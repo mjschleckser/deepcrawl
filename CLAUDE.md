@@ -28,46 +28,61 @@ public/               # static assets, PWA icons
 _To be filled in as conventions get established. Nothing formal yet beyond
 what the Vite/PixiJS defaults imply._
 
-## Development process: Linked-Intent Development (required)
+## LID
+- Mode: Full
+- Version: 1.3.0
 
-**All future changes to this repo must follow Linked-Intent Development (LID).**
-This is a hard requirement, not a suggestion. See https://linked-intent.dev.
+## Linked-Intent Development (MANDATORY)
 
-LID keeps a design linked all the way down to code, so intent never drifts
-from what's actually built:
+**Consult the `linked-intent-dev` skill for ALL code changes.** All changes flow through the arrow of intent in one direction:
 
 ```
-HLD (why) → LLD (how) → EARS specs (one-line, ID'd claims) → failing-first tests → code
+HLD → LLDs → EARS → Tests → Code
 ```
 
-- The **HLD** states the project's vision and problem/approach at a high level.
-- **LLDs** describe how each component/subsystem works.
-- **EARS specs** are one-line, greppable requirement IDs (e.g. `DUNGEON-GEN-001`)
-  derived from the design.
-- **Tests** are written failing-first, each asserting one spec ID.
-- **Code** carries `@spec` annotations citing the spec ID(s) it implements.
+- **New features and refactors**: full six-phase workflow (HLD check → LLD check/draft → EARS → intent-narrowing edge audit → tests-first → code).
+- **Bug fixes**: walk the arrow like any other change — find where behavior diverged from intent and cascade from there. No short-circuit.
+- **If unsure**: use the full workflow.
 
-This means `grep -r SOME-SPEC-ID` should surface the spec text, its tests, and
-the code implementing it, in one pass.
+Stop after each phase for user review. **Docs carry current intent, written to be read cold** — write each doc as if authored fresh today, from current intent alone: no narration of how it changed, no meaning that needs the conversation that produced it, no rebuttals to questions only a past discussion raised. Rationale, considered alternatives, and constraints a fresh author would independently write stay; record rejected alternatives and why in the LLD's Decisions & Alternatives table, not as asides in body prose.
 
-**Practically, for this repo:**
+**Memory vs. intent.** Before saving durable project knowledge to agent or tool memory, test whether it is project *intent* — would a fresh agent, in any tool, next session, need it to build this system correctly? If yes, record it in the arrow (HLD / LLD / EARS / decision doc), which travels and cascades — not in private, per-tool memory, where intent escapes the arrow. Knowledge about the user or how they like to work stays in memory.
 
-- New features and non-trivial changes start as a design edit (HLD or LLD)
-  under `docs/intent/`, not as code.
-- Specs, tests, and code cascade from that design edit — review happens at
-  the design level first.
-- In Claude Code, use the LID plugins to drive this:
+### Navigation
+
+| What you need | Where to look |
+|---|---|
+| High-level design | `docs/high-level-design.md` |
+| Design tree (sub-HLDs, LLDs, their specs) | `docs/intent/` — one folder per node |
+| EARS specs | beside each design doc as `{node}-specs.md` in the node's folder under `docs/intent/` |
+| Decision docs | `docs/decisions/` (project-level) and `docs/intent/<segment>/decisions/` |
+
+### Terminology
+
+- **HLD**: High-Level Design — single project-level doc at `docs/high-level-design.md`.
+- **LLD**: Low-Level Design — detailed component design doc in `docs/intent/`. The design layer is a recursive tree: the root is the HLD, leaf LLDs own EARS, and a component deep enough to outgrow one doc becomes a sub-HLD (HLD-shaped, owns no EARS) with children beneath it. "HLD" and "LLD" are roles by position; depth-2 (one HLD over flat leaf LLDs) is the default.
+- **EARS**: Easy Approach to Requirements Syntax — structured one-line requirements beside each design doc as `{node}-specs.md` in the node's folder under `docs/intent/`. IDs are path-concatenated — the root-to-leaf path of the owning segment plus a number — so a prefix grep gathers a subtree. Markers: `[x]` implemented, `[ ]` active gap, `[D]` deferred.
+- **Arrow**: the unidirectional chain from vision to code (HLD → LLDs → EARS → Tests → Code). Strictly a DAG of intent.
+- **Arrow segment**: the territory owned by one leaf LLD — the LLD itself plus the specs, tests, and code that cite its EARS IDs. The boundary is the leaf prefix. Within-segment cascade is free; across-segment cascade pauses.
+- **Cascade**: propagating a change downstream through the arrow so adjacent levels stay coherent.
+
+### Code annotations
+
+Annotate code and tests with `@spec` comments citing EARS IDs:
+
+```
+// @spec DUNGEON-GEN-001, DUNGEON-GEN-002
+```
+
+Place the annotation at the *entry point of the behavior's implementation graph* — the topmost function or module owning the specified behavior, not every helper. When a behavior spans multiple subsystems, annotate at the entry point in each subsystem. Tests follow the same rule: annotate the test that directly exercises the spec, not every inner assertion.
+
+### Project notes
+
+- Plugins that drive this workflow in Claude Code:
   ```
   /plugin marketplace add jszmajda/lid
   /plugin install linked-intent-dev@jszmajda-lid
   /plugin install arrow-maintenance@jszmajda-lid
-  /linked-intent-dev
   ```
-  The `/linked-intent-dev` skill scaffolds the `docs/intent/` tree and walks
-  through design → specs → tests before writing code.
-- Other agentic tools (Cursor, Windsurf, Copilot, Aider, etc.) should follow
-  the same workflow via their respective LID rule-file adapters — see
-  https://linked-intent.dev for setup per tool.
-- Small hotfixes may skip the workflow to ship urgently, but must be walked
-  back through the design afterward so specs/tests/code catch up. This is
-  LID's own stated allowance, not a general exception.
+- Other agentic tools (Cursor, Windsurf, Copilot, Aider) follow the same workflow via their LID rule-file adapters — see https://linked-intent.dev.
+- Small hotfixes may skip the workflow to ship urgently, but must be walked back through the design afterward so specs/tests/code catch up. This is LID's own stated allowance, not a general exception.
