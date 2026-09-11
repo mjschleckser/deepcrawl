@@ -87,6 +87,18 @@ acceptable alone.
 - A simulation layer testable without a renderer, so EARS specs assert game
   behavior directly rather than asserting through the UI.
 
+## Play Objectives
+
+What the design should encourage players to *do*. These are not software
+requirements: no spec asserts them and no test can prove them. They are the
+behaviours the segments exist to produce, and they are the standard a proposed
+mechanic is judged against — a mechanic that serves none of them needs another
+justification.
+
+- **Early floors stay worth revisiting.** A player who has reached the tenth floor
+  should still find reasons to walk the second. Falsified when optimal play is to
+  descend and never look back.
+
 ## Non-Goals
 
 - **Real-time or action combat.** No timing windows, no reaction tests, no ATB.
@@ -184,6 +196,10 @@ to survive a save.
 reproducible, so a floor can be regenerated identically and tested. Floors form a
 graph rather than a stack: a floor's connectors name target floors by id, so one
 floor may lead to several, and depth is a label rather than a computed property.
+Floors are generated once and persist for the campaign. The dungeon is not simulated
+while the party is away; a floor is rearranged on return in proportion to the time
+elapsed, so a known map stays accurate about its layout and unreliable about what
+occupies it.
 
 **Loot and items.** Item generation within loot tables and affix rules; inventory
 and equipment.
