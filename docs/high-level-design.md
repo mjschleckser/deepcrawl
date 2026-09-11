@@ -181,7 +181,9 @@ the automap is a view of what the party has seen, and what the party has seen ha
 to survive a save.
 
 **Dungeon generation.** Produces a floor from an archetype plus a seed. Seeded and
-reproducible, so a floor can be regenerated identically and tested.
+reproducible, so a floor can be regenerated identically and tested. Floors form a
+graph rather than a stack: a floor's connectors name target floors by id, so one
+floor may lead to several, and depth is a label rather than a computed property.
 
 **Loot and items.** Item generation within loot tables and affix rules; inventory
 and equipment.
