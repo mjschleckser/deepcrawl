@@ -76,10 +76,6 @@ acceptable alone.
 
 - A complete campaign loop: form a party, descend, fight, loot, return, improve,
   descend deeper.
-- Combat where front/back positioning, class roles, and ability choice visibly
-  decide outcomes.
-- A dungeon worth mapping: navigable from the first-person view, with an automap
-  that records what the party has seen and makes the unexplored obvious.
 - An identical play experience by keyboard and by touch — neither is a degraded
   port of the other.
 - Fully playable offline after first load; progress survives a closed tab, a
@@ -98,6 +94,14 @@ justification.
 - **Early floors stay worth revisiting.** A player who has reached the tenth floor
   should still find reasons to walk the second. Falsified when optimal play is to
   descend and never look back.
+- **Where characters stand decides fights.** A player should be able to explain why
+  an encounter went badly and change the outcome by rearranging the party or
+  choosing differently. Falsified when the best play is the same regardless of who
+  stands in which row.
+- **The dungeon is worth mapping.** A player should want to fill the map in, and
+  should navigate by looking at the dungeon rather than by reading the map.
+  Falsified when players ignore the map, or when they play entirely from it and
+  never look at the view.
 
 ## Non-Goals
 
@@ -258,8 +262,6 @@ Falsification signals — conditions under which Deepcrawl would be judged broke
   and the first-person view disagree about where the party is standing or facing.
 - A player cannot navigate the dungeon from the first-person view alone, or cannot
   tell from the automap where they have not yet been.
-- Combat outcomes are decided by stats alone — positioning and ability choice make
-  no observable difference.
 
 ## References
 
