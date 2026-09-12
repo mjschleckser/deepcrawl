@@ -281,6 +281,7 @@ describe('pits', () => {
   });
 
   // @spec EXPLORE-MOVE-010
+  // @spec EXPLORE-BOUND-005
   it('fires the trap trigger against the landing tile, not the pit tile', () => {
     const { upper, lower } = pitSetup();
     const onTrapTrigger = vi.fn();

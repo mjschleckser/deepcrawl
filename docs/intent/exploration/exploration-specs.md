@@ -9,49 +9,49 @@ tuning the game does not rewrite its specs.
 
 ## Floor representation
 
-- [ ] **EXPLORE-FLOOR-001**: The system shall represent a dungeon floor as a rectangular grid of tiles whose width and height are set per floor.
-- [ ] **EXPLORE-FLOOR-002**: The system shall store each edge between two tiles exactly once, in an array shared by both tiles.
-- [ ] **EXPLORE-FLOOR-003**: The system shall set every edge on the outermost ring of a floor to `wall`.
-- [ ] **EXPLORE-FLOOR-004**: The system shall give every edge exactly one kind from: `open`, `wall`, `door`, `lockedDoor`, `secretDoor`.
-- [ ] **EXPLORE-FLOOR-005**: The system shall record an open-or-closed state for every `door` and `lockedDoor` edge.
-- [ ] **EXPLORE-FLOOR-006**: The system shall give every tile exactly one feature from: `none`, `stairsUp`, `stairsDown`, `pit`.
-- [ ] **EXPLORE-FLOOR-007**: The system shall give every tile an intrinsic light level of `bright`, `dim`, or `dark`.
-- [ ] **EXPLORE-FLOOR-008**: The system shall identify each floor by a stable id, and each connector (stairs or pit) shall name its destination by target floor id and target tile.
-- [ ] **EXPLORE-FLOOR-009**: Where a floor's depth is shown to the player, the system shall display a stored label rather than a value computed from the floor id.
-- [ ] **EXPLORE-FLOOR-011**: The system shall permit a connector to exist with no return connector at its destination, so a `pit` may drop the party onto a tile offering no way back.
+- [x] **EXPLORE-FLOOR-001**: The system shall represent a dungeon floor as a rectangular grid of tiles whose width and height are set per floor.
+- [x] **EXPLORE-FLOOR-002**: The system shall store each edge between two tiles exactly once, in an array shared by both tiles.
+- [x] **EXPLORE-FLOOR-003**: The system shall set every edge on the outermost ring of a floor to `wall`.
+- [x] **EXPLORE-FLOOR-004**: The system shall give every edge exactly one kind from: `open`, `wall`, `door`, `lockedDoor`, `secretDoor`.
+- [x] **EXPLORE-FLOOR-005**: The system shall record an open-or-closed state for every `door` and `lockedDoor` edge.
+- [x] **EXPLORE-FLOOR-006**: The system shall give every tile exactly one feature from: `none`, `stairsUp`, `stairsDown`, `pit`.
+- [x] **EXPLORE-FLOOR-007**: The system shall give every tile an intrinsic light level of `bright`, `dim`, or `dark`.
+- [x] **EXPLORE-FLOOR-008**: The system shall identify each floor by a stable id, and each connector (stairs or pit) shall name its destination by target floor id and target tile.
+- [x] **EXPLORE-FLOOR-009**: Where a floor's depth is shown to the player, the system shall display a stored label rather than a value computed from the floor id.
+- [x] **EXPLORE-FLOOR-011**: The system shall permit a connector to exist with no return connector at its destination, so a `pit` may drop the party onto a tile offering no way back.
 - [D] **EXPLORE-FLOOR-010**: The system shall support tile features that alter the party's facing or position without a step (spinners, teleporters).
 
 ## The clock
 
-- [ ] **EXPLORE-CLOCK-001**: When the party enters a new tile, the system shall advance the clock by one tick.
-- [ ] **EXPLORE-CLOCK-002**: When the party searches its current tile, the system shall advance the clock by one tick.
-- [ ] **EXPLORE-CLOCK-003**: When the party relights a doused light source during exploration, the system shall advance the clock by one tick.
-- [ ] **EXPLORE-CLOCK-004**: When a camp action completes, the system shall advance the clock by the number of ticks the camp segment specifies for that action.
-- [ ] **EXPLORE-CLOCK-005**: While combat is active, the system shall not advance the clock for any reason.
-- [ ] **EXPLORE-CLOCK-006**: When the party turns in any direction, the system shall not advance the clock.
-- [ ] **EXPLORE-CLOCK-007**: If a step is blocked, then the system shall not advance the clock.
-- [ ] **EXPLORE-CLOCK-008**: While the automap, inventory, or any menu is open, the system shall not advance the clock.
-- [ ] **EXPLORE-CLOCK-009**: The system shall permit only the exploration segment to write the tick counter, including when the camp segment requests an advance.
+- [x] **EXPLORE-CLOCK-001**: When the party enters a new tile, the system shall advance the clock by one tick.
+- [x] **EXPLORE-CLOCK-002**: When the party searches its current tile, the system shall advance the clock by one tick.
+- [x] **EXPLORE-CLOCK-003**: When the party relights a doused light source during exploration, the system shall advance the clock by one tick.
+- [x] **EXPLORE-CLOCK-004**: When a camp action completes, the system shall advance the clock by the number of ticks the camp segment specifies for that action.
+- [x] **EXPLORE-CLOCK-005**: While combat is active, the system shall not advance the clock for any reason.
+- [x] **EXPLORE-CLOCK-006**: When the party turns in any direction, the system shall not advance the clock.
+- [x] **EXPLORE-CLOCK-007**: If a step is blocked, then the system shall not advance the clock.
+- [x] **EXPLORE-CLOCK-008**: While the automap, inventory, or any menu is open, the system shall not advance the clock.
+- [x] **EXPLORE-CLOCK-009**: The system shall permit only the exploration segment to write the tick counter, including when the camp segment requests an advance.
 
 ## Movement
 
-- [ ] **EXPLORE-MOVE-001**: The system shall accept exactly four movement verbs during exploration: `STEP_FORWARD`, `TURN_LEFT`, `TURN_RIGHT`, `TURN_AROUND`.
-- [ ] **EXPLORE-MOVE-002**: When the party turns, the system shall rotate its facing by the verb's angle (90° counter-clockwise, 90° clockwise, or 180°) and shall leave its tile unchanged.
-- [ ] **EXPLORE-MOVE-003**: If the edge between the party's tile and its target tile is `wall`, then the system shall block the step.
-- [ ] **EXPLORE-MOVE-004**: If that edge is a `lockedDoor` and the party does not hold the matching key, then the system shall block the step.
-- [ ] **EXPLORE-MOVE-005**: If that edge is an undiscovered `secretDoor`, then the system shall block the step and shall present the outcome identically to a `wall`.
-- [ ] **EXPLORE-MOVE-006**: If a step is blocked, then the system shall leave the party's tile, the clock, and every step side effect unchanged.
-- [ ] **EXPLORE-MOVE-007**: When the party steps through a closed `door`, or through a `lockedDoor` while holding its matching key, or through a discovered `secretDoor`, the system shall set that edge open and shall not charge a tick beyond the step's own.
-- [ ] **EXPLORE-MOVE-008**: When a step succeeds, the system shall resolve its effects in this order: move the party, advance the clock, resolve the tile feature, re-stock the floor if the party has arrived on one it previously left, fire the trap trigger hook, recompute sight and record discovery, move roaming enemies, check contact.
-- [ ] **EXPLORE-MOVE-009**: When the party enters a tile whose feature is `pit`, the system shall relocate the party to that connector's target floor and tile without asking for confirmation.
-- [ ] **EXPLORE-MOVE-015**: When the party attempts to step onto a tile whose feature is `stairsUp` or `stairsDown`, the system shall raise a confirmation before moving the party.
-- [ ] **EXPLORE-MOVE-016**: When the player confirms a staircase prompt, the system shall relocate the party to that connector's target floor and tile.
-- [ ] **EXPLORE-MOVE-017**: If the player declines a staircase prompt, then the system shall leave the party on its current tile and shall not advance the clock.
+- [x] **EXPLORE-MOVE-001**: The system shall accept exactly four movement verbs during exploration: `STEP_FORWARD`, `TURN_LEFT`, `TURN_RIGHT`, `TURN_AROUND`.
+- [x] **EXPLORE-MOVE-002**: When the party turns, the system shall rotate its facing by the verb's angle (90° counter-clockwise, 90° clockwise, or 180°) and shall leave its tile unchanged.
+- [x] **EXPLORE-MOVE-003**: If the edge between the party's tile and its target tile is `wall`, then the system shall block the step.
+- [x] **EXPLORE-MOVE-004**: If that edge is a `lockedDoor` and the party does not hold the matching key, then the system shall block the step.
+- [x] **EXPLORE-MOVE-005**: If that edge is an undiscovered `secretDoor`, then the system shall block the step and shall present the outcome identically to a `wall`.
+- [x] **EXPLORE-MOVE-006**: If a step is blocked, then the system shall leave the party's tile, the clock, and every step side effect unchanged.
+- [x] **EXPLORE-MOVE-007**: When the party steps through a closed `door`, or through a `lockedDoor` while holding its matching key, or through a discovered `secretDoor`, the system shall set that edge open and shall not charge a tick beyond the step's own.
+- [x] **EXPLORE-MOVE-008**: When a step succeeds, the system shall resolve its effects in this order: move the party, advance the clock, resolve the tile feature, re-stock the floor if the party has arrived on one it previously left, fire the trap trigger hook, recompute sight and record discovery, move roaming enemies, check contact.
+- [x] **EXPLORE-MOVE-009**: When the party enters a tile whose feature is `pit`, the system shall relocate the party to that connector's target floor and tile without asking for confirmation.
+- [x] **EXPLORE-MOVE-015**: When the party attempts to step onto a tile whose feature is `stairsUp` or `stairsDown`, the system shall raise a confirmation before moving the party.
+- [x] **EXPLORE-MOVE-016**: When the player confirms a staircase prompt, the system shall relocate the party to that connector's target floor and tile.
+- [x] **EXPLORE-MOVE-017**: If the player declines a staircase prompt, then the system shall leave the party on its current tile and shall not advance the clock.
 - [ ] **EXPLORE-MOVE-018**: While the party occupies a tile whose feature is `stairsUp` or `stairsDown` (having arrived by relocation rather than by stepping), the system shall offer that staircase as an `INTERACT` target.
-- [ ] **EXPLORE-MOVE-010**: When a relocation occurs mid-step, the system shall resolve re-stocking, the trap trigger hook, sight, roaming enemy movement, and contact check against the floor and tile the party occupies after relocating.
-- [ ] **EXPLORE-MOVE-011**: When a step relocates the party through a `pit`, the system shall advance the clock by one tick for the whole step.
-- [ ] **EXPLORE-MOVE-012**: If a relocation lands the party on a tile whose feature is also a connector, then the system shall not resolve that feature until the party's next step.
-- [ ] **EXPLORE-MOVE-013**: When the party moves between floors by any connector, the system shall preserve its facing.
+- [x] **EXPLORE-MOVE-010**: When a relocation occurs mid-step, the system shall resolve re-stocking, the trap trigger hook, sight, roaming enemy movement, and contact check against the floor and tile the party occupies after relocating.
+- [x] **EXPLORE-MOVE-011**: When a step relocates the party through a `pit`, the system shall advance the clock by one tick for the whole step.
+- [x] **EXPLORE-MOVE-012**: If a relocation lands the party on a tile whose feature is also a `pit`, then the system shall not resolve that pit until the party's next step, which it claims in place of a move.
+- [x] **EXPLORE-MOVE-013**: When the party moves between floors by any connector, the system shall preserve its facing.
 - [D] **EXPLORE-MOVE-014**: When the player selects a discovered tile on the automap, the system shall walk the party there, interrupting on an encounter, a trap, or the loss of light.
 
 ## Light
@@ -102,13 +102,13 @@ tuning the game does not rewrite its specs.
 
 - [ ] **EXPLORE-RETURN-001**: When the party leaves a floor, the system shall record the current tick against that floor.
 - [ ] **EXPLORE-RETURN-002**: While the party is not on a floor, the system shall not move that floor's roaming enemies, change its door states, or restock its rooms.
-- [ ] **EXPLORE-RETURN-003**: When the party arrives on a floor it has previously left, the system shall apply a re-stocking scaled to the ticks elapsed since that floor's recorded departure.
+- [x] **EXPLORE-RETURN-003**: When the party arrives on a floor it has previously left, the system shall apply a re-stocking scaled to the ticks elapsed since that floor's recorded departure.
 - [ ] **EXPLORE-RETURN-004**: When a re-stocking runs, the system shall reposition the floor's roaming enemies, change door open states, and refill some previously cleared rooms.
 - [ ] **EXPLORE-RETURN-005**: When a re-stocking runs, the system shall leave the floor's discovery record unchanged.
 - [ ] **EXPLORE-RETURN-009**: When a re-stocking runs, the system shall leave every trap on the floor unchanged — undiscovered traps stay undiscovered, known traps stay known, and sprung traps stay sprung.
 - [ ] **EXPLORE-RETURN-010**: The system shall lay a floor's traps once, when the floor is generated, and shall never add or remove a trap thereafter.
 - [ ] **EXPLORE-RETURN-006**: When a re-stocking runs, the system shall leave the floor's dimensions, edge kinds, and tile features unchanged.
-- [ ] **EXPLORE-RETURN-007**: When the party returns to a floor after fewer elapsed ticks than the minimum threshold defined in content data, the system shall apply no re-stocking.
+- [x] **EXPLORE-RETURN-007**: When the party returns to a floor after fewer elapsed ticks than the minimum threshold defined in content data, the system shall apply no re-stocking.
 - [ ] **EXPLORE-RETURN-008**: When two returns to the same floor differ in elapsed ticks, the system shall apply the larger re-stocking to the longer absence.
 
 ## Persistence
@@ -122,12 +122,12 @@ tuning the game does not rewrite its specs.
 
 ## Party actions
 
-- [ ] **EXPLORE-ACTION-001**: The system shall accept six party actions during exploration: `PARTY`, `INVENTORY`, `SPELLS`, `SEARCH`, `INTERACT`, and `TOGGLE_MAP`.
-- [ ] **EXPLORE-ACTION-002**: When the player opens a party action, the system shall not advance the clock.
-- [ ] **EXPLORE-ACTION-003**: When the player commits to a party action — equipping or using an item, casting a spell, searching a tile, or working a dungeon feature — the system shall advance the clock by one tick.
-- [ ] **EXPLORE-ACTION-004**: The system shall not advance the clock for `TOGGLE_MAP` under any circumstance.
-- [ ] **EXPLORE-ACTION-005**: When the player selects `INTERACT`, the system shall offer only features present on the party's current tile.
-- [ ] **EXPLORE-ACTION-006**: While the party is in combat, the system shall not accept any exploration movement verb or party action.
+- [x] **EXPLORE-ACTION-001**: The system shall accept six party actions during exploration: `PARTY`, `INVENTORY`, `SPELLS`, `SEARCH`, `INTERACT`, and `TOGGLE_MAP`.
+- [x] **EXPLORE-ACTION-002**: When the player opens a party action, the system shall not advance the clock.
+- [x] **EXPLORE-ACTION-003**: When the player commits to a party action — equipping or using an item, casting a spell, searching a tile, or working a dungeon feature — the system shall advance the clock by one tick.
+- [x] **EXPLORE-ACTION-004**: The system shall not advance the clock for `TOGGLE_MAP` under any circumstance.
+- [x] **EXPLORE-ACTION-005**: When the player selects `INTERACT`, the system shall offer only features present on the party's current tile.
+- [x] **EXPLORE-ACTION-006**: While the party is in combat, the system shall not accept any exploration movement verb or party action.
 
 ## Input
 
@@ -141,8 +141,8 @@ tuning the game does not rewrite its specs.
 - [ ] **EXPLORE-BOUND-002**: When an encounter begins, the system shall hand combat a payload naming the enemy group, the light level of the encounter tile, and which side was aware of the other.
 - [ ] **EXPLORE-BOUND-003**: The system shall change character hit points, status, and death state only through the party segment's operations, from exploration and from combat alike.
 - [ ] **EXPLORE-BOUND-004**: The system shall not mutate a floor's dimensions, edge kinds, or tile features after generation produces them.
-- [ ] **EXPLORE-BOUND-005**: When the party enters a tile, the system shall fire the trap trigger hook with that tile and the party.
-- [ ] **EXPLORE-BOUND-006**: When the clock advances, the system shall notify the hunger segment of the number of ticks elapsed.
+- [x] **EXPLORE-BOUND-005**: When the party enters a tile, the system shall fire the trap trigger hook with that tile and the party.
+- [x] **EXPLORE-BOUND-006**: When the clock advances, the system shall notify the hunger segment of the number of ticks elapsed.
 - [ ] **EXPLORE-BOUND-007**: When the party searches its current tile, the system shall fire the trap detection hook with that tile, the party, and the tile's resolved light level.
 - [ ] **EXPLORE-BOUND-008**: When sight is recomputed, the system shall fire the trap detection hook for the tiles it reached, with the party and each tile's resolved light level.
-- [ ] **EXPLORE-BOUND-009**: The system shall route each party action to the segment that owns it and shall hold no rules of its own for `PARTY`, `INVENTORY`, `SPELLS`, `SEARCH`, or `INTERACT`.
+- [x] **EXPLORE-BOUND-009**: The system shall route each party action to the segment that owns it and shall hold no rules of its own for `PARTY`, `INVENTORY`, `SPELLS`, `SEARCH`, or `INTERACT`.
