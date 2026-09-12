@@ -281,6 +281,13 @@ A quadrant cast rather than a straight line down the corridor: a straight-line c
 is simpler, but in an open room it reveals a single file of tiles and leaves the
 automap looking broken in exactly the places the player most wants mapped.
 
+Within the cone, visibility **spreads outward** from the party through edges that are
+not opaque, rather than being traced as a separate ray to each tile. The practical
+difference shows at a lone wall standing in open floor: the party sees the tiles
+behind it, because it can see past either end. Only an obstruction with no way around
+— a corridor wall, a closed door across a passage — actually hides what lies beyond,
+which is how a dungeon of corridors and doors behaves anyway.
+
 ### Discovery
 
 A tile becomes discovered the moment sight reaches it at `dim` or better — not when
@@ -455,6 +462,8 @@ widget occupies a corner and expands to full screen on tap.
 | Turning | Free, never ticks | Turning costs a tick | Free turning keeps the first-person view scannable, which matters most on a phone where looking around is the primary orientation gesture. |
 | Wall bump | No movement, no tick | Bumping costs a tick | A misjudged step should not cost food and torchlight. |
 | Movement verbs | Forward, turn L/R, turn 180° | Adding a backward step | Free turning already makes withdrawal cheap; a backward step would only add a case where the party enters a tile its facing never revealed. |
+| Visibility propagation | Spreading outward through non-opaque edges within the cone | A ray traced from the party to each candidate tile | With walls on edges, spreading is exactly "what the corridor lets through", and it is deterministic with no grazing-ray corner cases to arbitrate. The cost is that a lone obstruction in open floor is seen around rather than behind — acceptable where nearly every sightline is a corridor or a door. |
+| Light falloff distance | Chebyshev, so light pools square on the grid | Euclidean distance, rounded | A diagonal step costs the party no more than an orthogonal one, so light that reached further orthogonally than diagonally would contradict how the party moves. |
 | Sight shape | Forward-quadrant cast, 45° either side of facing | Straight-line corridor cast; full 360° radius | A straight line maps open rooms one file at a time and looks broken. A full circle would show what the party is not looking at. |
 | Discovery trigger | Sight reaches the tile | Standing on the tile | Mapping a room by walking every tile in it is tedious, and the first-person view already shows what sight-based discovery records. |
 | Light model | Three levels per tile: bright, dim, dark | A single binary lit/unlit; a continuous radius | Three tiers give a middle state where the party can map but cannot spot enemies, which is what makes pushing on with a guttering torch a real gamble. |
@@ -508,21 +517,24 @@ widget occupies a corner and expands to full screen on tap.
 23. ✅ **Trap detection and trap triggering are separate hooks.** Detection runs at sight and search and carries the light level; triggering runs on entry and does not.
 24. ✅ **Carried light is out for the duration of a camp**, so camp ticks do not burn it.
 25. ✅ **Re-stocking resolves immediately after relocation**, before the trap trigger fires.
+26. ✅ **Visibility spreads through non-opaque edges** within the cone rather than being ray-traced per tile.
+27. ✅ **Light distance is Chebyshev**, matching the way the party moves.
 
 ### Deferred
 
 1. **Re-stocking magnitude.** How far enemies move, which rooms refill, and how many ticks of absence separate a light rearrangement from a thorough one are all untuned. The trigger and the inputs are settled; the curve is not.
-2. **Skill-dependent enemy visibility on the automap.** Enemies currently show wherever they stand in `bright` light. Party skill was raised as a future modifier on that range; the mechanism is unspecified.
-3. **Auto-travel** — tap a discovered automap tile and walk there. Must interrupt on encounter, trap, or light expiry. Not in v1.
-4. **Player map annotations** — Etrian-style notes and icons. Out of scope.
-5. **Hunger stages and effects** — this segment supplies the tick only; thresholds and consequences belong to the hunger segment.
-6. **Ambush and first strike** — facing and awareness should decide who strikes first. The encounter payload carries an awareness field; the rule that reads it is combat's.
-7. **Keys and locked doors** — `lockedDoor` names a matching key, but whether keys are per-door ids, a keyring, or a generic unlock is the items segment's decision.
-8. **Spinners and teleporters** — tile features that defeat mapping. Deferred; the edge and feature model accommodates them unchanged.
-9. **Other adventuring parties** in the dungeon, carrying their own light. Noted as a future inhabitant of the same floor model.
-10. **Standing still is free and safe.** Because roamers move only on party ticks, a stationary party is never approached. Whether idling should carry a cost is an open design question.
-11. **Save size** — every floor is retained for the life of the campaign with a full edge model. Discovery is bitmasked; whether layouts need compaction is unmeasured.
-12. **Mapping-range and trap-finding modifiers** from items, tomes, and classes — the baseline map is never gated, but the extension mechanism is unspecified.
+2. **Seeing around a lone obstruction.** Because visibility spreads rather than casting rays, an isolated wall or pillar standing in open floor does not hide the tiles behind it. Whether that matters depends on how often generation places free-standing obstructions, which is unknown.
+3. **Skill-dependent enemy visibility on the automap.** Enemies currently show wherever they stand in `bright` light. Party skill was raised as a future modifier on that range; the mechanism is unspecified.
+4. **Auto-travel** — tap a discovered automap tile and walk there. Must interrupt on encounter, trap, or light expiry. Not in v1.
+5. **Player map annotations** — Etrian-style notes and icons. Out of scope.
+6. **Hunger stages and effects** — this segment supplies the tick only; thresholds and consequences belong to the hunger segment.
+7. **Ambush and first strike** — facing and awareness should decide who strikes first. The encounter payload carries an awareness field; the rule that reads it is combat's.
+8. **Keys and locked doors** — `lockedDoor` names a matching key, but whether keys are per-door ids, a keyring, or a generic unlock is the items segment's decision.
+9. **Spinners and teleporters** — tile features that defeat mapping. Deferred; the edge and feature model accommodates them unchanged.
+10. **Other adventuring parties** in the dungeon, carrying their own light. Noted as a future inhabitant of the same floor model.
+11. **Standing still is free and safe.** Because roamers move only on party ticks, a stationary party is never approached. Whether idling should carry a cost is an open design question.
+12. **Save size** — every floor is retained for the life of the campaign with a full edge model. Discovery is bitmasked; whether layouts need compaction is unmeasured.
+13. **Mapping-range and trap-finding modifiers** from items, tomes, and classes — the baseline map is never gated, but the extension mechanism is unspecified.
 
 ## References
 
