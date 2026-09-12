@@ -102,6 +102,11 @@ justification.
   should navigate by looking at the dungeon rather than by reading the map.
   Falsified when players ignore the map, or when they play entirely from it and
   never look at the view.
+- **Dragging out a fight never pays.** Combat stops the clock, so no hunger is
+  spent and no light burns while it lasts. Nothing else may accrue to the party for
+  staying in a fight longer either — no regeneration, no re-preparation, no recovery
+  on a timer. Falsified the moment stalling an already-won encounter becomes the
+  optimal play.
 
 ## Non-Goals
 
@@ -201,7 +206,7 @@ reproducible, so a floor can be regenerated identically and tested. Floors form 
 graph rather than a stack: a floor's connectors name target floors by id, so one
 floor may lead to several, and depth is a label rather than a computed property.
 Floors are generated once and persist for the campaign. The dungeon is not simulated
-while the party is away; a floor is rearranged on return in proportion to the time
+while the party is away; a floor is re-stocked on return in proportion to the time
 elapsed, so a known map stays accurate about its layout and unreliable about what
 occupies it.
 

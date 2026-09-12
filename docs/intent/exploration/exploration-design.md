@@ -62,7 +62,7 @@ Edge kinds:
 
 Doors carry an **open** flag alongside their kind. Generation may open some doors at
 creation; otherwise a door opens when the party steps through it. An open door stays
-open while the party is on the floor, but the shake-up applied on a return visit may
+open while the party is on the floor, but the re-stocking applied on a return visit may
 have closed it again (see *Returning to a Floor*). A closed door blocks sight as well
 as movement, so the party cannot map a room before entering it.
 
@@ -73,8 +73,8 @@ is blocked by the same rule that blocks every other wall.
 Tile features (on the tile, not the edge):
 
 - `none`
-- `stairsUp`, `stairsDown` — connectors to another floor
-- `pit` — a one-way connector downward
+- `stairsUp`, `stairsDown` — connectors to another floor, taken deliberately
+- `pit` — a one-way connector downward, taken involuntarily
 
 Each tile also carries an intrinsic light level (see *Sight, Light, and Discovery*)
 and a discovery record.
@@ -90,6 +90,13 @@ this segment computes depth by arithmetic on a floor id.
 
 Connectors are directional and paired only when both directions exist: a `pit`
 drops the party to a target floor with no return connector at the landing tile.
+
+Stairs and pits are taken differently. A `pit` fires the moment the party enters its
+tile, with no say in the matter. Stairs ask: attempting to step onto a staircase
+raises a confirmation, and declining leaves the party on its current tile having
+spent no tick, so a staircase is never merely walked across. A party that arrives on
+a staircase some other way — dropped there by a pit, which does not chain — is simply
+standing on it, and takes it with an `INTERACT`.
 
 ## The Clock
 
@@ -115,8 +122,15 @@ Combat standing outside the clock is deliberate: a long fight should not also
 starve the party and burn the torch down. Combat costs resources of its own, and
 charging time for it would punish the same encounter twice.
 
+The corollary is a constraint on every segment, not a licence: because the clock
+stops, nothing may accrue to the party merely for staying in combat longer. Anything
+that regenerates, re-prepares, or recovers on a timer must not tick during a fight
+either, or stalling becomes the optimal play.
+
 The camp segment advances a clock it does not own. It calls exploration's tick
-advance; exploration remains the only writer of the counter.
+advance; exploration remains the only writer of the counter. Those ticks reach hunger
+like any other, but not the party's carried light, which is out for the duration of
+the camp.
 
 ## Returning to a Floor
 
@@ -127,21 +141,27 @@ proportional to the length of the campaign, for changes nobody is present to see
 A frozen dungeon is a dead one, so the life is restored on arrival rather than
 maintained in the background. Every floor records the tick at which the party last
 left it. On return, exploration compares that against the current tick and applies a
-**shake-up** scaled to how much time has passed:
+**re-stocking** scaled to how much time has passed:
 
 - roaming enemies are repositioned
 - doors are opened and closed
-- some previously cleared rooms are restocked
+- some previously cleared rooms are refilled
 
-A long absence produces a thorough shake-up. Stepping down a staircase and straight
+A long absence produces a thorough re-stocking. Stepping down a staircase and straight
 back up produces none — the threshold is elapsed ticks, not the act of arriving.
 
-**The shake-up never touches the discovery record.** The map the party drew stays
-theirs permanently; what changes is what is standing in it. A returning party finds
-its own map accurate as a map and unreliable as intelligence, which is the point.
+**Re-stocking never touches the discovery record, and never touches a trap.** The map
+the party drew stays theirs permanently; what changes is what is standing in it. A
+returning party finds its own map accurate as a map and unreliable as intelligence,
+which is the point.
+
+Traps are exempt entirely: an undiscovered trap stays undiscovered, a known one stays
+known, and a sprung one stays sprung. A floor's traps are laid once, when it is
+generated, and the party's knowledge of them only ever grows. Re-stocking rearranges
+the living contents of a floor, not its construction.
 
 Exploration owns the trigger, the per-floor last-left tick, and the door changes,
-since it already owns door state. Repositioning and restocking are delegated to the
+since it already owns door state. Repositioning and refilling are delegated to the
 segments that own roaming enemies and generation.
 
 ## Movement
@@ -174,20 +194,25 @@ On a successful step, these resolve in a fixed order:
 2. The clock advances one tick — light burns down, hunger advances.
 3. Tile features resolve: a `pit` relocates the party to its connector's target floor
    and tile, preserving facing.
-4. The trap hook fires for the tile the party now occupies.
-5. Sight is recomputed and discovery recorded.
-6. Roaming enemies on the party's current floor move.
-7. Contact is checked; an enemy sharing the party's tile begins an encounter.
+4. If the party has arrived on a floor it previously left, that floor is re-stocked.
+5. The trap trigger hook fires for the tile the party now occupies.
+6. Sight is recomputed and discovery recorded.
+7. Roaming enemies on the party's current floor move.
+8. Contact is checked; an enemy sharing the party's tile begins an encounter.
 
-Steps 4 through 7 act on the tile the party occupies *after* any relocation, so a pit
-can drop the party onto a trap and both resolve inside one step. A pit costs only the
+Steps 4 through 8 act on the tile the party occupies *after* any relocation, so a pit
+can drop the party onto a trap and both resolve inside one step, and a pit onto a
+known floor lands the party in the re-stocked version of it rather than the stale
+one. A pit costs only the
 tick of the step that entered it — the landing is a relocation, not a second step. Tile
 features resolve at most once per step, so landing on another pit does not chain; the
 party falls again on its next step instead.
 
 The order is load-bearing in three places. Light burns down **before** sight is
-computed, so a torch that expires on this step leaves the party blind on arrival
-rather than granting one last free look. Roamers move **after** discovery, so the
+computed, so a torch that expires on this step is already spent when the party looks
+around, rather than granting one last free look. With a spare in the pack the next
+torch has already lit by then and nothing is lost; on the last torch, the party
+arrives blind. Roamers move **after** discovery, so the
 party sees the tile it entered as it was when it arrived, and a roamer that steps
 into view does so on the next recomputation. And only the occupied floor's roamers
 move: floors the party has left are frozen rather than simulated in the background.
@@ -229,7 +254,13 @@ unspent torch lights automatically.
 A torch may also be extinguished by an external effect — a water attack, say. That
 does **not** trigger automatic relighting; a deliberate relight action is required.
 Relighting costs a tick during exploration and a character's action during combat,
-which is what makes dousing the party's light worth an attack.
+which is what makes dousing the party's light worth an attack. A relight resumes the
+same doused instance, which still holds whatever fuel it had; it does not reach for a
+fresh one.
+
+Carried light is put out for the duration of a camp and relit on breaking camp, so
+the ticks a camp consumes do not burn a torch. Camp has a fire of its own, and a
+party that had to sleep in shifts holding a torch would simply never sleep.
 
 Spells with a duration, refuelable lanterns, permanently lit equipment, and light
 carried by something other than the party are later implementations of the same
@@ -241,10 +272,10 @@ stranded in the dark with no way to see.
 
 ### What the party sees
 
-Sight is cast into the **forward quadrant**: tiles whose direction from the party is
-within 90° of its facing, with line of sight blocked by any opaque edge — a `wall`, a
-closed `door`, or an undiscovered `secretDoor`. The occupied tile and its four edges
-are always seen unless that tile is `dark`.
+Sight is cast into the **forward quadrant**: tiles lying within 45° either side of
+the party's facing, a 90° cone in total, with line of sight blocked by any opaque
+edge — a `wall`, a closed `door`, or an undiscovered `secretDoor`. The occupied tile
+and its four edges are always seen unless that tile is `dark`.
 
 A quadrant cast rather than a straight line down the corridor: a straight-line cast
 is simpler, but in an open room it reveals a single file of tiles and leaves the
@@ -295,9 +326,10 @@ Rules beyond that line belong to the other segment.
 | Hook | Fires when | Exploration provides | Owned elsewhere |
 |---|---|---|---|
 | Hunger | every tick | the tick | stages, thresholds, effects |
-| Traps | party enters a tile; active search | tile, party, search flag | detection, disarm, effects |
+| Trap detection | sight is recomputed; the party searches | tiles in view or the searched tile, the party, the resolved light level | detection rules, disarm |
+| Trap triggering | the party enters a tile | the entered tile and the party | which trap fires and what it does |
 | Roaming enemies | after discovery on each step | floor, party tile, resolved tile light levels | movement behavior, roster, respawn |
-| Floor shake-up | the party arrives on a floor it has visited before | the floor and the ticks elapsed since it was last left | how far enemies move, which rooms restock |
+| Floor re-stocking | the party arrives on a floor it has visited before | the floor and the ticks elapsed since it was last left | how far enemies move, which rooms refill |
 | Encounter | an enemy shares the party's tile | the encounter payload — see *The Combat Handoff* | all of combat |
 | Camp | the player enters camp | tick advance | sleep, eat, rest, train |
 
@@ -347,7 +379,7 @@ writes only the discovery and door-state record laid over them.
 Everything in this segment is saved, including floors the party is not currently
 on. A floor is generated once and never generated again: its layout is fixed for the
 life of the save, and so is the discovery record laid over it. The floor's occupants
-and dynamic state also persist, but are rewritten by the shake-up on each return.
+and dynamic state also persist, but are rewritten by the re-stocking on each return.
 
 Saved by this segment:
 
@@ -367,17 +399,34 @@ is one bit per tile and floors accumulate for the life of the campaign.
 One action vocabulary; keyboard and touch both produce it, and the simulation
 cannot tell which was used.
 
-| Action | Keyboard | Touch |
+Exploration accepts two classes of action. **Movement verbs** change where the party
+is or which way it looks. **Party actions** open onto everything else the party can
+do while standing still.
+
+| Movement verb | Keyboard | Touch |
 |---|---|---|
 | `STEP_FORWARD` | `W` / `↑` | tap upper-centre of the view |
 | `TURN_LEFT` | `A` / `←` | tap left edge of the view |
 | `TURN_RIGHT` | `D` / `→` | tap right edge of the view |
 | `TURN_AROUND` | `S` / `↓` | tap lower-centre of the view |
-| `SEARCH` | `F` | tap the search control |
-| `TOGGLE_MAP` | `M` | tap the automap widget |
 
-`SEARCH` is the only action here that advances the clock; its rules belong to the
-trap segment, and exploration only routes it and charges the tick.
+| Party action | Keyboard | Touch | Owned by |
+|---|---|---|---|
+| `PARTY` — roster, row assignment, statuses | `P` | party bar | party |
+| `INVENTORY` — use and equip items | `I` | pack icon | loot and items |
+| `SPELLS` — out-of-combat magic | `C` | spell icon | abilities |
+| `SEARCH` — look for traps and secret doors | `F` | search control | traps |
+| `INTERACT` — dungeon features on the current tile | `E` | prompt on the view | varies by feature |
+| `TOGGLE_MAP` — open the automap | `M` | automap widget | exploration |
+
+Exploration owns none of these but `TOGGLE_MAP`: it routes each to the segment that
+owns it and charges the clock. **Opening a party action costs nothing; committing to
+one costs a tick.** Reading the roster, browsing the pack, and reading the map are
+free, because a game that charges for looking punishes the player for playing
+carefully. Equipping the armour, drinking the potion, casting the spell, searching
+the tile, and working the lever each cost a tick.
+
+`TOGGLE_MAP` never costs a tick at all, having nothing to commit to.
 
 ```
 ┌─────────────────────────────────┐
@@ -406,7 +455,7 @@ widget occupies a corner and expands to full screen on tap.
 | Turning | Free, never ticks | Turning costs a tick | Free turning keeps the first-person view scannable, which matters most on a phone where looking around is the primary orientation gesture. |
 | Wall bump | No movement, no tick | Bumping costs a tick | A misjudged step should not cost food and torchlight. |
 | Movement verbs | Forward, turn L/R, turn 180° | Adding a backward step | Free turning already makes withdrawal cheap; a backward step would only add a case where the party enters a tile its facing never revealed. |
-| Sight shape | Forward-quadrant cast, radius `R` | Straight-line corridor cast; full 360° radius | A straight line maps open rooms one file at a time and looks broken. A full circle would show what the party is not looking at. |
+| Sight shape | Forward-quadrant cast, 45° either side of facing | Straight-line corridor cast; full 360° radius | A straight line maps open rooms one file at a time and looks broken. A full circle would show what the party is not looking at. |
 | Discovery trigger | Sight reaches the tile | Standing on the tile | Mapping a room by walking every tile in it is tedious, and the first-person view already shows what sight-based discovery records. |
 | Light model | Three levels per tile: bright, dim, dark | A single binary lit/unlit; a continuous radius | Three tiers give a middle state where the party can map but cannot spot enemies, which is what makes pushing on with a guttering torch a real gamble. |
 | Light sources | A contract; torch is the only v1 implementation | Hard-coding the torch | Spells, lanterns, and enemy-carried light all arrive later. Nothing in sight resolution names a torch. |
@@ -417,11 +466,16 @@ widget occupies a corner and expands to full screen on tap.
 | Roamers on the automap | Shown only on `bright` tiles | Last-known position; always shown; visible at `dim` too | Seeing where enemies are is what carrying light buys. A persistent map marker would give it away for free. |
 | Exploration to combat | An explicit encounter payload | Both segments reading shared state freely | The segment boundary is where cascade pauses; a boundary read through freely is not a boundary. The payload is the contract that changes when the segments need to say something new. |
 | Party state | Owned by the party segment; exploration and combat both call its operations | Either segment writing character fields directly | Both segments legitimately change party state — damage in combat, a potion in exploration. Routing both through one owner keeps hit-point floors, the death state machine, and the five-member and three-per-row limits in a single place. |
-| Floors the party has left | Frozen, then shaken up on return in proportion to elapsed ticks | Live background simulation; no change at all on return | Background simulation costs time proportional to the campaign for changes nobody observes, while a wholly static dungeon is dead. A shake-up buys the appearance of a living dungeon at the cost of one arrival-time pass. |
-| Shake-up and the map | Discovery is never revised; only occupants, doors, and room contents change | Fogging the map again after long absences | The player earned the map. Making its layout decay would punish the mapping the game is built to reward; making its contents unreliable is the interesting half. |
+| Floors the party has left | Frozen, then re-stocked on return in proportion to elapsed ticks | Live background simulation; no change at all on return | Background simulation costs time proportional to the campaign for changes nobody observes, while a wholly static dungeon is dead. A re-stocking buys the appearance of a living dungeon at the cost of one arrival-time pass. |
+| Re-stocking and the map | Discovery is never revised; only occupants, doors, and room contents change | Fogging the map again after long absences | The player earned the map. Making its layout decay would punish the mapping the game is built to reward; making its contents unreliable is the interesting half. |
 | Dim light | Penalises trap and secret-door detection, and hides enemies | Dim as purely cosmetic; dim also degrading mapping accuracy | Detection penalties make a failing torch dangerous without making the map itself lie, which would undermine the record the player is building. |
 | Relighting a doused source | Costs a tick in exploration, an action in combat | Free relighting; automatic relighting after a dousing | A dousing has to cost something or the attack that caused it accomplishes nothing. Automatic relighting stays for ordinary burnout, where friction would only be tedium. |
 | Step resolution order | Fixed seven-step order | Resolving side effects in any order | Light burning before sight is computed, and roamers moving after discovery, are both observable behaviours that must be specified rather than emergent. |
+| Stairs versus pits | Stairs prompt on attempted entry and cost nothing to decline; pits fire on entry with no say | Stairs taken by a verb while standing on them; stairs firing automatically like pits | A staircase that fires automatically cannot be walked past, which breaks down once a floor has several. A confirmation keeps the tile passable in intent while never letting the party take stairs by accident. |
+| Action classes | Movement verbs, plus party actions that open free and commit for a tick | Charging a tick to open any menu; charging nothing for any party action | Charging for looking punishes careful play, and charging for nothing removes the cost of acting. The split puts the price on the commitment. |
+| Traps and re-stocking | Traps are untouched: laid at generation, and party knowledge of them only grows | Clearing known-trap flags on refilled rooms; re-laying traps as part of re-stocking | A trap the party disarmed reappearing, or a map marking a brand-new trap as already known, are both worse than a floor whose traps are simply permanent. |
+| Relighting | Resumes the same doused instance | Consuming a fresh source on relight | A doused torch still holds its fuel; making the party throw it away would turn one enemy attack into the loss of a whole item. |
+| Light during camp | Carried light is out for the camp's duration | Burning carried light through every tick a camp consumes | A camp has its own fire. Burning a torch through a night's sleep would make resting unaffordable and encourage never camping. |
 | Pit relocation | Steps 4-7 act on the landing tile; one tick total; features resolve at most once per step | Charging a second tick for the landing; chaining pits within one step | Acting on the landing tile lets a pit drop the party onto a trap, which is the interesting case. Resolving features once per step bounds the fall without a special rule. |
 | Facing across floors | Preserved through stairs and pits | Facing set by the connector; facing randomised on arrival | Preserving facing keeps arrival predictable and costs nothing; a connector-defined facing is a detail generation would have to author for every connector. |
 
@@ -442,26 +496,33 @@ widget occupies a corner and expands to full screen on tap.
 11. ✅ **One torch burns at a time**, tracked per instance, relighting automatically when spent but not when doused.
 12. ✅ **Facing is preserved** across stairs and pits.
 13. ✅ **Combat does not advance the clock.** Exploration and camp are the only sources of time.
-14. ✅ **Roamers appear on the automap only where currently visible.**
+14. ✅ **Roamers appear on the automap wherever they stand in `bright` light**, whether or not they fall inside the sight cast.
 15. ✅ **Exploration hands combat an explicit payload**; party state is owned by the party segment and changed through its operations by both.
-16. ✅ **Floors the party has left are frozen**, then shaken up on return in proportion to elapsed ticks — never actively simulated.
-17. ✅ **The shake-up never revises discovery.** Layout stays known; occupants, doors, and room contents change.
+16. ✅ **Floors the party has left are frozen**, then re-stocked on return in proportion to elapsed ticks — never actively simulated.
+17. ✅ **Re-stocking never revises discovery and never touches a trap.** Layout stays known, trap state is permanent; occupants, doors, and room contents change.
 18. ✅ **Dim light penalises trap and secret-door detection**, on top of hiding enemies. It does not degrade mapping.
-19. ✅ **Relighting a doused source costs a tick in exploration and an action in combat.** Burnout still relights automatically.
+19. ✅ **Relighting a doused source costs a tick in exploration and an action in combat**, and resumes the same instance. Burnout still relights automatically.
+20. ✅ **Sight is a true 90° cone** — 45° either side of facing.
+21. ✅ **Stairs prompt on attempted entry**; declining costs nothing and leaves the party in place. Pits fire without asking.
+22. ✅ **Party actions open free and commit for a tick.** Exploration routes them and charges the clock; the owning segments hold the rules.
+23. ✅ **Trap detection and trap triggering are separate hooks.** Detection runs at sight and search and carries the light level; triggering runs on entry and does not.
+24. ✅ **Carried light is out for the duration of a camp**, so camp ticks do not burn it.
+25. ✅ **Re-stocking resolves immediately after relocation**, before the trap trigger fires.
 
 ### Deferred
 
-1. **Shake-up magnitude.** How far enemies move, which rooms restock, and how many ticks of absence separate a light rearrangement from a thorough one are all untuned. The trigger and the inputs are settled; the curve is not.
-2. **Auto-travel** — tap a discovered automap tile and walk there. Must interrupt on encounter, trap, or light expiry. Not in v1.
-3. **Player map annotations** — Etrian-style notes and icons. Out of scope.
-4. **Hunger stages and effects** — this segment supplies the tick only; thresholds and consequences belong to the hunger segment.
-5. **Ambush and first strike** — facing and awareness should decide who strikes first. The encounter payload carries an awareness field; the rule that reads it is combat's.
-6. **Keys and locked doors** — `lockedDoor` names a matching key, but whether keys are per-door ids, a keyring, or a generic unlock is the items segment's decision.
-7. **Spinners and teleporters** — tile features that defeat mapping. Deferred; the edge and feature model accommodates them unchanged.
-8. **Other adventuring parties** in the dungeon, carrying their own light. Noted as a future inhabitant of the same floor model.
-9. **Standing still is free and safe.** Because roamers move only on party ticks, a stationary party is never approached. Whether idling should carry a cost is an open design question.
-10. **Save size** — every floor is retained for the life of the campaign with a full edge model. Discovery is bitmasked; whether layouts need compaction is unmeasured.
-11. **Mapping-range and trap-finding modifiers** from items, tomes, and classes — the baseline map is never gated, but the extension mechanism is unspecified.
+1. **Re-stocking magnitude.** How far enemies move, which rooms refill, and how many ticks of absence separate a light rearrangement from a thorough one are all untuned. The trigger and the inputs are settled; the curve is not.
+2. **Skill-dependent enemy visibility on the automap.** Enemies currently show wherever they stand in `bright` light. Party skill was raised as a future modifier on that range; the mechanism is unspecified.
+3. **Auto-travel** — tap a discovered automap tile and walk there. Must interrupt on encounter, trap, or light expiry. Not in v1.
+4. **Player map annotations** — Etrian-style notes and icons. Out of scope.
+5. **Hunger stages and effects** — this segment supplies the tick only; thresholds and consequences belong to the hunger segment.
+6. **Ambush and first strike** — facing and awareness should decide who strikes first. The encounter payload carries an awareness field; the rule that reads it is combat's.
+7. **Keys and locked doors** — `lockedDoor` names a matching key, but whether keys are per-door ids, a keyring, or a generic unlock is the items segment's decision.
+8. **Spinners and teleporters** — tile features that defeat mapping. Deferred; the edge and feature model accommodates them unchanged.
+9. **Other adventuring parties** in the dungeon, carrying their own light. Noted as a future inhabitant of the same floor model.
+10. **Standing still is free and safe.** Because roamers move only on party ticks, a stationary party is never approached. Whether idling should carry a cost is an open design question.
+11. **Save size** — every floor is retained for the life of the campaign with a full edge model. Discovery is bitmasked; whether layouts need compaction is unmeasured.
+12. **Mapping-range and trap-finding modifiers** from items, tomes, and classes — the baseline map is never gated, but the extension mechanism is unspecified.
 
 ## References
 
