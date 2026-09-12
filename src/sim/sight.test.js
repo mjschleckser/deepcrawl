@@ -214,6 +214,18 @@ describe('discovery', () => {
     expect(isTileDiscovered(state, 'f1', 3, 3)).toBe(true);
   });
 
+  // @spec EXPLORE-SIGHT-011
+  it('records what a turn reveals, though a turn costs no tick', () => {
+    const { state } = scene({ facing: Direction.NORTH });
+    computeSight(state);
+    expect(isTileDiscovered(state, 'f1', 5, 3)).toBe(false);
+
+    perform(state, { verb: Verb.TURN_RIGHT });
+
+    // Now facing east, the corridor to the right has been looked at.
+    expect(isTileDiscovered(state, 'f1', 5, 3)).toBe(true);
+  });
+
   // @spec EXPLORE-SIGHT-009
   it('keeps discovery permanently, across leaving and returning to a floor', () => {
     const upper = createFloor({ id: 'upper', width: 7, height: 7 });

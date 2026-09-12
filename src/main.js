@@ -1,21 +1,37 @@
 import './style.css';
-import { Application } from 'pixi.js';
-import { createPlaceholderScene } from './scenes/placeholder.js';
+import { createStarterGame } from './content/starter-floor.js';
+import { computeSight } from './sim/exploration.js';
+import { createRenderer } from './render/app.js';
+import { createController, pressKey, pressPointer, resize, answerPrompt } from './render/controller.js';
 
 async function bootstrap() {
-  const app = new Application();
+  const mount = document.querySelector('#app');
+  const state = createStarterGame();
+  // Record what the party can see from where it starts, before anything is drawn.
+  computeSight(state);
 
-  await app.init({
-    resizeTo: window,
-    background: '#1a1410',
-    antialias: false,
-    resolution: Math.min(window.devicePixelRatio || 1, 2),
-    autoDensity: true,
+  let controller;
+  const renderer = await createRenderer(mount, {
+    onAnswer: (accepted) => answerPrompt(controller, accepted),
   });
 
-  document.querySelector('#app').appendChild(app.canvas);
+  controller = createController({
+    state,
+    viewport: renderer.viewport(),
+    onDraw: renderer.draw,
+  });
 
-  createPlaceholderScene(app);
+  window.addEventListener('keydown', (event) => {
+    if (event.metaKey || event.ctrlKey || event.altKey) return;
+    if (pressKey(controller, event.key)) event.preventDefault();
+  });
+
+  renderer.app.canvas.addEventListener('pointerdown', (event) => {
+    const bounds = renderer.app.canvas.getBoundingClientRect();
+    pressPointer(controller, event.clientX - bounds.left, event.clientY - bounds.top);
+  });
+
+  renderer.app.renderer.on('resize', () => resize(controller, renderer.viewport()));
 }
 
 bootstrap();

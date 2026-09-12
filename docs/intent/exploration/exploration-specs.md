@@ -82,19 +82,20 @@ tuning the game does not rewrite its specs.
 - [x] **EXPLORE-SIGHT-006**: While a tile is resolved to `dim`, the system shall not reveal any enemy standing on it.
 - [x] **EXPLORE-SIGHT-007**: While the party's tile is resolved to `dim`, the system shall apply a detection penalty to both trap detection and secret-door detection.
 - [x] **EXPLORE-SIGHT-008**: While a tile is resolved to `dark`, the system shall record no discovery for it and shall reveal nothing standing on it.
+- [x] **EXPLORE-SIGHT-011**: When the party turns, the system shall recompute sight and record what the new facing reveals, even though turning advances no tick.
 - [x] **EXPLORE-SIGHT-010**: When the trap segment reports a trap detected, the system shall record that trap as known in the floor's discovery record.
 - [x] **EXPLORE-SIGHT-009**: The system shall retain each tile's discovered state for the life of the save, across floor changes, save reloads, and party death.
 
 ## The corridor ahead
 
-- [ ] **EXPLORE-VIEW-001**: The system shall report, for each depth ahead of the party, whether the tile at that depth is walled to the party's left and to the party's right.
-- [ ] **EXPLORE-VIEW-002**: The system shall report, for each depth ahead of the party, the feature standing on the tile at that depth.
-- [ ] **EXPLORE-VIEW-003**: The system shall report, for each depth ahead of the party, the resolved light level of the tile at that depth.
-- [ ] **EXPLORE-VIEW-004**: When reporting the corridor ahead, the system shall treat an edge as blocking if and only if sight treats it as opaque -- a `wall`, a closed `door` or `lockedDoor`, or an undiscovered `secretDoor`.
-- [ ] **EXPLORE-VIEW-005**: When the approach to a depth is blocked, the system shall report that depth as closed ahead and shall report no greater depth.
-- [ ] **EXPLORE-VIEW-006**: When a depth resolves to `dark`, the system shall report that depth as dark and shall report no depth beyond it, so the view has a boundary to fade into rather than an abrupt end.
-- [ ] **EXPLORE-VIEW-007**: The system shall report no depth greater than the maximum drawn depth, however far the party's light reaches.
-- [ ] **EXPLORE-VIEW-008**: The system shall report the corridor ahead relative to the party's current facing, so the same tile is reported as walled left or walled right according to which way the party looks.
+- [x] **EXPLORE-VIEW-001**: The system shall report, for each depth ahead of the party, whether the tile at that depth is walled to the party's left and to the party's right.
+- [x] **EXPLORE-VIEW-002**: The system shall report, for each depth ahead of the party, the feature standing on the tile at that depth.
+- [x] **EXPLORE-VIEW-003**: The system shall report, for each depth ahead of the party, the resolved light level of the tile at that depth.
+- [x] **EXPLORE-VIEW-004**: When reporting the corridor ahead, the system shall treat an edge as blocking if and only if sight treats it as opaque -- a `wall`, a closed `door` or `lockedDoor`, or an undiscovered `secretDoor`.
+- [x] **EXPLORE-VIEW-005**: When the approach to a depth is blocked, the system shall report that depth as closed ahead and shall report no greater depth.
+- [x] **EXPLORE-VIEW-006**: When a depth resolves to `dark`, the system shall report that depth as dark and shall report no depth beyond it, so the view has a boundary to fade into rather than an abrupt end.
+- [x] **EXPLORE-VIEW-007**: The system shall report no depth greater than the maximum drawn depth, however far the party's light reaches.
+- [x] **EXPLORE-VIEW-008**: The system shall report the corridor ahead relative to the party's current facing, so the same tile is reported as walled left or walled right according to which way the party looks.
 
 ## Automap
 

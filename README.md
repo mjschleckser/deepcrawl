@@ -30,6 +30,10 @@ about a minute).
 
 ## Status
 
-Early scaffold. Current scene (`src/scenes/placeholder.js`) is just a proof of
-concept: a static grid map with a movable marker, confirming the render and
-input pipeline work end to end. Design docs and real game architecture coming next.
+Exploration is playable. The dungeon is drawn first-person from the party's own
+tile and facing, with an automap filling in as you go; move with WASD or the arrow
+keys, or by tapping the screen. `M` expands the map.
+
+The floor you walk is hand-authored scaffolding — dungeon generation, combat, and
+the party itself are still to come. Design lives under `docs/`, following
+[Linked-Intent Development](https://linked-intent.dev).

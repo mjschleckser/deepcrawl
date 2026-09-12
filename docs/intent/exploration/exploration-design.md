@@ -277,6 +277,11 @@ the party's facing, a 90° cone in total, with line of sight blocked by any opaq
 edge — a `wall`, a closed `door`, or an undiscovered `secretDoor`. The occupied tile
 and its four edges are always seen unless that tile is `dark`.
 
+Sight is recomputed whenever the cone moves, which means on a turn as well as on a
+step. Turning costs no tick, but it points the party at ground it has not looked at;
+a party that mapped only what lay ahead of its walking direction would have to walk
+every corridor twice.
+
 A quadrant cast rather than a straight line down the corridor: a straight-line cast
 is simpler, but in an open room it reveals a single file of tiles and leaves the
 automap looking broken in exactly the places the player most wants mapped.

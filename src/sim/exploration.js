@@ -28,6 +28,7 @@ import {
   projectedLevel,
   tileDistance,
 } from './light.js';
+import { isOpaque } from './sight.js';
 import {
   computeSight as runSight,
   isEdgeKnown,
@@ -37,10 +38,12 @@ import {
 } from './sight.js';
 
 import { buildAutomapView } from './automap.js';
+import { buildCorridorAhead, MAX_DRAWN_DEPTH } from './firstperson.js';
 import { serialize as serializeState, restore } from './persistence.js';
 
 export { enemiesVisibleAt, detectionAt } from './light.js';
 export { SAVE_VERSION } from './persistence.js';
+export { MAX_DRAWN_DEPTH } from './firstperson.js';
 export { isTileDiscovered, isEdgeKnown, isTrapKnown, recordTrapDetected } from './sight.js';
 
 export const Verb = {
@@ -293,6 +296,20 @@ export function automapView(state) {
 }
 
 /**
+ * What stands ahead of the party, depth by depth, for the first-person view to draw.
+ *
+ * @spec EXPLORE-VIEW-001
+ * @spec EXPLORE-VIEW-007
+ */
+export function corridorAhead(state, maxDepth = MAX_DRAWN_DEPTH) {
+  return buildCorridorAhead(state, {
+    isOpaque: (floor, x, y, dir) => isOpaque(state.discoveredEdges, floor, x, y, dir),
+    resolveLight: (x, y) => resolveTileLight(state, x, y),
+    maxDepth,
+  });
+}
+
+/**
  * @spec EXPLORE-SAVE-001
  * @spec EXPLORE-SAVE-004
  */
@@ -496,11 +513,14 @@ function resolveStepEffects(state, events, { alreadyRelocated = false } = {}) {
 
 /**
  * @spec EXPLORE-MOVE-002
+ * @spec EXPLORE-SIGHT-011
  */
 function turn(state, verb) {
   const from = FACINGS.indexOf(state.party.facing);
   const delta = verb === Verb.TURN_LEFT ? 3 : verb === Verb.TURN_RIGHT ? 1 : 2;
   state.party.facing = FACINGS[(from + delta) % 4];
+  // A turn costs no tick, but it points the party at ground it has not looked at.
+  computeSight(state);
   return { blocked: false, events: [] };
 }
 
