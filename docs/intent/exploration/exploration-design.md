@@ -325,6 +325,27 @@ The automap is always available and needs no item or spell. Items, tomes, and
 classes may later extend mapping range and trap-finding, but the baseline map is
 never gated.
 
+## The Corridor Ahead
+
+The first-person view needs the same kind of answer the automap needs, and for the
+same reason: what may be shown, given where the party stands and how far it can see.
+Both are projections of exploration state, so both are answered here and drawn
+elsewhere.
+
+For each depth ahead of the party, exploration reports whether the way on is blocked,
+whether that tile is walled to the left and to the right, what feature stands on it,
+and what light it resolves to. The report stops at the first depth whose approach is
+opaque, at the first depth that resolves to `dark`, or at the maximum drawn depth,
+whichever comes first.
+
+The blocking rule is sight's rule, not a second one: a `wall`, a closed `door` or
+`lockedDoor`, an undiscovered `secretDoor`. A view that disagreed with sight about
+what is opaque would show a corridor the automap denies.
+
+The maximum drawn depth is a limit on the drawing, not on the seeing. A party whose
+light reaches forty tiles still maps forty tiles; it is simply not shown forty nested
+frames, which at that distance are narrower than a pixel.
+
 ## Hooks into Adjacent Segments
 
 Each hook names when exploration calls out and what the other segment may read.
@@ -485,6 +506,8 @@ widget occupies a corner and expands to full screen on tap.
 | Traps and re-stocking | Traps are untouched: laid at generation, and party knowledge of them only grows | Clearing known-trap flags on refilled rooms; re-laying traps as part of re-stocking | A trap the party disarmed reappearing, or a map marking a brand-new trap as already known, are both worse than a floor whose traps are simply permanent. |
 | Relighting | Resumes the same doused instance | Consuming a fresh source on relight | A doused torch still holds its fuel; making the party throw it away would turn one enemy attack into the loss of a whole item. |
 | Light during camp | Carried light is out for the camp's duration | Burning carried light through every tick a camp consumes | A camp has its own fire. Burning a torch through a night's sleep would make resting unaffordable and encourage never camping. |
+| Corridor projection | Answered by exploration, beside the automap projection | Owned by the presentation segment that draws it | Both answer "what may be shown given what the party can see", which is sight's question. Splitting two identical concerns across two segments would put the automap's rules and the corridor's rules in different places. |
+| Maximum drawn depth | A cap on the report, separate from how far light reaches | Drawing as deep as the light goes | Sight and drawing have different natural limits. A torch reaching far should still map far; nested frames past a handful of depths are narrower than a pixel. |
 | Pit relocation | Steps 4-7 act on the landing tile; one tick total; features resolve at most once per step | Charging a second tick for the landing; chaining pits within one step | Acting on the landing tile lets a pit drop the party onto a trap, which is the interesting case. Resolving features once per step bounds the fall without a special rule. |
 | Facing across floors | Preserved through stairs and pits | Facing set by the connector; facing randomised on arrival | Preserving facing keeps arrival predictable and costs nothing; a connector-defined facing is a detail generation would have to author for every connector. |
 
@@ -519,6 +542,8 @@ widget occupies a corner and expands to full screen on tap.
 25. ✅ **Re-stocking resolves immediately after relocation**, before the trap trigger fires.
 26. ✅ **Visibility spreads through non-opaque edges** within the cone rather than being ray-traced per tile.
 27. ✅ **Light distance is Chebyshev**, matching the way the party moves.
+28. ✅ **The corridor projection is exploration's**, answered beside the automap projection and drawn by presentation.
+29. ✅ **Maximum drawn depth is capped independently of light reach.**
 
 ### Deferred
 
