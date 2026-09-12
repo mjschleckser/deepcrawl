@@ -36,7 +36,11 @@ import {
   recordTrapDetected,
 } from './sight.js';
 
+import { buildAutomapView } from './automap.js';
+import { serialize as serializeState, restore } from './persistence.js';
+
 export { enemiesVisibleAt, detectionAt } from './light.js';
+export { SAVE_VERSION } from './persistence.js';
 export { isTileDiscovered, isEdgeKnown, isTrapKnown, recordTrapDetected } from './sight.js';
 
 export const Verb = {
@@ -91,6 +95,7 @@ export function createExploration({
   hooks = {},
   keys = [],
   lightSources = [],
+  roamers = [],
   restockMinElapsedTicks = DEFAULT_RESTOCK_MIN_ELAPSED_TICKS,
 }) {
   const state = {
@@ -106,6 +111,9 @@ export function createExploration({
     knownTraps: new Map(),
     // Only ever one of these is lit; the rest wait their turn in the pack.
     lightSources: lightSources.map((source) => ({ ...source })),
+    // Positions are owned by the roaming-enemy segment; exploration only reads them.
+    roamers: roamers.map((roamer) => ({ ...roamer })),
+    dousedSourceId: null,
     camped: false,
     litBeforeCamp: null,
     // floorId -> tick at which the party last left it
@@ -272,6 +280,34 @@ export function computeSight(state) {
 }
 
 /**
+ * What the automap may draw, given everything the party has discovered.
+ *
+ * @spec EXPLORE-MAP-001
+ * @spec EXPLORE-MAP-009
+ */
+export function automapView(state) {
+  return buildAutomapView(state, {
+    resolveLight: (x, y) => resolveTileLight(state, x, y),
+    enemiesVisibleAt,
+  });
+}
+
+/**
+ * @spec EXPLORE-SAVE-001
+ * @spec EXPLORE-SAVE-004
+ */
+export function serialize(state) {
+  return serializeState(state);
+}
+
+/**
+ * @spec EXPLORE-SAVE-002
+ */
+export function deserialize(saved) {
+  return restore(saved, createExploration);
+}
+
+/**
  * A party with no light of its own can still see down a corridor the dungeon lights,
  * so sight cannot be bounded by the torch alone.
  */
@@ -367,6 +403,9 @@ function stepBlocked(state, floor, from, facing) {
   return false;
 }
 
+/**
+ * @spec EXPLORE-RETURN-001
+ */
 function relocate(state, target) {
   // Leaving a floor stamps it, so a later return knows how long the party was gone.
   if (target.floorId !== state.party.floorId) {
@@ -557,8 +596,10 @@ export function resolveConfirmation(state, accepted) {
  * @spec EXPLORE-ACTION-003
  * @spec EXPLORE-ACTION-004
  * @spec EXPLORE-ACTION-005
+ * @spec EXPLORE-BOUND-007
  * @spec EXPLORE-BOUND-009
  * @spec EXPLORE-CLOCK-002
+ * @spec EXPLORE-MOVE-018
  */
 function partyAction(state, action, commit) {
   if (action === PartyAction.INTERACT) {
@@ -596,6 +637,7 @@ function partyAction(state, action, commit) {
  * @spec EXPLORE-ACTION-006
  * @spec EXPLORE-CLOCK-003
  * @spec EXPLORE-CLOCK-006
+ * @spec EXPLORE-LIGHT-010
  */
 export function perform(state, action) {
   // Exploration does not accept input during a fight; combat owns the party then.

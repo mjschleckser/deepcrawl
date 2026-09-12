@@ -30,6 +30,7 @@ function descendAndReturn(state) {
 }
 
 describe('returning to a floor', () => {
+  // @spec EXPLORE-RETURN-001
   // @spec EXPLORE-RETURN-003
   it('re-stocks a floor the party returns to, naming how long it was gone', () => {
     const onRestock = vi.fn();

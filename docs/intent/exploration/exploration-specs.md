@@ -47,7 +47,7 @@ tuning the game does not rewrite its specs.
 - [x] **EXPLORE-MOVE-015**: When the party attempts to step onto a tile whose feature is `stairsUp` or `stairsDown`, the system shall raise a confirmation before moving the party.
 - [x] **EXPLORE-MOVE-016**: When the player confirms a staircase prompt, the system shall relocate the party to that connector's target floor and tile.
 - [x] **EXPLORE-MOVE-017**: If the player declines a staircase prompt, then the system shall leave the party on its current tile and shall not advance the clock.
-- [ ] **EXPLORE-MOVE-018**: While the party occupies a tile whose feature is `stairsUp` or `stairsDown` (having arrived by relocation rather than by stepping), the system shall offer that staircase as an `INTERACT` target.
+- [x] **EXPLORE-MOVE-018**: While the party occupies a tile whose feature is `stairsUp` or `stairsDown` (having arrived by relocation rather than by stepping), the system shall offer that staircase as an `INTERACT` target.
 - [x] **EXPLORE-MOVE-010**: When a relocation occurs mid-step, the system shall resolve re-stocking, the trap trigger hook, sight, roaming enemy movement, and contact check against the floor and tile the party occupies after relocating.
 - [x] **EXPLORE-MOVE-011**: When a step relocates the party through a `pit`, the system shall advance the clock by one tick for the whole step.
 - [x] **EXPLORE-MOVE-012**: If a relocation lands the party on a tile whose feature is also a `pit`, then the system shall not resolve that pit until the party's next step, which it claims in place of a move.
@@ -65,7 +65,7 @@ tuning the game does not rewrite its specs.
 - [x] **EXPLORE-LIGHT-007**: When the clock advances by one tick, the system shall reduce the lit source's remaining ticks by one and shall leave unlit sources unchanged.
 - [x] **EXPLORE-LIGHT-008**: When a lit source's remaining ticks reach zero, the system shall mark it spent and light the party's next unspent source if one is carried.
 - [x] **EXPLORE-LIGHT-009**: If an external effect douses the party's lit source, then the system shall not light another source automatically.
-- [ ] **EXPLORE-LIGHT-010**: When the party relights a doused source during combat, the system shall consume the acting character's action for that round.
+- [x] **EXPLORE-LIGHT-010**: When the party relights a doused source during combat, the system shall consume the acting character's action for that round.
 - [x] **EXPLORE-LIGHT-013**: When the party relights a doused source, the system shall relight that same instance with its remaining ticks intact rather than consuming another source.
 - [x] **EXPLORE-LIGHT-014**: While the party is camped, the system shall keep every carried light source unlit, so that the ticks a camp consumes do not reduce any source's remaining ticks.
 - [x] **EXPLORE-LIGHT-015**: When the party breaks camp, the system shall relight the source that was lit when camp began, if the party still carries it.
@@ -87,20 +87,20 @@ tuning the game does not rewrite its specs.
 
 ## Automap
 
-- [ ] **EXPLORE-MAP-001**: The system shall draw on the automap only those tiles, edges, and features that have been discovered.
-- [ ] **EXPLORE-MAP-002**: The system shall draw traps the party has found on the automap.
-- [ ] **EXPLORE-MAP-003**: The system shall not draw undiscovered secret doors on the automap.
-- [ ] **EXPLORE-MAP-004**: While a roaming enemy occupies a tile resolved to `bright`, the system shall draw that enemy on the automap.
-- [ ] **EXPLORE-MAP-005**: While a roaming enemy occupies a tile not resolved to `bright`, the system shall draw no marker for it on the automap, at its current or any previously seen position.
-- [ ] **EXPLORE-MAP-006**: While the party's tile is resolved to `dark`, the system shall draw the automap without the party's position or facing marker.
-- [ ] **EXPLORE-MAP-007**: While the party's tile is not resolved to `dark`, the system shall draw the party's tile and facing on the automap.
-- [ ] **EXPLORE-MAP-008**: The system shall make the automap available without requiring any item, spell, or character class.
-- [ ] **EXPLORE-MAP-009**: The system shall draw the automap and the first-person view from the same party tile and facing, so the two can never disagree.
+- [x] **EXPLORE-MAP-001**: The system shall draw on the automap only those tiles, edges, and features that have been discovered.
+- [x] **EXPLORE-MAP-002**: The system shall draw traps the party has found on the automap.
+- [x] **EXPLORE-MAP-003**: The system shall not draw undiscovered secret doors on the automap.
+- [x] **EXPLORE-MAP-004**: While a roaming enemy occupies a tile resolved to `bright`, the system shall draw that enemy on the automap.
+- [x] **EXPLORE-MAP-005**: While a roaming enemy occupies a tile not resolved to `bright`, the system shall draw no marker for it on the automap, at its current or any previously seen position.
+- [x] **EXPLORE-MAP-006**: While the party's tile is resolved to `dark`, the system shall draw the automap without the party's position or facing marker.
+- [x] **EXPLORE-MAP-007**: While the party's tile is not resolved to `dark`, the system shall draw the party's tile and facing on the automap.
+- [x] **EXPLORE-MAP-008**: The system shall make the automap available without requiring any item, spell, or character class.
+- [x] **EXPLORE-MAP-009**: The system shall draw the automap and the first-person view from the same party tile and facing, so the two can never disagree.
 - [D] **EXPLORE-MAP-010**: The system shall allow the player to place notes and icons on the automap.
 
 ## Returning to a floor
 
-- [ ] **EXPLORE-RETURN-001**: When the party leaves a floor, the system shall record the current tick against that floor.
+- [x] **EXPLORE-RETURN-001**: When the party leaves a floor, the system shall record the current tick against that floor.
 - [ ] **EXPLORE-RETURN-002**: While the party is not on a floor, the system shall not move that floor's roaming enemies, change its door states, or restock its rooms.
 - [x] **EXPLORE-RETURN-003**: When the party arrives on a floor it has previously left, the system shall apply a re-stocking scaled to the ticks elapsed since that floor's recorded departure.
 - [ ] **EXPLORE-RETURN-004**: When a re-stocking runs, the system shall reposition the floor's roaming enemies, change door open states, and refill some previously cleared rooms.
@@ -113,12 +113,12 @@ tuning the game does not rewrite its specs.
 
 ## Persistence
 
-- [ ] **EXPLORE-SAVE-001**: The system shall save every generated floor, including floors the party does not currently occupy.
-- [ ] **EXPLORE-SAVE-002**: The system shall generate any given floor exactly once and shall never regenerate it.
-- [ ] **EXPLORE-SAVE-003**: The system shall save, for each floor: id, dimensions, edge arrays, tile features, intrinsic light levels, discovery record, door open states, known traps, and the tick at which the party last left it.
-- [ ] **EXPLORE-SAVE-004**: The system shall save the party's current floor, tile, and facing, and the tick counter.
-- [ ] **EXPLORE-SAVE-005**: The system shall save each carried light source as a separate instance with its remaining ticks and lit state.
-- [ ] **EXPLORE-SAVE-006**: The system shall store each floor's tile discovery record as one bit per tile.
+- [x] **EXPLORE-SAVE-001**: The system shall save every generated floor, including floors the party does not currently occupy.
+- [x] **EXPLORE-SAVE-002**: The system shall generate any given floor exactly once and shall never regenerate it.
+- [x] **EXPLORE-SAVE-003**: The system shall save, for each floor: id, dimensions, edge arrays, tile features, intrinsic light levels, discovery record, door open states, known traps, and the tick at which the party last left it.
+- [x] **EXPLORE-SAVE-004**: The system shall save the party's current floor, tile, and facing, and the tick counter.
+- [x] **EXPLORE-SAVE-005**: The system shall save each carried light source as a separate instance with its remaining ticks and lit state.
+- [x] **EXPLORE-SAVE-006**: The system shall store each floor's tile discovery record as one bit per tile.
 
 ## Party actions
 
@@ -131,9 +131,9 @@ tuning the game does not rewrite its specs.
 
 ## Input
 
-- [ ] **EXPLORE-INPUT-001**: The system shall expose every movement verb and every party action — `STEP_FORWARD`, `TURN_LEFT`, `TURN_RIGHT`, `TURN_AROUND`, `PARTY`, `INVENTORY`, `SPELLS`, `SEARCH`, `INTERACT`, `TOGGLE_MAP` — through both a keyboard path and a touch path.
-- [ ] **EXPLORE-INPUT-002**: The system shall produce an identical action for a given verb whether it originated from keyboard or from touch.
-- [ ] **EXPLORE-INPUT-003**: The system shall not expose to the simulation which input device produced an action.
+- [x] **EXPLORE-INPUT-001**: The system shall expose every movement verb and every party action — `STEP_FORWARD`, `TURN_LEFT`, `TURN_RIGHT`, `TURN_AROUND`, `PARTY`, `INVENTORY`, `SPELLS`, `SEARCH`, `INTERACT`, `TOGGLE_MAP` — through both a keyboard path and a touch path.
+- [x] **EXPLORE-INPUT-002**: The system shall produce an identical action for a given verb whether it originated from keyboard or from touch.
+- [x] **EXPLORE-INPUT-003**: The system shall not expose to the simulation which input device produced an action.
 
 ## Segment boundaries
 
@@ -143,6 +143,6 @@ tuning the game does not rewrite its specs.
 - [ ] **EXPLORE-BOUND-004**: The system shall not mutate a floor's dimensions, edge kinds, or tile features after generation produces them.
 - [x] **EXPLORE-BOUND-005**: When the party enters a tile, the system shall fire the trap trigger hook with that tile and the party.
 - [x] **EXPLORE-BOUND-006**: When the clock advances, the system shall notify the hunger segment of the number of ticks elapsed.
-- [ ] **EXPLORE-BOUND-007**: When the party searches its current tile, the system shall fire the trap detection hook with that tile, the party, and the tile's resolved light level.
+- [x] **EXPLORE-BOUND-007**: When the party searches its current tile, the system shall fire the trap detection hook with that tile, the party, and the tile's resolved light level.
 - [x] **EXPLORE-BOUND-008**: When sight is recomputed, the system shall fire the trap detection hook for the tiles it reached, with the party and each tile's resolved light level.
 - [x] **EXPLORE-BOUND-009**: The system shall route each party action to the segment that owns it and shall hold no rules of its own for `PARTY`, `INVENTORY`, `SPELLS`, `SEARCH`, or `INTERACT`.
