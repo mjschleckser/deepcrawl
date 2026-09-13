@@ -67,48 +67,108 @@ export function inCone(dx, dy, facing) {
   }
 }
 
+const EPSILON = 1e-9;
+
 /**
- * Every tile the party can presently see, nearest first.
+ * Whether an unobstructed line runs from the middle of one tile to the middle of
+ * another. Every edge the line crosses must be transparent.
  *
- * Visibility spreads outward from the party through edges that are not opaque, staying
- * inside the cone and inside the reach of the party's light. A spreading flood rather
- * than a ray cast per tile: with walls on edges and a 90 degree cone, the flood is
- * exactly "what the corridor lets through", it is deterministic, and it has no
- * grazing-ray corner cases to arbitrate.
+ * Where the line passes exactly through the corner point shared by four tiles, it is
+ * blocked only if both ways around that corner are blocked — a single diagonal slit
+ * can be seen through, a solid corner cannot. Blocking whenever either side was
+ * blocked would throw spurious shadows across open rooms.
+ *
+ * @spec EXPLORE-SIGHT-002
+ * @spec EXPLORE-SIGHT-012
+ * @spec EXPLORE-SIGHT-013
+ */
+export function hasLineOfSight(discoveredEdges, floor, from, to) {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  if (dx === 0 && dy === 0) return true;
+
+  const stepX = Math.sign(dx);
+  const stepY = Math.sign(dy);
+  const alongX = stepX > 0 ? Direction.EAST : Direction.WEST;
+  const alongY = stepY > 0 ? Direction.SOUTH : Direction.NORTH;
+
+  // Where the line crosses each grid line, as a fraction of its length. Centre-to-
+  // centre means a crossing sits at a half-integer count of whole steps.
+  const crossings = [];
+  for (let i = 0; i < Math.abs(dx); i++) {
+    crossings.push({ t: (i + 0.5) / Math.abs(dx), axis: 'x' });
+  }
+  for (let i = 0; i < Math.abs(dy); i++) {
+    crossings.push({ t: (i + 0.5) / Math.abs(dy), axis: 'y' });
+  }
+  crossings.sort((a, b) => a.t - b.t);
+
+  const blocked = (x, y, dir) =>
+    !contains(floor, x, y) || isOpaque(discoveredEdges, floor, x, y, dir);
+
+  let x = from.x;
+  let y = from.y;
+
+  for (let i = 0; i < crossings.length; i++) {
+    const here = crossings[i];
+    const next = crossings[i + 1];
+    const together = next && Math.abs(next.t - here.t) < EPSILON && next.axis !== here.axis;
+
+    if (together) {
+      // The line threads a corner point: take it only if some way round is open.
+      const viaX = !blocked(x, y, alongX) && !blocked(x + stepX, y, alongY);
+      const viaY = !blocked(x, y, alongY) && !blocked(x, y + stepY, alongX);
+      if (!viaX && !viaY) return false;
+      x += stepX;
+      y += stepY;
+      i++; // both crossings consumed
+      continue;
+    }
+
+    if (here.axis === 'x') {
+      if (blocked(x, y, alongX)) return false;
+      x += stepX;
+    } else {
+      if (blocked(x, y, alongY)) return false;
+      y += stepY;
+    }
+  }
+
+  return true;
+}
+
+/**
+ * Every tile the party can presently see.
+ *
+ * A line is traced to each candidate inside the cone and inside the reach of the
+ * party's light. Tracing lines rather than spreading outward is what stops sight going
+ * round a corner: ground beyond a turn stays hidden until the party reaches the corner
+ * and looks along the new arm.
  *
  * @spec EXPLORE-SIGHT-001
  * @spec EXPLORE-SIGHT-002
+ * @spec EXPLORE-SIGHT-012
  */
 function visibleTiles(state, floor, origin, facing, reach) {
-  const seen = new Set([`${origin.x},${origin.y}`]);
-  const ordered = [];
-  let frontier = [origin];
+  const visible = [];
 
-  for (let ring = 0; ring < reach; ring++) {
-    const next = [];
-    for (const tile of frontier) {
-      for (const dir of ALL_DIRECTIONS) {
-        const { dx, dy } = NEIGHBOUR[dir];
-        const nx = tile.x + dx;
-        const ny = tile.y + dy;
-        const key = `${nx},${ny}`;
+  for (let dy = -reach; dy <= reach; dy++) {
+    for (let dx = -reach; dx <= reach; dx++) {
+      if (dx === 0 && dy === 0) continue;
+      const x = origin.x + dx;
+      const y = origin.y + dy;
 
-        if (seen.has(key)) continue;
-        if (!contains(floor, nx, ny)) continue;
-        // Only tiles the party is actually looking at.
-        if (!inCone(nx - origin.x, ny - origin.y, facing)) continue;
-        if (isOpaque(state.discoveredEdges, floor, tile.x, tile.y, dir)) continue;
+      if (!contains(floor, x, y)) continue;
+      // Only tiles the party is actually looking at.
+      if (!inCone(dx, dy, facing)) continue;
+      if (Math.max(Math.abs(dx), Math.abs(dy)) > reach) continue;
+      if (!hasLineOfSight(state.discoveredEdges, floor, origin, { x, y })) continue;
 
-        seen.add(key);
-        next.push({ x: nx, y: ny });
-        ordered.push({ x: nx, y: ny });
-      }
+      visible.push({ x, y });
     }
-    if (next.length === 0) break;
-    frontier = next;
   }
 
-  return ordered;
+  return visible;
 }
 
 function discoverTile(state, floor, x, y) {

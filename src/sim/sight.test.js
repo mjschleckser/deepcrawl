@@ -13,6 +13,7 @@ import { createLightSource } from './light.js';
 import {
   createExploration,
   perform,
+  partyPosition,
   computeSight,
   isTileDiscovered,
   isEdgeKnown,
@@ -77,9 +78,8 @@ describe('the sight cone', () => {
   });
 });
 
-// Sight spreads outward through edges that are not opaque, so a lone wall segment in
-// an open room is simply walked around by eye. Blocking is only meaningful where there
-// is no way past: a one-tile-wide corridor running north from the party.
+// A one-tile-wide corridor running north from the party, for testing what stops sight
+// along a single unambiguous line.
 function corridor() {
   const { floor, state } = scene();
   for (let y = 0; y <= 3; y++) {
@@ -129,6 +129,84 @@ describe('what blocks sight', () => {
     computeSight(state);
 
     expect(isTileDiscovered(state, 'f1', 3, 1)).toBe(false);
+  });
+});
+
+describe('sight does not go round corners', () => {
+  // An L-shaped corridor: north from the party, then east at the top. Nothing in the
+  // eastern arm is in line of sight until the party reaches the turn.
+  function elbow() {
+    const floor = createFloor({ id: 'f1', width: 7, height: 7 });
+    // Wall off everything except the vertical arm at x=3 (y 3..6) and the horizontal
+    // arm at y=3 (x 3..6).
+    for (let y = 0; y < 7; y++) {
+      for (let x = 0; x < 7; x++) {
+        const inVertical = x === 3 && y >= 3;
+        const inHorizontal = y === 3 && x >= 3;
+        if (inVertical || inHorizontal) continue;
+        for (const dir of Object.values(Direction)) setEdge(floor, x, y, dir, EdgeKind.WALL);
+      }
+    }
+    const state = createExploration({
+      floors: [floor],
+      floorId: 'f1',
+      tile: { x: 3, y: 6 },
+      facing: Direction.NORTH,
+      lightSources: [lantern()],
+    });
+    return { floor, state };
+  }
+
+  // @spec EXPLORE-SIGHT-012
+  it('hides the far arm of an elbow until the party reaches the turn', () => {
+    const { state } = elbow();
+
+    computeSight(state);
+
+    // Straight up the corridor is visible...
+    expect(isTileDiscovered(state, 'f1', 3, 4)).toBe(true);
+    expect(isTileDiscovered(state, 'f1', 3, 3)).toBe(true);
+    // ...but the arm running east from the turn is not.
+    expect(isTileDiscovered(state, 'f1', 5, 3)).toBe(false);
+    expect(isTileDiscovered(state, 'f1', 6, 3)).toBe(false);
+  });
+
+  // @spec EXPLORE-SIGHT-012
+  it('reveals the far arm once the party stands at the turn and looks along it', () => {
+    const { state } = elbow();
+
+    perform(state, { verb: Verb.STEP_FORWARD });
+    perform(state, { verb: Verb.STEP_FORWARD });
+    perform(state, { verb: Verb.STEP_FORWARD });
+    perform(state, { verb: Verb.TURN_RIGHT });
+
+    expect(partyPosition(state).tile).toEqual({ x: 3, y: 3 });
+    expect(isTileDiscovered(state, 'f1', 5, 3)).toBe(true);
+  });
+
+  // @spec EXPLORE-SIGHT-002
+  it('hides the tile directly behind a lone wall standing in open floor', () => {
+    const { floor, state } = scene();
+    setEdge(floor, 3, 2, Direction.NORTH, EdgeKind.WALL);
+
+    computeSight(state);
+
+    expect(isTileDiscovered(state, 'f1', 3, 2)).toBe(true);
+    // Straight through the wall is not seen, even though the party could walk around.
+    expect(isTileDiscovered(state, 'f1', 3, 1)).toBe(false);
+  });
+
+  // @spec EXPLORE-SIGHT-013
+  it('sees through a single diagonal gap between two blocks', () => {
+    const { floor, state } = scene();
+    // Two blocks meeting at a corner point, leaving one diagonal slit open.
+    setEdge(floor, 2, 2, Direction.NORTH, EdgeKind.WALL);
+    setEdge(floor, 2, 2, Direction.EAST, EdgeKind.WALL);
+
+    computeSight(state);
+
+    // The way straight ahead is untouched.
+    expect(isTileDiscovered(state, 'f1', 3, 1)).toBe(true);
   });
 });
 

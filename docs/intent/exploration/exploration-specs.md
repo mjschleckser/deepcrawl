@@ -75,7 +75,9 @@ tuning the game does not rewrite its specs.
 ## Sight and discovery
 
 - [x] **EXPLORE-SIGHT-001**: When recomputing sight, the system shall consider only tiles lying within 45° either side of the party's facing, a 90° cone in total.
-- [x] **EXPLORE-SIGHT-002**: When tracing sight toward a tile, the system shall stop at the first opaque edge — a `wall`, a closed `door` or `lockedDoor`, or an undiscovered `secretDoor`.
+- [x] **EXPLORE-SIGHT-002**: When tracing sight toward a tile, the system shall treat the tile as unseen if any edge the traced line crosses is opaque — a `wall`, a closed `door` or `lockedDoor`, or an undiscovered `secretDoor`.
+- [x] **EXPLORE-SIGHT-012**: The system shall trace sight along a straight line from the centre of the party's tile to the centre of the candidate tile, so that a tile around a corner is not seen until the party can look along it.
+- [x] **EXPLORE-SIGHT-013**: Where a traced line passes exactly through the corner point shared by four tiles, the system shall treat the line as blocked only if both ways around that corner are blocked.
 - [x] **EXPLORE-SIGHT-003**: While the party's own tile is not `dark`, the system shall treat that tile and its four edges as seen regardless of facing.
 - [x] **EXPLORE-SIGHT-004**: When sight reaches a tile resolved to `dim` or `bright`, the system shall mark that tile, its four edges, and its feature discovered.
 - [x] **EXPLORE-SIGHT-005**: When sight discovers a tile, the system shall leave any undiscovered `secretDoor` among that tile's edges undiscovered.
