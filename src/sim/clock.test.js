@@ -192,3 +192,35 @@ describe('party actions and the clock', () => {
     );
   });
 });
+
+describe('what a step costs', () => {
+  // @spec EXPLORE-CLOCK-001
+  it('charges the party step cost rather than a flat tick', () => {
+    const state = explorationAt({ x: 1, y: 1 }, { stepCost: () => 7 });
+
+    perform(state, { verb: Verb.STEP_FORWARD });
+
+    expect(tickCount(state)).toBe(7);
+  });
+
+  // @spec EXPLORE-MOVE-019
+  it('hands roamers exactly the ticks the step consumed, to spend on their own pace', () => {
+    const onRoamersMove = vi.fn();
+    const state = explorationAt({ x: 1, y: 1 }, { stepCost: () => 6, hooks: { onRoamersMove } });
+
+    perform(state, { verb: Verb.STEP_FORWARD });
+
+    expect(onRoamersMove).toHaveBeenCalledWith(expect.objectContaining({ ticks: 6 }));
+  });
+
+  // @spec EXPLORE-MOVE-019
+  it('hands the roamers of a blocked step nothing, because no time passed', () => {
+    const onRoamersMove = vi.fn();
+    // Facing north from the top row walks into the border wall.
+    const state = explorationAt({ x: 1, y: 0 }, { stepCost: () => 6, hooks: { onRoamersMove } });
+
+    perform(state, { verb: Verb.STEP_FORWARD });
+
+    expect(onRoamersMove).not.toHaveBeenCalled();
+  });
+});
