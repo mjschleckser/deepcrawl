@@ -2,6 +2,9 @@ import { describe, it, expect, vi } from 'vitest';
 import { createFloor, setEdge, setTileFeature, EdgeKind, TileFeature, Direction } from '../sim/floor.js';
 import { createLightSource } from '../sim/light.js';
 import { createExploration, partyPosition, tickCount } from '../sim/exploration.js';
+import { createParty, createCharacter, addCharacter, CharacterClass, Row } from '../sim/party.js';
+import { beginEncounter, createEnemy, createEnemyGroup } from '../sim/combat.js';
+import { makeRng } from '../sim/rng.js';
 import { PIXI_APP_OPTIONS } from './appconfig.js';
 import { createController, pressKey, pressPointer, resize, layers } from './controller.js';
 
@@ -43,11 +46,17 @@ describe('the scene', () => {
   });
 
   // @spec PRESENT-SCENE-007
-  it('keeps no game state of its own', () => {
-    const { controller } = harness();
+  it('keeps no copy of game state, only references to it and what it needs to draw', () => {
+    const { controller, state } = harness();
 
-    // Only what is needed to draw: the viewport and whether the map is expanded.
-    expect(Object.keys(controller).sort()).toEqual(['expanded', 'onDraw', 'state', 'viewport']);
+    // The simulation is referenced, never duplicated.
+    expect(controller.state).toBe(state);
+    // Nothing here is a copy of anything the simulation owns.
+    for (const key of ['party', 'floors', 'roamers', 'ticks', 'discoveredTiles', 'lightSources']) {
+      expect(controller).not.toHaveProperty(key);
+    }
+    // What it does keep is the view's own business.
+    expect(controller.expanded).toBe(false);
   });
 
   // @spec PRESENT-SCENE-006
@@ -232,5 +241,57 @@ describe('prompts', () => {
     pressKey(controller, 'Enter');
 
     expect(onDraw).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('input while a fight is on', () => {
+  function inFight() {
+    const { state } = harness();
+    const party = createParty();
+    addCharacter(party, createCharacter({ id: 'bram', name: 'Bram', characterClass: CharacterClass.FIGHTER, row: Row.FRONT }));
+
+    const encounter = beginEncounter({
+      party,
+      enemies: createEnemyGroup([createEnemy({ id: 'g1', name: 'Goblin', row: Row.FRONT, hitPoints: 40, potValue: 10 })]),
+      light: 'BRIGHT',
+      awareness: { party: true, enemies: true },
+      rng: makeRng(2),
+      origin: { floorId: 'f1', x: 1, y: 1 },
+    });
+
+    const campaign = { encounter, state, concludeEncounter: () => { campaign.encounter = null; }, fleeEncounter: () => {} };
+    const onDraw = vi.fn();
+    const controller = createController({ state, campaign, viewport, onDraw });
+    onDraw.mockClear();
+    return { controller, state, campaign };
+  }
+
+  // @spec PRESENT-FIGHT-012
+  it('accepts no movement verb while a fight is running', () => {
+    const { controller, state } = inFight();
+    const held = partyPosition(state);
+
+    for (const key of ['w', 'a', 'd', 's']) pressKey(controller, key);
+
+    expect(partyPosition(state)).toEqual(held);
+    expect(tickCount(state)).toBe(0);
+  });
+
+  // @spec PRESENT-FIGHT-012
+  it('accepts no party action while a fight is running', () => {
+    const { controller, state } = inFight();
+
+    pressKey(controller, 'f'); // search
+    pressKey(controller, 'm'); // the map
+
+    expect(tickCount(state)).toBe(0);
+    expect(controller.expanded).toBe(false);
+  });
+
+  // @spec PRESENT-FIGHT-001
+  it('draws the fight layer over the view instead of the map', () => {
+    const { controller } = inFight();
+
+    expect(layers(controller).map((l) => l.name)).toEqual(['view', 'fight', 'hud']);
   });
 });

@@ -13,6 +13,14 @@ currently says, and the only way anything changes is that an action was performe
 
 Three principles shape the design.
 
+**Presentation remembers only what it was told once.** Every drawing is a function of
+what the simulation currently says. The single exception is a record of events already
+reported: a resolved round returns what happened once and never again, and since
+nothing animates, a fight would otherwise be perceived only as the state that came out
+the other side. Keeping that record is not holding game state — the simulation stays
+the only authority on what is true — but it is the one place the renderer remembers
+rather than reads.
+
 **Two views, one truth.** The first-person view and the automap show the same party
 standing on the same tile facing the same way. They are separate drawings of one
 state, never two models that must be kept in step, so they cannot drift apart.
@@ -142,6 +150,86 @@ viewport, not pixels, so they hold their proportions on any screen:
 An unrecognised key or a tap outside every region resolves to nothing and is
 discarded, rather than being guessed at.
 
+## Combat
+
+A fight is drawn over the corridor rather than in place of it. The party is still
+standing where it was standing, and seeing the passage they were caught in is part of
+knowing how badly this is going. The first-person view stays; the combat layer sits on
+top of it.
+
+### What is drawn
+
+```
+┌─────────────────────────────────────────────┐
+│           ╔═══════════════════╗             │ ← the corridor, still there
+│  ┌──────┐ ┌──────┐                          │
+│  │shaman│ │shaman│          enemy back row  │
+│  └──────┘ └──────┘                          │
+│  ┌──────┐ ┌──────┐ ┌──────┐                 │
+│  │goblin│ │goblin│ │goblin│  enemy front    │
+│  │ 9/9  │ │ 4/9  │ │ dead │                 │
+│  └──────┘ └──────┘ └──────┘                 │
+├─────────────────────────────────────────────┤
+│ Bram 14/20 │ Rook 20/20 │ Tam 20/20         │ ← your front row
+│ Isolde 20/20 │ Wren 20/20                   │ ← your back row
+├─────────────────────────────────────────────┤
+│ Bram: what will you do?                     │
+│  [1] Attack   [2] Defend   [3] Flee         │ ← only the legal ones
+├─────────────────────────────────────────────┤
+│ Rook grazes Goblin for 3.                   │
+│ Goblin hits Bram for 6.                     │ ← the log
+│ Tam crits Goblin for 14. Goblin falls.      │
+└─────────────────────────────────────────────┘
+```
+
+Both formations are drawn as rows, because rows are what the fight is about. A
+character or enemy who is down is drawn in place rather than removed — the shape of a
+line that has lost its middle is information.
+
+### The log carries the fight
+
+Nothing animates. A round resolves in a single frame, so without a record the player
+would see only the state that came out the other side and never learn what happened in
+between.
+
+The log is therefore not decoration. It is the fight, as perceived: one line per
+resolved action, naming who acted, what band the attack fell in, what it cost, and
+what it killed. It is built from the event log a resolved round already returns, so the
+renderer invents nothing and reports only what the simulation actually did.
+
+### Choosing actions
+
+Selection walks the conscious party in a fixed order. Each character is asked in turn,
+and only the actions that character can legally take are offered — no attack option
+with nothing in reach, no flee option against something that forbids it. An action
+needing a target asks for one from the legal targets only, so an illegal choice cannot
+be expressed rather than being refused after the fact.
+
+When the last character has chosen, the round resolves, the log grows, and the first
+character is asked again.
+
+Backing out of a choice steps back to the previous character, because a party committed
+before seeing any result should be able to reconsider the whole round rather than only
+its last decision.
+
+### Input in a fight
+
+The exploration vocabulary does not apply while a fight is on: there is nowhere to walk.
+Combat has its own, and like the other it resolves keyboard and touch to one set of
+actions that carry no trace of where they came from.
+
+| Action | Keyboard | Touch |
+|---|---|---|
+| Pick the nth option | `1`–`9` | tap the option |
+| Confirm | `Enter` | tap the confirm control |
+| Back | `Escape` | tap the back control |
+
+### Ending
+
+An outcome is drawn as a banner over the fight: what happened, and what it was worth.
+The player dismisses it, and combat gives way to the corridor again — or, on a defeat,
+to whatever the campaign does with a party that did not come back.
+
 ## Prompts
 
 Some actions ask before they resolve — taking a staircase, for one. When the
@@ -182,13 +270,18 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 | Draw order | Far to near | Near to far with depth testing | Painting far first makes occlusion automatic; there is no depth buffer to manage and no way for distant geometry to overwrite near geometry. |
 | Light in the view | Tint per depth, fading to black at the torch edge | Showing light only as a status readout | The player should watch the dark close in rather than read a number. It also makes the light rules legible without explanation. |
 | Tap regions | Fractions of the viewport | Fixed pixel rectangles | The same layout has to work on a phone and a desktop window; fractions hold their proportions where pixels do not. |
+| Combat over the corridor | Drawn on top of the first-person view, which stays visible | Replacing the view with a combat screen | The party is still standing in the passage they were caught in, and seeing it is part of knowing how bad this is. A separate screen would also throw away the light and the place. |
+| Showing a round | A text log built from the round's own event log | Animating each action; showing only the resulting state | Nothing animates, so a round lands in one frame. Without a record the player sees the aftermath and never learns what happened. The log is the fight as perceived. |
+| Illegal options | Not offered at all | Offered and refused when chosen | An option that cannot be taken should not be presented. Refusing after the fact teaches the rules by failure, which in a fight is expensive. |
+| Backing out | Steps back to the previous character | Cancelling only the current choice | The party commits to a whole round before any of it resolves, so reconsidering should reach the whole round rather than only its last decision. |
+| The fallen | Drawn in place, not removed | Removing them from the formation | The shape of a line that has lost its middle is information, and a body still occupies its row. |
 | Starter floor | Hand-authored data, deleted when generation lands | Waiting for dungeon generation; generating a floor here | The segment cannot be seen to work without a floor to walk, and building a generator inside the presentation segment would put it in the wrong place permanently. |
 
 ## Open Questions & Future Decisions
 
 ### Resolved
 
-1. ✅ **Presentation holds no game state.** Every drawing is a function of simulation state.
+1. ✅ **Presentation holds no copy of game state**, deriving every drawing from the simulation — except a record of events already reported, which is never reported twice.
 2. ✅ **The ticker is stopped**; redraws are triggered by change, not by time.
 3. ✅ **Layers are cleared and rebuilt** rather than diffed.
 4. ✅ **The corridor is nested depth frames**, drawn far to near, in 2D polygons.
@@ -199,12 +292,13 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 
 ### Deferred
 
-1. **Art.** Everything is flat-shaded polygons. Textures, sprites for doors and stairs, and any sense of material are unaddressed.
-2. **Animation between steps.** A step currently cuts from one position to the next. Whether it should slide, and how that squares with a stopped ticker, is open — an animation is the one thing in this segment that would need time.
-3. **The party action bar's contents.** `PARTY`, `INVENTORY`, and `SPELLS` route to segments that do not exist, so the bar can be drawn but its panels cannot.
-4. **Expanded-map interaction.** Panning and zooming an expanded map, and whether tapping a tile does anything, are unspecified. Auto-travel is already deferred in exploration.
-5. **Wide-screen framing.** On a very wide desktop window the corridor frames may want letterboxing rather than stretching; untested.
-6. **Accessibility.** Keyboard focus, screen-reader description of the map, and colour-blind-safe stroke distinctions are unaddressed.
+1. **Animation in a fight.** A round lands in one frame and is read from the log. Whether a resolving round should play out over time, and what that would do to the stopped ticker, is the same open question the step animation raises.
+2. **Art.** Everything is flat-shaded polygons. Textures, sprites for doors and stairs, and any sense of material are unaddressed.
+3. **Animation between steps.** A step currently cuts from one position to the next. Whether it should slide, and how that squares with a stopped ticker, is open — an animation is the one thing in this segment that would need time.
+4. **The party action bar's contents.** `PARTY`, `INVENTORY`, and `SPELLS` route to segments that do not exist, so the bar can be drawn but its panels cannot.
+5. **Expanded-map interaction.** Panning and zooming an expanded map, and whether tapping a tile does anything, are unspecified. Auto-travel is already deferred in exploration.
+6. **Wide-screen framing.** On a very wide desktop window the corridor frames may want letterboxing rather than stretching; untested.
+7. **Accessibility.** Keyboard focus, screen-reader description of the map, and colour-blind-safe stroke distinctions are unaddressed.
 
 ## References
 

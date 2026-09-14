@@ -6,7 +6,10 @@ import { createController, pressKey, pressPointer, resize, answerPrompt } from '
 
 async function bootstrap() {
   const mount = document.querySelector('#app');
-  const { state } = createCampaign();
+  const campaign = createCampaign();
+  const state = campaign.state;
+  // Exposed for driving the game from a browser smoke test. Development only.
+  if (import.meta.env.DEV) window.__campaign = campaign;
   // Record what the party can see from where it starts, before anything is drawn.
   computeSight(state);
 
@@ -17,6 +20,7 @@ async function bootstrap() {
 
   controller = createController({
     state,
+    campaign,
     viewport: renderer.viewport(),
     onDraw: renderer.draw,
   });

@@ -535,3 +535,30 @@ describe('the shape of a round', () => {
     expect(roster(state.party)).toHaveLength(2);
   });
 });
+
+describe('what a resolved round reports', () => {
+  // @spec COMBAT-ROUND-006
+  it('credits the felling blow to the blow that felled, not to every blow that landed', () => {
+    const a = hero('a', { attributes: { DEXTERITY: 18 } });
+    const b = hero('b', { attributes: { DEXTERITY: 12 } });
+    const state = encounter({ members: [a, b], enemies: [orc('o1', { hitPoints: 20, dexterity: 1 })] });
+
+    // Both swing at the same orc; the first wounds it, the second finishes it.
+    selectAction(state, 'a', { action: Action.ATTACK, targetId: 'o1', baseDamage: 12, accuracy: 100 });
+    selectAction(state, 'b', { action: Action.ATTACK, targetId: 'o1', baseDamage: 12, accuracy: 100 });
+    const log = resolveRound(state);
+
+    const felling = log.filter((e) => e.felled);
+    expect(felling).toHaveLength(1);
+    expect(felling[0].actorId).toBe('b');
+    expect(log.find((e) => e.actorId === 'a').felled).toBe(false);
+  });
+
+  // @spec COMBAT-ROUND-006
+  it('names the target of each resolved attack', () => {
+    const state = encounter({ members: [hero('a')], enemies: [orc('o1')] });
+    selectAction(state, 'a', { action: Action.ATTACK, targetId: 'o1', baseDamage: 5, accuracy: 100 });
+
+    expect(resolveRound(state)[0].targetId).toBe('o1');
+  });
+});

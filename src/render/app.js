@@ -142,10 +142,13 @@ export async function createRenderer(mount, { onAnswer }) {
   const layerContainers = {
     view: new Container(),
     map: new Container(),
+    fight: new Container(),
     hud: new Container(),
   };
-  // Added in order, so the view sits beneath the map and the map beneath the HUD.
-  app.stage.addChild(layerContainers.view, layerContainers.map, layerContainers.hud);
+  // Added in order, so the view sits beneath everything and the HUD above it.
+  app.stage.addChild(
+    layerContainers.view, layerContainers.map, layerContainers.fight, layerContainers.hud,
+  );
 
   const draw = (layers) => {
     for (const { name, plan } of layers) {
@@ -153,10 +156,121 @@ export async function createRenderer(mount, { onAnswer }) {
       container.removeChildren().forEach((child) => child.destroy());
       if (name === 'view') drawView(container, plan);
       if (name === 'map') drawMap(container, plan);
+      if (name === 'fight') drawFight(container, plan);
       if (name === 'hud') drawHud(container, plan, { onAnswer });
     }
     app.render();
   };
 
   return { app, draw, viewport: () => ({ width: app.screen.width, height: app.screen.height }) };
+}
+
+const FIGHT_COLOURS = {
+  panel: 0x0b0906,
+  frame: 0x6b5640,
+  enemy: 0x6b3a2c,
+  enemyDown: 0x241713,
+  ally: 0x3a4a30,
+  allyDown: 0x1a1d16,
+  text: 0xe8d9a8,
+  dim: 0x8a7354,
+  banner: 0xd8b46a,
+};
+
+const label = (text, size, colour) =>
+  new Text({ text, style: { fill: colour, fontSize: size, fontFamily: 'monospace' } });
+
+/**
+ * Draw a fight over the corridor. Both formations in their rows, the fallen still in
+ * place, the options on offer, and the log — which is how a round that lands in one
+ * frame is perceived at all.
+ *
+ * @spec PRESENT-FIGHT-001
+ * @spec PRESENT-FIGHT-002
+ * @spec PRESENT-FIGHT-003
+ * @spec PRESENT-FIGHT-004
+ */
+function drawFight(container, plan) {
+  const { x, y, width, height } = plan.bounds;
+  const graphics = new Graphics();
+  graphics.rect(x, y, width, height).fill({ color: FIGHT_COLOURS.panel, alpha: 0.9 });
+  graphics.moveTo(x, y).lineTo(x + width, y).stroke({ width: 2, color: FIGHT_COLOURS.frame });
+  container.addChild(graphics);
+
+  const cardW = Math.min(120, width / 6);
+  const cardH = 44;
+  const pad = 8;
+
+  const drawRank = (group, topY, downColour, upColour) => {
+    group.forEach((member, i) => {
+      const cx = x + pad + i * (cardW + pad);
+      graphics.rect(cx, topY, cardW, cardH).fill(member.down ? downColour : upColour);
+      graphics.rect(cx, topY, cardW, cardH).stroke({ width: 1, color: FIGHT_COLOURS.frame });
+
+      const name = label(member.name.slice(0, 12), 11, member.down ? FIGHT_COLOURS.dim : FIGHT_COLOURS.text);
+      name.x = cx + 5;
+      name.y = topY + 5;
+      container.addChild(name);
+
+      const hp = label(
+        member.down ? 'down' : `${member.hitPoints}/${member.maxHitPoints}`,
+        11,
+        member.down ? FIGHT_COLOURS.dim : FIGHT_COLOURS.text,
+      );
+      hp.x = cx + 5;
+      hp.y = topY + 23;
+      container.addChild(hp);
+    });
+  };
+
+  const byRow = (list, row) => list.filter((m) => m.row === row);
+  let cursor = y + pad;
+  drawRank(byRow(plan.enemies, 'BACK'), cursor, FIGHT_COLOURS.enemyDown, FIGHT_COLOURS.enemy);
+  cursor += cardH + pad;
+  drawRank(byRow(plan.enemies, 'FRONT'), cursor, FIGHT_COLOURS.enemyDown, FIGHT_COLOURS.enemy);
+  cursor += cardH + pad * 2;
+  drawRank(byRow(plan.party, 'FRONT'), cursor, FIGHT_COLOURS.allyDown, FIGHT_COLOURS.ally);
+  cursor += cardH + pad;
+  drawRank(byRow(plan.party, 'BACK'), cursor, FIGHT_COLOURS.allyDown, FIGHT_COLOURS.ally);
+  cursor += cardH + pad;
+
+  // What this character may do, numbered as the keys that pick them.
+  if (plan.pending) {
+    const who = plan.party.find((c) => c.id === plan.pending.characterId);
+    const choices = plan.pending.targets
+      ? plan.pending.targets.map((t, i) => `[${i + 1}] ${t.name}`)
+      : plan.pending.options.map((o, i) => `[${i + 1}] ${o.label}`);
+
+    const prompt = label(
+      `${who?.name ?? plan.pending.characterId}: ${plan.pending.targets ? 'at whom?' : 'what will you do?'}`,
+      14, FIGHT_COLOURS.text,
+    );
+    prompt.x = x + pad;
+    prompt.y = cursor;
+    container.addChild(prompt);
+
+    const row = label(`${choices.join('   ')}    [Esc] back`, 13, FIGHT_COLOURS.banner);
+    row.x = x + pad;
+    row.y = cursor + 20;
+    container.addChild(row);
+    cursor += 44;
+  }
+
+  for (const [i, line] of plan.log.entries()) {
+    const entry = label(line, 12, FIGHT_COLOURS.dim);
+    entry.x = x + pad;
+    entry.y = cursor + i * 15;
+    container.addChild(entry);
+  }
+
+  // @spec PRESENT-FIGHT-014
+  if (plan.banner) {
+    const text = plan.banner.pot
+      ? `${plan.banner.outcome} — the party learns ${plan.banner.pot}`
+      : plan.banner.outcome;
+    const banner = label(`${text}    [Enter]`, 18, FIGHT_COLOURS.banner);
+    banner.x = x + width / 2 - banner.width / 2;
+    banner.y = y + height / 2;
+    container.addChild(banner);
+  }
 }

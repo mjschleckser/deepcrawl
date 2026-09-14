@@ -263,19 +263,28 @@ export function resolveRound(state) {
     const band = attackBand(roll, (selection.accuracy ?? 0) - (target.armour ?? 0) - penalty);
     const damage = damageFor(band, selection.baseDamage ?? 0, target.armour ?? 0);
 
+    let felled = false;
     if (character(state.party, target.id)) {
       // Every change to a character goes through the party's own operation.
+      const wasUp = target.condition === Condition.OK;
       if (damage > 0) applyDamage(state.party, target.id, damage);
+      felled = wasUp && character(state.party, target.id).condition !== Condition.OK;
     } else {
       target.hitPoints = Math.max(0, target.hitPoints - damage);
-      if (target.hitPoints === 0) {
+      if (target.hitPoints === 0 && target.condition === Condition.OK) {
         target.condition = Condition.DEAD;
+        felled = true;
         // The pot belongs to the enemies defeated, never to the rounds taken.
         state.potBanked += target.potValue;
       }
     }
 
-    log.push({ actorId: actor.id, action: selection.action, band, damage, fizzled: false });
+    // Recorded here because only this moment knows it: after the round, every attacker
+    // who struck a target that died at any point would look like the one who felled it.
+    log.push({
+      actorId: actor.id, action: selection.action, targetId: target.id,
+      band, damage, felled, fizzled: false,
+    });
   }
 
   state.selections.clear();

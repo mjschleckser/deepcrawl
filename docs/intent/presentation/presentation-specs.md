@@ -14,7 +14,7 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-SCENE-004**: When a prompt is answered, the map is expanded or collapsed, or the window is resized, the system shall redraw.
 - [x] **PRESENT-SCENE-005**: If an action changes no simulation state, then the system shall not redraw.
 - [x] **PRESENT-SCENE-006**: When redrawing a layer, the system shall clear and rebuild it rather than reconciling it against what it drew before.
-- [ ] **PRESENT-SCENE-007**: The system shall hold no game state in the presentation layer; every drawing shall be derived from simulation state at the moment of drawing.
+- [ ] **PRESENT-SCENE-007**: The system shall hold no copy of game state in the presentation layer, deriving every drawing from simulation state at the moment of drawing, except for a record of events the simulation has already reported and will not report again.
 
 ## First-person view
 
@@ -57,8 +57,27 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-PROMPT-004**: When the player confirms or declines a prompt, the system shall pass the answer to the simulation and redraw.
 - [x] **PRESENT-PROMPT-005**: The system shall bind confirm to Enter and to the affirmative on-screen control, and decline to Escape and to the negative on-screen control.
 
+## Combat
+
+- [x] **PRESENT-FIGHT-001**: While an encounter is running, the system shall draw the combat layer over the first-person view rather than in place of it.
+- [x] **PRESENT-FIGHT-002**: The system shall draw both the enemy formation and the party in their two rows.
+- [x] **PRESENT-FIGHT-003**: The system shall draw a combatant who is down in the place they occupied, rather than removing them from their row.
+- [x] **PRESENT-FIGHT-004**: The system shall draw each combatant's remaining and maximum hit points.
+- [x] **PRESENT-FIGHT-005**: The system shall ask each conscious party member for an action in turn, in a fixed order.
+- [x] **PRESENT-FIGHT-006**: The system shall offer a character only the actions that character can legally take.
+- [x] **PRESENT-FIGHT-007**: When an action needs a target, the system shall offer only the targets the reach rules permit.
+- [x] **PRESENT-FIGHT-008**: When the last conscious party member has chosen, the system shall resolve the round and begin asking again.
+- [x] **PRESENT-FIGHT-009**: When the player backs out of a choice, the system shall return to the previous character's choice rather than only cancelling the current one.
+- [x] **PRESENT-FIGHT-010**: The system shall build the combat log from the events a resolved round reports, and shall report nothing the simulation did not do.
+- [x] **PRESENT-FIGHT-011**: The system shall name, for each resolved attack, who acted, which band the attack fell in, the damage it dealt, and whether it felled its target.
+- [x] **PRESENT-FIGHT-012**: While an encounter is running, the system shall accept no exploration movement verb or party action.
+- [x] **PRESENT-FIGHT-013**: The system shall resolve a numbered key and a tap on the same option to the same choice, carrying no record of which was used.
+- [x] **PRESENT-FIGHT-014**: When an encounter ends, the system shall draw a banner naming the outcome and, on a victory, what it was worth.
+- [x] **PRESENT-FIGHT-015**: When the player dismisses the outcome banner, the system shall return to drawing the corridor and accept exploration input again.
+
 ## Deferred
 
 - [D] **PRESENT-VIEW-010**: The system shall animate the transition between one party position and the next.
 - [D] **PRESENT-VIEW-011**: The system shall draw walls, floors, and features with textures rather than flat fill.
 - [D] **PRESENT-INPUT-007**: When a step is blocked, the system shall give the player feedback that the way is barred.
+- [D] **PRESENT-FIGHT-016**: The system shall play a resolving round out over time rather than landing it in a single frame.

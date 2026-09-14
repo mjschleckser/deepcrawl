@@ -19,6 +19,9 @@ import {
 import { hitTest } from './geometry.js';
 import { buildViewPlan } from './viewplan.js';
 import { buildMapPlan } from './mapplan.js';
+import {
+  buildFightPlan, createFightController, chooseOption, goBack, dismissOutcome, FightPhase,
+} from './fight.js';
 
 const CONFIRM_KEYS = ['Enter', ' '];
 const DECLINE_KEYS = ['Escape'];
@@ -47,10 +50,29 @@ function stateSignature(state) {
   ].join('|');
 }
 
-export function createController({ state, viewport, onDraw }) {
-  const controller = { state, viewport, onDraw, expanded: false };
+export function createController({ state, viewport, onDraw, campaign = null }) {
+  const controller = { state, viewport, onDraw, campaign, expanded: false, fight: null };
+  syncFight(controller);
   onDraw(layers(controller));
   return controller;
+}
+
+/**
+ * A fight begins and ends in the simulation; the renderer only follows it.
+ *
+ * @spec PRESENT-FIGHT-001
+ */
+function syncFight(controller) {
+  const encounter = controller.campaign?.encounter ?? null;
+  if (!encounter) {
+    controller.fight = null;
+    return;
+  }
+  if (!controller.fight || controller.fight.encounter !== encounter) {
+    controller.fight = createFightController({
+      encounter, viewport: controller.viewport, onDraw: () => {},
+    });
+  }
 }
 
 /**
@@ -64,7 +86,22 @@ export function createController({ state, viewport, onDraw }) {
  * @spec PRESENT-PROMPT-002
  */
 export function layers(controller) {
-  const { state, viewport, expanded } = controller;
+  const { state, viewport, expanded, fight } = controller;
+  if (fight) {
+    return [
+      { name: 'view', plan: buildViewPlan(corridorAhead(state), viewport) },
+      {
+        name: 'fight',
+        plan: buildFightPlan(fight.encounter, viewport, {
+          phase: fight.phase,
+          outcome: fight.outcome,
+          pending: fight.pending,
+          log: fight.log,
+        }),
+      },
+      { name: 'hud', plan: { prompt: null, viewport } },
+    ];
+  }
   return [
     { name: 'view', plan: buildViewPlan(corridorAhead(state), viewport) },
     { name: 'map', plan: buildMapPlan(automapView(state), viewport, { expanded }) },
@@ -97,7 +134,9 @@ function applyAction(controller, action) {
 
   const before = stateSignature(controller.state);
   perform(controller.state, action);
-  if (stateSignature(controller.state) === before) return false;
+  // A step can walk the party into a warband, which is a change no signature catches.
+  syncFight(controller);
+  if (!controller.fight && stateSignature(controller.state) === before) return false;
 
   redraw(controller);
   return true;
@@ -110,7 +149,49 @@ function applyAction(controller, action) {
  * @spec PRESENT-PROMPT-004
  * @spec PRESENT-PROMPT-005
  */
+/**
+ * While a fight is on there is nowhere to walk, so the exploration vocabulary does not
+ * apply and combat has its own.
+ *
+ * @spec PRESENT-FIGHT-012
+ * @spec PRESENT-FIGHT-013
+ */
+function pressKeyInFight(controller, key) {
+  const fight = controller.fight;
+
+  if (fight.phase === FightPhase.ENDED) {
+    if (key !== 'Enter' && key !== ' ' && key !== 'Escape') return false;
+    dismissOutcome(fight);
+    // Concluding banks the pot and puts the party back in the corridor.
+    controller.campaign.concludeEncounter();
+    syncFight(controller);
+    redraw(controller);
+    return true;
+  }
+
+  if (key === 'Escape') {
+    if (!goBack(fight)) return false;
+    redraw(controller);
+    return true;
+  }
+
+  const option = Number.parseInt(key, 10);
+  if (!Number.isInteger(option) || option < 1) return false;
+  if (!chooseOption(fight, option - 1)) return false;
+
+  // Fleeing can end a fight outright.
+  if (fight.phase === FightPhase.ENDED && fight.fled?.escaped) {
+    controller.campaign.fleeEncounter();
+    syncFight(controller);
+  }
+  redraw(controller);
+  return true;
+}
+
 export function pressKey(controller, key) {
+  syncFight(controller);
+  if (controller.fight) return pressKeyInFight(controller, key);
+
   if (controller.state.pendingConfirmation) {
     // While a prompt stands, it owns the keyboard: every movement verb and party
     // action is discarded rather than queued.
@@ -128,6 +209,9 @@ export function pressKey(controller, key) {
  * @spec PRESENT-PROMPT-003
  */
 export function pressPointer(controller, px, py) {
+  syncFight(controller);
+  // Taps in a fight land on numbered options, which the Pixi layer maps for us.
+  if (controller.fight) return false;
   if (controller.state.pendingConfirmation) return false;
   const region = hitTest(controller.viewport, px, py);
   if (!region) return false;
