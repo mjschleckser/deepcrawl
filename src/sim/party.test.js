@@ -22,6 +22,9 @@ import {
   CharacterClass,
   BASE_SKILLS,
   POT_SKILL_CEILING,
+  partyStepCost,
+  MIN_STEP_COST,
+  MAX_STEP_COST,
   serializeParty,
   restoreParty,
 } from './party.js';
@@ -470,5 +473,56 @@ describe('who may bring someone back', () => {
 
     expect(character(byCleric, 'f1').condition).toBe(character(byScroll, 'f1').condition);
     expect(character(byCleric, 'f1').condition).toBe(Condition.ASHES);
+  });
+});
+
+describe('how fast a party moves', () => {
+  // @spec EXPLORE-CLOCK-010
+  it('costs a number of ticks to cross a tile, bounded at both ends', () => {
+    const slow = partyOf(fighter({ attributes: { DEXTERITY: 1 } }));
+    const quick = partyOf(fighter({ attributes: { DEXTERITY: 30 } }));
+
+    for (const p of [slow, quick]) {
+      expect(partyStepCost(p)).toBeGreaterThanOrEqual(MIN_STEP_COST);
+      expect(partyStepCost(p)).toBeLessThanOrEqual(MAX_STEP_COST);
+    }
+    expect(partyStepCost(quick)).toBeLessThan(partyStepCost(slow));
+  });
+
+  // @spec EXPLORE-CLOCK-011
+  it('never charges a nimbler party more than a slower one', () => {
+    let previous = Infinity;
+    for (let dex = 1; dex <= 24; dex++) {
+      const cost = partyStepCost(partyOf(fighter({ attributes: { DEXTERITY: dex } })));
+      expect(cost).toBeLessThanOrEqual(previous);
+      previous = cost;
+    }
+  });
+
+  // @spec EXPLORE-CLOCK-010
+  it('averages across the party, so one slow member slows everyone', () => {
+    const nimble = partyOf(
+      fighter({ id: 'a', attributes: { DEXTERITY: 18 } }),
+      fighter({ id: 'b', attributes: { DEXTERITY: 18 }, row: Row.BACK }),
+    );
+    const burdened = partyOf(
+      fighter({ id: 'a', attributes: { DEXTERITY: 18 } }),
+      fighter({ id: 'b', attributes: { DEXTERITY: 4 }, row: Row.BACK }),
+    );
+
+    expect(partyStepCost(burdened)).toBeGreaterThan(partyStepCost(nimble));
+  });
+
+  // @spec EXPLORE-CLOCK-010
+  it('ignores the unconscious, who are being carried rather than walking', () => {
+    const party = partyOf(
+      fighter({ id: 'a', attributes: { DEXTERITY: 18 } }),
+      fighter({ id: 'b', attributes: { DEXTERITY: 2 }, row: Row.BACK }),
+    );
+    const laden = partyStepCost(party);
+
+    applyDamage(party, 'b', 9999);
+
+    expect(partyStepCost(party)).toBeLessThan(laden);
   });
 });

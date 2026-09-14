@@ -42,6 +42,27 @@ export const CharacterClass = {
 /** Skills every class carries, so nobody is useless at anything basic. */
 export const BASE_SKILLS = [Skill.LIGHT_ARMOUR, Skill.CARTOGRAPHY, Skill.COOKING, Skill.FORAGING];
 
+/**
+ * Ticks to cross one tile. Bounded at both ends so no party is ever twice the speed of
+ * another, and derived from average Dexterity so speed is something the player chose
+ * when they assembled the party rather than a number in a fight.
+ *
+ * @spec EXPLORE-CLOCK-010
+ * @spec EXPLORE-CLOCK-011
+ */
+export const MIN_STEP_COST = 5;
+export const MAX_STEP_COST = 10;
+
+export function partyStepCost(party) {
+  const able = party.members.filter((c) => c.condition === Condition.OK);
+  if (able.length === 0) return MAX_STEP_COST;
+
+  const average = able.reduce((sum, c) => sum + c.attributes[Attribute.DEXTERITY], 0) / able.length;
+  const span = MAX_STEP_COST - MIN_STEP_COST;
+  const scaled = MAX_STEP_COST - Math.round(((average - 6) / 12) * span);
+  return Math.min(MAX_STEP_COST, Math.max(MIN_STEP_COST, scaled));
+}
+
 export const MAX_PARTY = 5;
 export const MAX_PER_ROW = 3;
 

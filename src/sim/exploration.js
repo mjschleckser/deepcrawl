@@ -48,6 +48,7 @@ export { SAVE_VERSION } from './persistence.js';
 export { MAX_DRAWN_DEPTH } from './firstperson.js';
 export { ArrivalRule, generateFloor, generatePlan, DEFAULT_ARCHETYPE } from './generation.js';
 export { isTileDiscovered, isEdgeKnown, isTrapKnown, recordTrapDetected } from './sight.js';
+export { partyStepCost, MIN_STEP_COST, MAX_STEP_COST } from './party.js';
 
 export const Verb = {
   STEP_FORWARD: 'STEP_FORWARD',
@@ -103,6 +104,7 @@ export function createExploration({
   keys = [],
   lightSources = [],
   roamers = [],
+  stepCost = () => 1,
   restockMinElapsedTicks = DEFAULT_RESTOCK_MIN_ELAPSED_TICKS,
 }) {
   const state = {
@@ -112,6 +114,7 @@ export function createExploration({
     keys: [...keys],
     hooks: { ...NO_HOOKS, ...hooks },
     restockMinElapsedTicks,
+    stepCost,
     combatActive: false,
     menuOpen: false,
     discoveredEdges: new Set(),
@@ -528,10 +531,12 @@ function maybeRestock(state, events) {
  * @spec EXPLORE-MOVE-010
  * @spec EXPLORE-MOVE-011
  * @spec EXPLORE-MOVE-012
+ * @spec EXPLORE-MOVE-019
+ * @spec EXPLORE-CLOCK-001
  * @spec EXPLORE-BOUND-005
  */
 function resolveStepEffects(state, events, { alreadyRelocated = false } = {}) {
-  advance(state, 1);
+  const spent = advance(state, state.stepCost());
   events.push(StepEvent.CLOCK_ADVANCED);
 
   // A pit fires the moment the party enters it, with no say in the matter.
@@ -566,7 +571,9 @@ function resolveStepEffects(state, events, { alreadyRelocated = false } = {}) {
   state.hooks.onSight(here);
   events.push(StepEvent.SIGHT_RECOMPUTED);
 
-  state.hooks.onRoamersMove({ floorId: state.party.floorId });
+  // Roamers are given the ticks this step consumed, to spend against their own cost to
+  // cross a tile — so nothing moves once per party step.
+  state.hooks.onRoamersMove({ floorId: state.party.floorId, ticks: spent });
   events.push(StepEvent.ROAMERS_MOVED);
 
   state.hooks.onContactCheck(here);

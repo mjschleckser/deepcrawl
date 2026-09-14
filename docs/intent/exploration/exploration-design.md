@@ -119,10 +119,26 @@ The tick is the unit of in-game time. Exploration owns the tick counter.
 
 | Event | Ticks |
 |---|---|
-| Party enters a new tile | 1 |
-| An active search of the current tile | 1 |
-| Relighting a doused light source | 1 |
+| Party enters a new tile | a **step cost** set by the party's average Dexterity |
+| An active search of the current tile | a fixed cost |
+| Relighting a doused light source | a fixed cost |
 | Camp actions (sleep, eat, rest, train) | defined by the camp segment |
+
+### The step cost
+
+A step is not one tick. It costs a number of ticks drawn from the party's **average
+Dexterity** — a nimble party crosses a tile in less time than a burdened one — bounded
+between a floor and a ceiling so that no party is ever twice as fast as another.
+
+This is what makes speed a property of the party rather than a number in a fight. Every
+other inhabitant of the floor pays its own cost to cross a tile, so a party quicker
+than what is chasing it gradually opens a gap and eventually loses it, while a slower
+one is run down however cleverly it turns. Outrunning something is a thing the party
+either can or cannot do, decided by who they brought.
+
+Because a step now costs several ticks rather than one, hunger and light are consumed
+at rates authored against that scale. Both were always per-tick; only the size of a
+tick relative to a footstep has changed.
 
 **Does not advance the clock:**
 
@@ -210,7 +226,9 @@ On a successful step, these resolve in a fixed order:
 4. If the party has arrived on a floor it previously left, that floor is re-stocked.
 5. The trap trigger hook fires for the tile the party now occupies.
 6. Sight is recomputed and discovery recorded.
-7. Roaming enemies on the party's current floor move.
+7. Roaming enemies on the party's current floor move, each spending the ticks this
+   step consumed against its own cost to cross a tile — so a quick one moves more than
+   once while a slow one waits several of the party's steps for its turn.
 8. Contact is checked; an enemy sharing the party's tile begins an encounter.
 
 Steps 4 through 8 act on the tile the party occupies *after* any relocation, so a pit
@@ -220,6 +238,11 @@ one. A pit costs only the
 tick of the step that entered it — the landing is a relocation, not a second step. Tile
 features resolve at most once per step, so landing on another pit does not chain; the
 party falls again on its next step instead.
+
+Roamers are not moved once per party step but once per *their own* step. A step that
+costs the party eight ticks gives a roamer that crosses a tile in six ticks one move
+with two ticks carried forward; a roamer that needs twelve waits. Everything that
+chases the party does so at its own pace.
 
 The order is load-bearing in three places. Light burns down **before** sight is
 computed, so a torch that expires on this step is already spent when the party looks
@@ -507,6 +530,7 @@ widget occupies a corner and expands to full screen on tap.
 | Floor dimensions | Variable per floor | Fixed 20×20 | Lets generation shape a floor to its archetype. Costs nothing, since nothing in the model assumes a size. |
 | Floor topology | A graph of floors joined by connectors | A linear stack indexed by depth | One floor may lead to several others. Depth becomes a label rather than a computed property. |
 | Floor lifetime | Generated once, persisted forever | Regenerated from seed on revisit | Discovery, sprung traps, and looted tiles have to survive a revisit. Regeneration would undo the player's record of their own exploration. |
+| Step cost | Several ticks, set by the party's average Dexterity | A flat one tick per step | Speed becomes a property of the party rather than a combat statistic, and pursuit becomes a contest a party can win or lose by who they brought rather than by how they turn. |
 | Turning | Free, never ticks | Turning costs a tick | Free turning keeps the first-person view scannable, which matters most on a phone where looking around is the primary orientation gesture. |
 | Wall bump | No movement, no tick | Bumping costs a tick | A misjudged step should not cost food and torchlight. |
 | Movement verbs | Forward, turn L/R, turn 180° | Adding a backward step | Free turning already makes withdrawal cheap; a backward step would only add a case where the party enters a tile its facing never revealed. |
@@ -570,6 +594,8 @@ widget occupies a corner and expands to full screen on tap.
 25. ✅ **Re-stocking resolves immediately after relocation**, before the trap trigger fires.
 26. ✅ **Visibility is a traced line** from the party to each candidate tile; sight does not go round corners.
 27. ✅ **Light distance is Chebyshev**, matching the way the party moves.
+30. ✅ **A step costs several ticks**, set by the party's average Dexterity and bounded at both ends.
+31. ✅ **Roamers move on their own tick cost**, not once per party step.
 28. ✅ **The corridor projection is exploration's**, answered beside the automap projection and drawn by presentation.
 29. ✅ **Maximum drawn depth is capped independently of light reach.**
 

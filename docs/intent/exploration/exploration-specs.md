@@ -24,7 +24,9 @@ tuning the game does not rewrite its specs.
 
 ## The clock
 
-- [x] **EXPLORE-CLOCK-001**: When the party enters a new tile, the system shall advance the clock by one tick.
+- [x] **EXPLORE-CLOCK-001**: When the party enters a new tile, the system shall advance the clock by the party's step cost.
+- [x] **EXPLORE-CLOCK-010**: The system shall derive the party's step cost from the average Dexterity of its conscious members, bounded between a floor and a ceiling defined in content data.
+- [x] **EXPLORE-CLOCK-011**: The system shall never give a party of higher average Dexterity a greater step cost than one of lower average Dexterity.
 - [x] **EXPLORE-CLOCK-002**: When the party searches its current tile, the system shall advance the clock by one tick.
 - [x] **EXPLORE-CLOCK-003**: When the party relights a doused light source during exploration, the system shall advance the clock by one tick.
 - [x] **EXPLORE-CLOCK-004**: When a camp action completes, the system shall advance the clock by the number of ticks the camp segment specifies for that action.
@@ -44,6 +46,7 @@ tuning the game does not rewrite its specs.
 - [x] **EXPLORE-MOVE-006**: If a step is blocked, then the system shall leave the party's tile, the clock, and every step side effect unchanged.
 - [x] **EXPLORE-MOVE-007**: When the party steps through a closed `door`, or through a `lockedDoor` while holding its matching key, or through a discovered `secretDoor`, the system shall set that edge open and shall not charge a tick beyond the step's own.
 - [x] **EXPLORE-MOVE-008**: When a step succeeds, the system shall resolve its effects in this order: move the party, advance the clock, resolve the tile feature, re-stock the floor if the party has arrived on one it previously left, fire the trap trigger hook, recompute sight and record discovery, move roaming enemies, check contact.
+- [ ] **EXPLORE-MOVE-019**: When roaming enemies move, the system shall give each the ticks the step consumed to spend against its own cost to cross a tile, carrying any remainder forward.
 - [x] **EXPLORE-MOVE-009**: When the party enters a tile whose feature is `pit`, the system shall relocate the party to that connector's destination floor, at the tile its arrival rule resolves to, without asking for confirmation.
 - [x] **EXPLORE-MOVE-015**: When the party attempts to step onto a tile whose feature is `stairsUp` or `stairsDown`, the system shall raise a confirmation before moving the party.
 - [x] **EXPLORE-MOVE-016**: When the player confirms a staircase prompt, the system shall relocate the party to that connector's destination floor, at the tile its arrival rule resolves to on that floor.
