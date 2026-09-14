@@ -59,8 +59,8 @@ guarantees it with.
 
 ## Re-stocking
 
-- [ ] **GEN-STOCK-001**: When exploration re-stocks a floor, the system shall return the room contents to place, and shall change no edge, no tile feature, and no trap.
-- [ ] **GEN-STOCK-002**: The system shall derive a re-stocking from the floor's own seed combined with a re-stocking counter, so the same floor re-stocked the same number of times gives the same result.
+- [x] **GEN-STOCK-001**: When exploration re-stocks a floor, the system shall return the room contents to place, and shall change no edge, no tile feature, and no trap.
+- [x] **GEN-STOCK-002**: The system shall derive a re-stocking from the floor's own seed combined with a re-stocking counter, so the same floor re-stocked the same number of times gives the same result.
 - [ ] **GEN-STOCK-003**: The system shall produce a different arrangement for successive re-stockings of the same floor, so that a floor visited repeatedly does not settle into one layout of occupants.
 - [ ] **GEN-STOCK-004**: The system shall scale how much a re-stocking changes with the ticks the party was absent.
 

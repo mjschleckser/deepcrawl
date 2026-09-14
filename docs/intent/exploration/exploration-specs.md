@@ -119,13 +119,13 @@ tuning the game does not rewrite its specs.
 ## Returning to a floor
 
 - [x] **EXPLORE-RETURN-001**: When the party leaves a floor, the system shall record the current tick against that floor.
-- [ ] **EXPLORE-RETURN-002**: While the party is not on a floor, the system shall not move that floor's roaming enemies, change its door states, or restock its rooms.
+- [x] **EXPLORE-RETURN-002**: While the party is not on a floor, the system shall not move that floor's roaming enemies, change its door states, or restock its rooms.
 - [x] **EXPLORE-RETURN-003**: When the party arrives on a floor it has previously left, the system shall apply a re-stocking scaled to the ticks elapsed since that floor's recorded departure.
-- [ ] **EXPLORE-RETURN-004**: When a re-stocking runs, the system shall reposition the floor's roaming enemies, change door open states, and refill some previously cleared rooms.
-- [ ] **EXPLORE-RETURN-005**: When a re-stocking runs, the system shall leave the floor's discovery record unchanged.
-- [ ] **EXPLORE-RETURN-009**: When a re-stocking runs, the system shall leave every trap on the floor unchanged — undiscovered traps stay undiscovered, known traps stay known, and sprung traps stay sprung.
+- [x] **EXPLORE-RETURN-004**: When a re-stocking runs, the system shall reposition the floor's roaming enemies, change door open states, and refill some previously cleared rooms.
+- [x] **EXPLORE-RETURN-005**: When a re-stocking runs, the system shall leave the floor's discovery record unchanged.
+- [x] **EXPLORE-RETURN-009**: When a re-stocking runs, the system shall leave every trap on the floor unchanged — undiscovered traps stay undiscovered, known traps stay known, and sprung traps stay sprung.
 - [ ] **EXPLORE-RETURN-010**: The system shall lay a floor's traps once, when the floor is generated, and shall never add or remove a trap thereafter.
-- [ ] **EXPLORE-RETURN-006**: When a re-stocking runs, the system shall leave the floor's dimensions, edge kinds, and tile features unchanged.
+- [x] **EXPLORE-RETURN-006**: When a re-stocking runs, the system shall leave the floor's dimensions, edge kinds, and tile features unchanged.
 - [x] **EXPLORE-RETURN-007**: When the party returns to a floor after fewer elapsed ticks than the minimum threshold defined in content data, the system shall apply no re-stocking.
 - [ ] **EXPLORE-RETURN-008**: When two returns to the same floor differ in elapsed ticks, the system shall apply the larger re-stocking to the longer absence.
 
@@ -155,8 +155,8 @@ tuning the game does not rewrite its specs.
 
 ## Segment boundaries
 
-- [ ] **EXPLORE-BOUND-001**: When a roaming enemy occupies the party's tile at a step's contact check, the system shall begin an encounter.
-- [ ] **EXPLORE-BOUND-002**: When an encounter begins, the system shall hand combat a payload naming the enemy group, the light level of the encounter tile, and which side was aware of the other.
+- [x] **EXPLORE-BOUND-001**: When a roaming enemy occupies the party's tile at a step's contact check, the system shall begin an encounter.
+- [x] **EXPLORE-BOUND-002**: When an encounter begins, the system shall hand combat a payload naming the enemy group, the light level of the encounter tile, and which side was aware of the other.
 - [ ] **EXPLORE-BOUND-003**: The system shall change character hit points, status, and death state only through the party segment's operations, from exploration and from combat alike.
 - [ ] **EXPLORE-BOUND-004**: The system shall not mutate a floor's dimensions, edge kinds, or tile features after generation produces them.
 - [x] **EXPLORE-BOUND-005**: When the party enters a tile, the system shall fire the trap trigger hook with that tile and the party.

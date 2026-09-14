@@ -115,6 +115,8 @@ export function beginEncounter({ party, enemies, light, awareness, rng, origin }
     origin,
     rng,
     surpriseRoundFor,
+    // Kept, not just consumed: who knew what is worth telling the player.
+    awareness: { ...awareness },
     // Fighting blind is possible and awful: the party swings wildly at whatever is in
     // front of it.
     accuracyPenalty: dark ? DARK_ACCURACY_PENALTY : 0,
@@ -123,6 +125,7 @@ export function beginEncounter({ party, enemies, light, awareness, rng, origin }
     enemyAccuracyBonus: 0,
     selections: new Map(),
     skillsUsed: new Set(),
+    skillsByActor: new Map(),
     escaped: false,
     potBanked: 0,
   };
@@ -235,7 +238,12 @@ export function resolveRound(state) {
     const selection = state.selections.get(actor.id);
     if (!selection) continue;
 
-    if (selection.skill) state.skillsUsed.add(selection.skill);
+    if (selection.skill) {
+      state.skillsUsed.add(selection.skill);
+      const mine = state.skillsByActor.get(actor.id) ?? new Set();
+      mine.add(selection.skill);
+      state.skillsByActor.set(actor.id, mine);
+    }
 
     if (selection.action !== Action.ATTACK) {
       log.push({ actorId: actor.id, action: selection.action, fizzled: false });
@@ -319,7 +327,14 @@ export function encounterOutcome(state) {
   }
 
   if (!state.enemies.members.some(enemyStanding)) {
-    return { outcome: Outcome.VICTORY, pot: state.potBanked, skillsUsed: [...state.skillsUsed] };
+    return {
+      outcome: Outcome.VICTORY,
+      pot: state.potBanked,
+      skillsUsed: [...state.skillsUsed],
+      // Per actor, so a character advances the skills they used rather than the
+      // party's whole repertoire.
+      skillsByActor: new Map([...state.skillsByActor].map(([id, set]) => [id, [...set]])),
+    };
   }
 
   return { outcome: Outcome.ONGOING };

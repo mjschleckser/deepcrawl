@@ -48,7 +48,7 @@ are fed into.
 
 - [x] **ENEMY-CONTACT-001**: When a roamer occupies the party's tile, the system shall begin an encounter with that roamer's band.
 - [x] **ENEMY-CONTACT-002**: When the party and a roamer exchange tiles in the same step, the system shall begin an encounter rather than letting them pass through one another.
-- [ ] **ENEMY-CONTACT-003**: When an encounter begins, the system shall report the party's awareness of the roamer and the roamer's awareness of the party as the surprise payload.
+- [x] **ENEMY-CONTACT-003**: When an encounter begins, the system shall report the party's awareness of the roamer and the roamer's awareness of the party as the surprise payload.
 - [x] **ENEMY-CONTACT-004**: The system shall treat a roamer that has not noticed the party as unaware for the purposes of surprise, whatever the light.
 
 ## Behaviour in a fight
