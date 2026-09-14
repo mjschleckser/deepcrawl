@@ -276,3 +276,23 @@ describe('input in a fight', () => {
     expect(fight.pending.characterId).toBe(before.characterId);
   });
 });
+
+describe('what a won fight teaches', () => {
+  // @spec PRESENT-FIGHT-008
+  it('records the skill each attack used, so a victory advances something', () => {
+    const fight = controller({
+      enemies: [createEnemy({ id: 'g1', name: 'Goblin', row: Row.FRONT, hitPoints: 1, potValue: 14 })],
+    });
+
+    for (let i = 0; i < 6 && fight.phase !== FightPhase.ENDED; i++) {
+      chooseOption(fight, 0);
+      if (fight.pending?.targets) chooseOption(fight, 0);
+    }
+
+    // Somebody swung at something, so somebody learned from it.
+    expect(fight.outcome.skillsByActor.size).toBeGreaterThan(0);
+    for (const [, skills] of fight.outcome.skillsByActor) {
+      expect(skills.length).toBeGreaterThan(0);
+    }
+  });
+});

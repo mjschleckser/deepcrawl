@@ -90,49 +90,65 @@ function drawMap(container, plan) {
   container.addChild(graphics);
 }
 
-function drawHud(container, plan, { onAnswer }) {
-  if (!plan.prompt) return;
-
-  const { width, height } = plan.viewport;
-  const boxWidth = Math.min(width * 0.7, 420);
-  const boxHeight = 130;
-  const x = (width - boxWidth) / 2;
-  const y = height - boxHeight - height * 0.12;
-
+/**
+ * One drawn control: a panel, the action it performs, and any key as quieter text
+ * beside it. The plan decided where it sits; nothing here registers a handler, because
+ * the controller hit-tests that same plan.
+ *
+ * @spec PRESENT-CTRL-001
+ * @spec PRESENT-CTRL-003
+ * @spec PRESENT-CTRL-006
+ */
+function drawControl(container, control, { alpha = 0.55 } = {}) {
   const graphics = new Graphics();
-  graphics.rect(x, y, boxWidth, boxHeight).fill({ color: 0x0b0906, alpha: 0.92 });
-  graphics.rect(x, y, boxWidth, boxHeight).stroke({ width: 2, color: PALETTE.map.door });
+  graphics.roundRect(control.x, control.y, control.width, control.height, 6)
+    .fill({ color: 0x0b0906, alpha });
+  graphics.roundRect(control.x, control.y, control.width, control.height, 6)
+    .stroke({ width: 1.5, color: PALETTE.map.wall, alpha: 0.9 });
   container.addChild(graphics);
 
-  const label = new Text({
-    text: 'A staircase leads down.\nDescend?',
-    style: { fill: 0xe8d9a8, fontSize: 18, fontFamily: 'monospace', align: 'center' },
+  const name = new Text({
+    text: control.label,
+    style: { fill: 0xe8d9a8, fontSize: 14, fontFamily: 'monospace' },
   });
-  label.x = x + boxWidth / 2 - label.width / 2;
-  label.y = y + 18;
-  container.addChild(label);
+  name.x = control.x + control.width / 2 - name.width / 2;
+  name.y = control.y + control.height / 2 - name.height / 2 - (control.hint ? 6 : 0);
+  container.addChild(name);
 
-  for (const [text, accepted, offset] of [
-    ['[Enter] Descend', true, 0.28],
-    ['[Esc] Stay', false, 0.72],
-  ]) {
-    const button = new Text({
-      text,
-      style: { fill: 0xd8b46a, fontSize: 15, fontFamily: 'monospace' },
+  // The key is a hint, never the label: a phone has no Enter to press.
+  if (control.hint) {
+    const hint = new Text({
+      text: control.hint,
+      style: { fill: PALETTE.map.wall, fontSize: 10, fontFamily: 'monospace' },
     });
-    button.x = x + boxWidth * offset - button.width / 2;
-    button.y = y + boxHeight - 38;
-    button.eventMode = 'static';
-    button.cursor = 'pointer';
-    button.on('pointerdown', (event) => {
-      event.stopPropagation();
-      onAnswer(accepted);
-    });
-    container.addChild(button);
+    hint.x = control.x + control.width / 2 - hint.width / 2;
+    hint.y = control.y + control.height - hint.height - 4;
+    container.addChild(hint);
   }
 }
 
-export async function createRenderer(mount, { onAnswer }) {
+function drawHud(container, plan) {
+  for (const control of plan.controls ?? []) drawControl(container, control, { alpha: 0.32 });
+  if (!plan.prompt) return;
+
+  const { bounds, text, controls } = plan.prompt;
+  const graphics = new Graphics();
+  graphics.rect(bounds.x, bounds.y, bounds.width, bounds.height).fill({ color: 0x0b0906, alpha: 0.94 });
+  graphics.rect(bounds.x, bounds.y, bounds.width, bounds.height).stroke({ width: 2, color: PALETTE.map.door });
+  container.addChild(graphics);
+
+  const label = new Text({
+    text,
+    style: { fill: 0xe8d9a8, fontSize: 17, fontFamily: 'monospace', align: 'center' },
+  });
+  label.x = bounds.x + bounds.width / 2 - label.width / 2;
+  label.y = bounds.y + 20;
+  container.addChild(label);
+
+  for (const control of controls) drawControl(container, control, { alpha: 0.75 });
+}
+
+export async function createRenderer(mount) {
   const app = new Application();
   await app.init({ ...PIXI_APP_OPTIONS, resizeTo: mount });
   // Nothing is real-time, so nothing redraws on a clock.
@@ -157,7 +173,7 @@ export async function createRenderer(mount, { onAnswer }) {
       if (name === 'view') drawView(container, plan);
       if (name === 'map') drawMap(container, plan);
       if (name === 'fight') drawFight(container, plan);
-      if (name === 'hud') drawHud(container, plan, { onAnswer });
+      if (name === 'hud') drawHud(container, plan);
     }
     app.render();
   };
@@ -234,13 +250,8 @@ function drawFight(container, plan) {
   drawRank(byRow(plan.party, 'BACK'), cursor, FIGHT_COLOURS.allyDown, FIGHT_COLOURS.ally);
   cursor += cardH + pad;
 
-  // What this character may do, numbered as the keys that pick them.
   if (plan.pending) {
     const who = plan.party.find((c) => c.id === plan.pending.characterId);
-    const choices = plan.pending.targets
-      ? plan.pending.targets.map((t, i) => `[${i + 1}] ${t.name}`)
-      : plan.pending.options.map((o, i) => `[${i + 1}] ${o.label}`);
-
     const prompt = label(
       `${who?.name ?? plan.pending.characterId}: ${plan.pending.targets ? 'at whom?' : 'what will you do?'}`,
       14, FIGHT_COLOURS.text,
@@ -248,12 +259,7 @@ function drawFight(container, plan) {
     prompt.x = x + pad;
     prompt.y = cursor;
     container.addChild(prompt);
-
-    const row = label(`${choices.join('   ')}    [Esc] back`, 13, FIGHT_COLOURS.banner);
-    row.x = x + pad;
-    row.y = cursor + 20;
-    container.addChild(row);
-    cursor += 44;
+    cursor += 26;
   }
 
   for (const [i, line] of plan.log.entries()) {
@@ -265,12 +271,25 @@ function drawFight(container, plan) {
 
   // @spec PRESENT-FIGHT-014
   if (plan.banner) {
-    const text = plan.banner.pot
-      ? `${plan.banner.outcome} — the party learns ${plan.banner.pot}`
-      : plan.banner.outcome;
-    const banner = label(`${text}    [Enter]`, 18, FIGHT_COLOURS.banner);
-    banner.x = x + width / 2 - banner.width / 2;
-    banner.y = y + height / 2;
-    container.addChild(banner);
+    const b = plan.banner.bounds;
+    const panel = new Graphics();
+    panel.rect(b.x, b.y, b.width, b.height).fill({ color: FIGHT_COLOURS.panel, alpha: 0.97 });
+    panel.rect(b.x, b.y, b.width, b.height).stroke({ width: 2, color: FIGHT_COLOURS.banner });
+    container.addChild(panel);
+
+    const outcome = label(plan.banner.outcome, 20, FIGHT_COLOURS.banner);
+    outcome.x = b.x + b.width / 2 - outcome.width / 2;
+    outcome.y = b.y + 18;
+    container.addChild(outcome);
+
+    if (plan.banner.pot) {
+      const learned = label(`the party learns ${plan.banner.pot}`, 13, FIGHT_COLOURS.text);
+      learned.x = b.x + b.width / 2 - learned.width / 2;
+      learned.y = b.y + 46;
+      container.addChild(learned);
+    }
   }
+
+  // @spec PRESENT-FIGHT-017
+  for (const control of plan.controls ?? []) drawControl(container, control, { alpha: 0.7 });
 }

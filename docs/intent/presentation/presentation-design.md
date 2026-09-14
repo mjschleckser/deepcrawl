@@ -150,6 +150,25 @@ viewport, not pixels, so they hold their proportions on any screen:
 An unrecognised key or a tap outside every region resolves to nothing and is
 discarded, rather than being guessed at.
 
+### Controls are drawn, not implied
+
+Every region that can be tapped is visibly drawn. A player on a phone cannot discover
+an invisible control, and the project's first target user is holding one — a region
+that exists only in the hit-test is a region only a keyboard player benefits from.
+
+Each control is a bordered panel with a label, and no control is smaller than a
+thumb: there is a floor on how small a tap target may be drawn, in real pixels rather
+than a fraction, because a thumb does not shrink with the viewport.
+
+**A label names the thing, not the key.** `Descend` with a small `Enter` beside it,
+never `[Enter] Descend` — the second tells a phone player to press a key they do not
+have. Keyboard hints are secondary text on the same control, so one drawing serves
+both players and neither is told to use the other's device.
+
+Every hit region is computed in the plan alongside the drawing it belongs to, so the
+thing drawn and the thing tapped cannot drift apart. The renderer hit-tests the plan;
+it never registers handlers of its own.
+
 ## Combat
 
 A fight is drawn over the corridor rather than in place of it. The party is still
@@ -224,6 +243,10 @@ actions that carry no trace of where they came from.
 | Confirm | `Enter` | tap the confirm control |
 | Back | `Escape` | tap the back control |
 
+Every option on offer is a drawn control with its own hit region, sized like any
+other. A fight a player can watch but not act in is worse than no fight at all, and
+that is what an option with no tap target amounts to on a phone.
+
 ### Ending
 
 An outcome is drawn as a banner over the fight: what happened, and what it was worth.
@@ -269,7 +292,10 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 | Corridor geometry | Nested depth frames scaled toward a vanishing point | Raycasting into a texture-mapped wall; pre-rendered art per configuration | Frames are a handful of polygons per depth, need no art pipeline, and keep the view honestly 2D. Raycasting would contradict the project's non-goal and cost mobile performance for a view that only ever faces four directions. |
 | Draw order | Far to near | Near to far with depth testing | Painting far first makes occlusion automatic; there is no depth buffer to manage and no way for distant geometry to overwrite near geometry. |
 | Light in the view | Tint per depth, fading to black at the torch edge | Showing light only as a status readout | The player should watch the dark close in rather than read a number. It also makes the light rules legible without explanation. |
-| Tap regions | Fractions of the viewport | Fixed pixel rectangles | The same layout has to work on a phone and a desktop window; fractions hold their proportions where pixels do not. |
+| Tap regions | Fractions of the viewport, with a pixel floor on size | Fractions alone; fixed pixel rectangles | The same layout has to work on a phone and a desktop window, so fractions hold the proportions — but a thumb does not shrink with the viewport, so the floor is in real pixels. |
+| Drawing the controls | Every tappable region is drawn | Leaving the view uncluttered and the regions invisible | A control nobody can see is a control only a keyboard player has, and the first target user is holding a phone. |
+| Labels | Name the action, with any key hint as secondary text | Naming the key that triggers it | "[Enter] Descend" instructs a phone player to press a key they do not have. One drawing has to serve both without telling either to use the other's device. |
+| Hit regions | Computed in the plan, beside the drawing they belong to | Registered as handlers on the drawn objects | Keeping them together means what is drawn and what is tapped cannot drift apart, and it keeps hit-testing in the pure layer where it can be tested. |
 | Combat over the corridor | Drawn on top of the first-person view, which stays visible | Replacing the view with a combat screen | The party is still standing in the passage they were caught in, and seeing it is part of knowing how bad this is. A separate screen would also throw away the light and the place. |
 | Showing a round | A text log built from the round's own event log | Animating each action; showing only the resulting state | Nothing animates, so a round lands in one frame. Without a record the player sees the aftermath and never learns what happened. The log is the fight as perceived. |
 | Illegal options | Not offered at all | Offered and refused when chosen | An option that cannot be taken should not be presented. Refusing after the fact teaches the rules by failure, which in a fight is expensive. |
@@ -286,7 +312,9 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 3. ✅ **Layers are cleared and rebuilt** rather than diffed.
 4. ✅ **The corridor is nested depth frames**, drawn far to near, in 2D polygons.
 5. ✅ **Light is drawn as a per-depth tint**, fading to black at the edge of sight.
-6. ✅ **Tap regions are viewport fractions**, recomputed on resize.
+6. ✅ **Tap regions are viewport fractions**, recomputed on resize, with a pixel floor on how small one may be drawn.
+9. ✅ **Every tappable region is drawn**, and every drawn control carries its own hit region in the plan.
+10. ✅ **Labels name the action**, with any keyboard hint as secondary text.
 7. ✅ **Prompts are drawn from the simulation's pending confirmation**, never from the renderer's own flag.
 8. ✅ **A hand-authored starter floor** stands in until dungeon generation exists.
 

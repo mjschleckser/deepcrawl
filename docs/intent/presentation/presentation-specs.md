@@ -49,6 +49,15 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-INPUT-005**: When the viewport is resized, the system shall recompute the tap regions and the depth frames from the new size.
 - [x] **PRESENT-INPUT-006**: The system shall pass an action to the simulation without any indication of whether a key or a pointer produced it.
 
+## Controls
+
+- [x] **PRESENT-CTRL-001**: The system shall draw every region it will accept a tap in.
+- [x] **PRESENT-CTRL-002**: The system shall draw no interactive control smaller than the minimum tap size, measured in pixels rather than as a fraction of the viewport.
+- [x] **PRESENT-CTRL-003**: The system shall label a control with the action it performs, and shall show any keyboard key as secondary text rather than as the label.
+- [x] **PRESENT-CTRL-004**: The system shall carry each control's hit region in the same plan as its drawing, so that what is drawn and what is tapped are one thing.
+- [x] **PRESENT-CTRL-005**: When a pointer press lands on a drawn control, the system shall perform that control's action.
+- [x] **PRESENT-CTRL-006**: The system shall register no input handler on a drawn object, hit-testing the plan instead.
+
 ## Prompts
 
 - [x] **PRESENT-PROMPT-001**: While the simulation holds a pending confirmation, the system shall draw a prompt describing it.
@@ -73,6 +82,7 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-FIGHT-012**: While an encounter is running, the system shall accept no exploration movement verb or party action.
 - [x] **PRESENT-FIGHT-013**: The system shall resolve a numbered key and a tap on the same option to the same choice, carrying no record of which was used.
 - [x] **PRESENT-FIGHT-014**: When an encounter ends, the system shall draw a banner naming the outcome and, on a victory, what it was worth.
+- [x] **PRESENT-FIGHT-017**: The system shall give every combat option on offer a drawn control with its own hit region, so that a fight can be played by touch alone.
 - [x] **PRESENT-FIGHT-015**: When the player dismisses the outcome banner, the system shall return to drawing the corridor and accept exploration input again.
 
 ## Deferred

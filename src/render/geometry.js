@@ -31,6 +31,28 @@ export function depthFrames(viewport, count, ratio = FRAME_RATIO) {
 }
 
 /**
+ * The smallest a tappable control may be drawn. In real pixels, not a fraction: a
+ * thumb does not shrink with the viewport.
+ *
+ * @spec PRESENT-CTRL-002
+ */
+export const MIN_TAP_PX = 48;
+
+/** What each region does, named for the player rather than for the key. */
+const CONTROL_LABELS = {
+  FORWARD: { label: 'Forward', hint: 'W' },
+  TURN_LEFT: { label: 'Left', hint: 'A' },
+  TURN_RIGHT: { label: 'Right', hint: 'D' },
+  TURN_AROUND: { label: 'About', hint: 'S' },
+  PARTY_BAR: { label: 'Party', hint: 'P' },
+  PACK: { label: 'Pack', hint: 'I' },
+  SPELL_ICON: { label: 'Spells', hint: 'C' },
+  SEARCH_CONTROL: { label: 'Search', hint: 'F' },
+  INTERACT_PROMPT: { label: 'Use', hint: 'E' },
+  MAP: { label: 'Map', hint: 'M' },
+};
+
+/**
  * Tap regions as fractions of the viewport, so the same layout holds on a phone and
  * in a desktop window. Ordered most specific first: the controls along the bottom and
  * the map widget are hit-tested before the broad turn and step areas behind them.
@@ -50,15 +72,36 @@ export const TouchLayout = [
   { region: 'FORWARD', fx: 0.25, fy: 0.1, fw: 0.5, fh: 0.56 },
 ];
 
-/** @spec PRESENT-INPUT-005 */
+/**
+ * @spec PRESENT-INPUT-005
+ * @spec PRESENT-CTRL-002
+ */
 export function tapRegionsFor(viewport) {
-  return TouchLayout.map(({ region, fx, fy, fw, fh }) => ({
-    region,
-    x: fx * viewport.width,
-    y: fy * viewport.height,
-    width: fw * viewport.width,
-    height: fh * viewport.height,
-  }));
+  return TouchLayout.map(({ region, fx, fy, fw, fh }) => {
+    // Proportions from the fractions, but never below a thumb, and never pushed off
+    // the edge by the growing.
+    const width = Math.min(viewport.width, Math.max(MIN_TAP_PX, fw * viewport.width));
+    const height = Math.min(viewport.height, Math.max(MIN_TAP_PX, fh * viewport.height));
+    return {
+      region,
+      x: Math.max(0, Math.min(fx * viewport.width, viewport.width - width)),
+      y: Math.max(0, Math.min(fy * viewport.height, viewport.height - height)),
+      width,
+      height,
+    };
+  });
+}
+
+/**
+ * The same regions, with what to draw in them. A control nobody can see is a control
+ * only a keyboard player has.
+ *
+ * @spec PRESENT-CTRL-001
+ * @spec PRESENT-CTRL-003
+ * @spec PRESENT-CTRL-004
+ */
+export function controlsFor(viewport) {
+  return tapRegionsFor(viewport).map((area) => ({ ...area, ...CONTROL_LABELS[area.region] }));
 }
 
 /**

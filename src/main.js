@@ -2,7 +2,7 @@ import './style.css';
 import { createCampaign } from './content/campaign.js';
 import { computeSight } from './sim/exploration.js';
 import { createRenderer } from './render/app.js';
-import { createController, pressKey, pressPointer, resize, answerPrompt } from './render/controller.js';
+import { createController, pressKey, pressPointer, resize, layers } from './render/controller.js';
 
 async function bootstrap() {
   const mount = document.querySelector('#app');
@@ -14,9 +14,7 @@ async function bootstrap() {
   computeSight(state);
 
   let controller;
-  const renderer = await createRenderer(mount, {
-    onAnswer: (accepted) => answerPrompt(controller, accepted),
-  });
+  const renderer = await createRenderer(mount);
 
   controller = createController({
     state,
@@ -24,6 +22,11 @@ async function bootstrap() {
     viewport: renderer.viewport(),
     onDraw: renderer.draw,
   });
+
+  if (import.meta.env.DEV) {
+    controller.__layers = () => layers(controller);
+    window.__controller = controller;
+  }
 
   window.addEventListener('keydown', (event) => {
     if (event.metaKey || event.ctrlKey || event.altKey) return;

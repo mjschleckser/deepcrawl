@@ -10,7 +10,8 @@
  * resolved round actually reported.
  */
 
-import { Row, Condition, roster, character } from '../sim/party.js';
+import { Condition, Skill, roster } from '../sim/party.js';
+import { MIN_TAP_PX } from './geometry.js';
 import {
   Action, Band, Outcome, meleeTargets, rangedTargets,
   encounterOutcome, selectAction, resolveRound, attemptFlee,
@@ -26,6 +27,13 @@ export const FightAction = {
 
 const PANEL_FRACTION = 0.62;
 const LOG_LINES = 5;
+
+/**
+ * What an attack trains, and what it hits for. Placeholders until weapons exist: the
+ * skill an attack uses, the damage it deals and the accuracy behind it are all
+ * properties of the weapon being swung, and there are no weapons yet.
+ */
+const PLACEHOLDER_ATTACK = { skill: Skill.BLADE, baseDamage: 9, accuracy: 30 };
 
 const standing = (e) => e.condition === Condition.OK && e.hitPoints > 0;
 
@@ -56,19 +64,99 @@ export function buildFightPlan(encounter, viewport, { phase, outcome = null, pen
     down: c.condition !== Condition.OK,
   });
 
+  const bounds = { x: 0, y: viewport.height - height, width: viewport.width, height };
+  const bannerHeight = Math.max(MIN_TAP_PX * 2.6, 150);
+  const bannerWidth = Math.min(viewport.width - 24, 420);
+  const banner = phase === FightPhase.ENDED && outcome
+    ? {
+        outcome: outcome.outcome,
+        pot: outcome.pot ?? null,
+        // Its own panel: a banner reading through the formation behind it is a banner
+        // nobody can read.
+        bounds: {
+          x: (viewport.width - bannerWidth) / 2,
+          y: bounds.y + (bounds.height - bannerHeight) / 2,
+          width: bannerWidth,
+          height: bannerHeight,
+        },
+      }
+    : null;
+
   return {
     // Over the corridor, never instead of it: the party is still standing where they
     // were caught.
     overlaysView: true,
-    bounds: { x: 0, y: viewport.height - height, width: viewport.width, height },
+    bounds,
     enemies: encounter.enemies.members.map(drawEnemy),
     party: roster(encounter.party).map(drawMember),
     pending,
     log: log.slice(-LOG_LINES),
-    banner: phase === FightPhase.ENDED && outcome
-      ? { outcome: outcome.outcome, pot: outcome.pot ?? null }
-      : null,
+    banner,
+    // Drawn and tapped are one thing: a fight nobody can touch is a fight a phone
+    // player can watch and not play.
+    controls: fightControls({ bounds, pending, banner, viewport }),
   };
+}
+
+/**
+ * A control per option on offer, plus the way back and the way out.
+ *
+ * @spec PRESENT-CTRL-001
+ * @spec PRESENT-CTRL-002
+ * @spec PRESENT-CTRL-003
+ * @spec PRESENT-CTRL-004
+ * @spec PRESENT-FIGHT-017
+ */
+function fightControls({ bounds, pending, banner, viewport }) {
+  const gap = 8;
+  const buttonHeight = Math.max(MIN_TAP_PX, 52);
+
+  if (banner) {
+    const width = Math.min(banner.bounds.width - gap * 2, 320);
+    return [{
+      kind: 'DISMISS', label: 'Onward', hint: 'Enter',
+      x: banner.bounds.x + (banner.bounds.width - width) / 2,
+      y: banner.bounds.y + banner.bounds.height - buttonHeight - gap,
+      width, height: buttonHeight,
+    }];
+  }
+  if (!pending) return [];
+
+  const choices = pending.targets
+    ? pending.targets.map((t) => t.name)
+    : pending.options.map((o) => o.label);
+
+  // Wrap onto as many rows as the width needs, so a narrow phone never squeezes a
+  // control below a thumb.
+  const perRow = Math.max(1, Math.floor((bounds.width - gap) / (MIN_TAP_PX * 1.8 + gap)));
+  const columns = Math.min(perRow, Math.max(1, choices.length));
+  const width = Math.max(MIN_TAP_PX, (bounds.width - gap * (columns + 1)) / columns);
+  const baseY = bounds.y + bounds.height - buttonHeight * 2 - gap * 3;
+
+  const controls = choices.map((label, index) => {
+    const column = index % columns;
+    const row = Math.floor(index / columns);
+    return {
+      kind: pending.targets ? 'TARGET' : 'OPTION',
+      optionIndex: index,
+      label,
+      hint: String(index + 1),
+      x: bounds.x + gap + column * (width + gap),
+      y: baseY + row * (buttonHeight + gap),
+      width, height: buttonHeight,
+    };
+  });
+
+  const rows = Math.ceil(choices.length / columns);
+  controls.push({
+    kind: 'BACK', label: 'Back', hint: 'Esc',
+    x: bounds.x + gap,
+    y: Math.min(baseY + rows * (buttonHeight + gap), viewport.height - buttonHeight - gap),
+    width: Math.max(MIN_TAP_PX, bounds.width * 0.3),
+    height: buttonHeight,
+  });
+
+  return controls;
 }
 
 /**
@@ -180,9 +268,7 @@ function resolve(fight) {
       selectAction(encounter, characterId, {
         action: Action.ATTACK,
         targetId: choice.targetId,
-        baseDamage: 9,
-        accuracy: 30,
-        skill: choice.skill,
+        ...PLACEHOLDER_ATTACK,
       });
     } else {
       selectAction(encounter, characterId, { action: Action.DEFEND });

@@ -16,7 +16,8 @@ import {
   resolveConfirmation,
   PartyAction,
 } from '../sim/exploration.js';
-import { hitTest } from './geometry.js';
+import { hitTest, controlsFor } from './geometry.js';
+import { buildPromptPlan } from './promptplan.js';
 import { buildViewPlan } from './viewplan.js';
 import { buildMapPlan } from './mapplan.js';
 import {
@@ -99,7 +100,7 @@ export function layers(controller) {
           log: fight.log,
         }),
       },
-      { name: 'hud', plan: { prompt: null, viewport } },
+      { name: 'hud', plan: { prompt: null, viewport, controls: [] } },
     ];
   }
   return [
@@ -107,7 +108,15 @@ export function layers(controller) {
     { name: 'map', plan: buildMapPlan(automapView(state), viewport, { expanded }) },
     // The prompt is read from the simulation's pending confirmation, so one can never
     // be shown for a confirmation that is not actually pending.
-    { name: 'hud', plan: { prompt: state.pendingConfirmation ?? null, viewport } },
+    {
+      name: 'hud',
+      plan: {
+        prompt: buildPromptPlan(state.pendingConfirmation ?? null, viewport),
+        viewport,
+        // Nothing to walk toward while a prompt stands, so the walking controls go.
+        controls: state.pendingConfirmation ? [] : controlsFor(viewport),
+      },
+    },
   ];
 }
 
@@ -208,11 +217,39 @@ export function pressKey(controller, key) {
  * @spec PRESENT-INPUT-006
  * @spec PRESENT-PROMPT-003
  */
+function hit(controls, px, py) {
+  return (controls ?? []).find(
+    (c) => px >= c.x && px <= c.x + c.width && py >= c.y && py <= c.y + c.height,
+  ) ?? null;
+}
+
+/**
+ * @spec PRESENT-INPUT-002
+ * @spec PRESENT-INPUT-003
+ * @spec PRESENT-INPUT-006
+ * @spec PRESENT-CTRL-005
+ * @spec PRESENT-FIGHT-017
+ */
 export function pressPointer(controller, px, py) {
   syncFight(controller);
-  // Taps in a fight land on numbered options, which the Pixi layer maps for us.
-  if (controller.fight) return false;
-  if (controller.state.pendingConfirmation) return false;
+
+  if (controller.fight) {
+    const plan = layers(controller).find((l) => l.name === 'fight').plan;
+    const control = hit(plan.controls, px, py);
+    if (!control) return false;
+
+    if (control.kind === 'DISMISS') return pressKeyInFight(controller, 'Enter');
+    if (control.kind === 'BACK') return pressKeyInFight(controller, 'Escape');
+    return pressKeyInFight(controller, String(control.optionIndex + 1));
+  }
+
+  if (controller.state.pendingConfirmation) {
+    const plan = buildPromptPlan(controller.state.pendingConfirmation, controller.viewport);
+    const control = hit(plan?.controls, px, py);
+    if (!control) return false;
+    return answerPrompt(controller, control.accepted);
+  }
+
   const region = hitTest(controller.viewport, px, py);
   if (!region) return false;
   return applyAction(controller, actionForTouch(region));
