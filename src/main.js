@@ -1,12 +1,12 @@
 import './style.css';
-import { createStarterGame } from './content/starter-floor.js';
+import { createCampaign } from './content/campaign.js';
 import { computeSight } from './sim/exploration.js';
 import { createRenderer } from './render/app.js';
 import { createController, pressKey, pressPointer, resize, answerPrompt } from './render/controller.js';
 
 async function bootstrap() {
   const mount = document.querySelector('#app');
-  const state = createStarterGame();
+  const { state } = createCampaign();
   // Record what the party can see from where it starts, before anything is drawn.
   computeSight(state);
 

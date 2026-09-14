@@ -190,7 +190,7 @@ export function isTileDiscovered(state, floorId, x, y) {
 }
 
 export function isEdgeKnown(state, floorId, x, y, direction) {
-  const floor = state.floors.get(floorId);
+  const floor = state.getFloor(floorId);
   return state.discoveredEdges.has(edgeKey(floor, x, y, direction));
 }
 
@@ -222,7 +222,7 @@ export function isTrapKnown(state, floorId, x, y) {
  * @spec EXPLORE-BOUND-008
  */
 export function computeSight(state, { resolveLight, litReach, enemiesVisibleAt }) {
-  const floor = state.floors.get(state.party.floorId);
+  const floor = state.getFloor(state.party.floorId);
   const origin = state.party.tile;
   const tiles = [];
 

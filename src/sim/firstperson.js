@@ -43,7 +43,7 @@ const RIGHT_OF = {
  * @spec EXPLORE-VIEW-008
  */
 export function buildCorridorAhead(state, { isOpaque, resolveLight, maxDepth = MAX_DRAWN_DEPTH }) {
-  const floor = state.floors.get(state.party.floorId);
+  const floor = state.getFloor(state.party.floorId);
   const facing = state.party.facing;
   const { dx, dy } = STEP_DELTA[facing];
   const slices = [];

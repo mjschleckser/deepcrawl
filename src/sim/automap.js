@@ -41,7 +41,7 @@ function drawnEdge(state, floor, x, y, direction) {
  * @spec EXPLORE-MAP-009
  */
 export function buildAutomapView(state, { resolveLight, enemiesVisibleAt }) {
-  const floor = state.floors.get(state.party.floorId);
+  const floor = state.getFloor(state.party.floorId);
   const discovered = state.discoveredTiles.get(floor.id) ?? new Set();
   const traps = state.knownTraps.get(floor.id) ?? new Set();
 

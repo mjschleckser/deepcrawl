@@ -37,6 +37,8 @@ import {
   recordTrapDetected,
 } from './sight.js';
 
+import { makeRng } from './rng.js';
+import { ArrivalRule } from './generation.js';
 import { buildAutomapView } from './automap.js';
 import { buildCorridorAhead, MAX_DRAWN_DEPTH } from './firstperson.js';
 import { serialize as serializeState, restore } from './persistence.js';
@@ -44,6 +46,7 @@ import { serialize as serializeState, restore } from './persistence.js';
 export { enemiesVisibleAt, detectionAt } from './light.js';
 export { SAVE_VERSION } from './persistence.js';
 export { MAX_DRAWN_DEPTH } from './firstperson.js';
+export { ArrivalRule, generateFloor, generatePlan, DEFAULT_ARCHETYPE } from './generation.js';
 export { isTileDiscovered, isEdgeKnown, isTrapKnown, recordTrapDetected } from './sight.js';
 
 export const Verb = {
@@ -94,6 +97,7 @@ export function createExploration({
   floors,
   floorId,
   tile,
+  floorProvider = null,
   facing = Direction.NORTH,
   hooks = {},
   keys = [],
@@ -103,6 +107,7 @@ export function createExploration({
 }) {
   const state = {
     floors: new Map(floors.map((f) => [f.id, f])),
+    floorProvider,
     party: { floorId, tile: { ...tile }, facing },
     keys: [...keys],
     hooks: { ...NO_HOOKS, ...hooks },
@@ -136,6 +141,19 @@ export function createExploration({
   });
   state._advanceTicks = (n) => {
     ticks += n;
+  };
+
+  // Floors the party has not reached are fetched once, on demand, and held from then
+  // on — so a floor is still generated exactly once and saved thereafter.
+  // @spec EXPLORE-FLOOR-012
+  // @spec GEN-PLAN-007
+  state.getFloor = (id) => {
+    let floor = state.floors.get(id);
+    if (!floor && state.floorProvider) {
+      floor = state.floorProvider(id);
+      state.floors.set(id, floor);
+    }
+    return floor;
   };
 
   // At most one source burns at a time, however many arrive lit.
@@ -320,8 +338,8 @@ export function serialize(state) {
 /**
  * @spec EXPLORE-SAVE-002
  */
-export function deserialize(saved) {
-  return restore(saved, createExploration);
+export function deserialize(saved, { floorProvider = null } = {}) {
+  return restore(saved, createExploration, floorProvider);
 }
 
 /**
@@ -354,7 +372,50 @@ export function setMenuOpen(state, open) {
 }
 
 export function currentFloor(state) {
-  return state.floors.get(state.party.floorId);
+  return state.getFloor(state.party.floorId);
+}
+
+/**
+ * Where a connector puts the party down. A connector names a rule rather than a tile,
+ * because the floor it points at may not have existed when it was laid.
+ *
+ * @spec EXPLORE-MOVE-009
+ * @spec EXPLORE-MOVE-016
+ * @spec EXPLORE-FLOOR-008
+ * @spec GEN-PLAN-005
+ * @spec GEN-PLAN-006
+ */
+export function resolveArrival(state, target) {
+  const floor = state.getFloor(target.floorId);
+  // A target that names a tile outright is honoured as given.
+  if (target.x !== undefined && target.y !== undefined) {
+    return { floorId: target.floorId, x: target.x, y: target.y };
+  }
+
+  const tiles = [];
+  for (let y = 0; y < floor.height; y++) {
+    for (let x = 0; x < floor.width; x++) tiles.push({ x, y, tile: getTile(floor, x, y) });
+  }
+
+  if (target.arriveAt === ArrivalRule.STAIRS_UP) {
+    const stairs = tiles.find((t) => t.tile.feature === TileFeature.STAIRS_UP);
+    if (stairs) return { floorId: target.floorId, x: stairs.x, y: stairs.y };
+  }
+
+  // Anywhere in a room: a pit drops the party somewhere, not somewhere chosen.
+  const rooms = floor.rooms ?? [];
+  if (rooms.length > 0) {
+    const rng = makeRng((floor.seed ?? 1) ^ 0x5bf03635);
+    const room = rng.pick(rooms);
+    return {
+      floorId: target.floorId,
+      x: room.x + rng.int(0, room.width - 1),
+      y: room.y + rng.int(0, room.height - 1),
+    };
+  }
+
+  const fallback = tiles.find((t) => t.tile.feature === TileFeature.STAIRS_UP) ?? tiles[0];
+  return { floorId: target.floorId, x: fallback.x, y: fallback.y };
 }
 
 /** Mark a secret door found, so it stops behaving as a wall. */
@@ -423,7 +484,8 @@ function stepBlocked(state, floor, from, facing) {
 /**
  * @spec EXPLORE-RETURN-001
  */
-function relocate(state, target) {
+function relocate(state, rawTarget) {
+  const target = resolveArrival(state, rawTarget);
   // Leaving a floor stamps it, so a later return knows how long the party was gone.
   if (target.floorId !== state.party.floorId) {
     state.departedAt.set(state.party.floorId, state.ticks);

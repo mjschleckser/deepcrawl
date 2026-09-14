@@ -59,6 +59,8 @@ export function serialize(state) {
       horizontalEdges: floor.horizontalEdges,
       verticalEdges: floor.verticalEdges,
       tiles: floor.tiles,
+      rooms: floor.rooms ?? null,
+      seed: floor.seed ?? null,
     });
     discovery[id] = packDiscovery(
       floor.width,
@@ -94,7 +96,7 @@ export function serialize(state) {
  * @spec EXPLORE-SAVE-001
  * @spec EXPLORE-SAVE-002
  */
-export function restore(saved, createExploration) {
+export function restore(saved, createExploration, floorProvider = null) {
   const floors = saved.floors.map((data) => {
     const floor = createFloor({
       id: data.id,
@@ -105,11 +107,14 @@ export function restore(saved, createExploration) {
     floor.horizontalEdges = data.horizontalEdges.map((edge) => ({ ...edge }));
     floor.verticalEdges = data.verticalEdges.map((edge) => ({ ...edge }));
     floor.tiles = data.tiles.map((tile) => ({ ...tile }));
+    if (data.rooms) floor.rooms = data.rooms;
+    if (data.seed !== null && data.seed !== undefined) floor.seed = data.seed;
     return floor;
   });
 
   const state = createExploration({
     floors,
+    floorProvider,
     floorId: saved.party.floorId,
     tile: saved.party.tile,
     facing: saved.party.facing,

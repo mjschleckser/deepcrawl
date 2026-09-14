@@ -16,7 +16,8 @@ tuning the game does not rewrite its specs.
 - [x] **EXPLORE-FLOOR-005**: The system shall record an open-or-closed state for every `door` and `lockedDoor` edge.
 - [x] **EXPLORE-FLOOR-006**: The system shall give every tile exactly one feature from: `none`, `stairsUp`, `stairsDown`, `pit`.
 - [x] **EXPLORE-FLOOR-007**: The system shall give every tile an intrinsic light level of `bright`, `dim`, or `dark`.
-- [x] **EXPLORE-FLOOR-008**: The system shall identify each floor by a stable id, and each connector (stairs or pit) shall name its destination by target floor id and target tile.
+- [x] **EXPLORE-FLOOR-008**: The system shall identify each floor by a stable id, and each connector (stairs or pit) shall name its destination by target floor id and an arrival rule rather than a target tile, since the destination floor may not exist yet.
+- [x] **EXPLORE-FLOOR-012**: When the party needs a floor the simulation does not hold, the system shall request it once from the floor provider it was given, and shall hold and save it thereafter.
 - [x] **EXPLORE-FLOOR-009**: Where a floor's depth is shown to the player, the system shall display a stored label rather than a value computed from the floor id.
 - [x] **EXPLORE-FLOOR-011**: The system shall permit a connector to exist with no return connector at its destination, so a `pit` may drop the party onto a tile offering no way back.
 - [D] **EXPLORE-FLOOR-010**: The system shall support tile features that alter the party's facing or position without a step (spinners, teleporters).
@@ -43,9 +44,9 @@ tuning the game does not rewrite its specs.
 - [x] **EXPLORE-MOVE-006**: If a step is blocked, then the system shall leave the party's tile, the clock, and every step side effect unchanged.
 - [x] **EXPLORE-MOVE-007**: When the party steps through a closed `door`, or through a `lockedDoor` while holding its matching key, or through a discovered `secretDoor`, the system shall set that edge open and shall not charge a tick beyond the step's own.
 - [x] **EXPLORE-MOVE-008**: When a step succeeds, the system shall resolve its effects in this order: move the party, advance the clock, resolve the tile feature, re-stock the floor if the party has arrived on one it previously left, fire the trap trigger hook, recompute sight and record discovery, move roaming enemies, check contact.
-- [x] **EXPLORE-MOVE-009**: When the party enters a tile whose feature is `pit`, the system shall relocate the party to that connector's target floor and tile without asking for confirmation.
+- [x] **EXPLORE-MOVE-009**: When the party enters a tile whose feature is `pit`, the system shall relocate the party to that connector's destination floor, at the tile its arrival rule resolves to, without asking for confirmation.
 - [x] **EXPLORE-MOVE-015**: When the party attempts to step onto a tile whose feature is `stairsUp` or `stairsDown`, the system shall raise a confirmation before moving the party.
-- [x] **EXPLORE-MOVE-016**: When the player confirms a staircase prompt, the system shall relocate the party to that connector's target floor and tile.
+- [x] **EXPLORE-MOVE-016**: When the player confirms a staircase prompt, the system shall relocate the party to that connector's destination floor, at the tile its arrival rule resolves to on that floor.
 - [x] **EXPLORE-MOVE-017**: If the player declines a staircase prompt, then the system shall leave the party on its current tile and shall not advance the clock.
 - [x] **EXPLORE-MOVE-018**: While the party occupies a tile whose feature is `stairsUp` or `stairsDown` (having arrived by relocation rather than by stepping), the system shall offer that staircase as an `INTERACT` target.
 - [x] **EXPLORE-MOVE-010**: When a relocation occurs mid-step, the system shall resolve re-stocking, the trap trigger hook, sight, roaming enemy movement, and contact check against the floor and tile the party occupies after relocating.

@@ -79,6 +79,13 @@ Tile features (on the tile, not the edge):
 Each tile also carries an intrinsic light level (see *Sight, Light, and Discovery*)
 and a discovery record.
 
+### Floors the party has not reached
+
+Exploration does not hold every floor of a campaign. A floor it has never visited is
+requested, once, through a provider handed to it at setup; from then on it is held and
+saved like any other. Exploration knows nothing about how a floor comes to exist —
+only that asking for one by id yields one.
+
 ### The floor graph
 
 Floors form a **graph, not a stack**. A floor has a stable id; connectors name a
@@ -87,6 +94,12 @@ stairs to Floor 2 and separate stairs to Floor 5.
 
 Floor numbering is therefore a label the player sees, not the topology. Nothing in
 this segment computes depth by arithmetic on a floor id.
+
+A connector names its destination floor and an **arrival rule** rather than a
+destination tile, because the floor it points at may not have been built yet. Stairs
+down arrive at the destination's upward staircase, so a descent can be retraced; a pit
+drops the party into a room chosen on the destination, with no way back from where they
+land.
 
 Connectors are directional and paired only when both directions exist: a `pit`
 drops the party to a target floor with no return connector at the landing tile.
