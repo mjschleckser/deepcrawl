@@ -99,7 +99,8 @@ function drawMap(container, plan) {
  * @spec PRESENT-CTRL-003
  * @spec PRESENT-CTRL-006
  */
-function drawControl(container, control, { alpha = 0.55, ghost = false } = {}) {
+function drawControl(container, control, { alpha = 0.55 } = {}) {
+  const ghost = control.kind === 'ZONE';
   const graphics = new Graphics();
   // Over the dungeon a control is its label alone, and shows its edges only under a
   // finger. On a panel of its own there is nothing behind it to hide, so it keeps them.
@@ -134,7 +135,9 @@ function drawControl(container, control, { alpha = 0.55, ghost = false } = {}) {
 }
 
 function drawHud(container, plan) {
-  for (const control of plan.controls ?? []) drawControl(container, control, { ghost: true });
+  // A button hides almost nothing, so it can afford to be solid — and needs to be, or
+  // it washes out over a brightly lit floor. A zone ignores this and draws no panel.
+  for (const control of plan.controls ?? []) drawControl(container, control, { alpha: 0.88 });
   if (!plan.prompt) return;
 
   const { bounds, text, controls } = plan.prompt;
@@ -218,47 +221,35 @@ const label = (text, size, colour) =>
  */
 function drawFight(container, plan) {
   const { x, y, width, height } = plan.bounds;
+  const pad = 8;
   const graphics = new Graphics();
   graphics.rect(x, y, width, height).fill({ color: FIGHT_COLOURS.panel, alpha: 0.9 });
   graphics.moveTo(x, y).lineTo(x + width, y).stroke({ width: 2, color: FIGHT_COLOURS.frame });
   container.addChild(graphics);
 
-  const cardW = Math.min(120, width / 6);
-  const cardH = 44;
-  const pad = 8;
+  // Every card was placed by the plan; this only paints it.
+  const drawCard = (member, downColour, upColour) => {
+    graphics.rect(member.x, member.y, member.width, member.height)
+      .fill(member.down ? downColour : upColour);
+    graphics.rect(member.x, member.y, member.width, member.height)
+      .stroke({ width: 1, color: FIGHT_COLOURS.frame });
 
-  const drawRank = (group, topY, downColour, upColour) => {
-    group.forEach((member, i) => {
-      const cx = x + pad + i * (cardW + pad);
-      graphics.rect(cx, topY, cardW, cardH).fill(member.down ? downColour : upColour);
-      graphics.rect(cx, topY, cardW, cardH).stroke({ width: 1, color: FIGHT_COLOURS.frame });
+    const tone = member.down ? FIGHT_COLOURS.dim : FIGHT_COLOURS.text;
+    const name = label(member.name.slice(0, 12), 11, tone);
+    name.x = member.x + 5;
+    name.y = member.y + 5;
+    container.addChild(name);
 
-      const name = label(member.name.slice(0, 12), 11, member.down ? FIGHT_COLOURS.dim : FIGHT_COLOURS.text);
-      name.x = cx + 5;
-      name.y = topY + 5;
-      container.addChild(name);
-
-      const hp = label(
-        member.down ? 'down' : `${member.hitPoints}/${member.maxHitPoints}`,
-        11,
-        member.down ? FIGHT_COLOURS.dim : FIGHT_COLOURS.text,
-      );
-      hp.x = cx + 5;
-      hp.y = topY + 23;
-      container.addChild(hp);
-    });
+    const hp = label(member.down ? 'down' : `${member.hitPoints}/${member.maxHitPoints}`, 11, tone);
+    hp.x = member.x + 5;
+    hp.y = member.y + 23;
+    container.addChild(hp);
   };
 
-  const byRow = (list, row) => list.filter((m) => m.row === row);
-  let cursor = y + pad;
-  drawRank(byRow(plan.enemies, 'BACK'), cursor, FIGHT_COLOURS.enemyDown, FIGHT_COLOURS.enemy);
-  cursor += cardH + pad;
-  drawRank(byRow(plan.enemies, 'FRONT'), cursor, FIGHT_COLOURS.enemyDown, FIGHT_COLOURS.enemy);
-  cursor += cardH + pad * 2;
-  drawRank(byRow(plan.party, 'FRONT'), cursor, FIGHT_COLOURS.allyDown, FIGHT_COLOURS.ally);
-  cursor += cardH + pad;
-  drawRank(byRow(plan.party, 'BACK'), cursor, FIGHT_COLOURS.allyDown, FIGHT_COLOURS.ally);
-  cursor += cardH + pad;
+  for (const member of plan.enemies) drawCard(member, FIGHT_COLOURS.enemyDown, FIGHT_COLOURS.enemy);
+  for (const member of plan.party) drawCard(member, FIGHT_COLOURS.allyDown, FIGHT_COLOURS.ally);
+
+  let cursor = plan.cardsBottom + pad;
 
   if (plan.pending) {
     const who = plan.party.find((c) => c.id === plan.pending.characterId);

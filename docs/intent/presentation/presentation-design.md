@@ -174,14 +174,21 @@ Every hit region is computed in the plan alongside the drawing it belongs to, so
 thing drawn and the thing tapped cannot drift apart. The renderer hit-tests the plan;
 it never registers handlers of its own.
 
-**A control over the dungeon is its label, until it is touched.** Panels large enough
-to tap comfortably are panels large enough to hide the corridor behind them, and the
-corridor is the game. So a control lying over the view draws only its name; its outline
-appears under the finger and goes when the finger lifts. The player learns where the
-zones are by using them, and then gets their dungeon back.
+Controls come in two kinds, and the difference is how much of the view they cover.
 
-Controls that sit on a panel of their own — the options in a fight, the answers to a
-prompt — keep their frames, because there is nothing behind them to hide.
+A **navigation zone** — step forward, turn either way — is a large area of the screen,
+and a panel that size is a panel large enough to hide the corridor. The corridor is the
+game, so a zone draws only its name; its outline appears under the finger and goes when
+the finger lifts. The player learns where the zones are by using them, and then gets
+their dungeon back.
+
+A **button** — the map, the pack, a spell, a search, an option in a fight — is small and
+discrete, and covers almost nothing. Buttons keep their panel and their frame, because
+a button that is only a word is hard to read as something you may press, and hiding
+almost nothing buys almost nothing.
+
+Which kind a control is belongs in the plan rather than being worked out while drawing,
+so the rule lives in one place and can be checked.
 
 ## Combat
 
@@ -218,6 +225,10 @@ top of it.
 Both formations are drawn as rows, because rows are what the fight is about. A
 character or enemy who is down is drawn in place rather than removed — the shape of a
 line that has lost its middle is information.
+
+Each rank is **centred**, so the two sides read as facing one another down a corridor
+rather than as two lists sharing a left margin. Where every card sits is decided in the
+plan, like everything else, rather than worked out while drawing.
 
 ### The log carries the fight
 
@@ -323,7 +334,9 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 | Surface size | The visible viewport, chrome and safe areas excluded | The layout viewport; `100vh` | On a phone browser the layout viewport is the height the page would have with the address bar hidden, so sizing to it puts the bottom of the game behind the chrome. Installed as an app the two agree, which is how the fault hides. |
 | Tap regions | Fractions of the viewport, with a pixel floor on size | Fractions alone; fixed pixel rectangles | The same layout has to work on a phone and a desktop window, so fractions hold the proportions — but a thumb does not shrink with the viewport, so the floor is in real pixels. |
 | Drawing the controls | Every tappable region is drawn | Leaving the view uncluttered and the regions invisible | A control nobody can see is a control only a keyboard player has, and the first target user is holding a phone. |
-| Controls over the view | The label alone, outlined only while pressed | Always framed; always invisible | A panel big enough to tap is a panel big enough to hide the corridor, and the corridor is the game. Drawing the outline under the finger teaches where the zones are without keeping the dungeon covered. |
+| Navigation zones | The label alone, outlined only while pressed | Always framed | A panel the size of a movement zone is a panel big enough to hide the corridor, and the corridor is the game. The outline under the finger teaches where the zones are without keeping the dungeon covered. |
+| Buttons | Keep their panel and frame | Bare labels, like the zones | A button covers almost nothing, so hiding it buys almost nothing — and a button that is only a word is hard to read as something you may press. |
+| Which kind a control is | Carried in the plan | Inferred from its name while drawing | The rule then lives in one place and can be checked, rather than being re-derived by whatever happens to be drawing. |
 | Turning about | A key, but no control of its own | A fourth movement control | Two taps of a turn the player already uses reach it. A control earns its place by being the only way to do something or by being worth the room; this is neither. |
 | Labels | Name the action, with any key hint as secondary text | Naming the key that triggers it | "[Enter] Descend" instructs a phone player to press a key they do not have. One drawing has to serve both without telling either to use the other's device. |
 | Hit regions | Computed in the plan, beside the drawing they belong to | Registered as handlers on the drawn objects | Keeping them together means what is drawn and what is tapped cannot drift apart, and it keeps hit-testing in the pure layer where it can be tested. |
@@ -345,7 +358,8 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 5. ✅ **Light is drawn as a per-depth tint**, fading to black at the edge of sight.
 6. ✅ **Tap regions are viewport fractions**, recomputed on resize, with a pixel floor on how small one may be drawn.
 9. ✅ **Every tappable region is drawn**, and every drawn control carries its own hit region in the plan.
-11. ✅ **A control over the view is its label alone**, outlined only while it is pressed.
+11. ✅ **A navigation zone is its label alone**, outlined only while pressed; a button keeps its panel and frame.
+13. ✅ **Each rank in a fight is centred**, and every card's position is decided in the plan.
 12. ✅ **Turning about has a key but no control**, being two taps of one the player already uses.
 10. ✅ **Labels name the action**, with any keyboard hint as secondary text.
 7. ✅ **Prompts are drawn from the simulation's pending confirmation**, never from the renderer's own flag.

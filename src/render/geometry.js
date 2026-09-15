@@ -38,17 +38,26 @@ export function depthFrames(viewport, count, ratio = FRAME_RATIO) {
  */
 export const MIN_TAP_PX = 48;
 
+/**
+ * A zone is a large area of the view and draws as a bare label, because a panel that
+ * size would hide the corridor. A button is small and discrete and keeps its panel,
+ * because hiding almost nothing buys almost nothing.
+ *
+ * @spec PRESENT-CTRL-011
+ */
+export const ControlKind = { ZONE: 'ZONE', BUTTON: 'BUTTON' };
+
 /** What each region does, named for the player rather than for the key. */
 const CONTROL_LABELS = {
-  FORWARD: { label: 'Forward', hint: 'W' },
-  TURN_LEFT: { label: 'Left', hint: 'A' },
-  TURN_RIGHT: { label: 'Right', hint: 'D' },
-  PARTY_BAR: { label: 'Party', hint: 'P' },
-  PACK: { label: 'Pack', hint: 'I' },
-  SPELL_ICON: { label: 'Spells', hint: 'C' },
-  SEARCH_CONTROL: { label: 'Search', hint: 'F' },
-  INTERACT_PROMPT: { label: 'Use', hint: 'E' },
-  MAP: { label: 'Map', hint: 'M' },
+  FORWARD: { label: 'Forward', hint: 'W', kind: ControlKind.ZONE },
+  TURN_LEFT: { label: 'Left', hint: 'A', kind: ControlKind.ZONE },
+  TURN_RIGHT: { label: 'Right', hint: 'D', kind: ControlKind.ZONE },
+  PARTY_BAR: { label: 'Party', hint: 'P', kind: ControlKind.BUTTON },
+  PACK: { label: 'Pack', hint: 'I', kind: ControlKind.BUTTON },
+  SPELL_ICON: { label: 'Spells', hint: 'C', kind: ControlKind.BUTTON },
+  SEARCH_CONTROL: { label: 'Search', hint: 'F', kind: ControlKind.BUTTON },
+  INTERACT_PROMPT: { label: 'Use', hint: 'E', kind: ControlKind.BUTTON },
+  MAP: { label: 'Map', hint: 'M', kind: ControlKind.BUTTON },
 };
 
 /**

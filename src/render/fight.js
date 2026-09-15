@@ -10,8 +10,8 @@
  * resolved round actually reported.
  */
 
-import { Condition, Skill, roster } from '../sim/party.js';
-import { MIN_TAP_PX } from './geometry.js';
+import { Condition, Row, Skill, roster } from '../sim/party.js';
+import { MIN_TAP_PX, ControlKind } from './geometry.js';
 import {
   Action, Band, Outcome, meleeTargets, rangedTargets,
   encounterOutcome, selectAction, resolveRound, attemptFlee,
@@ -27,6 +27,39 @@ export const FightAction = {
 
 const PANEL_FRACTION = 0.62;
 const LOG_LINES = 5;
+
+const CARD_WIDTH = 108;
+const CARD_HEIGHT = 44;
+const CARD_GAP = 8;
+
+/**
+ * Lay a rank out centred across the panel, so the two sides read as facing one another
+ * down a corridor rather than as two lists sharing a left margin.
+ *
+ * @spec PRESENT-FIGHT-018
+ * @spec PRESENT-FIGHT-019
+ */
+function layOutRank(cards, bounds, top) {
+  if (cards.length === 0) return [];
+
+  // Squeeze rather than overflow: a crowded rank still has to fit the panel.
+  const available = bounds.width - CARD_GAP * 2;
+  const natural = cards.length * CARD_WIDTH + (cards.length - 1) * CARD_GAP;
+  const width = natural <= available
+    ? CARD_WIDTH
+    : (available - (cards.length - 1) * CARD_GAP) / cards.length;
+
+  const rankWidth = cards.length * width + (cards.length - 1) * CARD_GAP;
+  const startX = bounds.x + (bounds.width - rankWidth) / 2;
+
+  return cards.map((card, i) => ({
+    ...card,
+    x: startX + i * (width + CARD_GAP),
+    y: top,
+    width,
+    height: CARD_HEIGHT,
+  }));
+}
 
 /**
  * What an attack trains, and what it hits for. Placeholders until weapons exist: the
@@ -82,13 +115,32 @@ export function buildFightPlan(encounter, viewport, { phase, outcome = null, pen
       }
     : null;
 
+  const byRow = (cards, row) => cards.filter((c) => c.row === row);
+  const enemyCards = encounter.enemies.members.map(drawEnemy);
+  const partyCards = roster(encounter.party).map(drawMember);
+
+  // Enemy back, enemy front, then the party's two ranks facing them.
+  let top = bounds.y + CARD_GAP;
+  const ranks = [];
+  for (const [cards, row] of [
+    [enemyCards, Row.BACK], [enemyCards, Row.FRONT],
+    [partyCards, Row.FRONT], [partyCards, Row.BACK],
+  ]) {
+    const rank = byRow(cards, row);
+    ranks.push({ owner: cards === enemyCards ? 'enemies' : 'party', laid: layOutRank(rank, bounds, top) });
+    if (rank.length > 0) top += CARD_HEIGHT + CARD_GAP;
+  }
+  const laidEnemies = ranks.filter((r) => r.owner === 'enemies').flatMap((r) => r.laid);
+  const laidParty = ranks.filter((r) => r.owner === 'party').flatMap((r) => r.laid);
+
   return {
     // Over the corridor, never instead of it: the party is still standing where they
     // were caught.
     overlaysView: true,
     bounds,
-    enemies: encounter.enemies.members.map(drawEnemy),
-    party: roster(encounter.party).map(drawMember),
+    cardsBottom: top,
+    enemies: laidEnemies,
+    party: laidParty,
     pending,
     log: log.slice(-LOG_LINES),
     banner,
@@ -114,7 +166,7 @@ function fightControls({ bounds, pending, banner, viewport }) {
   if (banner) {
     const width = Math.min(banner.bounds.width - gap * 2, 320);
     return [{
-      kind: 'DISMISS', label: 'Onward', hint: 'Enter',
+      kind: ControlKind.BUTTON, role: 'DISMISS', label: 'Onward', hint: 'Enter',
       x: banner.bounds.x + (banner.bounds.width - width) / 2,
       y: banner.bounds.y + banner.bounds.height - buttonHeight - gap,
       width, height: buttonHeight,
@@ -137,7 +189,8 @@ function fightControls({ bounds, pending, banner, viewport }) {
     const column = index % columns;
     const row = Math.floor(index / columns);
     return {
-      kind: pending.targets ? 'TARGET' : 'OPTION',
+      kind: ControlKind.BUTTON,
+      role: pending.targets ? 'TARGET' : 'OPTION',
       optionIndex: index,
       label,
       hint: String(index + 1),
@@ -149,7 +202,7 @@ function fightControls({ bounds, pending, banner, viewport }) {
 
   const rows = Math.ceil(choices.length / columns);
   controls.push({
-    kind: 'BACK', label: 'Back', hint: 'Esc',
+    kind: ControlKind.BUTTON, role: 'BACK', label: 'Back', hint: 'Esc',
     x: bounds.x + gap,
     y: Math.min(baseY + rows * (buttonHeight + gap), viewport.height - buttonHeight - gap),
     width: Math.max(MIN_TAP_PX, bounds.width * 0.3),

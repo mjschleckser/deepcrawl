@@ -6,7 +6,7 @@
  * key they do not have.
  */
 
-import { MIN_TAP_PX } from './geometry.js';
+import { MIN_TAP_PX, ControlKind } from './geometry.js';
 
 const PROMPTS = {
   STAIRS: { text: 'A staircase leads down.', confirm: 'Descend', decline: 'Stay' },
@@ -42,11 +42,11 @@ export function buildPromptPlan(pending, viewport) {
     bounds: { x, y, width, height },
     controls: [
       {
-        kind: 'CONFIRM', accepted: true, label: wording.confirm, hint: 'Enter',
+        kind: ControlKind.BUTTON, role: 'CONFIRM', accepted: true, label: wording.confirm, hint: 'Enter',
         x: x + gap, y: buttonY, width: buttonWidth, height: buttonHeight,
       },
       {
-        kind: 'DECLINE', accepted: false, label: wording.decline, hint: 'Esc',
+        kind: ControlKind.BUTTON, role: 'DECLINE', accepted: false, label: wording.decline, hint: 'Esc',
         x: x + gap * 2 + buttonWidth, y: buttonY, width: buttonWidth, height: buttonHeight,
       },
     ],

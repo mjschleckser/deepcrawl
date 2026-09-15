@@ -259,8 +259,8 @@ export function pressPointer(controller, px, py) {
     const control = hit(plan.controls, px, py);
     if (!control) return false;
 
-    if (control.kind === 'DISMISS') return pressKeyInFight(controller, 'Enter');
-    if (control.kind === 'BACK') return pressKeyInFight(controller, 'Escape');
+    if (control.role === 'DISMISS') return pressKeyInFight(controller, 'Enter');
+    if (control.role === 'BACK') return pressKeyInFight(controller, 'Escape');
     return pressKeyInFight(controller, String(control.optionIndex + 1));
   }
 

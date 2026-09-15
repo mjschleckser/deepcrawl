@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { makeRng } from '../sim/rng.js';
 import { Row, CharacterClass, createParty, createCharacter, addCharacter } from '../sim/party.js';
 import { beginEncounter, createEnemy, createEnemyGroup } from '../sim/combat.js';
-import { tapRegionsFor, MIN_TAP_PX, controlsFor } from './geometry.js';
+import { tapRegionsFor, MIN_TAP_PX, controlsFor, ControlKind } from './geometry.js';
 import { buildFightPlan, createFightController, FightPhase } from './fight.js';
 import { buildPromptPlan } from './promptplan.js';
 import { createController, pressPointer, layers } from './controller.js';
@@ -128,7 +128,7 @@ describe('combat controls', () => {
     const { encounter, fight } = fightOf(phone);
 
     const back = allControls(buildFightPlan(encounter, phone, { phase: FightPhase.SELECTING, pending: fight.pending }))
-      .find((c) => c.kind === 'BACK');
+      .find((c) => c.role === 'BACK');
 
     expect(back).toBeDefined();
     expect(back.height).toBeGreaterThanOrEqual(MIN_TAP_PX);
@@ -142,7 +142,7 @@ describe('combat controls', () => {
       phase: FightPhase.ENDED, outcome: { outcome: 'VICTORY', pot: 20 },
     });
 
-    const dismiss = allControls(plan).find((c) => c.kind === 'DISMISS');
+    const dismiss = allControls(plan).find((c) => c.role === 'DISMISS');
     expect(dismiss).toBeDefined();
     expect(dismiss.label).not.toMatch(/Enter/);
   });
@@ -212,7 +212,7 @@ describe('the outcome banner', () => {
       phase: FightPhase.ENDED, outcome: { outcome: 'VICTORY', pot: 56 },
     });
 
-    const dismiss = plan.controls.find((c) => c.kind === 'DISMISS');
+    const dismiss = plan.controls.find((c) => c.role === 'DISMISS');
     const b = plan.banner.bounds;
     expect(dismiss.x).toBeGreaterThanOrEqual(b.x);
     expect(dismiss.x + dismiss.width).toBeLessThanOrEqual(b.x + b.width + 0.001);
@@ -262,7 +262,7 @@ describe('tapping a drawn control', () => {
     const attack = plan().controls.find((c) => c.optionIndex === 0);
     pressPointer(controller, attack.x + attack.width / 2, attack.y + attack.height / 2);
 
-    const back = plan().controls.find((c) => c.kind === 'BACK');
+    const back = plan().controls.find((c) => c.role === 'BACK');
     pressPointer(controller, back.x + back.width / 2, back.y + back.height / 2);
 
     expect(controller.fight.pending.targets).toBeNull();
@@ -317,5 +317,120 @@ describe('controls over the dungeon', () => {
   // @spec PRESENT-CTRL-008
   it('marks nothing once the finger lifts', () => {
     expect(controlsFor(phone, { pressedRegion: null }).some((c) => c.pressed)).toBe(false);
+  });
+});
+
+describe('the two kinds of control', () => {
+  const byRegion = (region) => controlsFor(phone).find((c) => c.region === region);
+
+  // @spec PRESENT-CTRL-011
+  it('says on each control which kind it is', () => {
+    for (const control of controlsFor(phone)) {
+      expect([ControlKind.ZONE, ControlKind.BUTTON]).toContain(control.kind);
+    }
+  });
+
+  // @spec PRESENT-CTRL-007
+  it('makes the movement areas zones, which draw as bare labels', () => {
+    for (const region of ['FORWARD', 'TURN_LEFT', 'TURN_RIGHT']) {
+      expect(byRegion(region).kind).toBe(ControlKind.ZONE);
+    }
+  });
+
+  // @spec PRESENT-CTRL-010
+  it('makes everything else a button, which keeps its panel', () => {
+    for (const region of ['MAP', 'PARTY_BAR', 'PACK', 'SPELL_ICON', 'SEARCH_CONTROL', 'INTERACT_PROMPT']) {
+      expect(byRegion(region).kind).toBe(ControlKind.BUTTON);
+    }
+  });
+
+  // @spec PRESENT-CTRL-010
+  it('keeps every combat option a button, panel and all', () => {
+    const { encounter, fight } = fightOf(phone);
+    const plan = buildFightPlan(encounter, phone, { phase: FightPhase.SELECTING, pending: fight.pending });
+
+    for (const control of plan.controls) {
+      expect(control.kind).toBe(ControlKind.BUTTON);
+    }
+  });
+
+  // @spec PRESENT-CTRL-010
+  it('keeps both prompt answers buttons', () => {
+    for (const control of buildPromptPlan({ kind: 'STAIRS' }, phone).controls) {
+      expect(control.kind).toBe(ControlKind.BUTTON);
+    }
+  });
+});
+
+describe('the formations in a fight', () => {
+  const rowOf = (cards, row) => cards.filter((c) => c.row === row);
+  const centreOf = (cards) => {
+    const left = Math.min(...cards.map((c) => c.x));
+    const right = Math.max(...cards.map((c) => c.x + c.width));
+    return (left + right) / 2;
+  };
+
+  // @spec PRESENT-FIGHT-019
+  it('decides every card position in the plan', () => {
+    const { encounter } = fightOf(phone);
+    const plan = buildFightPlan(encounter, phone, { phase: FightPhase.SELECTING });
+
+    for (const card of [...plan.enemies, ...plan.party]) {
+      for (const field of ['x', 'y', 'width', 'height']) {
+        expect(typeof card[field]).toBe('number');
+      }
+    }
+  });
+
+  // @spec PRESENT-FIGHT-018
+  it('centres each rank across the panel', () => {
+    const { encounter } = fightOf(phone);
+    const plan = buildFightPlan(encounter, phone, { phase: FightPhase.SELECTING });
+    const middle = plan.bounds.x + plan.bounds.width / 2;
+
+    // Two enemies in front, one party member in front: different counts, same centre.
+    expect(centreOf(rowOf(plan.enemies, Row.FRONT))).toBeCloseTo(middle, 1);
+    expect(centreOf(rowOf(plan.party, Row.FRONT))).toBeCloseTo(middle, 1);
+  });
+
+  // @spec PRESENT-FIGHT-018
+  it('centres a rank of one as surely as a rank of several', () => {
+    const party = createParty();
+    addCharacter(party, createCharacter({ id: 'solo', name: 'Solo', characterClass: CharacterClass.FIGHTER, row: Row.FRONT }));
+    const encounter = beginEncounter({
+      party,
+      enemies: createEnemyGroup([
+        createEnemy({ id: 'a', name: 'A', row: Row.FRONT, hitPoints: 9, potValue: 1 }),
+        createEnemy({ id: 'b', name: 'B', row: Row.FRONT, hitPoints: 9, potValue: 1 }),
+        createEnemy({ id: 'c', name: 'C', row: Row.FRONT, hitPoints: 9, potValue: 1 }),
+      ]),
+      light: 'BRIGHT', awareness: { party: true, enemies: true },
+      rng: makeRng(1), origin: { floorId: 'f1', x: 1, y: 1 },
+    });
+    const plan = buildFightPlan(encounter, phone, { phase: FightPhase.SELECTING });
+    const middle = plan.bounds.x + plan.bounds.width / 2;
+
+    expect(centreOf(rowOf(plan.party, Row.FRONT))).toBeCloseTo(middle, 1);
+    expect(centreOf(rowOf(plan.enemies, Row.FRONT))).toBeCloseTo(middle, 1);
+  });
+
+  // @spec PRESENT-FIGHT-002
+  it('keeps every card inside the panel, even a crowded rank on a narrow phone', () => {
+    const party = createParty();
+    addCharacter(party, createCharacter({ id: 'x', name: 'X', characterClass: CharacterClass.FIGHTER, row: Row.FRONT }));
+    const enemies = Array.from({ length: 8 }, (_, i) =>
+      createEnemy({ id: `e${i}`, name: 'Goblin', row: Row.FRONT, hitPoints: 9, potValue: 1 }));
+    const encounter = beginEncounter({
+      party, enemies: createEnemyGroup(enemies),
+      light: 'BRIGHT', awareness: { party: true, enemies: true },
+      rng: makeRng(1), origin: { floorId: 'f1', x: 1, y: 1 },
+    });
+
+    const plan = buildFightPlan(encounter, phone, { phase: FightPhase.SELECTING });
+
+    for (const card of plan.enemies) {
+      expect(card.x).toBeGreaterThanOrEqual(plan.bounds.x - 0.001);
+      expect(card.x + card.width).toBeLessThanOrEqual(plan.bounds.x + plan.bounds.width + 0.001);
+    }
   });
 });
