@@ -25,8 +25,9 @@ html, body {
   position: fixed;
   inset: 0;
   /* The height the browser is actually showing. 100vh is the height the page would
-     have with the address bar hidden, which puts the bottom of the game behind it. */
-  height: 100vh;
+     have with the address bar hidden, which puts the bottom of the game behind it.
+     The fallback is guarded rather than written as a duplicate declaration, which a
+     minifier is entitled to drop as redundant -- and does. */
   height: 100dvh;
   padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
   display: block;
@@ -34,4 +35,11 @@ html, body {
 
 canvas {
   display: block;
+}
+
+/* Anything too old to know what a dynamic viewport is. */
+@supports not (height: 100dvh) {
+  #app {
+    height: 100vh;
+  }
 }
