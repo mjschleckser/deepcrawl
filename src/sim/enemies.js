@@ -49,6 +49,9 @@ export const AWARENESS_TICKS = 40;
 export const MIN_CROSSING = 5;
 export const MAX_CROSSING = 10;
 
+/** Tries at finding a tile for a band before its placement is given up on. */
+export const PLACEMENT_ATTEMPTS = 8;
+
 /** Share of a ranged enemy's choices that fall on the back row. */
 export const BACK_ROW_WEIGHT = 0.25;
 
@@ -172,15 +175,31 @@ function stepToward(roamer, floor, party, blocked) {
   return null;
 }
 
-function stepAdrift(roamer, floor, blocked) {
+function stepAdrift(roamer, floor, blocked, avoid = null) {
   const directions = roamer.rng.shuffle(Object.values(Direction));
   for (const direction of directions) {
     if (blocked(roamer.x, roamer.y, direction)) continue;
     const { dx, dy } = STEP_DELTA[direction];
-    if (!contains(floor, roamer.x + dx, roamer.y + dy)) continue;
-    return { x: roamer.x + dx, y: roamer.y + dy };
+    const to = { x: roamer.x + dx, y: roamer.y + dy };
+    if (!contains(floor, to.x, to.y)) continue;
+    if (avoid && to.x === avoid.x && to.y === avoid.y) continue;
+    return to;
   }
   return null;
+}
+
+/**
+ * Move a roamer off the tile the party is on, to any tile beside it that it could
+ * travel to. Nothing shares a tile with the party, and a placement made before the
+ * party's own tile was settled is the one case that has to be corrected rather than
+ * prevented.
+ *
+ * @spec ENEMY-CONTACT-006
+ */
+export function giveGround(roamer, floor, party) {
+  if (roamer.x !== party.x || roamer.y !== party.y) return roamer;
+  const aside = stepAdrift(roamer, floor, (x, y, d) => blocksRoamer(floor, x, y, d), party);
+  return aside ? { ...roamer, x: aside.x, y: aside.y } : roamer;
 }
 
 /**
@@ -205,6 +224,7 @@ function stepAdrift(roamer, floor, blocked) {
  * @spec ENEMY-CONTACT-001
  * @spec ENEMY-CONTACT-002
  * @spec ENEMY-CONTACT-004
+ * @spec ENEMY-CONTACT-005
  */
 export function giveTicks(roamer, ticks, { floor, party }) {
   const blocked = (x, y, direction) => blocksRoamer(floor, x, y, direction);
@@ -223,11 +243,16 @@ export function giveTicks(roamer, ticks, { floor, party }) {
 
   next.banked += ticks;
 
-  // The party may have stepped onto the roamer before it was given any ticks. That is
-  // contact, and checking it here is what stops the two trading places and passing
-  // through one another unnoticed.
+  // The party may have arrived on top of the roamer by a route they could not refuse —
+  // a pit, or a stair. Nothing shares a tile with the party, so the band gives ground,
+  // and the arrival is contact.
   if (next.x === party.x && next.y === party.y) {
     next.contacted = true;
+    const aside = stepAdrift(next, floor, blocked, party);
+    if (aside) {
+      next.x = aside.x;
+      next.y = aside.y;
+    }
     return next;
   }
 
@@ -238,13 +263,16 @@ export function giveTicks(roamer, ticks, { floor, party }) {
       : stepAdrift(next, floor, blocked);
     if (!destination) break;
 
-    next.x = destination.x;
-    next.y = destination.y;
-
-    if (next.x === party.x && next.y === party.y) {
+    // Reaching the party is the encounter, not a tile to stand on. Holding the ground
+    // it already had is what lets a party outwalk anything no quicker than they are:
+    // a pursuer spends its ticks arriving where they last stood, never on them.
+    if (destination.x === party.x && destination.y === party.y) {
       next.contacted = true;
       break;
     }
+
+    next.x = destination.x;
+    next.y = destination.y;
   }
 
   return next;
@@ -278,16 +306,28 @@ export function selectEnemyTarget(role, candidates, rng) {
  *
  * @spec ENEMY-STOCK-001
  * @spec ENEMY-STOCK-002
+ * @spec ENEMY-CONTACT-006
  */
-export function occupantsFor({ floorId, rooms, rng, count }) {
+export function occupantsFor({ floorId, rooms, rng, count, avoid = null }) {
   const occupants = [];
   for (let i = 0; i < count && rooms.length > 0; i++) {
-    const room = rng.pick(rooms);
+    let tile = null;
+    // Nothing is placed where the party stands, so a floor re-stocking around them
+    // cannot hand back a band already on top of them.
+    for (let attempt = 0; attempt < PLACEMENT_ATTEMPTS && tile === null; attempt++) {
+      const room = rng.pick(rooms);
+      const candidate = {
+        x: room.x + rng.int(0, room.width - 1),
+        y: room.y + rng.int(0, room.height - 1),
+      };
+      if (!avoid || candidate.x !== avoid.x || candidate.y !== avoid.y) tile = candidate;
+    }
+    if (!tile) continue;
+
     occupants.push({
       id: `${floorId}-roamer-${i}`,
       floorId,
-      x: room.x + rng.int(0, room.width - 1),
-      y: room.y + rng.int(0, room.height - 1),
+      ...tile,
       band: assembleBand(BANDS.GOBLIN_WARBAND, rng),
     });
   }

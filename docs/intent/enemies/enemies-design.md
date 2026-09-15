@@ -130,6 +130,33 @@ assembled rather than in the corridor.
 Movement is over the floor's own passages: a roamer cannot walk through a wall, and a
 closed door stops it exactly as it stops the party.
 
+### Contact
+
+**The party and a roamer never stand on the same tile.** Reaching one another *is* the
+encounter, and it happens instead of the step that would have closed the gap.
+
+| What moved | What happens |
+|---|---|
+| The party, into a roamer's tile | The step is not taken; the encounter begins |
+| A roamer, into the party's tile | The roamer holds the tile it stood on; the encounter begins |
+| The party, onto a roamer, by a route it cannot refuse | The encounter begins, and the roamer gives ground to a tile beside it |
+
+A roamer that stops short rather than stepping onto the party is what makes a chase
+legible. A pursuer no quicker than the party spends its ticks arriving where the party
+last stood and never reaches them; one quicker has ticks left over to attempt the tile
+they are standing in, and that attempt is the fight. Speed decides a chase, which is
+what paying separate tick costs was for.
+
+It is also what makes breaking off a fight worth anything. A roamer left standing on
+the party would re-open the encounter with their very next step, whatever their
+Dexterity — there is no distance to open when the thing chased them into their own
+tile.
+
+The one route the party cannot refuse is a relocation: a pit drops them where it drops
+them, and a stair lands them on its arrival tile. If something is already standing
+there, the encounter begins and the roamer steps aside, because the invariant holds
+however the two came to meet.
+
 ### Surprise
 
 When contact happens, whether each side was aware is handed to combat as the surprise
@@ -145,6 +172,10 @@ generation asks here. What comes back is a set of bands and where they stand.
 
 A re-stocking never touches the floor's construction or its traps, so this segment
 answers only with occupants.
+
+Nothing is ever placed on the tile the party occupies: a floor that re-stocks around a
+standing party puts its new bands elsewhere, so the invariant holds from the moment
+anything arrives.
 
 ## Behaviour in a Fight
 
@@ -164,6 +195,7 @@ reach rules are the thing the combat design rests on.
 | Role and row | Separate fields | Row implied by role | A melee enemy pushed into the back row by a full front rank is a useful thing for a band to contain, and the two concepts come apart the moment a band is larger than a row. |
 | Group composition | Named bands with count ranges | Filling an encounter budget from a table | A band is legible: a goblin warband is two to four goblins, and an author can picture it. Budgets are worth having later for variety, but they make it hard to say what any particular fight will be. |
 | Awareness | Proximity alone | Line of sight; noticing the party's light | The exploration segment forbids light affecting enemy awareness. Proximity also produces the asymmetry worth having, where the dark hides the roamer from the party rather than the party from the roamer. |
+| Contact | Neither side may enter the other's tile; the attempted entry is the encounter | Contact when the two share a tile | Sharing a tile makes a chase unresolvable: a pursuer that follows the party step for step is never escaped, because every attempt to break off ends with it still on top of them. Barring the entry hands the outcome of a chase back to speed. |
 | Pursuit speed | Each side pays its own tick cost to cross a tile | Aware roamers matching the party's pace exactly | Paying separately makes outrunning something a real possibility decided by who the party brought, rather than a chase nobody can ever win. It also makes Dexterity matter in a corridor and not only in a fight. |
 | Awareness decay | Runs down over ticks, and never while the party is in sight | Permanent once gained; decaying on a timer regardless of sight | Permanent awareness means a single goblin band pursues forever. Decaying while visible would let a party escape by walking backwards down a lit corridor. Breaking line of sight is the skill worth rewarding. |
 | Unaware movement | Drifting | Standing still; patrolling a route | A motionless roamer is furniture, and a patrol route is authored detail a generated floor cannot provide. Drifting gives a floor that changes without anyone designing its traffic. |

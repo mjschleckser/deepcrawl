@@ -217,6 +217,13 @@ outside the grid, or the edge is `wall`, `lockedDoor` without the matching key, 
 an undiscovered `secretDoor`. A `door` or discovered `secretDoor` opens as part of
 the step and costs no extra tick.
 
+A step into a tile a roaming enemy occupies is **barred**: the encounter begins where
+that enemy stands, the party does not move, and no tick is spent. Meeting happens
+*instead of* the step rather than on arrival, because the party and a roamer never
+share a tile. That invariant is what makes breaking off a fight worth anything — a
+warband cannot be standing on the party when they turn to walk away, and so cannot
+re-open the fight with their next step.
+
 On a successful step, these resolve in a fixed order:
 
 1. The party's tile becomes the target tile.
@@ -229,7 +236,7 @@ On a successful step, these resolve in a fixed order:
 7. Roaming enemies on the party's current floor move, each spending the ticks this
    step consumed against its own cost to cross a tile — so a quick one moves more than
    once while a slow one waits several of the party's steps for its turn.
-8. Contact is checked; an enemy sharing the party's tile begins an encounter.
+8. Contact is checked; a roamer that reached the party begins an encounter.
 
 Steps 4 through 8 act on the tile the party occupies *after* any relocation, so a pit
 can drop the party onto a trap and both resolve inside one step, and a pit onto a
@@ -538,6 +545,7 @@ widget occupies a corner and expands to full screen on tap.
 | Step cost | Several ticks, set by the party's average Dexterity | A flat one tick per step | Speed becomes a property of the party rather than a combat statistic, and pursuit becomes a contest a party can win or lose by who they brought rather than by how they turn. |
 | Turning | Free, never ticks | Turning costs a tick | Free turning keeps the first-person view scannable, which matters most on a phone where looking around is the primary orientation gesture. |
 | Wall bump | No movement, no tick | Bumping costs a tick | A misjudged step should not cost food and torchlight. |
+| Stepping into an occupied tile | Barred: the encounter begins and the party stays where it is | Take the step, then check contact on arrival | Arriving on top of a warband leaves the two sharing a tile, and a fight broken off from there re-opens on the party's next step, since whatever they fled is standing on them. Barring the step makes meeting a thing that happens between tiles, so fleeing buys distance rather than a single step's reprieve. |
 | Movement verbs | Forward, turn L/R, turn 180° | Adding a backward step | Free turning already makes withdrawal cheap; a backward step would only add a case where the party enters a tile its facing never revealed. |
 | Visibility propagation | A line traced from the party to each candidate tile | Spreading outward through non-opaque edges within the cone | Spreading is cheaper and has no corner cases to arbitrate, but it sees around corners: the map fills in ground beyond a turn the party has never looked along. That silently undoes the reason to map a dungeon at all, which is worth the cost of tracing lines. |
 | Lines through a corner point | Blocked only when both ways around the corner are blocked | Blocked when either way is blocked | A solid corner is blocked both ways and stays hidden. Blocking on either side would throw spurious shadows across open rooms, where a player can plainly see past the edge of a pillar. |

@@ -300,29 +300,44 @@ describe('movement', () => {
 describe('contact', () => {
   const band = () => assembleBand(BANDS.GOBLIN_WARBAND, makeRng(2));
 
-  // @spec ENEMY-CONTACT-002
-  it('catches a roamer the party stepped onto, before it can move away', () => {
-    const floor = corridorFloor();
-    // The party has just stepped onto the roamer's tile. Left to move first, a quick
-    // roamer would walk off and the two would have passed through each other.
-    const chaser = createRoamer({ id: 'r1', floorId: 'f1', x: 5, y: 5, band: band(), dexterity: 20 });
-
-    const moved = giveTicks(chaser, crossingCost(20) * 3, { floor, party: { x: 5, y: 5 } });
-
-    expect(moved.contacted).toBe(true);
-    expect({ x: moved.x, y: moved.y }).toEqual({ x: 5, y: 5 });
-  });
-
   // @spec ENEMY-CONTACT-001
-  it('catches a party it has walked onto', () => {
+  // @spec ENEMY-CONTACT-002
+  it('stops short of the party rather than standing on them', () => {
     const floor = corridorFloor();
     const chaser = createRoamer({ id: 'r1', floorId: 'f1', x: 5, y: 6, band: band(), dexterity: 20 });
 
     const moved = giveTicks(chaser, crossingCost(20), { floor, party: { x: 5, y: 5 } });
 
-    expect(moved.x).toBe(5);
-    expect(moved.y).toBe(5);
     expect(moved.contacted).toBe(true);
+    expect({ x: moved.x, y: moved.y }).toEqual({ x: 5, y: 6 });
+  });
+
+  // @spec ENEMY-CONTACT-002
+  // @spec ENEMY-MOVE-008
+  it('never overtakes a party no slower than it, however long the chase runs', () => {
+    const floor = corridorFloor();
+    let chaser = createRoamer({ id: 'r1', floorId: 'f1', x: 5, y: 6, band: band(), dexterity: 10 });
+    let partyY = 5;
+
+    // The party walks up the corridor at the same pace the goblins cross a tile.
+    for (let step = 0; step < 4 && partyY > 1; step++) {
+      partyY -= 1;
+      chaser = giveTicks(chaser, crossingCost(10), { floor, party: { x: 5, y: partyY } });
+      expect({ x: chaser.x, y: chaser.y }).not.toEqual({ x: 5, y: partyY });
+      expect(chaser.contacted).toBe(false);
+    }
+  });
+
+  // @spec ENEMY-CONTACT-005
+  it('gives ground when the party lands on it by a route they could not refuse', () => {
+    const floor = corridorFloor();
+    // A pit has dropped the party onto the tile this band was standing on.
+    const surprised = createRoamer({ id: 'r1', floorId: 'f1', x: 5, y: 5, band: band(), dexterity: 20 });
+
+    const moved = giveTicks(surprised, crossingCost(20) * 3, { floor, party: { x: 5, y: 5 } });
+
+    expect(moved.contacted).toBe(true);
+    expect({ x: moved.x, y: moved.y }).not.toEqual({ x: 5, y: 5 });
   });
 
   // @spec ENEMY-CONTACT-004

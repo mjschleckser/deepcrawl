@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { LightLevel } from '../sim/floor.js';
+import { LightLevel, STEP_DELTA } from '../sim/floor.js';
 import { makeRng } from '../sim/rng.js';
 import {
   computeSight, perform, partyPosition, tickCount, isTileDiscovered, isTrapKnown,
@@ -30,18 +30,20 @@ function walkUntil(campaign, predicate, limit = 1200) {
   return predicate(campaign);
 }
 
-// Stand a warband on the party, then walk until it catches them. Contact is checked
-// at the tile the party lands on, so the roamer has to actually close the gap — which
-// it does, being adjacent and aware and no slower than they are.
+// Stand a warband directly in the party's path and walk into it. Neither side may
+// enter the other's tile, so contact has to be provoked by the step itself rather than
+// by parking the goblins on top of the party.
 function stepIntoContact(campaign, limit = 20) {
   const { state } = campaign;
   const planted = state.roamers[0];
   planted.floorId = state.party.floorId;
-  planted.x = state.party.tile.x;
-  planted.y = state.party.tile.y;
 
   const rng = makeRng(5);
   for (let i = 0; i < limit && !campaign.encounter; i++) {
+    const { dx, dy } = STEP_DELTA[state.party.facing];
+    planted.x = state.party.tile.x + dx;
+    planted.y = state.party.tile.y + dy;
+
     const result = perform(state, { verb: Verb.STEP_FORWARD });
     if (result.blocked) perform(state, { verb: rng.pick([Verb.TURN_LEFT, Verb.TURN_RIGHT]) });
   }
@@ -144,6 +146,31 @@ describe('walking into a warband', () => {
     expect(encounter.origin).toMatchObject({ floorId: expect.any(String) });
   });
 
+  // @spec ENEMY-CONTACT-001
+  // @spec ENEMY-CONTACT-002
+  it('meets the warband beside the party rather than on top of them', () => {
+    const campaign = booted();
+    stepIntoContact(campaign);
+
+    const met = campaign.state.roamers.find((r) => r.id === campaign.encounter.roamerId);
+    expect({ x: met.x, y: met.y }).not.toEqual({ ...campaign.state.party.tile });
+  });
+
+  // @spec ENEMY-CONTACT-002
+  it('keeps the party off every warband on the floor, however far they walk', () => {
+    const campaign = booted();
+    const state = campaign.state;
+
+    const shared = (c) => c.state.roamers.some(
+      (r) => r.floorId === state.party.floorId
+        && r.x === state.party.tile.x && r.y === state.party.tile.y,
+    );
+
+    walkUntil(campaign, (c) => c.encounter !== null || shared(c), 400);
+
+    expect(shared(campaign)).toBe(false);
+  });
+
   it('stops the party walking while a fight is on', () => {
     const campaign = booted();
     stepIntoContact(campaign);
@@ -220,6 +247,29 @@ describe('winning a fight', () => {
 });
 
 describe('re-stocking a floor', () => {
+  // @spec ENEMY-CONTACT-006
+  it('starts nobody on the tile the party comes in on', () => {
+    for (const seed of [1, 7, 4242, 90210]) {
+      const { state } = booted(seed);
+      for (const roamer of state.roamers.filter((r) => r.floorId === state.party.floorId)) {
+        expect({ x: roamer.x, y: roamer.y }).not.toEqual({ ...state.party.tile });
+      }
+    }
+  });
+
+  // @spec ENEMY-CONTACT-006
+  it('puts nothing back on the tile the party is standing on', () => {
+    const campaign = booted();
+    const state = campaign.state;
+    const home = state.party.floorId;
+
+    campaign.restockFloor(home, 2000);
+
+    for (const roamer of state.roamers.filter((r) => r.floorId === home)) {
+      expect({ x: roamer.x, y: roamer.y }).not.toEqual({ ...state.party.tile });
+    }
+  });
+
   // @spec EXPLORE-RETURN-004
   // @spec EXPLORE-RETURN-005
   // @spec EXPLORE-RETURN-006

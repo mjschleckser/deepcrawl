@@ -439,3 +439,59 @@ describe('stairs', () => {
     expect(offered.targets).toEqual([]);
   });
 });
+
+describe('stepping into something', () => {
+  // The party's tile is (1,1) facing north, so a step is an attempt on (1,0).
+  const occupiedAhead = () => ({
+    isTileOccupied: ({ tile }) => tile.x === 1 && tile.y === 0,
+    onContactCheck: vi.fn(),
+  });
+
+  // @spec EXPLORE-BOUND-001
+  it('meets a roaming enemy where it stands rather than walking onto it', () => {
+    const hooks = occupiedAhead();
+    const state = exploration([openFloor()], { hooks });
+
+    const result = perform(state, { verb: Verb.STEP_FORWARD });
+
+    expect(hooks.onContactCheck).toHaveBeenCalledTimes(1);
+    expect(hooks.onContactCheck.mock.calls[0][0]).toMatchObject({
+      floorId: 'f1', tile: { x: 1, y: 1 }, at: { x: 1, y: 0 },
+    });
+    expect(result.events).toEqual([StepEvent.CONTACT_CHECKED]);
+  });
+
+  // @spec EXPLORE-BOUND-010
+  it('spends nothing on the step it did not take', () => {
+    const state = exploration([openFloor()], { hooks: occupiedAhead() });
+    const before = tickCount(state);
+
+    perform(state, { verb: Verb.STEP_FORWARD });
+
+    expect(partyPosition(state).tile).toEqual({ x: 1, y: 1 });
+    expect(partyPosition(state).facing).toBe(Direction.NORTH);
+    expect(tickCount(state)).toBe(before);
+  });
+
+  // @spec EXPLORE-BOUND-010
+  it('is not the same as walking into a wall: the party learns it met something', () => {
+    const state = exploration([openFloor()], { hooks: occupiedAhead() });
+
+    // A blocked step reports blocked and says nothing; a barred one is a step that
+    // resolved into an encounter.
+    expect(perform(state, { verb: Verb.STEP_FORWARD }).blocked).toBe(false);
+  });
+
+  // @spec EXPLORE-BOUND-011
+  it('still checks contact on arrival, for whatever reached the party as it walked', () => {
+    const onContactCheck = vi.fn();
+    const state = exploration([openFloor()], { hooks: { onContactCheck } });
+
+    const result = perform(state, { verb: Verb.STEP_FORWARD });
+
+    expect(result.events).toContain(StepEvent.CONTACT_CHECKED);
+    expect(onContactCheck).toHaveBeenCalledWith(
+      expect.objectContaining({ floorId: 'f1', tile: { x: 1, y: 0 } }),
+    );
+  });
+});

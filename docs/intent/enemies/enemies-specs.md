@@ -46,10 +46,12 @@ are fed into.
 
 ## Contact
 
-- [x] **ENEMY-CONTACT-001**: When a roamer occupies the party's tile, the system shall begin an encounter with that roamer's band.
-- [x] **ENEMY-CONTACT-002**: When the party and a roamer exchange tiles in the same step, the system shall begin an encounter rather than letting them pass through one another.
+- [x] **ENEMY-CONTACT-001**: When the tile a roamer would move into is the party's tile, the system shall begin an encounter with that roamer's band and leave the roamer on the tile it stood on.
+- [x] **ENEMY-CONTACT-002**: The system shall not let the party and a roamer occupy the same tile, nor exchange tiles within one step.
 - [x] **ENEMY-CONTACT-003**: When an encounter begins, the system shall report the party's awareness of the roamer and the roamer's awareness of the party as the surprise payload.
 - [x] **ENEMY-CONTACT-004**: The system shall treat a roamer that has not noticed the party as unaware for the purposes of surprise, whatever the light.
+- [x] **ENEMY-CONTACT-005**: When the party arrives on a roamer's tile by a relocation it cannot refuse, the system shall begin an encounter and move that roamer to an adjacent tile it can travel to.
+- [x] **ENEMY-CONTACT-006**: The system shall place a newly stocked roamer on a tile other than the one the party occupies.
 
 ## Behaviour in a fight
 

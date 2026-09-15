@@ -90,6 +90,7 @@ const NO_HOOKS = {
   onRoamersMove: () => {},
   onRestock: () => {},
   onContactCheck: () => {},
+  isTileOccupied: () => false,
   onSight: () => {},
   onPartyAction: () => {},
 };
@@ -534,6 +535,7 @@ function maybeRestock(state, events) {
  * @spec EXPLORE-MOVE-019
  * @spec EXPLORE-CLOCK-001
  * @spec EXPLORE-BOUND-005
+ * @spec EXPLORE-BOUND-011
  */
 function resolveStepEffects(state, events, { alreadyRelocated = false } = {}) {
   const spent = advance(state, state.stepCost());
@@ -600,6 +602,8 @@ function turn(state, verb) {
  * @spec EXPLORE-MOVE-015
  * @spec EXPLORE-CLOCK-001
  * @spec EXPLORE-CLOCK-007
+ * @spec EXPLORE-BOUND-001
+ * @spec EXPLORE-BOUND-010
  */
 function stepForward(state) {
   const floor = currentFloor(state);
@@ -625,6 +629,19 @@ function stepForward(state) {
   const { dx, dy } = STEP_DELTA[state.party.facing];
   const target = { x: from.x + dx, y: from.y + dy };
   const targetTile = getTile(floor, target.x, target.y);
+
+  // Walking into a warband is not a step. The party and a roamer never share a tile,
+  // so meeting happens here instead of the step, before a tick is spent or anything
+  // on the far tile resolves — and a fight broken off from leaves real ground between
+  // them rather than ending with the pursuer standing on the party.
+  if (state.hooks.isTileOccupied({ floorId: state.party.floorId, tile: { ...target } })) {
+    state.hooks.onContactCheck({
+      floorId: state.party.floorId,
+      tile: { ...from },
+      at: { ...target },
+    });
+    return { blocked: false, events: [StepEvent.CONTACT_CHECKED] };
+  }
 
   // Stairs ask before they take the party anywhere, and a declined staircase is not
   // walked onto at all — so a staircase is never crossed by accident.

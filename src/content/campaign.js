@@ -18,7 +18,7 @@ import {
   Row, CharacterClass,
 } from '../sim/party.js';
 import {
-  createRoamer, giveTicks, forgetParty, isAware, occupantsFor,
+  createRoamer, giveTicks, giveGround, forgetParty, isAware, occupantsFor,
 } from '../sim/enemies.js';
 import {
   beginEncounter, createEnemy, createEnemyGroup, encounterOutcome, attemptFlee, Outcome,
@@ -69,7 +69,13 @@ export function createCampaign({ seed = Date.now() >>> 0 } = {}) {
   const campaign = { plan, party, state: null, encounter: null };
 
   function stockFloor(floor, count = BANDS_PER_FLOOR) {
-    return occupantsFor({ floorId: floor.id, rooms: floor.rooms ?? [], rng, count }).map((occupant) =>
+    // Nothing is stocked onto the party, so a floor re-stocking around a standing
+    // party cannot put a warband where they are.
+    const avoid = campaign.state && campaign.state.party.floorId === floor.id
+      ? { ...campaign.state.party.tile }
+      : null;
+
+    return occupantsFor({ floorId: floor.id, rooms: floor.rooms ?? [], rng, count, avoid }).map((occupant) =>
       createRoamer({
         ...occupant,
         dexterity: occupant.band.members[0].dexterity,
@@ -118,21 +124,39 @@ export function createCampaign({ seed = Date.now() >>> 0 } = {}) {
   }
 
   /**
-   * Contact begins a fight. Exploration reports where the party is; whether anything
-   * is standing there is this layer's business.
+   * Whether a warband is standing on a tile. Exploration asks before it steps, because
+   * a step into one is the encounter rather than a step.
+   *
+   * @spec EXPLORE-BOUND-001
+   * @spec ENEMY-CONTACT-002
+   */
+  function isTileOccupied({ floorId, tile }) {
+    if (campaign.encounter) return false;
+    return campaign.state.roamers.some(
+      (r) => r.floorId === floorId && r.x === tile.x && r.y === tile.y,
+    );
+  }
+
+  /**
+   * Contact begins a fight. Exploration reports where the party stands and, when the
+   * step was barred, the tile it was barred from; which warband is there is this
+   * layer's business.
    *
    * @spec EXPLORE-BOUND-001
    * @spec EXPLORE-BOUND-002
+   * @spec EXPLORE-BOUND-011
    * @spec ENEMY-CONTACT-001
    * @spec ENEMY-CONTACT-003
    */
-  function onContactCheck({ floorId, tile }) {
+  function onContactCheck({ floorId, tile, at = null }) {
     const state = campaign.state;
     if (campaign.encounter) return;
 
-    const met = state.roamers.find(
-      (r) => r.floorId === floorId && (r.contacted || (r.x === tile.x && r.y === tile.y)),
-    );
+    // A barred step names the tile they walked into; otherwise it is whatever reached
+    // the party while they walked.
+    const met = at
+      ? state.roamers.find((r) => r.floorId === floorId && r.x === at.x && r.y === at.y)
+      : state.roamers.find((r) => r.floorId === floorId && r.contacted);
     if (!met) return;
 
     const light = resolveTileLight(state, tile.x, tile.y);
@@ -190,6 +214,7 @@ export function createCampaign({ seed = Date.now() >>> 0 } = {}) {
     hooks: {
       onRoamersMove,
       onContactCheck,
+      isTileOccupied,
       onRestock: ({ floorId, elapsed }) => restockFloor(floorId, elapsed),
     },
     lightSources: [
@@ -202,6 +227,12 @@ export function createCampaign({ seed = Date.now() >>> 0 } = {}) {
 
   const start = resolveArrival(state, plan.entrance);
   state.party.tile = { x: start.x, y: start.y };
+  // The entrance was stocked before anyone knew where the party would come in, so
+  // anything standing on the arrival tile steps aside now rather than being fought on
+  // the first move.
+  state.roamers = state.roamers.map((r) =>
+    r.floorId === entrance.id ? giveGround(r, entrance, state.party.tile) : r,
+  );
   // The way out is always visible, so losing every torch is a crisis rather than a
   // dead end.
   // @spec GEN-PLACE-006
