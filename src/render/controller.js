@@ -52,7 +52,12 @@ function stateSignature(state) {
 }
 
 export function createController({ state, viewport, onDraw, campaign = null }) {
-  const controller = { state, viewport, onDraw, campaign, expanded: false, fight: null };
+  const controller = {
+    state, viewport, onDraw, campaign,
+    expanded: false, fight: null,
+    // Which control the finger is currently on, so it can be outlined while held.
+    pressedRegion: null,
+  };
   syncFight(controller);
   onDraw(layers(controller));
   return controller;
@@ -128,7 +133,9 @@ export function layers(controller) {
         prompt: buildPromptPlan(state.pendingConfirmation ?? null, viewport),
         viewport,
         // Nothing to walk toward while a prompt stands, so the walking controls go.
-        controls: state.pendingConfirmation ? [] : controlsFor(viewport),
+        controls: state.pendingConfirmation
+          ? []
+          : controlsFor(viewport, { pressedRegion: controller.pressedRegion }),
       },
     },
   ];
@@ -266,7 +273,26 @@ export function pressPointer(controller, px, py) {
 
   const region = hitTest(controller.viewport, px, py);
   if (!region) return false;
-  return applyAction(controller, actionForTouch(region));
+
+  // Show it held before the action lands, so the outline is visible for the press.
+  controller.pressedRegion = region;
+  const acted = applyAction(controller, actionForTouch(region));
+  // A blocked step changes nothing, so nothing redrew it as pressed. Draw it anyway.
+  if (!acted) redraw(controller);
+  return acted;
+}
+
+/**
+ * The finger lifted. Whatever was outlined stops being.
+ *
+ * @spec PRESENT-CTRL-008
+ * @spec PRESENT-CTRL-009
+ */
+export function releasePointer(controller) {
+  if (controller.pressedRegion === null) return false;
+  controller.pressedRegion = null;
+  redraw(controller);
+  return true;
 }
 
 /**

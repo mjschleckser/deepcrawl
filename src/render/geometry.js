@@ -43,7 +43,6 @@ const CONTROL_LABELS = {
   FORWARD: { label: 'Forward', hint: 'W' },
   TURN_LEFT: { label: 'Left', hint: 'A' },
   TURN_RIGHT: { label: 'Right', hint: 'D' },
-  TURN_AROUND: { label: 'About', hint: 'S' },
   PARTY_BAR: { label: 'Party', hint: 'P' },
   PACK: { label: 'Pack', hint: 'I' },
   SPELL_ICON: { label: 'Spells', hint: 'C' },
@@ -66,10 +65,9 @@ export const TouchLayout = [
   { region: 'SPELL_ICON', fx: 0.42, fy: 0.86, fw: 0.18, fh: 0.12 },
   { region: 'SEARCH_CONTROL', fx: 0.62, fy: 0.86, fw: 0.16, fh: 0.12 },
   { region: 'INTERACT_PROMPT', fx: 0.8, fy: 0.86, fw: 0.18, fh: 0.12 },
-  { region: 'TURN_AROUND', fx: 0.35, fy: 0.66, fw: 0.3, fh: 0.18 },
-  { region: 'TURN_LEFT', fx: 0.0, fy: 0.22, fw: 0.25, fh: 0.62 },
-  { region: 'TURN_RIGHT', fx: 0.75, fy: 0.22, fw: 0.25, fh: 0.62 },
-  { region: 'FORWARD', fx: 0.25, fy: 0.1, fw: 0.5, fh: 0.56 },
+  { region: 'TURN_LEFT', fx: 0.0, fy: 0.18, fw: 0.26, fh: 0.66 },
+  { region: 'TURN_RIGHT', fx: 0.74, fy: 0.18, fw: 0.26, fh: 0.66 },
+  { region: 'FORWARD', fx: 0.26, fy: 0.18, fw: 0.48, fh: 0.66 },
 ];
 
 /**
@@ -100,8 +98,14 @@ export function tapRegionsFor(viewport) {
  * @spec PRESENT-CTRL-003
  * @spec PRESENT-CTRL-004
  */
-export function controlsFor(viewport) {
-  return tapRegionsFor(viewport).map((area) => ({ ...area, ...CONTROL_LABELS[area.region] }));
+export function controlsFor(viewport, { pressedRegion = null } = {}) {
+  return tapRegionsFor(viewport).map((area) => ({
+    ...area,
+    ...CONTROL_LABELS[area.region],
+    // Drawn as a bare label until a finger is on it: a panel big enough to tap is a
+    // panel big enough to hide the corridor.
+    pressed: area.region === pressedRegion,
+  }));
 }
 
 /**

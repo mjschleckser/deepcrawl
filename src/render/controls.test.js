@@ -278,3 +278,44 @@ describe('tapping a drawn control', () => {
     expect(adapter).not.toMatch(/\.on\(\s*['"]pointer/);
   });
 });
+
+describe('controls over the dungeon', () => {
+  // @spec EXPLORE-INPUT-004
+  it('no longer offers a control for turning about, which two taps of a turn reach', () => {
+    const regions = tapRegionsFor(phone).map((r) => r.region);
+
+    expect(regions).not.toContain('TURN_AROUND');
+    expect(regions).toContain('TURN_LEFT');
+    expect(regions).toContain('TURN_RIGHT');
+  });
+
+  // @spec PRESENT-CTRL-007
+  it('is unpressed by default, so it draws as its label alone', () => {
+    for (const control of controlsFor(phone)) {
+      expect(control.pressed).toBe(false);
+    }
+  });
+
+  // @spec PRESENT-CTRL-008
+  it('marks the control under the finger as pressed', () => {
+    const forward = controlsFor(phone).find((c) => c.region === 'FORWARD');
+
+    const held = controlsFor(phone, { pressedRegion: 'FORWARD' });
+
+    expect(held.find((c) => c.region === 'FORWARD').pressed).toBe(true);
+    expect(forward.pressed).toBe(false);
+  });
+
+  // @spec PRESENT-CTRL-009
+  it('marks only the one under the finger, never two at once', () => {
+    const held = controlsFor(phone, { pressedRegion: 'TURN_LEFT' });
+
+    expect(held.filter((c) => c.pressed)).toHaveLength(1);
+    expect(held.find((c) => c.pressed).region).toBe('TURN_LEFT');
+  });
+
+  // @spec PRESENT-CTRL-008
+  it('marks nothing once the finger lifts', () => {
+    expect(controlsFor(phone, { pressedRegion: null }).some((c) => c.pressed)).toBe(false);
+  });
+});

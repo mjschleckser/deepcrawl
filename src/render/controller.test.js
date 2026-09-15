@@ -6,7 +6,7 @@ import { createParty, createCharacter, addCharacter, CharacterClass, Row } from 
 import { beginEncounter, createEnemy, createEnemyGroup } from '../sim/combat.js';
 import { makeRng } from '../sim/rng.js';
 import { PIXI_APP_OPTIONS } from './appconfig.js';
-import { createController, pressKey, pressPointer, resize, layers } from './controller.js';
+import { createController, pressKey, pressPointer, releasePointer, resize, layers } from './controller.js';
 
 const viewport = { width: 800, height: 600 };
 
@@ -357,5 +357,70 @@ describe('when a fight ends', () => {
     campaign.encounter = null;
 
     expect(hudControls().length).toBeGreaterThan(0);
+  });
+});
+
+describe('holding a control', () => {
+  const hudControls = (controller) =>
+    layers(controller).find((l) => l.name === 'hud').plan.controls;
+
+  // @spec PRESENT-CTRL-008
+  it('outlines the one under the finger, and only while it is down', () => {
+    const { controller } = harness();
+    const forward = hudControls(controller).find((c) => c.region === 'FORWARD');
+    expect(forward.pressed).toBe(false);
+
+    pressPointer(controller, forward.x + forward.width / 2, forward.y + forward.height / 2);
+    expect(hudControls(controller).find((c) => c.region === 'FORWARD').pressed).toBe(true);
+
+    releasePointer(controller);
+    expect(hudControls(controller).some((c) => c.pressed)).toBe(false);
+  });
+
+  // @spec PRESENT-CTRL-009
+  it('holds at most one at a time', () => {
+    const { controller } = harness();
+    const left = hudControls(controller).find((c) => c.region === 'TURN_LEFT');
+    const right = hudControls(controller).find((c) => c.region === 'TURN_RIGHT');
+
+    pressPointer(controller, left.x + left.width / 2, left.y + left.height / 2);
+    pressPointer(controller, right.x + right.width / 2, right.y + right.height / 2);
+
+    const held = hudControls(controller).filter((c) => c.pressed);
+    expect(held).toHaveLength(1);
+    expect(held[0].region).toBe('TURN_RIGHT');
+  });
+
+  // @spec PRESENT-CTRL-008
+  it('redraws when the finger lifts, so the outline actually goes', () => {
+    const { controller, onDraw } = harness();
+    const forward = hudControls(controller).find((c) => c.region === 'FORWARD');
+    pressPointer(controller, forward.x + forward.width / 2, forward.y + forward.height / 2);
+    onDraw.mockClear();
+
+    releasePointer(controller);
+
+    expect(onDraw).toHaveBeenCalledTimes(1);
+  });
+
+  // @spec PRESENT-CTRL-008
+  it('shows a control held even when its action changed nothing', () => {
+    const { floor, controller } = harness();
+    // Walled in, so stepping forward is refused and no state changes.
+    setEdge(floor, 3, 3, Direction.NORTH, EdgeKind.WALL);
+    const forward = hudControls(controller).find((c) => c.region === 'FORWARD');
+
+    pressPointer(controller, forward.x + forward.width / 2, forward.y + forward.height / 2);
+
+    expect(hudControls(controller).find((c) => c.region === 'FORWARD').pressed).toBe(true);
+  });
+
+  // @spec PRESENT-CTRL-008
+  it('does nothing on a release when nothing was held', () => {
+    const { controller, onDraw } = harness();
+    onDraw.mockClear();
+
+    expect(releasePointer(controller)).toBe(false);
+    expect(onDraw).not.toHaveBeenCalled();
   });
 });

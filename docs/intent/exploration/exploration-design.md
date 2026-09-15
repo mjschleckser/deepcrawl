@@ -486,7 +486,12 @@ do while standing still.
 | `STEP_FORWARD` | `W` / `↑` | tap upper-centre of the view |
 | `TURN_LEFT` | `A` / `←` | tap left edge of the view |
 | `TURN_RIGHT` | `D` / `→` | tap right edge of the view |
-| `TURN_AROUND` | `S` / `↓` | tap lower-centre of the view |
+| `TURN_AROUND` | `S` / `↓` | two taps of either turn control |
+
+Turning about has a key but no control of its own. Two taps of a turn the player is
+already using reach it, and a control earns its place by being the only way to do
+something or by being worth the room it takes — this one is neither. What must hold is
+that every action stays *achievable* by touch, not that each has a button of its own.
 
 | Party action | Keyboard | Touch | Owned by |
 |---|---|---|---|

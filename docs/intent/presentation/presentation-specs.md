@@ -61,6 +61,10 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-CTRL-005**: When a pointer press lands on a drawn control, the system shall perform that control's action.
 - [x] **PRESENT-CTRL-006**: The system shall register no input handler on a drawn object, hit-testing the plan instead.
 
+- [ ] **PRESENT-CTRL-007**: The system shall draw a control that lies over the dungeon view as its label alone, without a panel or an outline, while it is not pressed.
+- [x] **PRESENT-CTRL-008**: While a pointer is held on a control, the system shall draw that control's outline, and shall stop drawing it when the pointer is released.
+- [x] **PRESENT-CTRL-009**: The system shall mark at most one control as pressed at a time.
+
 ## Prompts
 
 - [x] **PRESENT-PROMPT-001**: While the simulation holds a pending confirmation, the system shall draw a prompt describing it.

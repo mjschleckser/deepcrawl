@@ -3,7 +3,7 @@ import { createCampaign } from './content/campaign.js';
 import { computeSight } from './sim/exploration.js';
 import { createRenderer } from './render/app.js';
 import { playableViewport } from './render/viewport.js';
-import { createController, pressKey, pressPointer, resize, layers } from './render/controller.js';
+import { createController, pressKey, pressPointer, releasePointer, resize, layers } from './render/controller.js';
 
 async function bootstrap() {
   const mount = document.querySelector('#app');
@@ -38,6 +38,11 @@ async function bootstrap() {
     const bounds = renderer.app.canvas.getBoundingClientRect();
     pressPointer(controller, event.clientX - bounds.left, event.clientY - bounds.top);
   });
+
+  // The outline is shown for as long as the finger is down, and no longer.
+  for (const ending of ['pointerup', 'pointercancel', 'pointerleave']) {
+    renderer.app.canvas.addEventListener(ending, () => releasePointer(controller));
+  }
 
   /**
    * Follow the visible viewport rather than the layout one, and keep following it: the

@@ -99,12 +99,18 @@ function drawMap(container, plan) {
  * @spec PRESENT-CTRL-003
  * @spec PRESENT-CTRL-006
  */
-function drawControl(container, control, { alpha = 0.55 } = {}) {
+function drawControl(container, control, { alpha = 0.55, ghost = false } = {}) {
   const graphics = new Graphics();
-  graphics.roundRect(control.x, control.y, control.width, control.height, 6)
-    .fill({ color: 0x0b0906, alpha });
-  graphics.roundRect(control.x, control.y, control.width, control.height, 6)
-    .stroke({ width: 1.5, color: PALETTE.map.wall, alpha: 0.9 });
+  // Over the dungeon a control is its label alone, and shows its edges only under a
+  // finger. On a panel of its own there is nothing behind it to hide, so it keeps them.
+  if (!ghost) {
+    graphics.roundRect(control.x, control.y, control.width, control.height, 6)
+      .fill({ color: 0x0b0906, alpha });
+  }
+  if (!ghost || control.pressed) {
+    graphics.roundRect(control.x, control.y, control.width, control.height, 6)
+      .stroke({ width: 1.5, color: PALETTE.map.wall, alpha: ghost ? 0.85 : 0.9 });
+  }
   container.addChild(graphics);
 
   const name = new Text({
@@ -128,7 +134,7 @@ function drawControl(container, control, { alpha = 0.55 } = {}) {
 }
 
 function drawHud(container, plan) {
-  for (const control of plan.controls ?? []) drawControl(container, control, { alpha: 0.32 });
+  for (const control of plan.controls ?? []) drawControl(container, control, { ghost: true });
   if (!plan.prompt) return;
 
   const { bounds, text, controls } = plan.prompt;

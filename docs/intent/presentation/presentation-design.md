@@ -174,6 +174,15 @@ Every hit region is computed in the plan alongside the drawing it belongs to, so
 thing drawn and the thing tapped cannot drift apart. The renderer hit-tests the plan;
 it never registers handlers of its own.
 
+**A control over the dungeon is its label, until it is touched.** Panels large enough
+to tap comfortably are panels large enough to hide the corridor behind them, and the
+corridor is the game. So a control lying over the view draws only its name; its outline
+appears under the finger and goes when the finger lifts. The player learns where the
+zones are by using them, and then gets their dungeon back.
+
+Controls that sit on a panel of their own — the options in a fight, the answers to a
+prompt — keep their frames, because there is nothing behind them to hide.
+
 ## Combat
 
 A fight is drawn over the corridor rather than in place of it. The party is still
@@ -314,6 +323,8 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 | Surface size | The visible viewport, chrome and safe areas excluded | The layout viewport; `100vh` | On a phone browser the layout viewport is the height the page would have with the address bar hidden, so sizing to it puts the bottom of the game behind the chrome. Installed as an app the two agree, which is how the fault hides. |
 | Tap regions | Fractions of the viewport, with a pixel floor on size | Fractions alone; fixed pixel rectangles | The same layout has to work on a phone and a desktop window, so fractions hold the proportions — but a thumb does not shrink with the viewport, so the floor is in real pixels. |
 | Drawing the controls | Every tappable region is drawn | Leaving the view uncluttered and the regions invisible | A control nobody can see is a control only a keyboard player has, and the first target user is holding a phone. |
+| Controls over the view | The label alone, outlined only while pressed | Always framed; always invisible | A panel big enough to tap is a panel big enough to hide the corridor, and the corridor is the game. Drawing the outline under the finger teaches where the zones are without keeping the dungeon covered. |
+| Turning about | A key, but no control of its own | A fourth movement control | Two taps of a turn the player already uses reach it. A control earns its place by being the only way to do something or by being worth the room; this is neither. |
 | Labels | Name the action, with any key hint as secondary text | Naming the key that triggers it | "[Enter] Descend" instructs a phone player to press a key they do not have. One drawing has to serve both without telling either to use the other's device. |
 | Hit regions | Computed in the plan, beside the drawing they belong to | Registered as handlers on the drawn objects | Keeping them together means what is drawn and what is tapped cannot drift apart, and it keeps hit-testing in the pure layer where it can be tested. |
 | Combat over the corridor | Drawn on top of the first-person view, which stays visible | Replacing the view with a combat screen | The party is still standing in the passage they were caught in, and seeing it is part of knowing how bad this is. A separate screen would also throw away the light and the place. |
@@ -334,6 +345,8 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 5. ✅ **Light is drawn as a per-depth tint**, fading to black at the edge of sight.
 6. ✅ **Tap regions are viewport fractions**, recomputed on resize, with a pixel floor on how small one may be drawn.
 9. ✅ **Every tappable region is drawn**, and every drawn control carries its own hit region in the plan.
+11. ✅ **A control over the view is its label alone**, outlined only while it is pressed.
+12. ✅ **Turning about has a key but no control**, being two taps of one the player already uses.
 10. ✅ **Labels name the action**, with any keyboard hint as secondary text.
 7. ✅ **Prompts are drawn from the simulation's pending confirmation**, never from the renderer's own flag.
 8. ✅ **A hand-authored starter floor** stands in until dungeon generation exists.
