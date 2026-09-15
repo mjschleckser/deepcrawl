@@ -2,6 +2,7 @@ import './style.css';
 import { createCampaign } from './content/campaign.js';
 import { computeSight } from './sim/exploration.js';
 import { createRenderer } from './render/app.js';
+import { playableViewport } from './render/viewport.js';
 import { createController, pressKey, pressPointer, resize, layers } from './render/controller.js';
 
 async function bootstrap() {
@@ -38,7 +39,23 @@ async function bootstrap() {
     pressPointer(controller, event.clientX - bounds.left, event.clientY - bounds.top);
   });
 
-  renderer.app.renderer.on('resize', () => resize(controller, renderer.viewport()));
+  /**
+   * Follow the visible viewport rather than the layout one, and keep following it: the
+   * address bar slides in and out as the player taps and scrolls.
+   *
+   * @spec PRESENT-SCENE-008
+   * @spec PRESENT-SCENE-009
+   */
+  const fit = () => {
+    const viewport = playableViewport(window, getComputedStyle(document.documentElement));
+    renderer.app.renderer.resize(viewport.width, viewport.height);
+    resize(controller, viewport);
+  };
+
+  fit();
+  window.visualViewport?.addEventListener('resize', fit);
+  window.addEventListener('resize', fit);
+  window.addEventListener('orientationchange', fit);
 }
 
 bootstrap();

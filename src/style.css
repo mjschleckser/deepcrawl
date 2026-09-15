@@ -2,6 +2,14 @@
   box-sizing: border-box;
 }
 
+:root {
+  /* Read back by the renderer, so what the game may draw in is decided in one place. */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+}
+
 html, body {
   margin: 0;
   padding: 0;
@@ -14,8 +22,13 @@ html, body {
 }
 
 #app {
-  width: 100vw;
+  position: fixed;
+  inset: 0;
+  /* The height the browser is actually showing. 100vh is the height the page would
+     have with the address bar hidden, which puts the bottom of the game behind it. */
   height: 100vh;
+  height: 100dvh;
+  padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
   display: block;
 }
 

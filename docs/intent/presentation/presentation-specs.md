@@ -46,6 +46,8 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-INPUT-002**: When a pointer press lands inside a tap region, the system shall resolve that region through the shared touch binding and perform the resulting action.
 - [x] **PRESENT-INPUT-003**: If a key or a pointer press resolves to no action, then the system shall discard it without performing anything.
 - [x] **PRESENT-INPUT-004**: The system shall define every tap region as a fraction of the viewport rather than a fixed pixel rectangle.
+- [x] **PRESENT-SCENE-008**: The system shall size its drawing surface to the visible viewport, excluding browser chrome and device safe areas, rather than to the layout viewport.
+- [x] **PRESENT-SCENE-009**: When the visible viewport changes size, the system shall resize to it and redraw.
 - [x] **PRESENT-INPUT-005**: When the viewport is resized, the system shall recompute the tap regions and the depth frames from the new size.
 - [x] **PRESENT-INPUT-006**: The system shall pass an action to the simulation without any indication of whether a key or a pointer produced it.
 

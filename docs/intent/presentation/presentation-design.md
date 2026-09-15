@@ -276,6 +276,19 @@ when something has changed:
 Resizing recomputes the depth frames and the tap regions from the new viewport, then
 redraws. Nothing else in the segment is size-dependent.
 
+### The viewport is what can be seen
+
+The drawing surface is sized to the **visible** viewport, not the layout one. On a
+phone browser these differ: the layout viewport is the height the page would have with
+the address bar hidden, so a surface sized to it puts its bottom edge permanently
+behind the chrome. Installed as an app there is no chrome and the two agree, which is
+exactly why the fault hides from anyone testing only the installed version.
+
+The visible height is read from the browser's own report of it and followed as it
+changes, because the chrome slides in and out as the player scrolls or taps. Device
+safe areas — a notch, a home indicator — are excluded on the same principle: they are
+screen the player can see but the game cannot have.
+
 ## The Starter Floor
 
 Dungeon generation does not exist yet, so the app boots onto a hand-authored floor
@@ -292,6 +305,7 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 | Corridor geometry | Nested depth frames scaled toward a vanishing point | Raycasting into a texture-mapped wall; pre-rendered art per configuration | Frames are a handful of polygons per depth, need no art pipeline, and keep the view honestly 2D. Raycasting would contradict the project's non-goal and cost mobile performance for a view that only ever faces four directions. |
 | Draw order | Far to near | Near to far with depth testing | Painting far first makes occlusion automatic; there is no depth buffer to manage and no way for distant geometry to overwrite near geometry. |
 | Light in the view | Tint per depth, fading to black at the torch edge | Showing light only as a status readout | The player should watch the dark close in rather than read a number. It also makes the light rules legible without explanation. |
+| Surface size | The visible viewport, chrome and safe areas excluded | The layout viewport; `100vh` | On a phone browser the layout viewport is the height the page would have with the address bar hidden, so sizing to it puts the bottom of the game behind the chrome. Installed as an app the two agree, which is how the fault hides. |
 | Tap regions | Fractions of the viewport, with a pixel floor on size | Fractions alone; fixed pixel rectangles | The same layout has to work on a phone and a desktop window, so fractions hold the proportions — but a thumb does not shrink with the viewport, so the floor is in real pixels. |
 | Drawing the controls | Every tappable region is drawn | Leaving the view uncluttered and the regions invisible | A control nobody can see is a control only a keyboard player has, and the first target user is holding a phone. |
 | Labels | Name the action, with any key hint as secondary text | Naming the key that triggers it | "[Enter] Descend" instructs a phone player to press a key they do not have. One drawing has to serve both without telling either to use the other's device. |

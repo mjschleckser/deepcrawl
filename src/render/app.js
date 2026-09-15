@@ -150,7 +150,9 @@ function drawHud(container, plan) {
 
 export async function createRenderer(mount) {
   const app = new Application();
-  await app.init({ ...PIXI_APP_OPTIONS, resizeTo: mount });
+  // No resizeTo: the surface is sized from the visible viewport, and two things
+  // deciding a size means one of them is wrong.
+  await app.init({ ...PIXI_APP_OPTIONS });
   // Nothing is real-time, so nothing redraws on a clock.
   app.ticker.stop();
   mount.appendChild(app.canvas);
