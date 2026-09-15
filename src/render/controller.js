@@ -86,11 +86,24 @@ function syncFight(controller) {
  * @spec PRESENT-PROMPT-001
  * @spec PRESENT-PROMPT-002
  */
+/**
+ * Every drawing names every layer. A layer with nothing to show gets an empty drawing
+ * rather than being left out, because a layer nobody names is a layer nobody clears,
+ * and what it drew last stays on the screen.
+ *
+ * @spec PRESENT-SCENE-001
+ * @spec PRESENT-SCENE-006
+ * @spec PRESENT-SCENE-010
+ */
 export function layers(controller) {
+  // Read the simulation, never a cache of it: a drawing derived from a stale flag is a
+  // drawing of something that is no longer true.
+  syncFight(controller);
   const { state, viewport, expanded, fight } = controller;
   if (fight) {
     return [
       { name: 'view', plan: buildViewPlan(corridorAhead(state), viewport) },
+      { name: 'map', plan: null },
       {
         name: 'fight',
         plan: buildFightPlan(fight.encounter, viewport, {
@@ -106,6 +119,7 @@ export function layers(controller) {
   return [
     { name: 'view', plan: buildViewPlan(corridorAhead(state), viewport) },
     { name: 'map', plan: buildMapPlan(automapView(state), viewport, { expanded }) },
+    { name: 'fight', plan: null },
     // The prompt is read from the simulation's pending confirmation, so one can never
     // be shown for a confirmation that is not actually pending.
     {

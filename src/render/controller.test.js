@@ -9,6 +9,8 @@ import { PIXI_APP_OPTIONS } from './appconfig.js';
 import { createController, pressKey, pressPointer, resize, layers } from './controller.js';
 
 const viewport = { width: 800, height: 600 };
+
+const hud = (controller) => layers(controller).find((l) => l.name === 'hud').plan;
 const lamp = () =>
   createLightSource({ id: 'l', brightRadius: 2, dimRadius: 5, remainingTicks: 99, lit: true });
 
@@ -34,10 +36,13 @@ function harness({ withStairs = false } = {}) {
 
 describe('the scene', () => {
   // @spec PRESENT-SCENE-001
-  it('presents three layers, view then map then HUD', () => {
+  // @spec PRESENT-SCENE-010
+  it('names every layer in every drawing, in order, whether or not it has anything to show', () => {
     const { controller } = harness();
 
-    expect(layers(controller).map((l) => l.name)).toEqual(['view', 'map', 'hud']);
+    expect(layers(controller).map((l) => l.name)).toEqual(['view', 'map', 'fight', 'hud']);
+    // Nothing is fighting, so that layer is named and empty rather than left out.
+    expect(layers(controller).find((l) => l.name === 'fight').plan).toBeNull();
   });
 
   // @spec PRESENT-SCENE-002
@@ -182,7 +187,7 @@ describe('prompts', () => {
   it('draws no prompt while the simulation holds none', () => {
     const { controller } = harness();
 
-    expect(layers(controller)[2].plan.prompt).toBeNull();
+    expect(hud(controller).prompt).toBeNull();
   });
 
   // @spec PRESENT-PROMPT-001
@@ -191,7 +196,7 @@ describe('prompts', () => {
 
     pressKey(controller, 'w'); // steps toward the staircase
 
-    expect(layers(controller)[2].plan.prompt).toMatchObject({ kind: 'STAIRS' });
+    expect(hud(controller).prompt).toMatchObject({ kind: 'STAIRS' });
   });
 
   // @spec PRESENT-PROMPT-003
@@ -204,7 +209,7 @@ describe('prompts', () => {
 
     expect(partyPosition(state).facing).toBe(Direction.NORTH);
     expect(tickCount(state)).toBe(0);
-    expect(layers(controller)[2].plan.prompt).not.toBeNull();
+    expect(hud(controller).prompt).not.toBeNull();
   });
 
   // @spec PRESENT-PROMPT-004
@@ -216,7 +221,7 @@ describe('prompts', () => {
     pressKey(controller, 'Enter');
 
     expect(partyPosition(state).tile).toEqual({ x: 0, y: 0 });
-    expect(layers(controller)[2].plan.prompt).toBeNull();
+    expect(hud(controller).prompt).toBeNull();
   });
 
   // @spec PRESENT-PROMPT-004
@@ -229,7 +234,7 @@ describe('prompts', () => {
 
     expect(partyPosition(state).tile).toEqual({ x: 3, y: 3 });
     expect(tickCount(state)).toBe(0);
-    expect(layers(controller)[2].plan.prompt).toBeNull();
+    expect(hud(controller).prompt).toBeNull();
   });
 
   // @spec PRESENT-PROMPT-004
@@ -289,9 +294,68 @@ describe('input while a fight is on', () => {
   });
 
   // @spec PRESENT-FIGHT-001
-  it('draws the fight layer over the view instead of the map', () => {
+  // @spec PRESENT-SCENE-010
+  it('draws the fight and empties the map, naming both either way', () => {
     const { controller } = inFight();
+    const drawn = layers(controller);
 
-    expect(layers(controller).map((l) => l.name)).toEqual(['view', 'fight', 'hud']);
+    expect(drawn.map((l) => l.name)).toEqual(['view', 'map', 'fight', 'hud']);
+    expect(drawn.find((l) => l.name === 'fight').plan).not.toBeNull();
+    expect(drawn.find((l) => l.name === 'map').plan).toBeNull();
+  });
+});
+
+describe('when a fight ends', () => {
+  // @spec PRESENT-SCENE-010
+  it('leaves nothing of the fight behind', () => {
+    const { state } = harness();
+    const party = createParty();
+    addCharacter(party, createCharacter({ id: 'bram', name: 'Bram', characterClass: CharacterClass.FIGHTER, row: Row.FRONT }));
+    const encounter = beginEncounter({
+      party,
+      enemies: createEnemyGroup([createEnemy({ id: 'g1', name: 'Goblin', row: Row.FRONT, hitPoints: 40, potValue: 10 })]),
+      light: 'BRIGHT',
+      awareness: { party: true, enemies: true },
+      rng: makeRng(2),
+      origin: { floorId: 'f1', x: 1, y: 1 },
+    });
+    const campaign = { encounter, state, concludeEncounter: () => { campaign.encounter = null; }, fleeEncounter: () => {} };
+    const controller = createController({ state, campaign, viewport, onDraw: vi.fn() });
+
+    const named = (name) => layers(controller).find((l) => l.name === name).plan;
+    expect(named('fight')).not.toBeNull();
+
+    // The fight is over and the campaign has moved on.
+    campaign.encounter = null;
+
+    // Every layer is still named, so the one with nothing to show is cleared rather
+    // than left holding its last drawing.
+    expect(layers(controller).map((l) => l.name)).toEqual(['view', 'map', 'fight', 'hud']);
+    expect(named('fight')).toBeNull();
+    expect(named('map')).not.toBeNull();
+  });
+
+  // @spec PRESENT-SCENE-010
+  it('gives the walking controls back once the fight layer empties', () => {
+    const { controller, campaign } = (() => {
+      const { state } = harness();
+      const party = createParty();
+      addCharacter(party, createCharacter({ id: 'bram', name: 'Bram', characterClass: CharacterClass.FIGHTER, row: Row.FRONT }));
+      const encounter = beginEncounter({
+        party,
+        enemies: createEnemyGroup([createEnemy({ id: 'g1', name: 'Goblin', row: Row.FRONT, hitPoints: 40, potValue: 10 })]),
+        light: 'BRIGHT', awareness: { party: true, enemies: true },
+        rng: makeRng(3), origin: { floorId: 'f1', x: 1, y: 1 },
+      });
+      const campaign = { encounter, state, concludeEncounter: () => { campaign.encounter = null; }, fleeEncounter: () => {} };
+      return { controller: createController({ state, campaign, viewport, onDraw: vi.fn() }), campaign };
+    })();
+
+    const hudControls = () => layers(controller).find((l) => l.name === 'hud').plan.controls;
+    expect(hudControls()).toEqual([]);
+
+    campaign.encounter = null;
+
+    expect(hudControls().length).toBeGreaterThan(0);
   });
 });

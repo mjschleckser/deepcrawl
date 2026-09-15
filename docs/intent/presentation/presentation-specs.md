@@ -13,6 +13,7 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-SCENE-003**: When an action changes simulation state, the system shall redraw — including a turn, which changes facing without advancing the clock.
 - [x] **PRESENT-SCENE-004**: When a prompt is answered, the map is expanded or collapsed, or the window is resized, the system shall redraw.
 - [x] **PRESENT-SCENE-005**: If an action changes no simulation state, then the system shall not redraw.
+- [x] **PRESENT-SCENE-010**: The system shall name every layer in every drawing, giving a layer with nothing to show an empty drawing rather than omitting it, so that nothing from a previous drawing can persist.
 - [x] **PRESENT-SCENE-006**: When redrawing a layer, the system shall clear and rebuild it rather than reconciling it against what it drew before.
 - [ ] **PRESENT-SCENE-007**: The system shall hold no copy of game state in the presentation layer, deriving every drawing from simulation state at the moment of drawing, except for a record of events the simulation has already reported and will not report again.
 

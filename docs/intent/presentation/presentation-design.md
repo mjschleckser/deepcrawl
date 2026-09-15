@@ -60,7 +60,12 @@ stage
 ```
 
 Each layer is rebuilt from state by its own draw function. No layer keeps a retained
-model of what it drew last; a redraw clears and re-emits. At the sizes involved — a
+model of what it drew last; a redraw clears and re-emits.
+
+**Every drawing names every layer.** A layer with nothing to show is given an empty
+drawing rather than left out, because a layer that is merely omitted is a layer nobody
+clears — and what it drew last stays on the screen. Leaving a layer out of a drawing is
+the one way this design can leak, so it is not a thing a drawing is allowed to do. At the sizes involved — a
 few dozen polygons for the corridor, a few hundred cells for a map — rebuilding is
 cheaper to reason about than diffing, and it removes an entire class of bug where the
 screen disagrees with the state because an update was missed.
@@ -301,6 +306,7 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 | Decision | Chosen | Alternatives Considered | Rationale |
 |---|---|---|---|
 | Redraw trigger | On state change only; the ticker is stopped | A conventional per-frame render loop | The world advances only when the player acts, so a render loop would redraw an unchanged corridor sixty times a second. On the phone this game is built for, that is battery spent on nothing. |
+| Absent layers | Every drawing names every layer, empty where there is nothing to show | Listing only the layers with something in them | A layer merely left out of a drawing is a layer nobody clears, so what it drew last stays on screen. That is the one way this design leaks, so it is made impossible rather than remembered. |
 | Layer updates | Clear and rebuild the changed layer | Diffing against a retained scene model | A corridor is a few dozen polygons and a map a few hundred cells. Rebuilding removes the class of bug where the screen and the state disagree because an update was missed. |
 | Corridor geometry | Nested depth frames scaled toward a vanishing point | Raycasting into a texture-mapped wall; pre-rendered art per configuration | Frames are a handful of polygons per depth, need no art pipeline, and keep the view honestly 2D. Raycasting would contradict the project's non-goal and cost mobile performance for a view that only ever faces four directions. |
 | Draw order | Far to near | Near to far with depth testing | Painting far first makes occlusion automatic; there is no depth buffer to manage and no way for distant geometry to overwrite near geometry. |

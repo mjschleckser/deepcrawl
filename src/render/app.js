@@ -172,6 +172,8 @@ export async function createRenderer(mount) {
     for (const { name, plan } of layers) {
       const container = layerContainers[name];
       container.removeChildren().forEach((child) => child.destroy());
+      // A null plan is a layer with nothing to show: cleared, then left alone.
+      if (!plan) continue;
       if (name === 'view') drawView(container, plan);
       if (name === 'map') drawMap(container, plan);
       if (name === 'fight') drawFight(container, plan);
