@@ -38,7 +38,7 @@ tuning the game does not rewrite its specs.
 
 ## Movement
 
-- [x] **EXPLORE-MOVE-001**: The system shall accept exactly four movement verbs during exploration: `STEP_FORWARD`, `TURN_LEFT`, `TURN_RIGHT`, `TURN_AROUND`.
+- [x] **EXPLORE-MOVE-001**: The system shall accept exactly five movement verbs during exploration: `STEP_FORWARD`, `STEP_BACKWARD`, `TURN_LEFT`, `TURN_RIGHT`, `TURN_AROUND`.
 - [x] **EXPLORE-MOVE-002**: When the party turns, the system shall rotate its facing by the verb's angle (90° counter-clockwise, 90° clockwise, or 180°) and shall leave its tile unchanged.
 - [x] **EXPLORE-MOVE-003**: If the edge between the party's tile and its target tile is `wall`, then the system shall block the step.
 - [x] **EXPLORE-MOVE-004**: If that edge is a `lockedDoor` and the party does not hold the matching key, then the system shall block the step.
@@ -46,6 +46,8 @@ tuning the game does not rewrite its specs.
 - [x] **EXPLORE-MOVE-006**: If a step is blocked, then the system shall leave the party's tile, the clock, and every step side effect unchanged.
 - [x] **EXPLORE-MOVE-007**: When the party steps through a closed `door`, or through a `lockedDoor` while holding its matching key, or through a discovered `secretDoor`, the system shall set that edge open and shall not charge a tick beyond the step's own.
 - [x] **EXPLORE-MOVE-008**: When a step succeeds, the system shall resolve its effects in this order: move the party, advance the clock, resolve the tile feature, re-stock the floor if the party has arrived on one it previously left, fire the trap trigger hook, recompute sight and record discovery, move roaming enemies, check contact.
+- [x] **EXPLORE-MOVE-020**: When the party steps backward, the system shall move it one tile in the direction opposite its facing and shall leave its facing unchanged.
+- [x] **EXPLORE-MOVE-021**: The system shall resolve a backward step against the edge behind the party, by the same blocking rules, the same tick cost, and the same step effects in the same order as a forward step.
 - [x] **EXPLORE-MOVE-019**: When roaming enemies move, the system shall give each the ticks the step consumed to spend against its own cost to cross a tile, carrying any remainder forward.
 - [x] **EXPLORE-MOVE-009**: When the party enters a tile whose feature is `pit`, the system shall relocate the party to that connector's destination floor, at the tile its arrival rule resolves to, without asking for confirmation.
 - [x] **EXPLORE-MOVE-015**: When the party attempts to step onto a tile whose feature is `stairsUp` or `stairsDown`, the system shall raise a confirmation before moving the party.
@@ -102,6 +104,8 @@ tuning the game does not rewrite its specs.
 - [x] **EXPLORE-VIEW-006**: When a depth resolves to `dark`, the system shall report that depth as dark and shall report no depth beyond it, so the view has a boundary to fade into rather than an abrupt end.
 - [x] **EXPLORE-VIEW-007**: The system shall report no depth greater than the maximum drawn depth, however far the party's light reaches.
 - [x] **EXPLORE-VIEW-008**: The system shall report the corridor ahead relative to the party's current facing, so the same tile is reported as walled left or walled right according to which way the party looks.
+- [x] **EXPLORE-VIEW-009**: The system shall report, for each depth ahead of the party, whether a door stands on the edge the way on passes through, and whether that door is open or closed.
+- [x] **EXPLORE-VIEW-010**: The system shall report a `wall` and an undiscovered `secretDoor` on the edge ahead as no door at all.
 
 ## Automap
 
@@ -114,6 +118,7 @@ tuning the game does not rewrite its specs.
 - [x] **EXPLORE-MAP-007**: While the party's tile is not resolved to `dark`, the system shall draw the party's tile and facing on the automap.
 - [x] **EXPLORE-MAP-008**: The system shall make the automap available without requiring any item, spell, or character class.
 - [x] **EXPLORE-MAP-009**: The system shall draw the automap and the first-person view from the same party tile and facing, so the two can never disagree.
+- [x] **EXPLORE-MAP-011**: The system shall report, for each door edge drawn on the automap, whether that door stands open.
 - [D] **EXPLORE-MAP-010**: The system shall allow the player to place notes and icons on the automap.
 
 ## Returning to a floor
@@ -149,7 +154,7 @@ tuning the game does not rewrite its specs.
 
 ## Input
 
-- [x] **EXPLORE-INPUT-001**: The system shall give every movement verb and every party action — `STEP_FORWARD`, `TURN_LEFT`, `TURN_RIGHT`, `TURN_AROUND`, `PARTY`, `INVENTORY`, `SPELLS`, `SEARCH`, `INTERACT`, `TOGGLE_MAP` — a keyboard path.
+- [x] **EXPLORE-INPUT-001**: The system shall give every movement verb and every party action — `STEP_FORWARD`, `STEP_BACKWARD`, `TURN_LEFT`, `TURN_RIGHT`, `TURN_AROUND`, `PARTY`, `INVENTORY`, `SPELLS`, `SEARCH`, `INTERACT`, `TOGGLE_MAP` — a keyboard path.
 - [ ] **EXPLORE-INPUT-004**: The system shall leave every movement verb and party action achievable by touch, whether through a control of its own or through repeating another.
 - [x] **EXPLORE-INPUT-002**: The system shall produce an identical action for a given verb whether it originated from keyboard or from touch.
 - [x] **EXPLORE-INPUT-003**: The system shall not expose to the simulation which input device produced an action.

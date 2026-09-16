@@ -23,12 +23,34 @@ function shapeColour(shape) {
   return tones.opening;
 }
 
+/**
+ * A door on the frame the corridor stops at. Closed, it is a leaf of timber with a
+ * handle; open, it is the frame alone, with whatever lies beyond showing through.
+ *
+ * @spec PRESENT-VIEW-012
+ * @spec PRESENT-VIEW-013
+ */
+function drawDoor(graphics, shape) {
+  const tones = PALETTE[shape.level] ?? PALETTE.DARK;
+  const { x, y, width, height } = shape.rect;
+
+  if (shape.open) {
+    graphics.rect(x, y, width, height).stroke({ width: shape.thickness, color: tones.doorFrame });
+    return;
+  }
+
+  graphics.rect(x, y, width, height).fill(tones.door);
+  graphics.rect(x, y, width, height).stroke({ width: shape.thickness, color: tones.doorFrame });
+  graphics.circle(shape.handle.x, shape.handle.y, shape.handle.radius).fill(tones.handle);
+}
+
 function drawView(container, plan) {
   const graphics = new Graphics();
   // The plan is already ordered furthest-first, so emitting it in sequence gives
   // correct occlusion with no depth test.
   for (const shape of plan.shapes) {
-    graphics.poly(shape.points).fill(shapeColour(shape));
+    if (shape.kind === 'door') drawDoor(graphics, shape);
+    else graphics.poly(shape.points).fill(shapeColour(shape));
   }
   container.addChild(graphics);
 }
@@ -54,24 +76,25 @@ function drawMap(container, plan) {
   }
 
   for (const edge of plan.edges) {
+    const door = edge.kind === EdgeKind.DOOR || edge.kind === EdgeKind.LOCKED_DOOR;
     const colour =
       edge.kind === EdgeKind.SECRET_DOOR
         ? PALETTE.map.secret
-        : edge.kind === EdgeKind.DOOR || edge.kind === EdgeKind.LOCKED_DOOR
+        : door
           ? PALETTE.map.door
           : PALETTE.map.wall;
-    const { px, py } = edge;
-    const ends = {
-      [Direction.NORTH]: [px, py, px + size, py],
-      [Direction.SOUTH]: [px, py + size, px + size, py + size],
-      [Direction.WEST]: [px, py, px, py + size],
-      [Direction.EAST]: [px + size, py, px + size, py + size],
-    }[edge.direction];
-    graphics.moveTo(ends[0], ends[1]).lineTo(ends[2], ends[3]).stroke({ width: 2, color: colour });
+    // The plan decided where the strokes go; an open door is already two of them.
+    for (const [x1, y1, x2, y2] of edge.segments) {
+      graphics.moveTo(x1, y1).lineTo(x2, y2).stroke({ width: door ? 3 : 2, color: colour });
+    }
   }
 
-  for (const enemy of plan.enemies) {
-    graphics.circle(enemy.px + size / 2, enemy.py + size / 2, size * 0.3).fill(PALETTE.map.enemy);
+  for (const { marker } of plan.enemies) {
+    for (const horn of marker.horns) graphics.poly(horn).fill(PALETTE.map.enemy);
+    graphics.circle(marker.head.x, marker.head.y, marker.head.radius).fill(PALETTE.map.enemy);
+    for (const eye of marker.eyes) {
+      graphics.circle(eye.x, eye.y, eye.radius).fill(PALETTE.map.eye);
+    }
   }
 
   if (plan.party) {

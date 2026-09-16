@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   createFloor,
+  openEdge,
   setEdge,
   setTileFeature,
   setTileLight,
@@ -10,7 +11,7 @@ import {
   Direction,
 } from './floor.js';
 import { createLightSource } from './light.js';
-import { createExploration, corridorAhead, MAX_DRAWN_DEPTH } from './exploration.js';
+import { createExploration, corridorAhead, discoverEdge, MAX_DRAWN_DEPTH } from './exploration.js';
 
 const lamp = (over = {}) =>
   createLightSource({ id: 'l', brightRadius: 2, dimRadius: 6, remainingTicks: 99, lit: true, ...over });
@@ -158,6 +159,70 @@ describe('where the corridor report stops', () => {
 
     expect(slices.length).toBeLessThanOrEqual(MAX_DRAWN_DEPTH + 1);
     expect(MAX_DRAWN_DEPTH).toBeLessThan(20);
+  });
+
+  // @spec EXPLORE-VIEW-009
+  it('reports a closed door on the edge ahead as the door it is', () => {
+    const { floor, state } = corridorScene();
+    setEdge(floor, 3, 5, Direction.NORTH, EdgeKind.DOOR);
+
+    const slices = corridorAhead(state);
+
+    expect(slices.at(-1)).toMatchObject({
+      depth: 1,
+      closedAhead: true,
+      portalAhead: { kind: EdgeKind.DOOR, open: false },
+    });
+  });
+
+  // @spec EXPLORE-VIEW-009
+  it('reports an open door as a door, and the corridor as going on through it', () => {
+    const { floor, state } = corridorScene();
+    setEdge(floor, 3, 5, Direction.NORTH, EdgeKind.DOOR);
+    openEdge(floor, 3, 5, Direction.NORTH);
+
+    const slices = corridorAhead(state);
+
+    expect(slices[1]).toMatchObject({
+      depth: 1,
+      closedAhead: false,
+      portalAhead: { kind: EdgeKind.DOOR, open: true },
+    });
+    expect(slices.length).toBeGreaterThan(2);
+  });
+
+  // @spec EXPLORE-VIEW-010
+  it('reports a plain wall as no door', () => {
+    const { floor, state } = corridorScene();
+    setEdge(floor, 3, 5, Direction.NORTH, EdgeKind.WALL);
+
+    expect(corridorAhead(state).at(-1)).toMatchObject({
+      closedAhead: true,
+      portalAhead: null,
+    });
+  });
+
+  // @spec EXPLORE-VIEW-010
+  it('reports an undiscovered secret door as no door, giving nothing away', () => {
+    const { floor, state } = corridorScene();
+    setEdge(floor, 3, 5, Direction.NORTH, EdgeKind.SECRET_DOOR);
+
+    expect(corridorAhead(state).at(-1)).toMatchObject({
+      closedAhead: true,
+      portalAhead: null,
+    });
+  });
+
+  // @spec EXPLORE-VIEW-009
+  it('reports a secret door the party has found as the door it turned out to be', () => {
+    const { floor, state } = corridorScene();
+    setEdge(floor, 3, 5, Direction.NORTH, EdgeKind.SECRET_DOOR);
+    discoverEdge(state, 'f1', 3, 5, Direction.NORTH);
+
+    // Found, it stops being opaque, so the report carries on past it as a door.
+    expect(corridorAhead(state)[1]).toMatchObject({
+      portalAhead: { kind: EdgeKind.SECRET_DOOR, open: false },
+    });
   });
 
   // @spec EXPLORE-VIEW-005

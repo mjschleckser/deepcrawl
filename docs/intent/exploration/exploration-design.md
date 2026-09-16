@@ -195,24 +195,31 @@ segments that own roaming enemies and generation.
 
 ## Movement
 
-Four verbs:
+Five verbs:
 
 | Verb | Effect | Ticks |
 |---|---|---|
-| `STEP_FORWARD` | move one tile in the facing direction | 1, if the step succeeds |
+| `STEP_FORWARD` | move one tile in the facing direction | the step cost, if the step succeeds |
+| `STEP_BACKWARD` | move one tile opposite the facing, which does not change | the step cost, if the step succeeds |
 | `TURN_LEFT` | facing rotates 90° counter-clockwise | 0 |
 | `TURN_RIGHT` | facing rotates 90° clockwise | 0 |
 | `TURN_AROUND` | facing rotates 180° | 0 |
 
-There is no backward step. Because turning is free, withdrawing while facing a
-threat costs nothing a backward step would save, and a backward step would move
-the party into a tile its facing never revealed — an exception the sight rules
-would otherwise have to carry.
+A backward step is a withdrawal: the party gives ground without taking its eyes off
+what is in front of it. In every other respect it is an ordinary step — the same cost,
+the same blocking rules, the same arrival — because the tile behind the party does not
+care which way they are looking. What it buys is the difference between retreating and
+turning your back, which in a corridor with something in it is the whole of it.
+
+Backing into a tile the party has never looked at needs no exception in the sight
+rules. The party always sees the ground under its own feet, so the tile is mapped on
+arrival like any other.
 
 ### Step resolution
 
-A step is attempted against the edge between the current tile and the target tile.
-It is **blocked** — no movement, no tick, no side effects — when the target is
+A step is attempted against the edge between the current tile and the target tile —
+the tile ahead of the party going forward, the tile behind it going back. It is
+**blocked** — no movement, no tick, no side effects — when the target is
 outside the grid, or the edge is `wall`, `lockedDoor` without the matching key, or
 an undiscovered `secretDoor`. A `door` or discovered `secretDoor` opens as part of
 the step and costs no extra tick.
@@ -365,7 +372,8 @@ corridors it will have to map again.
 
 The automap is a second view of exploration state. It owns nothing.
 
-**It draws:** discovered tiles and their edges, discovered features (stairs, pits),
+**It draws:** discovered tiles and their edges — including whether a door on one
+stands open or closed — discovered features (stairs, pits),
 traps the party has found, and the party's own tile and facing.
 
 **It does not draw:** undiscovered tiles or secret doors, and roaming enemies on
@@ -390,14 +398,21 @@ Both are projections of exploration state, so both are answered here and drawn
 elsewhere.
 
 For each depth ahead of the party, exploration reports whether the way on is blocked,
-whether that tile is walled to the left and to the right, what feature stands on it,
-and what light it resolves to. The report stops at the first depth whose approach is
-opaque, at the first depth that resolves to `dark`, or at the maximum drawn depth,
-whichever comes first.
+what stands on the edge the way on passes through, whether that tile is walled to the
+left and to the right, what feature stands on it, and what light it resolves to. The
+report stops at the first depth whose approach is opaque, at the first depth that
+resolves to `dark`, or at the maximum drawn depth, whichever comes first.
 
 The blocking rule is sight's rule, not a second one: a `wall`, a closed `door` or
 `lockedDoor`, an undiscovered `secretDoor`. A view that disagreed with sight about
 what is opaque would show a corridor the automap denies.
+
+**A door on the edge ahead is reported as a door**, open or closed alike. Closed, it is
+what separates a way on from the end of a passage, which the blocking flag by itself
+cannot say. Open, it is a landmark: a doorway already walked through is what tells one
+stretch of corridor from another. A secret door the party has not found is reported as
+the wall it imitates, exactly as sight reports it — the corridor report may never give
+away what searching has not yet earned.
 
 The maximum drawn depth is a limit on the drawing, not on the seeing. A party whose
 light reaches forty tiles still maps forty tiles; it is simply not shown forty nested
@@ -491,14 +506,16 @@ do while standing still.
 | Movement verb | Keyboard | Touch |
 |---|---|---|
 | `STEP_FORWARD` | `W` / `↑` | tap upper-centre of the view |
+| `STEP_BACKWARD` | `S` / `↓` | tap lower-centre of the view |
 | `TURN_LEFT` | `A` / `←` | tap left edge of the view |
 | `TURN_RIGHT` | `D` / `→` | tap right edge of the view |
-| `TURN_AROUND` | `S` / `↓` | two taps of either turn control |
+| `TURN_AROUND` | `X` | two taps of either turn control |
 
-Turning about has a key but no control of its own. Two taps of a turn the player is
-already using reach it, and a control earns its place by being the only way to do
-something or by being worth the room it takes — this one is neither. What must hold is
-that every action stays *achievable* by touch, not that each has a button of its own.
+The four keys under one hand walk the party: forward, back, and a turn either way.
+Turning about is the one verb reached by repeating another, so it keeps a key without
+a control of its own. A control earns its place by being the only way to do something
+or by being worth the room it takes, and this one is neither. What must hold is that
+every action stays *achievable* by touch, not that each has a button of its own.
 
 | Party action | Keyboard | Touch | Owned by |
 |---|---|---|---|
@@ -520,13 +537,12 @@ the tile, and working the lever each cost a tick.
 
 ```
 ┌─────────────────────────────────┐
-│ ◀    ┌───────────────┐    ▶  ┌─┐│
-│ turn │   step fwd    │ turn │▓││ ← automap widget
-│ left │               │ right└─┘│   (tap to expand)
-│      └───────────────┘         │
-│      ┌───────────────┐         │
-│      │  turn around  │         │
-│      └───────────────┘         │
+│ ◀    ┌───────────────┐    ▶  ┌─┐│ ← automap widget
+│ turn │  step forward │ turn  │▓││   (tap to expand)
+│ left │               │ right └─┘│
+│      ├───────────────┤          │
+│      │   step back   │          │
+│      └───────────────┘          │
 └─────────────────────────────────┘
 ```
 
@@ -546,7 +562,8 @@ widget occupies a corner and expands to full screen on tap.
 | Turning | Free, never ticks | Turning costs a tick | Free turning keeps the first-person view scannable, which matters most on a phone where looking around is the primary orientation gesture. |
 | Wall bump | No movement, no tick | Bumping costs a tick | A misjudged step should not cost food and torchlight. |
 | Stepping into an occupied tile | Barred: the encounter begins and the party stays where it is | Take the step, then check contact on arrival | Arriving on top of a warband leaves the two sharing a tile, and a fight broken off from there re-opens on the party's next step, since whatever they fled is standing on them. Barring the step makes meeting a thing that happens between tiles, so fleeing buys distance rather than a single step's reprieve. |
-| Movement verbs | Forward, turn L/R, turn 180° | Adding a backward step | Free turning already makes withdrawal cheap; a backward step would only add a case where the party enters a tile its facing never revealed. |
+| Movement verbs | Forward, backward, turn L/R, turn 180° | Forward and turns alone, withdrawing by turning about | Turning to leave is not the same act as backing away: it puts the party's front rank at the back and gives up sight of whatever they are retreating from. The objection that a backward step enters a tile the facing never revealed costs nothing after all, since the party maps the tile it stands on however it arrived there. |
+| The corridor's door report | The edge ahead is reported as a door, open or closed, or as nothing | Reporting only whether the way on is blocked | A closed door and a dead end are otherwise the same report, so the view cannot tell a way on from the end of a passage. Open doors are reported for the reverse reason: a doorway already walked through is what distinguishes one corridor from another. |
 | Visibility propagation | A line traced from the party to each candidate tile | Spreading outward through non-opaque edges within the cone | Spreading is cheaper and has no corner cases to arbitrate, but it sees around corners: the map fills in ground beyond a turn the party has never looked along. That silently undoes the reason to map a dungeon at all, which is worth the cost of tracing lines. |
 | Lines through a corner point | Blocked only when both ways around the corner are blocked | Blocked when either way is blocked | A solid corner is blocked both ways and stays hidden. Blocking on either side would throw spurious shadows across open rooms, where a player can plainly see past the edge of a pillar. |
 | Light falloff distance | Chebyshev, so light pools square on the grid | Euclidean distance, rounded | A diagonal step costs the party no more than an orthogonal one, so light that reached further orthogonally than diagonally would contradict how the party moves. |
@@ -611,6 +628,8 @@ widget occupies a corner and expands to full screen on tap.
 31. ✅ **Roamers move on their own tick cost**, not once per party step.
 28. ✅ **The corridor projection is exploration's**, answered beside the automap projection and drawn by presentation.
 29. ✅ **Maximum drawn depth is capped independently of light reach.**
+32. ✅ **The party may step backward**, at the same cost and under the same rules as a forward step, without changing facing.
+33. ✅ **The corridor report names the door on the edge ahead**, open or closed, and never an undiscovered secret one.
 
 ### Deferred
 

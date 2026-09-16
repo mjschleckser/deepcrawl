@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   createFloor,
+  openEdge,
   setEdge,
   setTileFeature,
   EdgeKind,
@@ -63,7 +64,7 @@ describe('what the automap draws', () => {
 
     const view = automapView(state);
 
-    expect(tileAt(view, 3, 3).edges[Direction.NORTH]).toBe(EdgeKind.DOOR);
+    expect(tileAt(view, 3, 3).edges[Direction.NORTH].kind).toBe(EdgeKind.DOOR);
   });
 
   // @spec EXPLORE-MAP-001
@@ -95,7 +96,7 @@ describe('what the automap draws', () => {
     setEdge(floor, 3, 3, Direction.EAST, EdgeKind.SECRET_DOOR);
     computeSight(state);
 
-    expect(tileAt(automapView(state), 3, 3).edges[Direction.EAST]).toBe(EdgeKind.WALL);
+    expect(tileAt(automapView(state), 3, 3).edges[Direction.EAST].kind).toBe(EdgeKind.WALL);
   });
 
   // @spec EXPLORE-MAP-003
@@ -105,7 +106,20 @@ describe('what the automap draws', () => {
     discoverEdge(state, 'f1', 3, 3, Direction.EAST);
     computeSight(state);
 
-    expect(tileAt(automapView(state), 3, 3).edges[Direction.EAST]).toBe(EdgeKind.SECRET_DOOR);
+    expect(tileAt(automapView(state), 3, 3).edges[Direction.EAST].kind).toBe(EdgeKind.SECRET_DOOR);
+  });
+
+  // @spec EXPLORE-MAP-011
+  it('says whether a door it draws stands open', () => {
+    const { floor, state } = scene();
+    setEdge(floor, 3, 3, Direction.NORTH, EdgeKind.DOOR);
+    setEdge(floor, 3, 3, Direction.EAST, EdgeKind.DOOR);
+    openEdge(floor, 3, 3, Direction.EAST);
+    computeSight(state);
+
+    const tile = tileAt(automapView(state), 3, 3);
+    expect(tile.edges[Direction.NORTH]).toEqual({ kind: EdgeKind.DOOR, open: false });
+    expect(tile.edges[Direction.EAST]).toEqual({ kind: EdgeKind.DOOR, open: true });
   });
 
   // @spec EXPLORE-MAP-008

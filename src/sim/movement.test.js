@@ -38,9 +38,9 @@ function exploration(floors, opts = {}) {
 
 describe('movement verbs', () => {
   // @spec EXPLORE-MOVE-001
-  it('accepts exactly the four defined movement verbs', () => {
+  it('accepts exactly the five defined movement verbs', () => {
     expect(Object.values(Verb).sort()).toEqual(
-      ['STEP_FORWARD', 'TURN_LEFT', 'TURN_RIGHT', 'TURN_AROUND'].sort(),
+      ['STEP_FORWARD', 'STEP_BACKWARD', 'TURN_LEFT', 'TURN_RIGHT', 'TURN_AROUND'].sort(),
     );
   });
 
@@ -71,6 +71,101 @@ describe('movement verbs', () => {
     }
 
     expect(seen).toEqual([Direction.EAST, Direction.SOUTH, Direction.WEST, Direction.NORTH]);
+  });
+});
+
+describe('stepping backward', () => {
+  // @spec EXPLORE-MOVE-020
+  it('moves one tile opposite the facing and leaves the facing alone', () => {
+    const state = exploration([openFloor()]);
+
+    perform(state, { verb: Verb.STEP_BACKWARD });
+
+    // Facing north from (1,1), the tile behind is (1,2).
+    expect(partyPosition(state).tile).toEqual({ x: 1, y: 2 });
+    expect(partyPosition(state).facing).toBe(Direction.NORTH);
+  });
+
+  // @spec EXPLORE-MOVE-020
+  it('is the reverse of a forward step, whichever way the party looks', () => {
+    for (const [facing, behind] of [
+      [Direction.NORTH, { x: 1, y: 2 }],
+      [Direction.SOUTH, { x: 1, y: 0 }],
+      [Direction.EAST, { x: 0, y: 1 }],
+      [Direction.WEST, { x: 2, y: 1 }],
+    ]) {
+      const state = exploration([openFloor()], { facing });
+
+      perform(state, { verb: Verb.STEP_BACKWARD });
+
+      expect(partyPosition(state).tile).toEqual(behind);
+    }
+  });
+
+  // @spec EXPLORE-MOVE-021
+  it('is blocked by the edge behind, and costs nothing when it is', () => {
+    const floor = openFloor();
+    // Facing north at (1,1), so the edge behind is the southern one.
+    setEdge(floor, 1, 1, Direction.SOUTH, EdgeKind.WALL);
+    const state = exploration([floor]);
+
+    const result = perform(state, { verb: Verb.STEP_BACKWARD });
+
+    expect(result.blocked).toBe(true);
+    expect(partyPosition(state).tile).toEqual({ x: 1, y: 1 });
+    expect(tickCount(state)).toBe(0);
+  });
+
+  // @spec EXPLORE-MOVE-021
+  it('costs the same clock a forward step costs', () => {
+    const forwards = exploration([openFloor()]);
+    const backwards = exploration([openFloor()]);
+
+    perform(forwards, { verb: Verb.STEP_FORWARD });
+    perform(backwards, { verb: Verb.STEP_BACKWARD });
+
+    expect(tickCount(backwards)).toBe(tickCount(forwards));
+    expect(tickCount(backwards)).toBeGreaterThan(0);
+  });
+
+  // @spec EXPLORE-MOVE-021
+  it('opens a closed door behind as part of the step, as a forward step would', () => {
+    const floor = openFloor();
+    setEdge(floor, 1, 1, Direction.SOUTH, EdgeKind.DOOR);
+    const state = exploration([floor]);
+
+    perform(state, { verb: Verb.STEP_BACKWARD });
+
+    expect(partyPosition(state).tile).toEqual({ x: 1, y: 2 });
+    expect(isEdgeOpen(floor, 1, 1, Direction.SOUTH)).toBe(true);
+  });
+
+  // @spec EXPLORE-MOVE-021
+  it('resolves the same step effects on arrival a forward step resolves', () => {
+    const onContactCheck = vi.fn();
+    const state = exploration([openFloor()], { hooks: { onContactCheck } });
+
+    const result = perform(state, { verb: Verb.STEP_BACKWARD });
+
+    expect(result.events).toContain(StepEvent.MOVED);
+    expect(result.events).toContain(StepEvent.CLOCK_ADVANCED);
+    expect(onContactCheck).toHaveBeenCalled();
+  });
+
+  // @spec EXPLORE-MOVE-021
+  it('is barred by a warband behind, which begins the encounter where it stands', () => {
+    const onContactCheck = vi.fn();
+    const state = exploration([openFloor()], {
+      hooks: { isTileOccupied: ({ tile }) => tile.x === 1 && tile.y === 2, onContactCheck },
+    });
+
+    const result = perform(state, { verb: Verb.STEP_BACKWARD });
+
+    expect(partyPosition(state).tile).toEqual({ x: 1, y: 1 });
+    expect(tickCount(state)).toBe(0);
+    expect(onContactCheck).toHaveBeenCalledWith(
+      expect.objectContaining({ at: { x: 1, y: 2 } }),
+    );
   });
 });
 

@@ -20,9 +20,18 @@ export const PIXI_APP_OPTIONS = {
 
 /** Flat fills per light level; the corridor fades toward black as the torch fails. */
 export const PALETTE = {
-  BRIGHT: { wall: 0x6b5640, floor: 0x2e2418, ceiling: 0x17120c, opening: 0x090705 },
-  DIM: { wall: 0x3a2f24, floor: 0x1a150e, ceiling: 0x0d0a07, opening: 0x050403 },
-  DARK: { wall: 0x000000, floor: 0x000000, ceiling: 0x000000, opening: 0x000000 },
+  BRIGHT: {
+    wall: 0x6b5640, floor: 0x2e2418, ceiling: 0x17120c, opening: 0x090705,
+    door: 0x7a4a22, doorFrame: 0x3d2510, handle: 0xd8b46a,
+  },
+  DIM: {
+    wall: 0x3a2f24, floor: 0x1a150e, ceiling: 0x0d0a07, opening: 0x050403,
+    door: 0x452a13, doorFrame: 0x241608, handle: 0x8a7354,
+  },
+  DARK: {
+    wall: 0x000000, floor: 0x000000, ceiling: 0x000000, opening: 0x000000,
+    door: 0x000000, doorFrame: 0x000000, handle: 0x000000,
+  },
   darkness: 0x000000,
   feature: 0xd8b46a,
   map: {
@@ -30,6 +39,7 @@ export const PALETTE = {
     wall: 0x8a7354,
     door: 0xd8b46a,
     secret: 0xc06a4a,
+    eye: 0x1c160f,
     party: 0xe8d9a8,
     enemy: 0xc0503a,
     trap: 0xc06a4a,

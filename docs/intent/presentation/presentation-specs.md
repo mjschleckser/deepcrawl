@@ -26,8 +26,10 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-VIEW-005**: When the simulation reports the way ahead closed at a depth, the system shall draw a panel closing the corridor at that depth's frame.
 - [x] **PRESENT-VIEW-006**: The system shall draw floor and ceiling bands between each pair of consecutive depth frames.
 - [x] **PRESENT-VIEW-007**: The system shall tint each depth according to the light level the simulation reports for it, drawing nothing for a depth reported as dark.
-- [x] **PRESENT-VIEW-008**: The system shall draw the feature the simulation reports at each depth — stairs, a pit, or a door — within that depth's band.
+- [x] **PRESENT-VIEW-008**: The system shall draw the feature the simulation reports at each depth — stairs or a pit — within that depth's band.
 - [x] **PRESENT-VIEW-009**: The system shall draw no depth beyond the maximum the simulation reports, however far the party's light reaches.
+- [x] **PRESENT-VIEW-012**: When the simulation reports a closed door on the edge ahead at a depth, the system shall draw a door panel on that depth's far frame, filled distinguishably from the wall around it and carrying a handle.
+- [x] **PRESENT-VIEW-013**: When the simulation reports an open door on the edge ahead at a depth, the system shall draw that door's frame on that depth's far frame and shall leave what lies beyond it visible through the opening.
 
 ## Automap
 
@@ -40,6 +42,8 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-MAP-007**: The system shall draw walls, doors, and found secret doors with distinguishable strokes.
 - [x] **PRESENT-MAP-008**: The system shall mark tiles the simulation reports as holding a known trap, and mark stairs and pits distinguishably from one another.
 - [x] **PRESENT-MAP-009**: The system shall draw an enemy marker for each enemy the simulation reports, and for no other position.
+- [x] **PRESENT-MAP-010**: The system shall draw a door the simulation reports as open distinguishably from one it reports as closed.
+- [x] **PRESENT-MAP-011**: The system shall draw every enemy with one shared creature marker, distinguishable in shape from the party marker and from a trap mark.
 
 ## Input
 
@@ -68,6 +72,7 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-CTRL-013**: The system shall carry the scale on the plan rather than working it out while drawing.
 - [x] **PRESENT-CTRL-008**: While a pointer is held on a control, the system shall draw that control's outline, and shall stop drawing it when the pointer is released.
 - [x] **PRESENT-CTRL-009**: The system shall mark at most one control as pressed at a time.
+- [x] **PRESENT-CTRL-014**: The system shall offer a navigation zone for stepping backward beneath the one for stepping forward, giving neither any part of the other's area.
 
 ## Prompts
 

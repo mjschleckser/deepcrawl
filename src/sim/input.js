@@ -10,6 +10,7 @@ import { Verb, PartyAction } from './exploration.js';
 
 export const TouchRegion = {
   FORWARD: 'FORWARD',
+  BACKWARD: 'BACKWARD',
   TURN_LEFT: 'TURN_LEFT',
   TURN_RIGHT: 'TURN_RIGHT',
   TURN_AROUND: 'TURN_AROUND',
@@ -28,9 +29,12 @@ export const TouchRegion = {
  */
 const BINDINGS = [
   { action: Verb.STEP_FORWARD, keys: ['w', 'ArrowUp'], region: TouchRegion.FORWARD },
+  { action: Verb.STEP_BACKWARD, keys: ['s', 'ArrowDown'], region: TouchRegion.BACKWARD },
   { action: Verb.TURN_LEFT, keys: ['a', 'ArrowLeft'], region: TouchRegion.TURN_LEFT },
   { action: Verb.TURN_RIGHT, keys: ['d', 'ArrowRight'], region: TouchRegion.TURN_RIGHT },
-  { action: Verb.TURN_AROUND, keys: ['s', 'ArrowDown'], region: TouchRegion.TURN_AROUND },
+  // The four keys under one hand walk the party; turning about is the verb reached by
+  // repeating another, so it keeps a key of its own and no control.
+  { action: Verb.TURN_AROUND, keys: ['x'], region: TouchRegion.TURN_AROUND },
   { action: PartyAction.PARTY, keys: ['p'], region: TouchRegion.PARTY_BAR },
   { action: PartyAction.INVENTORY, keys: ['i'], region: TouchRegion.PACK },
   { action: PartyAction.SPELLS, keys: ['c'], region: TouchRegion.SPELL_ICON },

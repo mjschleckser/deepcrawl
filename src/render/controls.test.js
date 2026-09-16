@@ -292,6 +292,13 @@ describe('controls over the dungeon', () => {
     expect(regions).toContain('TURN_RIGHT');
   });
 
+  // @spec EXPLORE-INPUT-004
+  it('gives walking backward a control, which no repetition of another reaches', () => {
+    const regions = tapRegionsFor(phone).map((r) => r.region);
+
+    expect(regions).toContain('BACKWARD');
+  });
+
   // @spec PRESENT-CTRL-007
   it('is unpressed by default, so it draws as its label alone', () => {
     for (const control of controlsFor(phone)) {
@@ -335,7 +342,7 @@ describe('the two kinds of control', () => {
 
   // @spec PRESENT-CTRL-007
   it('makes the movement areas zones, which draw as bare labels', () => {
-    for (const region of ['FORWARD', 'TURN_LEFT', 'TURN_RIGHT']) {
+    for (const region of ['FORWARD', 'BACKWARD', 'TURN_LEFT', 'TURN_RIGHT']) {
       expect(byRegion(region).kind).toBe(ControlKind.ZONE);
     }
   });

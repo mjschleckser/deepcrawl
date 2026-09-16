@@ -6,7 +6,9 @@
  * and cannot disagree about where the party stands.
  */
 
-import { Direction, EdgeKind, LightLevel, edgeDetail, edgeKey, getTile } from './floor.js';
+import {
+  Direction, EdgeKind, LightLevel, edgeDetail, edgeKey, getTile, isEdgeOpen,
+} from './floor.js';
 
 const ALL_DIRECTIONS = Object.values(Direction);
 
@@ -15,14 +17,19 @@ const ALL_DIRECTIONS = Object.values(Direction);
  * reported as the wall it imitates — the map gives nothing away that the party has
  * not actually found.
  *
+ * A door also reports whether it stands open, because a doorway already walked through
+ * and one still shut are different things to a party reading its own map.
+ *
  * @spec EXPLORE-MAP-003
+ * @spec EXPLORE-MAP-011
  */
 function drawnEdge(state, floor, x, y, direction) {
   const { kind } = edgeDetail(floor, x, y, direction);
-  if (kind !== EdgeKind.SECRET_DOOR) return kind;
+  const open = isEdgeOpen(floor, x, y, direction);
+  if (kind !== EdgeKind.SECRET_DOOR) return { kind, open };
   return state.discoveredEdges.has(edgeKey(floor, x, y, direction))
-    ? EdgeKind.SECRET_DOOR
-    : EdgeKind.WALL;
+    ? { kind: EdgeKind.SECRET_DOOR, open }
+    : { kind: EdgeKind.WALL, open: false };
 }
 
 /**

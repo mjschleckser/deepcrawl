@@ -11,6 +11,45 @@ import { depthFrames } from './geometry.js';
 
 const quad = (a, b, c, d) => [a.x, a.y, b.x, b.y, c.x, c.y, d.x, d.y];
 
+/** How much of the frame a door takes: narrower than the corridor, and not as tall. */
+const DOOR_WIDTH = 0.66;
+const DOOR_HEIGHT = 0.86;
+
+/**
+ * The door standing in a frame, as a rectangle on the floor of it with a handle on the
+ * side away from its hinge. An open door keeps the rectangle and loses the leaf: what
+ * is drawn is the frame, and the corridor shows through it.
+ *
+ * @spec PRESENT-VIEW-012
+ * @spec PRESENT-VIEW-013
+ */
+function doorShape(frame, band, portal) {
+  const width = frame.width * DOOR_WIDTH;
+  const height = frame.height * DOOR_HEIGHT;
+  const rect = {
+    x: frame.x + (frame.width - width) / 2,
+    // Standing on the floor of the frame rather than floating in the middle of it.
+    y: frame.y + frame.height - height,
+    width,
+    height,
+  };
+  return {
+    ...band,
+    kind: 'door',
+    open: portal.open,
+    kindOfDoor: portal.kind,
+    rect,
+    thickness: Math.max(1, width * 0.08),
+    handle: portal.open
+      ? null
+      : {
+        x: rect.x + rect.width * 0.84,
+        y: rect.y + rect.height * 0.55,
+        radius: Math.max(1, width * 0.05),
+      },
+  };
+}
+
 const corners = (frame) => ({
   topLeft: { x: frame.x, y: frame.y },
   topRight: { x: frame.x + frame.width, y: frame.y },
@@ -33,6 +72,8 @@ const corners = (frame) => ({
  * @spec PRESENT-VIEW-007
  * @spec PRESENT-VIEW-008
  * @spec PRESENT-VIEW-009
+ * @spec PRESENT-VIEW-012
+ * @spec PRESENT-VIEW-013
  */
 export function buildViewPlan(slices, viewport) {
   if (slices.length === 0) return { shapes: [] };
@@ -100,6 +141,11 @@ export function buildViewPlan(slices, viewport) {
         kind: 'frontWall',
         points: quad(far.topLeft, far.topRight, far.bottomRight, far.bottomLeft),
       });
+    }
+
+    // After the wall it stands in, so a closed door is not painted over by it.
+    if (slice.portalAhead) {
+      shapes.push(doorShape(frames[slice.depth + 1], band, slice.portalAhead));
     }
   }
 

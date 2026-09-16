@@ -92,6 +92,7 @@ export const ControlKind = { ZONE: 'ZONE', BUTTON: 'BUTTON' };
 /** What each region does, named for the player rather than for the key. */
 const CONTROL_LABELS = {
   FORWARD: { label: 'Forward', hint: 'W', kind: ControlKind.ZONE },
+  BACKWARD: { label: 'Back', hint: 'S', kind: ControlKind.ZONE },
   TURN_LEFT: { label: 'Left', hint: 'A', kind: ControlKind.ZONE },
   TURN_RIGHT: { label: 'Right', hint: 'D', kind: ControlKind.ZONE },
   PARTY_BAR: { label: 'Party', hint: 'P', kind: ControlKind.BUTTON },
@@ -125,7 +126,10 @@ export const TouchLayout = [
   { region: 'INTERACT_PROMPT', fx: 0.8, fy: 0.86, fw: 0.18, fh: 0.12, anchor: Anchor.COLUMN },
   { region: 'TURN_LEFT', fx: 0.0, fy: 0.18, fw: 0.26, fh: 0.66, anchor: Anchor.VIEWPORT },
   { region: 'TURN_RIGHT', fx: 0.74, fy: 0.18, fw: 0.26, fh: 0.66, anchor: Anchor.VIEWPORT },
-  { region: 'FORWARD', fx: 0.26, fy: 0.18, fw: 0.48, fh: 0.66, anchor: Anchor.VIEWPORT },
+  // The centre splits: walking on above, giving ground below. Forward takes the larger
+  // share, being the one used on almost every step.
+  { region: 'FORWARD', fx: 0.26, fy: 0.18, fw: 0.48, fh: 0.44, anchor: Anchor.VIEWPORT },
+  { region: 'BACKWARD', fx: 0.26, fy: 0.62, fw: 0.48, fh: 0.22, anchor: Anchor.VIEWPORT },
 ];
 
 /**

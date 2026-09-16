@@ -15,8 +15,11 @@ const slice = (over = {}) => ({
   walledLeft: true,
   walledRight: true,
   closedAhead: false,
+  portalAhead: null,
   ...over,
 });
+
+const door = (over = {}) => ({ kind: EdgeKind.DOOR, open: false, ...over });
 
 const kinds = (plan, kind) => plan.shapes.filter((s) => s.kind === kind);
 
@@ -147,6 +150,60 @@ describe('the first-person draw plan', () => {
     expect(Math.max(...plan.shapes.map((s) => s.depth))).toBe(1);
   });
 
+  // @spec PRESENT-VIEW-012
+  it('draws a closed door as a panel on the frame, with a handle', () => {
+    const plan = buildViewPlan([slice({ closedAhead: true, portalAhead: door() })], viewport);
+
+    const [panel] = kinds(plan, 'door');
+    expect(panel).toBeDefined();
+    expect(panel.open).toBe(false);
+    expect(panel.handle.radius).toBeGreaterThan(0);
+  });
+
+  // @spec PRESENT-VIEW-012
+  it('puts the door inside the frame the corridor stops at, not across the screen', () => {
+    const frames = depthFrames(viewport, 2);
+    const plan = buildViewPlan([slice({ closedAhead: true, portalAhead: door() })], viewport);
+
+    const [panel] = kinds(plan, 'door');
+    expect(panel.rect.width).toBeLessThan(frames[1].width);
+    expect(panel.rect.x).toBeGreaterThanOrEqual(frames[1].x);
+    expect(panel.rect.x + panel.rect.width).toBeLessThanOrEqual(frames[1].x + frames[1].width);
+  });
+
+  // @spec PRESENT-VIEW-012
+  it('draws the door after the wall it stands in, so it is not painted over', () => {
+    const plan = buildViewPlan([slice({ closedAhead: true, portalAhead: door() })], viewport);
+
+    const wall = plan.shapes.findIndex((sh) => sh.kind === 'frontWall');
+    const panel = plan.shapes.findIndex((sh) => sh.kind === 'door');
+    expect(wall).toBeGreaterThanOrEqual(0);
+    expect(panel).toBeGreaterThan(wall);
+  });
+
+  // @spec PRESENT-VIEW-013
+  it('draws an open door as its frame, with nothing filling the doorway', () => {
+    const plan = buildViewPlan(
+      [slice({ closedAhead: false, portalAhead: door({ open: true }) }), slice({ depth: 1 })],
+      viewport,
+    );
+
+    const [panel] = kinds(plan, 'door');
+    expect(panel.open).toBe(true);
+    expect(panel.handle).toBeNull();
+    expect(panel.thickness).toBeGreaterThan(0);
+    // Nothing closes the corridor, so the way on is still visible through it.
+    expect(kinds(plan, 'frontWall')).toHaveLength(0);
+  });
+
+  // @spec PRESENT-VIEW-005
+  it('draws no door where the simulation reports none', () => {
+    const plan = buildViewPlan([slice({ closedAhead: true })], viewport);
+
+    expect(kinds(plan, 'door')).toHaveLength(0);
+    expect(kinds(plan, 'frontWall')).toHaveLength(1);
+  });
+
   // @spec PRESENT-VIEW-001
   it('draws nothing at all from an empty report', () => {
     expect(buildViewPlan([], viewport).shapes).toEqual([]);
@@ -159,8 +216,8 @@ describe('the automap draw plan', () => {
     width: 5,
     height: 5,
     tiles: [
-      { x: 1, y: 1, feature: TileFeature.NONE, trapKnown: false, edges: { NORTH: EdgeKind.WALL, EAST: EdgeKind.OPEN, SOUTH: EdgeKind.DOOR, WEST: EdgeKind.WALL } },
-      { x: 2, y: 1, feature: TileFeature.STAIRS_DOWN, trapKnown: true, edges: { NORTH: EdgeKind.WALL, EAST: EdgeKind.WALL, SOUTH: EdgeKind.OPEN, WEST: EdgeKind.OPEN } },
+      { x: 1, y: 1, feature: TileFeature.NONE, trapKnown: false, edges: { NORTH: { kind: EdgeKind.WALL, open: false }, EAST: { kind: EdgeKind.OPEN, open: false }, SOUTH: { kind: EdgeKind.DOOR, open: false }, WEST: { kind: EdgeKind.DOOR, open: true } } },
+      { x: 2, y: 1, feature: TileFeature.STAIRS_DOWN, trapKnown: true, edges: { NORTH: { kind: EdgeKind.WALL, open: false }, EAST: { kind: EdgeKind.WALL, open: false }, SOUTH: { kind: EdgeKind.OPEN, open: false }, WEST: { kind: EdgeKind.OPEN, open: false } } },
     ],
     party: { x: 1, y: 1, facing: Direction.NORTH },
     enemies: [{ id: 'r1', x: 2, y: 1 }],
@@ -219,6 +276,30 @@ describe('the automap draw plan', () => {
     expect(plan.edges.some((e) => e.kind === EdgeKind.OPEN)).toBe(false);
   });
 
+  // @spec PRESENT-MAP-010
+  it('leaves a gap in an open door and bars a closed one', () => {
+    const plan = buildMapPlan(view, viewport, { expanded: false });
+    const find = (direction) =>
+      plan.edges.find((e) => e.x === 1 && e.y === 1 && e.direction === direction);
+
+    // A closed door is one unbroken run along the edge; an open one is its two posts.
+    expect(find(Direction.SOUTH).segments).toHaveLength(1);
+    expect(find(Direction.WEST).segments).toHaveLength(2);
+    expect(find(Direction.WEST).open).toBe(true);
+  });
+
+  // @spec PRESENT-MAP-007
+  it('draws every edge from segments decided in the plan', () => {
+    const plan = buildMapPlan(view, viewport, { expanded: false });
+
+    for (const edge of plan.edges) {
+      expect(edge.segments.length).toBeGreaterThan(0);
+      for (const [x1, y1, x2, y2] of edge.segments) {
+        for (const n of [x1, y1, x2, y2]) expect(Number.isFinite(n)).toBe(true);
+      }
+    }
+  });
+
   // @spec PRESENT-MAP-008
   it('marks known traps and features', () => {
     const plan = buildMapPlan(view, viewport, { expanded: false });
@@ -236,6 +317,23 @@ describe('the automap draw plan', () => {
     expect(plan.enemies[0]).toMatchObject({ x: 2, y: 1 });
 
     expect(buildMapPlan({ ...view, enemies: [] }, viewport, { expanded: false }).enemies).toEqual([]);
+  });
+
+  // @spec PRESENT-MAP-011
+  it('carries one shared creature marker for every enemy, decided in the plan', () => {
+    const two = { ...view, enemies: [{ id: 'r1', x: 2, y: 1 }, { id: 'r2', x: 1, y: 1 }] };
+    const plan = buildMapPlan(two, viewport, { expanded: false });
+
+    for (const enemy of plan.enemies) {
+      // A head, horns, and eyes: more than the party's triangle or a trap's dot, and
+      // every enemy gets the same one.
+      expect(enemy.marker.head.radius).toBeGreaterThan(0);
+      expect(enemy.marker.horns).toHaveLength(2);
+      expect(enemy.marker.eyes).toHaveLength(2);
+    }
+    const [a, b] = plan.enemies;
+    expect(a.marker.head.radius).toBe(b.marker.head.radius);
+    expect(a.marker.head.x).not.toBe(b.marker.head.x);
   });
 });
 
@@ -262,7 +360,7 @@ describe('tap regions', () => {
     const wide = { width: 2400, height: 1000 };
     const column = contentColumn(wide);
     const buttons = tapRegionsFor(wide).filter(
-      (r) => !['FORWARD', 'TURN_LEFT', 'TURN_RIGHT'].includes(r.region),
+      (r) => !['FORWARD', 'BACKWARD', 'TURN_LEFT', 'TURN_RIGHT'].includes(r.region),
     );
 
     expect(buttons.length).toBeGreaterThan(0);
@@ -290,6 +388,16 @@ describe('tap regions', () => {
 
     // Still over on the right, where the automap's opposite number belongs.
     expect(map.x + map.width).toBeGreaterThan(wide.width * 0.9);
+  });
+
+  // @spec PRESENT-CTRL-014
+  it('puts the backward zone under the forward one, neither taking room from the other', () => {
+    const forward = tapRegionsFor(viewport).find((r) => r.region === 'FORWARD');
+    const back = tapRegionsFor(viewport).find((r) => r.region === 'BACKWARD');
+
+    expect(back).toBeDefined();
+    expect(back.y).toBeGreaterThanOrEqual(forward.y + forward.height);
+    expect(hitTest(viewport, viewport.width / 2, back.y + back.height / 2)).toBe('BACKWARD');
   });
 
   // @spec PRESENT-INPUT-002

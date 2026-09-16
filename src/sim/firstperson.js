@@ -41,8 +41,13 @@ const RIGHT_OF = {
  * @spec EXPLORE-VIEW-006
  * @spec EXPLORE-VIEW-007
  * @spec EXPLORE-VIEW-008
+ * @spec EXPLORE-VIEW-009
+ * @spec EXPLORE-VIEW-010
  */
-export function buildCorridorAhead(state, { isOpaque, resolveLight, maxDepth = MAX_DRAWN_DEPTH }) {
+export function buildCorridorAhead(
+  state,
+  { isOpaque, portalAt = () => null, resolveLight, maxDepth = MAX_DRAWN_DEPTH },
+) {
   const floor = state.getFloor(state.party.floorId);
   const facing = state.party.facing;
   const { dx, dy } = STEP_DELTA[facing];
@@ -63,6 +68,9 @@ export function buildCorridorAhead(state, { isOpaque, resolveLight, maxDepth = M
       walledLeft: isOpaque(floor, x, y, LEFT_OF[facing]),
       walledRight: isOpaque(floor, x, y, RIGHT_OF[facing]),
       closedAhead: false,
+      // A door is a landmark whether or not it is in the way, so it is reported
+      // alongside the blocking flag rather than being implied by it.
+      portalAhead: null,
     };
 
     // The dark boundary is reported rather than omitted, so the view has somewhere to
@@ -75,6 +83,9 @@ export function buildCorridorAhead(state, { isOpaque, resolveLight, maxDepth = M
     const ahead = { x: x + dx, y: y + dy };
     const blocked = !contains(floor, ahead.x, ahead.y) || isOpaque(floor, x, y, facing);
     slice.closedAhead = blocked;
+    slice.portalAhead = contains(floor, ahead.x, ahead.y)
+      ? portalAt(floor, x, y, facing)
+      : null;
     slices.push(slice);
 
     if (blocked) return slices;

@@ -106,8 +106,14 @@ drawn at all at `dark`. The corridor therefore fades into blackness at the edge 
 party's torch, and a guttering torch is something the player watches happen rather
 than reads in a status line.
 
-Doors, stairs, and pits are drawn as panels and floor markings within the band for the
-depth they occupy.
+Stairs and pits are markings on the floor within the band for the depth they occupy.
+
+**A door is drawn on the frame, not on the floor**, because it is a thing in the way
+rather than a thing underfoot. A closed door is a panel of timber across the frame the
+corridor stops at, lighter than the stone around it and carrying a handle, so a way on
+is never taken for the end of a passage. An open door is drawn as its frame alone, the
+corridor visible through it — the doorway the party has already been through, which is
+what tells one stretch of passage from another.
 
 ## The Automap
 
@@ -115,12 +121,16 @@ A corner widget over the first-person view, drawn from what exploration says may
 shown and nothing else.
 
 - Discovered tiles are cells; discovered edges are strokes along the cell boundary.
-- Walls, doors, and secret doors the party has found are distinguished by stroke.
+- Walls, doors, and secret doors the party has found are distinguished by stroke, and
+  a door shows whether it stands open: closed, it bars the edge; open, it leaves the
+  gap the party walked through between its two posts.
 - Known traps carry a mark; stairs and pits carry their own.
 - The party is a triangle pointing the way it faces — absent entirely when the party
   stands in the dark, while the rest of the map stays drawn.
 - Enemies appear only where exploration reports them, which is only where the party
-  can presently see them.
+  can presently see them, and are drawn as a creature mark rather than a dot, so one is
+  not read as a trap or as the party. Every enemy shares that mark; telling a goblin
+  from a mage on the map is authoring nobody has done.
 
 Tapping or pressing the map key expands the widget to fill the screen; the same input
 collapses it. Expanded, it is the same drawing at a larger scale — not a different
@@ -142,13 +152,15 @@ viewport, not pixels, so they hold their proportions on any screen:
 
 ```
 ┌─────────────────────────────────┐
-│ ◀    ┌───────────────┐    ▶  ┌─┐│
-│ turn │  step forward │ turn │▓││ ← automap widget
-│ left │               │ right└─┘│
-│      └───────────────┘         │
-│ ┌──┬──┬──┐   ┌────────┐        │
-│ │party│pack│ │ turn   │        │ ← party action bar
-│ └──┴──┴──┘   │ around │        │
+│ ◀    ┌───────────────┐    ▶  ┌─┐│ ← automap widget
+│ turn │  step forward │ turn  │▓││
+│ left │               │ right └─┘│
+│      ├───────────────┤          │
+│      │   step back   │          │
+│      └───────────────┘          │
+│  ┌────┬────┬────┬────┬────┐     │
+│  │part│pack│spel│srch│ use│     │ ← party action bar
+│  └────┴────┴────┴────┴────┘     │
 └─────────────────────────────────┘
 ```
 
@@ -368,9 +380,12 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 | Tap regions | Fractions of the viewport, with a pixel floor on size | Fractions alone; fixed pixel rectangles | The same layout has to work on a phone and a desktop window, so fractions hold the proportions — but a thumb does not shrink with the viewport, so the floor is in real pixels. |
 | Drawing the controls | Every tappable region is drawn | Leaving the view uncluttered and the regions invisible | A control nobody can see is a control only a keyboard player has, and the first target user is holding a phone. |
 | Navigation zones | The label alone, outlined only while pressed | Always framed | A panel the size of a movement zone is a panel big enough to hide the corridor, and the corridor is the game. The outline under the finger teaches where the zones are without keeping the dungeon covered. |
+| Stepping back | A zone of its own, under the forward zone | Reaching it by turning about, stepping, and turning back | A withdrawal that needs three taps is not a withdrawal. Splitting the centre of the view gives the verb a home without taking a thumb's width from any other control. |
+| A door in the view | Drawn on the frame the corridor stops at, with an open one drawn as its frame alone | Drawn as a floor marking, like stairs and pits | A door is in the way rather than underfoot, and drawn on the floor it would say nothing about whether the corridor goes on. Drawing the open ones too costs a frame and buys the landmark a player navigates by. |
+| The enemy mark | One creature mark for every enemy | A dot; a different mark per roster entry | A dot beside the trap mark and the party triangle is three dots. Per-enemy marks are authoring that the roster does not yet justify, and they would leak what the party has not fought. |
 | Buttons | Keep their panel and frame | Bare labels, like the zones | A button covers almost nothing, so hiding it buys almost nothing — and a button that is only a word is hard to read as something you may press. |
 | Which kind a control is | Carried in the plan | Inferred from its name while drawing | The rule then lives in one place and can be checked, rather than being re-derived by whatever happens to be drawing. |
-| Turning about | A key, but no control of its own | A fourth movement control | Two taps of a turn the player already uses reach it. A control earns its place by being the only way to do something or by being worth the room; this is neither. |
+| Turning about | A key, but no control of its own | A movement zone of its own, beside the step and turn zones | Two taps of a turn the player already uses reach it. A control earns its place by being the only way to do something or by being worth the room; this is neither. |
 | Labels | Name the action, with any key hint as secondary text | Naming the key that triggers it | "[Enter] Descend" instructs a phone player to press a key they do not have. One drawing has to serve both without telling either to use the other's device. |
 | Hit regions | Computed in the plan, beside the drawing they belong to | Registered as handlers on the drawn objects | Keeping them together means what is drawn and what is tapped cannot drift apart, and it keeps hit-testing in the pure layer where it can be tested. |
 | Combat over the corridor | Drawn on top of the first-person view, which stays visible | Replacing the view with a combat screen | The party is still standing in the passage they were caught in, and seeing it is part of knowing how bad this is. A separate screen would also throw away the light and the place. |
@@ -393,6 +408,8 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 9. ✅ **Every tappable region is drawn**, and every drawn control carries its own hit region in the plan.
 11. ✅ **A navigation zone is its label alone**, outlined only while pressed; a button keeps its panel and frame.
 13. ✅ **Each rank in a fight is centred**, and every card's position is decided in the plan.
+14. ✅ **Stepping back is a zone of its own**, beneath the forward zone.
+15. ✅ **A door is drawn on the frame the corridor stops at**, closed as a panel with a handle and open as its frame alone.
 12. ✅ **Turning about has a key but no control**, being two taps of one the player already uses.
 10. ✅ **Labels name the action**, with any keyboard hint as secondary text.
 7. ✅ **Prompts are drawn from the simulation's pending confirmation**, never from the renderer's own flag.

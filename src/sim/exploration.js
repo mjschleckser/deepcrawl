@@ -18,6 +18,7 @@ import {
   edgeKey,
   getEdge,
   getTile,
+  isEdgeOpen,
   isStairs,
   openEdge,
 } from './floor.js';
@@ -52,6 +53,7 @@ export { partyStepCost, MIN_STEP_COST, MAX_STEP_COST } from './party.js';
 
 export const Verb = {
   STEP_FORWARD: 'STEP_FORWARD',
+  STEP_BACKWARD: 'STEP_BACKWARD',
   TURN_LEFT: 'TURN_LEFT',
   TURN_RIGHT: 'TURN_RIGHT',
   TURN_AROUND: 'TURN_AROUND',
@@ -326,6 +328,7 @@ export function automapView(state) {
 export function corridorAhead(state, maxDepth = MAX_DRAWN_DEPTH) {
   return buildCorridorAhead(state, {
     isOpaque: (floor, x, y, dir) => isOpaque(state.discoveredEdges, floor, x, y, dir),
+    portalAt: (floor, x, y, dir) => visiblePortal(state, floor, x, y, dir),
     resolveLight: (x, y) => resolveTileLight(state, x, y),
     maxDepth,
   });
@@ -432,6 +435,27 @@ function isEdgeDiscovered(state, floor, x, y, direction) {
   return state.discoveredEdges.has(edgeKey(floor, x, y, direction));
 }
 
+/** The way behind, which is where a backward step goes without the party turning. */
+function reverseOf(facing) {
+  return FACINGS[(FACINGS.indexOf(facing) + 2) % 4];
+}
+
+/**
+ * The door standing on an edge, or null where there is none to see. A wall is not a
+ * door, and a secret door nobody has found is the wall it imitates — what the party
+ * has not earned by searching is never reported.
+ *
+ * @spec EXPLORE-VIEW-009
+ * @spec EXPLORE-VIEW-010
+ */
+function visiblePortal(state, floor, x, y, direction) {
+  const kind = getEdge(floor, x, y, direction);
+  const secret = kind === EdgeKind.SECRET_DOOR;
+  if (kind !== EdgeKind.DOOR && kind !== EdgeKind.LOCKED_DOOR && !secret) return null;
+  if (secret && !isEdgeDiscovered(state, floor, x, y, direction)) return null;
+  return { kind, open: isEdgeOpen(floor, x, y, direction) };
+}
+
 /**
  * Advance the clock and tell the segments that live off it.
  *
@@ -468,18 +492,18 @@ export function advanceForCamp(state, ticks) {
  * @spec EXPLORE-MOVE-004
  * @spec EXPLORE-MOVE-005
  */
-function stepBlocked(state, floor, from, facing) {
-  const { dx, dy } = STEP_DELTA[facing];
+function stepBlocked(state, floor, from, heading) {
+  const { dx, dy } = STEP_DELTA[heading];
   const target = { x: from.x + dx, y: from.y + dy };
   if (!contains(floor, target.x, target.y)) return true;
 
-  const kind = getEdge(floor, from.x, from.y, facing);
+  const kind = getEdge(floor, from.x, from.y, heading);
   if (kind === EdgeKind.WALL) return true;
-  if (kind === EdgeKind.SECRET_DOOR && !isEdgeDiscovered(state, floor, from.x, from.y, facing)) {
+  if (kind === EdgeKind.SECRET_DOOR && !isEdgeDiscovered(state, floor, from.x, from.y, heading)) {
     return true;
   }
   if (kind === EdgeKind.LOCKED_DOOR) {
-    const { keyId } = edgeDetail(floor, from.x, from.y, facing);
+    const { keyId } = edgeDetail(floor, from.x, from.y, heading);
     if (keyId !== undefined && !state.keys.includes(keyId)) return true;
   }
   return false;
@@ -604,8 +628,10 @@ function turn(state, verb) {
  * @spec EXPLORE-CLOCK-007
  * @spec EXPLORE-BOUND-001
  * @spec EXPLORE-BOUND-010
+ * @spec EXPLORE-MOVE-020
+ * @spec EXPLORE-MOVE-021
  */
-function stepForward(state) {
+function takeStep(state, heading) {
   const floor = currentFloor(state);
 
   // A pit the party was dropped onto claims this step instead of it.
@@ -620,13 +646,13 @@ function stepForward(state) {
   }
 
   const from = state.party.tile;
-  if (stepBlocked(state, floor, from, state.party.facing)) {
+  if (stepBlocked(state, floor, from, heading)) {
     // Blocked is blocked: no movement, no tick, no side effect, and no clue about
     // which of the several reasons applied.
     return { blocked: true, events: [] };
   }
 
-  const { dx, dy } = STEP_DELTA[state.party.facing];
+  const { dx, dy } = STEP_DELTA[heading];
   const target = { x: from.x + dx, y: from.y + dy };
   const targetTile = getTile(floor, target.x, target.y);
 
@@ -655,10 +681,10 @@ function stepForward(state) {
     return { blocked: false, events: [], confirmationRequired: state.pendingConfirmation };
   }
 
-  const edgeKind = getEdge(floor, from.x, from.y, state.party.facing);
+  const edgeKind = getEdge(floor, from.x, from.y, heading);
   if (edgeKind === EdgeKind.DOOR || edgeKind === EdgeKind.LOCKED_DOOR || edgeKind === EdgeKind.SECRET_DOOR) {
     // Opening is part of the step, not a second action charged separately.
-    openEdge(floor, from.x, from.y, state.party.facing);
+    openEdge(floor, from.x, from.y, heading);
   }
 
   const events = [];
@@ -762,7 +788,9 @@ export function perform(state, action) {
     return { relit: Boolean(source), events: [] };
   }
 
-  if (action.verb === Verb.STEP_FORWARD) return stepForward(state);
+  if (action.verb === Verb.STEP_FORWARD) return takeStep(state, state.party.facing);
+  // Backing away is the same step over the same ground, taken without turning round.
+  if (action.verb === Verb.STEP_BACKWARD) return takeStep(state, reverseOf(state.party.facing));
   if (action.verb) return turn(state, action.verb);
   if (action.partyAction) return partyAction(state, action.partyAction, action.commit);
 

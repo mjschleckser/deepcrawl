@@ -49,6 +49,7 @@ describe('resolving input', () => {
   it('produces an identical action from the keyboard and from touch', () => {
     expect(actionForKey('w')).toEqual(actionForTouch(TouchRegion.FORWARD));
     expect(actionForKey('ArrowUp')).toEqual(actionForTouch(TouchRegion.FORWARD));
+    expect(actionForKey('s')).toEqual(actionForTouch(TouchRegion.BACKWARD));
     expect(actionForKey('m')).toEqual(actionForTouch(TouchRegion.MAP));
     expect(actionForKey('i')).toEqual(actionForTouch(TouchRegion.PACK));
   });
@@ -90,7 +91,8 @@ describe('resolving input', () => {
     expect(actionForKey('w')).toEqual({ verb: Verb.STEP_FORWARD });
     expect(actionForKey('a')).toEqual({ verb: Verb.TURN_LEFT });
     expect(actionForKey('d')).toEqual({ verb: Verb.TURN_RIGHT });
-    expect(actionForKey('s')).toEqual({ verb: Verb.TURN_AROUND });
+    expect(actionForKey('s')).toEqual({ verb: Verb.STEP_BACKWARD });
+    expect(actionForKey('x')).toEqual({ verb: Verb.TURN_AROUND });
   });
 
   // @spec EXPLORE-INPUT-001
