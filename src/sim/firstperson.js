@@ -43,10 +43,18 @@ const RIGHT_OF = {
  * @spec EXPLORE-VIEW-008
  * @spec EXPLORE-VIEW-009
  * @spec EXPLORE-VIEW-010
+ * @spec EXPLORE-VIEW-011
+ * @spec EXPLORE-VIEW-012
  */
 export function buildCorridorAhead(
   state,
-  { isOpaque, portalAt = () => null, resolveLight, maxDepth = MAX_DRAWN_DEPTH },
+  {
+    isOpaque,
+    portalAt = () => null,
+    resolveLight,
+    enemiesVisibleAt = () => false,
+    maxDepth = MAX_DRAWN_DEPTH,
+  },
 ) {
   const floor = state.getFloor(state.party.floorId);
   const facing = state.party.facing;
@@ -71,6 +79,12 @@ export function buildCorridorAhead(
       // A door is a landmark whether or not it is in the way, so it is reported
       // alongside the blocking flag rather than being implied by it.
       portalAhead: null,
+      // The same light rule the automap draws a roamer by, so the map and the passage
+      // cannot disagree about what is standing on a tile. The walk has already stopped
+      // at the first opaque edge, so nothing reported here is seen through a wall.
+      enemyHere:
+        enemiesVisibleAt(level)
+        && state.roamers.some((r) => r.floorId === floor.id && r.x === x && r.y === y),
     };
 
     // The dark boundary is reported rather than omitted, so the view has somewhere to

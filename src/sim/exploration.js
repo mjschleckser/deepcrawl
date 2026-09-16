@@ -29,7 +29,7 @@ import {
   projectedLevel,
   tileDistance,
 } from './light.js';
-import { isOpaque } from './sight.js';
+import { hasLineOfSight, isOpaque } from './sight.js';
 import {
   computeSight as runSight,
   isEdgeKnown,
@@ -313,9 +313,14 @@ export function computeSight(state) {
  * @spec EXPLORE-MAP-009
  */
 export function automapView(state) {
+  const floor = state.getFloor(state.party.floorId);
   return buildAutomapView(state, {
     resolveLight: (x, y) => resolveTileLight(state, x, y),
     enemiesVisibleAt,
+    // Light pools by distance and knows nothing of walls, so brightness alone would
+    // show a warband standing in torchlight on the far side of solid stone.
+    inLineOfSight: (x, y) =>
+      hasLineOfSight(state.discoveredEdges, floor, state.party.tile, { x, y }),
   });
 }
 
@@ -330,6 +335,7 @@ export function corridorAhead(state, maxDepth = MAX_DRAWN_DEPTH) {
     isOpaque: (floor, x, y, dir) => isOpaque(state.discoveredEdges, floor, x, y, dir),
     portalAt: (floor, x, y, dir) => visiblePortal(state, floor, x, y, dir),
     resolveLight: (x, y) => resolveTileLight(state, x, y),
+    enemiesVisibleAt,
     maxDepth,
   });
 }

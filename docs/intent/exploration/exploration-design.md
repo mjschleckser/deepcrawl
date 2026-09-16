@@ -376,10 +376,16 @@ The automap is a second view of exploration state. It owns nothing.
 stands open or closed — discovered features (stairs, pits),
 traps the party has found, and the party's own tile and facing.
 
-**It does not draw:** undiscovered tiles or secret doors, and roaming enemies on
-tiles that are not `bright`. A roamer appears on the map only where the party can
-presently see it — showing last-known positions would hand the player an information
-advantage that carrying light is supposed to buy.
+**It does not draw:** undiscovered tiles or secret doors, and roaming enemies the
+party cannot presently see.
+
+Seeing a roamer takes two things: its tile is `bright`, and nothing opaque stands
+between it and the party. Light alone will not do, because light pools by distance and
+pays no attention to walls — a goblin one tile away through solid stone is standing in
+torchlight the party cannot see it by. What the rule does *not* ask for is facing: a
+roamer behind the party, in the party's own light, is something they can see well
+enough. Last-known positions are never drawn, which is what carrying light is meant to
+buy.
 
 **In darkness the map stays readable, but the party marker disappears.** The record
 of where the party has been is never lost; knowing where it currently stands is
@@ -406,6 +412,11 @@ resolves to `dark`, or at the maximum drawn depth, whichever comes first.
 The blocking rule is sight's rule, not a second one: a `wall`, a closed `door` or
 `lockedDoor`, an undiscovered `secretDoor`. A view that disagreed with sight about
 what is opaque would show a corridor the automap denies.
+
+**A warband standing on a tile ahead is reported with that tile.** Whether it is seen
+is decided by the automap's rule, so the two views can never disagree about what is in
+the passage — and the report has already stopped at the first opaque edge, so anything
+it names is something an unobstructed look would find.
 
 **A door on the edge ahead is reported as a door**, open or closed alike. Closed, it is
 what separates a way on from the end of a passage, which the blocking flag by itself
@@ -575,7 +586,8 @@ widget occupies a corner and expands to full screen on tap.
 | Doors and sight | A closed door is opaque and impassable; it opens by being stepped through, and some start open | Doors transparent when closed; opening as its own action costing a tick | Seeing through closed doors would let the party map a room without entering it. Charging a tick to open would make every doorway a toll. |
 | Light and enemies | Light never worsens the party's position | Light raising encounter rate or enemy awareness | Light is a scarce resource the player already pays for; making it also a liability would push play toward travelling dark. |
 | Combat and time | Combat advances no ticks | Combat ticking per round | A long fight already costs resources. Charging time as well would punish the same encounter twice. |
-| Roamers on the automap | Shown only on `bright` tiles | Last-known position; always shown; visible at `dim` too | Seeing where enemies are is what carrying light buys. A persistent map marker would give it away for free. |
+| Roamers on the automap | Shown where their tile is `bright` and nothing opaque stands between | Brightness alone; last-known position; always shown; visible at `dim` too | Seeing where enemies are is what carrying light buys, and a persistent marker would give it away for free. Brightness alone is not sight either: light pools by distance and ignores walls, so it would show a goblin standing in torchlight on the far side of solid stone. |
+| Roamers in the first-person view | Drawn where the corridor report puts them, under the automap's rule | Shown on the automap alone; shown whenever the party's own tile is lit | A monster the map shows and the passage does not is the two views disagreeing about the same tile, which is the one thing answering both projections here is meant to prevent. |
 | Exploration to combat | An explicit encounter payload | Both segments reading shared state freely | The segment boundary is where cascade pauses; a boundary read through freely is not a boundary. The payload is the contract that changes when the segments need to say something new. |
 | Party state | Owned by the party segment; exploration and combat both call its operations | Either segment writing character fields directly | Both segments legitimately change party state — damage in combat, a potion in exploration. Routing both through one owner keeps hit-point floors, the death state machine, and the five-member and three-per-row limits in a single place. |
 | Floors the party has left | Frozen, then re-stocked on return in proportion to elapsed ticks | Live background simulation; no change at all on return | Background simulation costs time proportional to the campaign for changes nobody observes, while a wholly static dungeon is dead. A re-stocking buys the appearance of a living dungeon at the cost of one arrival-time pass. |
@@ -610,7 +622,7 @@ widget occupies a corner and expands to full screen on tap.
 11. ✅ **One torch burns at a time**, tracked per instance, relighting automatically when spent but not when doused.
 12. ✅ **Facing is preserved** across stairs and pits.
 13. ✅ **Combat does not advance the clock.** Exploration and camp are the only sources of time.
-14. ✅ **Roamers appear on the automap wherever they stand in `bright` light**, whether or not they fall inside the sight cast.
+14. ✅ **Roamers appear where their tile is `bright` and nothing opaque stands between them and the party**, whether or not they fall inside the sight cast.
 15. ✅ **Exploration hands combat an explicit payload**; party state is owned by the party segment and changed through its operations by both.
 16. ✅ **Floors the party has left are frozen**, then re-stocked on return in proportion to elapsed ticks — never actively simulated.
 17. ✅ **Re-stocking never revises discovery and never touches a trap.** Layout stays known, trap state is permanent; occupants, doors, and room contents change.
@@ -630,6 +642,7 @@ widget occupies a corner and expands to full screen on tap.
 29. ✅ **Maximum drawn depth is capped independently of light reach.**
 32. ✅ **The party may step backward**, at the same cost and under the same rules as a forward step, without changing facing.
 33. ✅ **The corridor report names the door on the edge ahead**, open or closed, and never an undiscovered secret one.
+34. ✅ **The corridor report names a warband standing on a tile ahead**, under the same rule the automap draws one by.
 
 ### Deferred
 

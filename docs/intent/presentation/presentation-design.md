@@ -108,6 +108,11 @@ than reads in a status line.
 
 Stairs and pits are markings on the floor within the band for the depth they occupy.
 
+**An enemy in the passage is drawn standing in it**, a figure on the floor of the
+depth the simulation reports it at and scaled to that depth's frame like everything
+else. It carries the horned head the automap marks it with, so the thing on the map and
+the thing down the corridor are recognisably one thing.
+
 **A door is drawn on the frame, not on the floor**, because it is a thing in the way
 rather than a thing underfoot. A closed door is a panel of timber across the frame the
 corridor stops at, lighter than the stone around it and carrying a handle, so a way on
@@ -382,6 +387,7 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 | Navigation zones | The label alone, outlined only while pressed | Always framed | A panel the size of a movement zone is a panel big enough to hide the corridor, and the corridor is the game. The outline under the finger teaches where the zones are without keeping the dungeon covered. |
 | Stepping back | A zone of its own, under the forward zone | Reaching it by turning about, stepping, and turning back | A withdrawal that needs three taps is not a withdrawal. Splitting the centre of the view gives the verb a home without taking a thumb's width from any other control. |
 | A door in the view | Drawn on the frame the corridor stops at, with an open one drawn as its frame alone | Drawn as a floor marking, like stairs and pits | A door is in the way rather than underfoot, and drawn on the floor it would say nothing about whether the corridor goes on. Drawing the open ones too costs a frame and buys the landmark a player navigates by. |
+| Enemies in the corridor | A figure at the depth the report puts it, sharing the map mark's horned head | Drawing none, leaving the map to show them; a card or banner announcing one | A monster the map shows and the corridor does not makes the player watch the corner of the screen instead of the dungeon. Sharing the head is what makes the mark and the figure read as the same creature. |
 | The enemy mark | One creature mark for every enemy | A dot; a different mark per roster entry | A dot beside the trap mark and the party triangle is three dots. Per-enemy marks are authoring that the roster does not yet justify, and they would leak what the party has not fought. |
 | Buttons | Keep their panel and frame | Bare labels, like the zones | A button covers almost nothing, so hiding it buys almost nothing — and a button that is only a word is hard to read as something you may press. |
 | Which kind a control is | Carried in the plan | Inferred from its name while drawing | The rule then lives in one place and can be checked, rather than being re-derived by whatever happens to be drawing. |
@@ -410,6 +416,7 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 13. ✅ **Each rank in a fight is centred**, and every card's position is decided in the plan.
 14. ✅ **Stepping back is a zone of its own**, beneath the forward zone.
 15. ✅ **A door is drawn on the frame the corridor stops at**, closed as a panel with a handle and open as its frame alone.
+16. ✅ **An enemy the corridor report names is drawn standing at that depth**, with the same horned head the automap uses.
 12. ✅ **Turning about has a key but no control**, being two taps of one the player already uses.
 10. ✅ **Labels name the action**, with any keyboard hint as secondary text.
 7. ✅ **Prompts are drawn from the simulation's pending confirmation**, never from the renderer's own flag.

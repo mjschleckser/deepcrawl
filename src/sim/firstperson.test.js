@@ -17,7 +17,7 @@ const lamp = (over = {}) =>
   createLightSource({ id: 'l', brightRadius: 2, dimRadius: 6, remainingTicks: 99, lit: true, ...over });
 
 // A north-south corridor one tile wide at x=3, party at the south end facing north.
-function corridorScene({ facing = Direction.NORTH, sources = [lamp()] } = {}) {
+function corridorScene({ facing = Direction.NORTH, sources = [lamp()], roamers = [] } = {}) {
   const floor = createFloor({ id: 'f1', width: 7, height: 9 });
   for (let y = 0; y <= 8; y++) {
     setEdge(floor, 3, y, Direction.WEST, EdgeKind.WALL);
@@ -29,6 +29,7 @@ function corridorScene({ facing = Direction.NORTH, sources = [lamp()] } = {}) {
     tile: { x: 3, y: 6 },
     facing,
     lightSources: sources,
+    roamers,
   });
   return { floor, state };
 }
@@ -159,6 +160,32 @@ describe('where the corridor report stops', () => {
 
     expect(slices.length).toBeLessThanOrEqual(MAX_DRAWN_DEPTH + 1);
     expect(MAX_DRAWN_DEPTH).toBeLessThan(20);
+  });
+
+  // @spec EXPLORE-VIEW-011
+  it('reports a warband standing on a tile ahead', () => {
+    // (3,5) is one ahead of the party and inside the lamp's bright ring.
+    const { state } = corridorScene({ roamers: [{ id: 'r1', floorId: 'f1', x: 3, y: 5 }] });
+
+    const slices = corridorAhead(state);
+
+    expect(slices[1]).toMatchObject({ depth: 1, enemyHere: true });
+    expect(slices.filter((s) => s.enemyHere)).toHaveLength(1);
+  });
+
+  // @spec EXPLORE-VIEW-012
+  it('reports no warband on a tile too dim to pick one out of', () => {
+    // (3,3) is three ahead: inside the dim radius, outside the bright one.
+    const { state } = corridorScene({ roamers: [{ id: 'r1', floorId: 'f1', x: 3, y: 3 }] });
+
+    expect(corridorAhead(state).every((s) => s.enemyHere === false)).toBe(true);
+  });
+
+  // @spec EXPLORE-VIEW-011
+  it('reports no warband from another floor standing on the same coordinates', () => {
+    const { state } = corridorScene({ roamers: [{ id: 'r1', floorId: 'elsewhere', x: 3, y: 5 }] });
+
+    expect(corridorAhead(state).every((s) => s.enemyHere === false)).toBe(true);
   });
 
   // @spec EXPLORE-VIEW-009

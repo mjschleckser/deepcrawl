@@ -81,6 +81,31 @@ export function contentColumn(viewport) {
 }
 
 /**
+ * The horned head an enemy is drawn with, wherever it is drawn: a head, two horns, and
+ * a pair of eyes around a given centre. One shape in one place, so the mark on the map
+ * and the figure down the corridor are recognisably the same creature.
+ *
+ * @spec PRESENT-MAP-011
+ * @spec PRESENT-VIEW-015
+ */
+export function hornedHead(cx, cy, radius) {
+  const brow = cy - radius * 0.55;
+  const horn = (side) => [
+    cx + side * radius * 1.05, brow - radius * 0.95,
+    cx + side * radius * 0.15, brow + radius * 0.2,
+    cx + side * radius * 0.95, brow + radius * 0.5,
+  ];
+  return {
+    head: { x: cx, y: cy, radius },
+    horns: [horn(-1), horn(1)],
+    eyes: [
+      { x: cx - radius * 0.4, y: cy, radius: Math.max(0.5, radius * 0.2) },
+      { x: cx + radius * 0.4, y: cy, radius: Math.max(0.5, radius * 0.2) },
+    ],
+  };
+}
+
+/**
  * A zone is a large area of the view and draws as a bare label, because a panel that
  * size would hide the corridor. A button is small and discrete and keeps its panel,
  * because hiding almost nothing buys almost nothing.

@@ -199,6 +199,37 @@ describe('roaming enemies on the map', () => {
     expect(automapView(state).enemies).toEqual([]);
   });
 
+  // @spec EXPLORE-MAP-012
+  it('draws no enemy standing behind a wall, however bright its tile', () => {
+    // (3,2) is adjacent and lit, but the party is looking at the wall between them.
+    const { floor, state } = scene({ roamers: [{ id: 'r1', floorId: 'f1', x: 3, y: 2 }] });
+    setEdge(floor, 3, 3, Direction.NORTH, EdgeKind.WALL);
+    computeSight(state);
+
+    expect(automapView(state).enemies).toEqual([]);
+  });
+
+  // @spec EXPLORE-MAP-012
+  it('draws no enemy standing behind a closed door, and draws it once the door opens', () => {
+    const { floor, state } = scene({ roamers: [{ id: 'r1', floorId: 'f1', x: 3, y: 2 }] });
+    setEdge(floor, 3, 3, Direction.NORTH, EdgeKind.DOOR);
+    computeSight(state);
+    expect(automapView(state).enemies).toEqual([]);
+
+    openEdge(floor, 3, 3, Direction.NORTH);
+
+    expect(automapView(state).enemies).toEqual([{ id: 'r1', x: 3, y: 2 }]);
+  });
+
+  // @spec EXPLORE-MAP-013
+  it('draws an enemy standing behind the party, which sight never had to reach', () => {
+    // (3,4) is at the party's back: outside the sight cone, inside the lantern.
+    const { state } = scene({ roamers: [{ id: 'r1', floorId: 'f1', x: 3, y: 4 }] });
+    computeSight(state);
+
+    expect(automapView(state).enemies).toEqual([{ id: 'r1', x: 3, y: 4 }]);
+  });
+
   // @spec EXPLORE-MAP-004
   it('ignores enemies on other floors', () => {
     const { state } = scene({ roamers: [{ id: 'r1', floorId: 'elsewhere', x: 3, y: 2 }] });

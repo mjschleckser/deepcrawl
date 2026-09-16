@@ -7,9 +7,35 @@
  */
 
 import { LightLevel, TileFeature } from '../sim/floor.js';
-import { depthFrames } from './geometry.js';
+import { depthFrames, hornedHead } from './geometry.js';
 
 const quad = (a, b, c, d) => [a.x, a.y, b.x, b.y, c.x, c.y, d.x, d.y];
+
+/** How tall an enemy stands in the frame of the tile it is on. */
+const FIGURE_HEIGHT = 0.62;
+
+/**
+ * An enemy standing on a tile, drawn at the frame that tile ends at: feet on the floor,
+ * head where a head goes, and the same horned head the automap marks it with.
+ *
+ * @spec PRESENT-VIEW-014
+ * @spec PRESENT-VIEW-015
+ */
+function figureShape(frame, band) {
+  const height = frame.height * FIGURE_HEIGHT;
+  const ground = frame.y + frame.height;
+  const cx = frame.x + frame.width / 2;
+  const radius = height * 0.17;
+  const headY = ground - height + radius;
+  const shoulders = headY + radius * 1.2;
+  const width = height * 0.46;
+  return {
+    ...band,
+    kind: 'figure',
+    body: { x: cx - width / 2, y: shoulders, width, height: ground - shoulders },
+    ...hornedHead(cx, headY, radius),
+  };
+}
 
 /** How much of the frame a door takes: narrower than the corridor, and not as tall. */
 const DOOR_WIDTH = 0.66;
@@ -74,6 +100,7 @@ const corners = (frame) => ({
  * @spec PRESENT-VIEW-009
  * @spec PRESENT-VIEW-012
  * @spec PRESENT-VIEW-013
+ * @spec PRESENT-VIEW-014
  */
 export function buildViewPlan(slices, viewport) {
   if (slices.length === 0) return { shapes: [] };
@@ -146,6 +173,12 @@ export function buildViewPlan(slices, viewport) {
     // After the wall it stands in, so a closed door is not painted over by it.
     if (slice.portalAhead) {
       shapes.push(doorShape(frames[slice.depth + 1], band, slice.portalAhead));
+    }
+
+    // Last of this depth's shapes, so the creature stands in front of the tile it is
+    // on rather than behind it. Nearer depths still paint over it, being drawn later.
+    if (slice.enemyHere) {
+      shapes.push(figureShape(frames[slice.depth + 1], band));
     }
   }
 

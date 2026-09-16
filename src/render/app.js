@@ -44,12 +44,36 @@ function drawDoor(graphics, shape) {
   graphics.circle(shape.handle.x, shape.handle.y, shape.handle.radius).fill(tones.handle);
 }
 
+/**
+ * An enemy standing in the passage: a body, and the horned head the automap marks the
+ * same creature with.
+ *
+ * @spec PRESENT-VIEW-014
+ * @spec PRESENT-VIEW-015
+ */
+function drawFigure(graphics, shape) {
+  const tones = PALETTE[shape.level] ?? PALETTE.DARK;
+  const { x, y, width, height } = shape.body;
+  const edge = Math.max(1, width * 0.06);
+
+  graphics.roundRect(x, y, width, height, width * 0.35).fill(tones.figure);
+  graphics.roundRect(x, y, width, height, width * 0.35)
+    .stroke({ width: edge, color: tones.figureEdge });
+
+  for (const horn of shape.horns) graphics.poly(horn).fill(tones.figure);
+  graphics.circle(shape.head.x, shape.head.y, shape.head.radius).fill(tones.figure);
+  graphics.circle(shape.head.x, shape.head.y, shape.head.radius)
+    .stroke({ width: edge, color: tones.figureEdge });
+  for (const eye of shape.eyes) graphics.circle(eye.x, eye.y, eye.radius).fill(tones.eye);
+}
+
 function drawView(container, plan) {
   const graphics = new Graphics();
   // The plan is already ordered furthest-first, so emitting it in sequence gives
   // correct occlusion with no depth test.
   for (const shape of plan.shapes) {
     if (shape.kind === 'door') drawDoor(graphics, shape);
+    else if (shape.kind === 'figure') drawFigure(graphics, shape);
     else graphics.poly(shape.points).fill(shapeColour(shape));
   }
   container.addChild(graphics);

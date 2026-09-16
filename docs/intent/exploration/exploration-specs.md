@@ -106,14 +106,18 @@ tuning the game does not rewrite its specs.
 - [x] **EXPLORE-VIEW-008**: The system shall report the corridor ahead relative to the party's current facing, so the same tile is reported as walled left or walled right according to which way the party looks.
 - [x] **EXPLORE-VIEW-009**: The system shall report, for each depth ahead of the party, whether a door stands on the edge the way on passes through, and whether that door is open or closed.
 - [x] **EXPLORE-VIEW-010**: The system shall report a `wall` and an undiscovered `secretDoor` on the edge ahead as no door at all.
+- [x] **EXPLORE-VIEW-011**: The system shall report, for each depth ahead of the party, whether a roaming enemy stands on the tile at that depth.
+- [x] **EXPLORE-VIEW-012**: The system shall decide whether a roaming enemy is reported in the corridor by the same light rule the automap draws one by, so the two views cannot disagree about the same tile.
 
 ## Automap
 
 - [x] **EXPLORE-MAP-001**: The system shall draw on the automap only those tiles, edges, and features that have been discovered.
 - [x] **EXPLORE-MAP-002**: The system shall draw traps the party has found on the automap.
 - [x] **EXPLORE-MAP-003**: The system shall not draw undiscovered secret doors on the automap.
-- [x] **EXPLORE-MAP-004**: While a roaming enemy occupies a tile resolved to `bright`, the system shall draw that enemy on the automap.
+- [x] **EXPLORE-MAP-004**: While a roaming enemy occupies a tile resolved to `bright` with an unobstructed line between that tile and the party's, the system shall draw that enemy on the automap.
 - [x] **EXPLORE-MAP-005**: While a roaming enemy occupies a tile not resolved to `bright`, the system shall draw no marker for it on the automap, at its current or any previously seen position.
+- [x] **EXPLORE-MAP-012**: While a wall, a closed door, or an undiscovered secret door stands between a roaming enemy and the party, the system shall draw no marker for that enemy on the automap, however bright its tile.
+- [x] **EXPLORE-MAP-013**: The system shall not require a roaming enemy to fall inside the party's sight cone to draw it on the automap.
 - [x] **EXPLORE-MAP-006**: While the party's tile is resolved to `dark`, the system shall draw the automap without the party's position or facing marker.
 - [x] **EXPLORE-MAP-007**: While the party's tile is not resolved to `dark`, the system shall draw the party's tile and facing on the automap.
 - [x] **EXPLORE-MAP-008**: The system shall make the automap available without requiring any item, spell, or character class.

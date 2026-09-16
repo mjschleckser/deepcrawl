@@ -16,6 +16,7 @@ const slice = (over = {}) => ({
   walledRight: true,
   closedAhead: false,
   portalAhead: null,
+  enemyHere: false,
   ...over,
 });
 
@@ -148,6 +149,49 @@ describe('the first-person draw plan', () => {
     const plan = buildViewPlan([slice({ depth: 0 }), slice({ depth: 1 })], viewport);
 
     expect(Math.max(...plan.shapes.map((s) => s.depth))).toBe(1);
+  });
+
+  // @spec PRESENT-VIEW-014
+  it('draws a figure where the simulation reports an enemy', () => {
+    const plan = buildViewPlan([slice(), slice({ depth: 1, enemyHere: true })], viewport);
+
+    const [figure] = kinds(plan, 'figure');
+    expect(figure).toBeDefined();
+    expect(figure.depth).toBe(1);
+    expect(kinds(buildViewPlan([slice()], viewport), 'figure')).toHaveLength(0);
+  });
+
+  // @spec PRESENT-VIEW-014
+  it('stands the figure on the floor of the depth it is at, scaled to that frame', () => {
+    const frames = depthFrames(viewport, 3);
+    const plan = buildViewPlan([slice(), slice({ depth: 1, enemyHere: true })], viewport);
+
+    const [figure] = kinds(plan, 'figure');
+    // Its feet are on the floor of the frame it stands at, not floating in the middle.
+    expect(figure.body.y + figure.body.height).toBeCloseTo(frames[2].y + frames[2].height);
+    expect(figure.body.height).toBeLessThan(frames[2].height);
+  });
+
+  // @spec PRESENT-VIEW-014
+  it('draws a nearer figure larger than a further one', () => {
+    const near = buildViewPlan([slice(), slice({ depth: 1, enemyHere: true })], viewport);
+    const far = buildViewPlan(
+      [slice(), slice({ depth: 1 }), slice({ depth: 2 }), slice({ depth: 3, enemyHere: true })],
+      viewport,
+    );
+
+    expect(kinds(near, 'figure')[0].body.height)
+      .toBeGreaterThan(kinds(far, 'figure')[0].body.height);
+  });
+
+  // @spec PRESENT-VIEW-015
+  it('gives the figure the horned head the automap marks an enemy with', () => {
+    const plan = buildViewPlan([slice(), slice({ depth: 1, enemyHere: true })], viewport);
+
+    const [figure] = kinds(plan, 'figure');
+    expect(figure.head.radius).toBeGreaterThan(0);
+    expect(figure.horns).toHaveLength(2);
+    expect(figure.eyes).toHaveLength(2);
   });
 
   // @spec PRESENT-VIEW-012

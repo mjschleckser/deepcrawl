@@ -23,14 +23,17 @@ export const PALETTE = {
   BRIGHT: {
     wall: 0x6b5640, floor: 0x2e2418, ceiling: 0x17120c, opening: 0x090705,
     door: 0x7a4a22, doorFrame: 0x3d2510, handle: 0xd8b46a,
+    figure: 0x8f3a28, figureEdge: 0x2a120c, eye: 0xf0d48a,
   },
   DIM: {
     wall: 0x3a2f24, floor: 0x1a150e, ceiling: 0x0d0a07, opening: 0x050403,
     door: 0x452a13, doorFrame: 0x241608, handle: 0x8a7354,
+    figure: 0x4a1f15, figureEdge: 0x160a07, eye: 0x8a7354,
   },
   DARK: {
     wall: 0x000000, floor: 0x000000, ceiling: 0x000000, opening: 0x000000,
     door: 0x000000, doorFrame: 0x000000, handle: 0x000000,
+    figure: 0x000000, figureEdge: 0x000000, eye: 0x000000,
   },
   darkness: 0x000000,
   feature: 0xd8b46a,

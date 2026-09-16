@@ -6,6 +6,7 @@
  */
 
 import { Direction, EdgeKind } from '../sim/floor.js';
+import { hornedHead } from './geometry.js';
 
 const COLLAPSED_FRACTION = 0.22;
 const EXPANDED_FRACTION = 0.9;
@@ -51,21 +52,7 @@ function edgeSegments(line, open) {
  * @spec PRESENT-MAP-011
  */
 function enemyMarker(px, py, size) {
-  const cx = px + size / 2;
-  const cy = py + size * 0.56;
-  const r = size * 0.26;
-  const brow = cy - r * 0.55;
-  return {
-    head: { x: cx, y: cy, radius: r },
-    horns: [
-      [cx - r * 1.05, brow - r * 0.95, cx - r * 0.15, brow + r * 0.2, cx - r * 0.95, brow + r * 0.5],
-      [cx + r * 1.05, brow - r * 0.95, cx + r * 0.15, brow + r * 0.2, cx + r * 0.95, brow + r * 0.5],
-    ],
-    eyes: [
-      { x: cx - r * 0.4, y: cy, radius: Math.max(0.5, r * 0.2) },
-      { x: cx + r * 0.4, y: cy, radius: Math.max(0.5, r * 0.2) },
-    ],
-  };
+  return hornedHead(px + size / 2, py + size * 0.56, size * 0.26);
 }
 
 /**

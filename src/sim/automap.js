@@ -45,9 +45,14 @@ function drawnEdge(state, floor, x, y, direction) {
  * @spec EXPLORE-MAP-006
  * @spec EXPLORE-MAP-007
  * @spec EXPLORE-MAP-008
+ * @spec EXPLORE-MAP-012
+ * @spec EXPLORE-MAP-013
  * @spec EXPLORE-MAP-009
  */
-export function buildAutomapView(state, { resolveLight, enemiesVisibleAt }) {
+export function buildAutomapView(
+  state,
+  { resolveLight, enemiesVisibleAt, inLineOfSight = () => true },
+) {
   const floor = state.getFloor(state.party.floorId);
   const discovered = state.discoveredTiles.get(floor.id) ?? new Set();
   const traps = state.knownTraps.get(floor.id) ?? new Set();
@@ -76,10 +81,14 @@ export function buildAutomapView(state, { resolveLight, enemiesVisibleAt }) {
       : { ...state.party.tile, facing: state.party.facing };
 
   // An enemy appears only where the party can presently see it — never at a position
-  // where it was last spotted, which would hand over what carrying light is meant to buy.
+  // where it was last spotted, which would hand over what carrying light is meant to
+  // buy. Seeing takes both halves: light enough to pick one out, and nothing opaque in
+  // between. Facing is not one of them; a roamer at the party's back is still in front
+  // of their eyes the moment they turn.
   const enemies = state.roamers
     .filter((roamer) => roamer.floorId === floor.id)
     .filter((roamer) => enemiesVisibleAt(resolveLight(roamer.x, roamer.y)))
+    .filter((roamer) => inLineOfSight(roamer.x, roamer.y))
     .map(({ id, x, y }) => ({ id, x, y }));
 
   return { floorId: floor.id, width: floor.width, height: floor.height, tiles, party, enemies };
