@@ -47,7 +47,7 @@ An enemy definition carries what combat needs and nothing more.
 | `id`, `name` | identity |
 | `role` | `MELEE`, `RANGED`, or `CASTER` |
 | `row` | which row it prefers to stand in |
-| `hitPoints`, `dexterity`, `accuracy`, `armour` | what combat resolves against |
+| `hitPoints`, `dexterity`, `accuracy`, `defence`, `armour`, `damage` | what combat resolves against |
 | `potValue` | what defeating it is worth in skill experience |
 | `forbidsEscape` | whether a party can flee from it |
 
@@ -68,6 +68,23 @@ The first floor's inhabitants, and the shape every later roster follows.
 The archer and the mage are what make a goblin band a positioning problem rather than
 an arithmetic one. Killing the bodies in front is not the same decision as reaching
 past them.
+
+An enemy carries **defence** and **armour** as separate numbers, exactly as a character
+does: defence decides whether a blow lands, armour decides what it is worth. A goblin
+is easy to hit and lightly protected; something in plate later will be the reverse of
+one and not the other.
+
+### What an enemy is worth
+
+`potValue` is authored, not computed, and the guideline is that an **ordinary enemy of
+floor tier N is worth about 12 × N**, with a dangerous one worth up to twice that. A
+floor-one goblin at 14, an archer at 18 and a mage at 24 are that rule applied.
+
+The pot scaling with the floor is the other half of the rank curve. A rank costs more
+than the last one did, and a deeper enemy is worth more than a shallower one, so
+advancing a rank takes seven or eight floor-appropriate fights at any depth — while the
+same rank bought with floor-one goblins takes four times as many by the end. Farming
+decays without being forbidden.
 
 ## Bands
 

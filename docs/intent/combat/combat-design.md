@@ -100,11 +100,57 @@ damage, rounded up, and never less than one. Heavy armour can reduce a blow to a
 nothing, but a blow that connected is never worth nothing — that is what the miss band
 is for, and having two different ways to deal zero would make the bands meaningless.
 
-**Accuracy** is assembled from the attacker's weapon skill rank, the attribute the
-weapon declares it draws on, and equipment. **Defence** is assembled from the
-defender's armour skill, attributes, and equipment. Which attribute an attack draws on
-is a property of the weapon, never of the skill — a finesse blade draws on Dexterity
-where a mace draws on Might, and both still use their weapon skill.
+### Accuracy, Defence, and Armour
+
+Accuracy is **practice and eyesight**: the weapon in hand, the rank behind it, and how
+much the wielder notices.
+
+```
+accuracy = weapon.accuracy + 5 × weapon skill rank + 2 × (Perception − 10)
+```
+
+Defence is what it takes to avoid being hit, and is a different thing entirely from
+what it takes to survive being hit:
+
+```
+defence = 20 + 2 × (Dexterity − 10) + 3 × armour skill rank + shield
+```
+
+**Armour never makes anyone harder to hit.** It reduces the damage of a blow that
+landed, and does nothing else. Letting one number do both jobs makes heavy armour
+doubly good and light armour doubly bad, and it squeezes the accuracy bands until
+every point of armour is worth more than a rank of practice.
+
+Damage is **practice and force**, and the attribute is the weapon's to name:
+
+```
+base damage = weapon.damage × (1 + 0.10 × weapon skill rank)
+                            × (1 + 0.04 × (governing attribute − 10))
+dealt        = round(base damage × band multiplier) − target armour
+```
+
+Might governs by default; a weapon with the *finesse* property names Dexterity
+instead, and still trains the same weapon skill. This is why the governing attribute is
+a property of the weapon rather than of the skill: a dagger and a longsword are both
+Blade, and they are not the same argument for what makes a character dangerous.
+
+### What the numbers come out at
+
+The calibration anchor is a fresh party against a floor-one goblin. Everything above is
+tuned so an ordinary goblin takes two solid hits and a front-liner falls in five.
+
+| | Value |
+|---|---|
+| Fresh fighter, sword (acc 20, dmg 8), Blade 2, Perception 10 | accuracy 30, base damage 10 |
+| Same fighter, Heavy Armour 2, Dexterity 10 | defence 26 |
+| Goblin | defence 20, armour 2, accuracy 24 |
+
+A level-appropriate attacker therefore sits at about **+10** over what it is attacking,
+which on the band thresholds gives 4% miss, 35% graze, 50% hit, 11% crit. Missing is
+rare, as it should be; crits are frequent enough to hope for and far too rare to plan
+around; and guaranteeing them would take an advantage of +99, which no campaign
+casually produces. Each rank is worth +5 accuracy and +10% damage, so enemy defence has
+to climb by about five per floor tier for parity to hold.
 
 ## Reach and Targeting
 
@@ -246,6 +292,9 @@ whether or not it can see.
 
 | Decision | Chosen | Alternatives Considered | Rationale |
 |---|---|---|---|
+| Defence and armour | Two separate stats: defence decides the band, armour reduces damage | One armour number serving as both | One number doing both jobs makes heavy armour doubly good and light armour doubly bad, and it forces the accuracy bands to stay compressed so that plate does not become untouchable. Splitting them is also what lets a nimble unarmoured thief be hard to hit and easy to hurt, which is a character worth being able to build. |
+| What accuracy is made of | Weapon, weapon skill rank, and Perception | The weapon's governing attribute, as damage uses; nothing but skill and weapon | Tying to-hit to the governing attribute would mean Might raised both how often you hit and how hard, compounding one attribute twice in the same swing. Perception keeps its exploration job and gains a reason to exist in a fight, without becoming the universal attribute that flattens every build. |
+| Rank value | +5 accuracy and +10% damage per rank | +3/+6%, so gear leads; +8/+15%, so skill dominates | Practice should be the main axis in a game whose progression is practice, while still leaving a found weapon and the right attribute able to decide a fight between two similar characters. |
 | Attack resolution | One roll into four bands: miss, graze, hit, crit | Binary hit or miss; always-hit with variable damage | A binary result makes an unfavourable matchup produce nothing at all, so the player watches turns evaporate. Four bands make it produce less, so a losing fight is still being played. |
 | Band widths | Narrow miss, wide middle, distant crit | Even bands | A miss should mean badly outmatched, not unlucky; a reliable crit should mean a real accuracy advantage rather than a good afternoon. |
 | Round structure | Select everything, then resolve in Dexterity order | Resolving each character's action as it is chosen | Committing before you know the results is what makes initiative worth having, and it stops a round becoming a sequence of individually optimal reactions. |

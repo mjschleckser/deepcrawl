@@ -30,8 +30,12 @@ specs fix the structure those numbers are fed into.
 - [x] **COMBAT-ATTACK-004**: The system shall deal reduced damage on a graze, full damage on a hit, and increased damage on a crit.
 - [x] **COMBAT-ATTACK-005**: The system shall deal at least one twentieth of an attack's base damage, rounded up and never below one, whenever that attack lands.
 - [x] **COMBAT-ATTACK-006**: The system shall raise the band as the attacker's accuracy rises relative to the target's defence, so that a greater advantage never produces a worse band on the same roll.
-- [ ] **COMBAT-ATTACK-007**: The system shall draw an attack's governing attribute from the weapon rather than from the skill the weapon uses.
-- [ ] **COMBAT-ATTACK-008**: The system shall assemble accuracy from the attacker's weapon skill rank, the weapon's governing attribute, and equipment.
+- [ ] **COMBAT-ATTACK-007**: The system shall draw the governing attribute for an attack's damage from the weapon rather than from the skill the weapon uses.
+- [ ] **COMBAT-ATTACK-008**: The system shall assemble an attacker's accuracy from the weapon's own accuracy, five per rank of the weapon's skill, and two per point of Perception above ten.
+- [ ] **COMBAT-ATTACK-009**: The system shall assemble a defender's defence from a base of twenty, two per point of Dexterity above ten, three per rank of the armour skill they are wearing, and any shield they carry.
+- [ ] **COMBAT-ATTACK-010**: The system shall resolve an attack's band against the target's defence and shall not let the target's armour affect which band the attack falls into.
+- [ ] **COMBAT-ATTACK-011**: The system shall assemble an attack's base damage from the weapon's own damage, a tenth more per rank of the weapon's skill, and four hundredths more per point of the weapon's governing attribute above ten.
+- [ ] **COMBAT-ATTACK-012**: The system shall subtract the target's armour from the damage of a landed attack, after the band's multiplier and before the minimum.
 
 ## Reach and targeting
 

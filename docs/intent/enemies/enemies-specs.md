@@ -8,11 +8,13 @@ are fed into.
 
 ## The roster
 
-- [x] **ENEMY-ROSTER-001**: The system shall define each enemy with an id, a name, a role, a preferred row, hit points, Dexterity, accuracy, armour, and a pot value.
+- [x] **ENEMY-ROSTER-001**: The system shall define each enemy with an id, a name, a role, a preferred row, hit points, Dexterity, accuracy, defence, armour, damage, and a pot value.
 - [ ] **ENEMY-ROSTER-002**: The system shall give every enemy exactly one role from: melee, ranged, or caster.
 - [x] **ENEMY-ROSTER-003**: The system shall keep an enemy's role and its row as separate properties, so that an enemy may stand in a row its role does not prefer.
 - [ ] **ENEMY-ROSTER-004**: The system shall hold the goblin, the goblin archer, and the goblin mage in the first floor's roster, as a melee front-row enemy, a ranged back-row enemy, and a caster back-row enemy respectively.
 - [ ] **ENEMY-ROSTER-005**: The system shall read every enemy from content data, and shall hold no behaviour particular to any named enemy.
+- [ ] **ENEMY-ROSTER-007**: The system shall give every enemy a defence and an armour as separate values, defence deciding whether a blow lands and armour what it is worth.
+- [ ] **ENEMY-ROSTER-008**: The system shall set an ordinary enemy's pot value at about twelve for each floor tier of its depth, and a dangerous one's at up to twice that.
 
 ## Bands
 

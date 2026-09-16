@@ -53,20 +53,53 @@ cannot be in two places or nowhere.
 
 Six scores, fixed at creation and moved only by rare effects.
 
-| Attribute | What it bears on |
+| Attribute | What it contributes |
 |---|---|
-| **Might** | raw physical force |
-| **Constitution** | hit points, and resisting what wears a body down |
-| **Dexterity** | precision and speed of hand |
-| **Intellect** | arcane capacity |
-| **Perception** | noticing what does not want to be noticed |
-| **Resolve** | divine capacity, and holding together under pressure |
+| **Might** | +4% damage per point over 10, for any weapon that names it |
+| **Constitution** | hit points; resisting poison and disease |
+| **Dexterity** | step cost, turn order, fleeing, +2 defence per point over 10 |
+| **Intellect** | spell slots at the lower ranks; spell magnitude and duration |
+| **Perception** | +2 accuracy per point over 10; finding traps and secret doors |
+| **Resolve** | resisting fear and charm; holding a spell when struck mid-cast |
 
-Attributes are deliberately not wired to particular skills or weapons. A dagger with a
-finesse property draws on Dexterity where a mace draws on Might, while both still use
-their weapon skill for to-hit and for damage. Which attribute a thing draws on is a
-property of the thing, resolved by combat — binding it here would flatten exactly the
-nuance that makes a dagger different from a mace.
+Each attribute has its own contribution rather than a blanket rule applied to whichever
+one a weapon names. Might is the damage attribute by default, but *which* attribute a
+weapon draws on for damage is a property of the weapon: a dagger with the *finesse*
+property names Dexterity, and still trains Blade. Accuracy is not open to that
+substitution — it is always weapon skill and Perception — because letting one attribute
+raise both how often a character connects and how hard would compound it twice in the
+same swing.
+
+Attributes are fixed at creation and moved only by a trainer, rarely and at cost. They
+are what a character *is*; skills are what they have done.
+
+### Hit points
+
+```
+maximum hit points = class base × (1 + 0.05 × (Constitution − 10))
+```
+
+| Class | Base |
+|---|---|
+| Fighter | 30 |
+| Cleric | 26 |
+| Thief | 22 |
+| Mage | 18 |
+
+**Hit points never grow through play.** There are no character levels to grow them
+with, and tying them to a skill rank would mean practising a weapon made a body harder
+to kill. Getting harder to kill instead means better armour, better healing, better
+positioning, and — rarely — buying Constitution from a trainer.
+
+This has a consequence worth being deliberate about: the survivability curve across a
+campaign runs entirely through armour, defence, and healing, so enemy damage can stay
+roughly flat as floors deepen instead of chasing an ever-growing pool. A deep floor
+stays lethal to a veteran party in a way it would not if hit points had quietly
+tripled on the way down.
+
+Constitution is multiplicative rather than flat so that the classes stay distinct at
+every score: a tough fighter gains more absolute hit points than a tough mage, and the
+gap between the two holds at roughly 1.7× from Constitution 6 to 18.
 
 ## Skills
 
@@ -118,6 +151,34 @@ disaster, which is when it should be available.
 
 Outside combat a skill advances through use, bounded by the clock: searching, cooking
 and mapping all cost ticks, and ticks cost food and light.
+
+#### What a rank costs
+
+Ranks run from 1 to **10**, and each one costs more than the last:
+
+```
+experience to go from rank r to rank r + 1 = 300 × r
+```
+
+| From → to | Cost | Running total |
+|---|---|---|
+| 1 → 2 | 300 | 300 |
+| 2 → 3 | 600 | 900 |
+| 5 → 6 | 1,500 | 4,500 |
+| 9 → 10 | 2,700 | 13,500 |
+
+A rising cost is what makes farming decay on its own. A floor-one warband is worth
+about 42 to the pot, which reaches a fighter's Blade as roughly 84 once the class rate
+is applied — some seven warbands for rank 2 → 3, and thirty-two for rank 9 → 10. The
+same rank against floor-appropriate enemies costs seven or eight fights at any point in
+the campaign, because the pot grows with the floor while the cost grows with the rank.
+Early floors therefore stay *available* to a party that is underlevelled or rebuilding
+after a disaster, and stay *slow* for one that is not, without a rule forbidding
+anything.
+
+The cap of 10 is what lets content be calibrated at all: it fixes the top of the
+accuracy and damage curves, so the deepest floor can be built against a known ceiling
+rather than an open-ended one.
 
 ### Class
 
@@ -225,6 +286,10 @@ show what it cost.
 
 | Decision | Chosen | Alternatives Considered | Rationale |
 |---|---|---|---|
+| Hit-point growth | None: class base and Constitution, fixed for life | Growth with the best armour skill rank; a Toughness skill trained by being hit; character levels | Every growth mechanism needs enemy damage to grow alongside it, and a campaign that inflates both ends changes nothing except the size of the numbers. Fixed hit points keep a deep floor genuinely lethal to a veteran, and route survivability through armour, healing and positioning, which are decisions made in the fight. |
+| Constitution's shape | Multiplicative, 5% per point over 10 | Flat hit points per point | Flat would make a point of Constitution worth the same to a mage as to a fighter, compressing the classes together at high scores until a tough mage outlasts a frail fighter. |
+| Rank cost | 300 × r to leave rank r, capped at rank 10 | A flat cost per rank; a geometric curve | A flat cost makes floor one exactly as efficient at rank 9 as at rank 2, so nothing ever pulls a party downward. A geometric curve makes the last ranks a grind measured in hundreds of fights. A linear-cost curve decays farming gently while leaving it available. |
+| Rank ceiling | 10 | Uncapped ranks | Without a ceiling there is no top to the accuracy and damage curves, and the deepest floor cannot be built against anything. |
 | Who writes character state | Only this segment, through named operations | Combat and exploration writing fields directly | Both legitimately change hit points. One owner means the zero floor, the death chain and the roster limits are enforced once rather than in every caller. |
 | Progression | Skill ranks earned by use | Experience points and character levels | A character should be what they have done. It also makes class a governor rather than an identity, which is what allows changing class without discarding a character. |
 | Combat advancement | A pot per enemy, growing with distinct skills used up to a ceiling, split equally | Per-action gain; a flat pot split equally; diminishing returns per action | A pot fixed by the enemy is what makes prolonging a fight worthless. Growing it with distinct skills stops a flat split punishing a party for using its whole kit; the ceiling stops a party inflating it by dragging the fight out until everyone has touched everything. |
