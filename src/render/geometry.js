@@ -39,6 +39,48 @@ export function depthFrames(viewport, count, ratio = FRAME_RATIO) {
 export const MIN_TAP_PX = 48;
 
 /**
+ * The viewport the layout was designed against: a phone held upright.
+ */
+export const BASE_VIEWPORT = { width: 390, height: 780 };
+
+/** How much larger than that layout anything may be drawn. */
+export const MAX_UI_SCALE = 2;
+
+/**
+ * How large to draw everything, given the screen it is being drawn on.
+ *
+ * The smaller of the two ratios, so a wide short window does not inflate the controls
+ * until they fall off the bottom of it. Never below 1, because the phone layout is
+ * already at the floor of what a thumb can use; never above 2, because past that the
+ * game stops looking like a bigger version of itself.
+ *
+ * @spec PRESENT-CTRL-012
+ */
+export function uiScale(viewport) {
+  const ratio = Math.min(
+    viewport.width / BASE_VIEWPORT.width,
+    viewport.height / BASE_VIEWPORT.height,
+  );
+  return Math.min(MAX_UI_SCALE, Math.max(1, ratio));
+}
+
+/** How wide a column of content may be at scale 1. */
+export const MAX_CONTENT_WIDTH = 560;
+
+/**
+ * A centred column to lay content out in. A phone gets its whole width; a desktop gets
+ * a column with the dungeon showing either side, because a button spanning a third of
+ * a monitor is not a bigger button and a line of text spanning all of it is not an
+ * easier read.
+ *
+ * @spec PRESENT-FIGHT-020
+ */
+export function contentColumn(viewport) {
+  const width = Math.min(viewport.width, MAX_CONTENT_WIDTH * uiScale(viewport));
+  return { x: (viewport.width - width) / 2, width };
+}
+
+/**
  * A zone is a large area of the view and draws as a bare label, because a panel that
  * size would hide the corridor. A button is small and discrete and keeps its panel,
  * because hiding almost nothing buys almost nothing.
@@ -67,31 +109,65 @@ const CONTROL_LABELS = {
  *
  * @spec PRESENT-INPUT-004
  */
+/**
+ * What a region's fractions are measured against. A row of buttons belongs to the
+ * centred column, so it stays a row rather than spreading across a monitor. A corner
+ * widget belongs to the corner it sits in, and a zone belongs to the whole screen.
+ */
+export const Anchor = { VIEWPORT: 'VIEWPORT', COLUMN: 'COLUMN' };
+
 export const TouchLayout = [
-  { region: 'MAP', fx: 0.78, fy: 0.02, fw: 0.2, fh: 0.2 },
-  { region: 'PARTY_BAR', fx: 0.02, fy: 0.86, fw: 0.18, fh: 0.12 },
-  { region: 'PACK', fx: 0.22, fy: 0.86, fw: 0.18, fh: 0.12 },
-  { region: 'SPELL_ICON', fx: 0.42, fy: 0.86, fw: 0.18, fh: 0.12 },
-  { region: 'SEARCH_CONTROL', fx: 0.62, fy: 0.86, fw: 0.16, fh: 0.12 },
-  { region: 'INTERACT_PROMPT', fx: 0.8, fy: 0.86, fw: 0.18, fh: 0.12 },
-  { region: 'TURN_LEFT', fx: 0.0, fy: 0.18, fw: 0.26, fh: 0.66 },
-  { region: 'TURN_RIGHT', fx: 0.74, fy: 0.18, fw: 0.26, fh: 0.66 },
-  { region: 'FORWARD', fx: 0.26, fy: 0.18, fw: 0.48, fh: 0.66 },
+  { region: 'MAP', fx: 0.78, fy: 0.02, fw: 0.2, fh: 0.2, anchor: Anchor.VIEWPORT },
+  { region: 'PARTY_BAR', fx: 0.02, fy: 0.86, fw: 0.18, fh: 0.12, anchor: Anchor.COLUMN },
+  { region: 'PACK', fx: 0.22, fy: 0.86, fw: 0.18, fh: 0.12, anchor: Anchor.COLUMN },
+  { region: 'SPELL_ICON', fx: 0.42, fy: 0.86, fw: 0.18, fh: 0.12, anchor: Anchor.COLUMN },
+  { region: 'SEARCH_CONTROL', fx: 0.62, fy: 0.86, fw: 0.16, fh: 0.12, anchor: Anchor.COLUMN },
+  { region: 'INTERACT_PROMPT', fx: 0.8, fy: 0.86, fw: 0.18, fh: 0.12, anchor: Anchor.COLUMN },
+  { region: 'TURN_LEFT', fx: 0.0, fy: 0.18, fw: 0.26, fh: 0.66, anchor: Anchor.VIEWPORT },
+  { region: 'TURN_RIGHT', fx: 0.74, fy: 0.18, fw: 0.26, fh: 0.66, anchor: Anchor.VIEWPORT },
+  { region: 'FORWARD', fx: 0.26, fy: 0.18, fw: 0.48, fh: 0.66, anchor: Anchor.VIEWPORT },
 ];
 
 /**
  * @spec PRESENT-INPUT-005
  * @spec PRESENT-CTRL-002
+ * @spec PRESENT-CTRL-012
  */
 export function tapRegionsFor(viewport) {
-  return TouchLayout.map(({ region, fx, fy, fw, fh }) => {
-    // Proportions from the fractions, but never below a thumb, and never pushed off
-    // the edge by the growing.
-    const width = Math.min(viewport.width, Math.max(MIN_TAP_PX, fw * viewport.width));
-    const height = Math.min(viewport.height, Math.max(MIN_TAP_PX, fh * viewport.height));
+  const column = contentColumn(viewport);
+  const scale = uiScale(viewport);
+  // The most a discrete button may grow to. A zone is meant to cover the screen; a
+  // button is meant to be pressed, and past this it is only a larger target for the
+  // same tap.
+  const maxButton = MIN_TAP_PX * 4 * scale;
+
+  return TouchLayout.map(({ region, fx, fy, fw, fh, anchor }) => {
+    // A zone spans whatever it is measured against, because covering ground is its
+    // job. A button is bounded, because past a point it is only a larger target for
+    // the same tap.
+    const zone = CONTROL_LABELS[region].kind === ControlKind.ZONE;
+    const basis = anchor === Anchor.COLUMN ? column : { x: 0, width: viewport.width };
+
+    const natural = fw * basis.width;
+    const width = Math.min(
+      viewport.width,
+      Math.max(MIN_TAP_PX, zone ? natural : Math.min(natural, maxButton)),
+    );
+    const naturalHeight = fh * viewport.height;
+    const height = Math.min(
+      viewport.height,
+      Math.max(MIN_TAP_PX, zone ? naturalHeight : Math.min(naturalHeight, maxButton)),
+    );
+
+    // A bounded button keeps the centre of the share it was given, so a row that no
+    // longer fills its basis stays evenly spread across it.
+    const left = zone
+      ? basis.x + fx * basis.width
+      : basis.x + fx * basis.width + (natural - width) / 2;
+
     return {
       region,
-      x: Math.max(0, Math.min(fx * viewport.width, viewport.width - width)),
+      x: Math.max(0, Math.min(left, viewport.width - width)),
       y: Math.max(0, Math.min(fy * viewport.height, viewport.height - height)),
       width,
       height,

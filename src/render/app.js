@@ -99,7 +99,7 @@ function drawMap(container, plan) {
  * @spec PRESENT-CTRL-003
  * @spec PRESENT-CTRL-006
  */
-function drawControl(container, control, { alpha = 0.55 } = {}) {
+function drawControl(container, control, { alpha = 0.55, scale = 1 } = {}) {
   const ghost = control.kind === 'ZONE';
   const graphics = new Graphics();
   // Over the dungeon a control is its label alone, and shows its edges only under a
@@ -116,28 +116,29 @@ function drawControl(container, control, { alpha = 0.55 } = {}) {
 
   const name = new Text({
     text: control.label,
-    style: { fill: 0xe8d9a8, fontSize: 14, fontFamily: 'monospace' },
+    style: { fill: 0xe8d9a8, fontSize: Math.round(14 * scale), fontFamily: 'monospace' },
   });
   name.x = control.x + control.width / 2 - name.width / 2;
-  name.y = control.y + control.height / 2 - name.height / 2 - (control.hint ? 6 : 0);
+  name.y = control.y + control.height / 2 - name.height / 2 - (control.hint ? 6 * scale : 0);
   container.addChild(name);
 
   // The key is a hint, never the label: a phone has no Enter to press.
   if (control.hint) {
     const hint = new Text({
       text: control.hint,
-      style: { fill: PALETTE.map.wall, fontSize: 10, fontFamily: 'monospace' },
+      style: { fill: PALETTE.map.wall, fontSize: Math.round(10 * scale), fontFamily: 'monospace' },
     });
     hint.x = control.x + control.width / 2 - hint.width / 2;
-    hint.y = control.y + control.height - hint.height - 4;
+    hint.y = control.y + control.height - hint.height - 4 * scale;
     container.addChild(hint);
   }
 }
 
 function drawHud(container, plan) {
+  const scale = plan.scale ?? 1;
   // A button hides almost nothing, so it can afford to be solid — and needs to be, or
   // it washes out over a brightly lit floor. A zone ignores this and draws no panel.
-  for (const control of plan.controls ?? []) drawControl(container, control, { alpha: 0.88 });
+  for (const control of plan.controls ?? []) drawControl(container, control, { alpha: 0.88, scale });
   if (!plan.prompt) return;
 
   const { bounds, text, controls } = plan.prompt;
@@ -148,13 +149,13 @@ function drawHud(container, plan) {
 
   const label = new Text({
     text,
-    style: { fill: 0xe8d9a8, fontSize: 17, fontFamily: 'monospace', align: 'center' },
+    style: { fill: 0xe8d9a8, fontSize: Math.round(17 * scale), fontFamily: 'monospace', align: 'center' },
   });
   label.x = bounds.x + bounds.width / 2 - label.width / 2;
-  label.y = bounds.y + 20;
+  label.y = bounds.y + 20 * scale;
   container.addChild(label);
 
-  for (const control of controls) drawControl(container, control, { alpha: 0.75 });
+  for (const control of controls) drawControl(container, control, { alpha: 0.75, scale });
 }
 
 export async function createRenderer(mount) {
@@ -221,7 +222,8 @@ const label = (text, size, colour) =>
  */
 function drawFight(container, plan) {
   const { x, y, width, height } = plan.bounds;
-  const pad = 8;
+  const scale = plan.scale ?? 1;
+  const pad = 8 * scale;
   const graphics = new Graphics();
   graphics.rect(x, y, width, height).fill({ color: FIGHT_COLOURS.panel, alpha: 0.9 });
   graphics.moveTo(x, y).lineTo(x + width, y).stroke({ width: 2, color: FIGHT_COLOURS.frame });
@@ -235,14 +237,14 @@ function drawFight(container, plan) {
       .stroke({ width: 1, color: FIGHT_COLOURS.frame });
 
     const tone = member.down ? FIGHT_COLOURS.dim : FIGHT_COLOURS.text;
-    const name = label(member.name.slice(0, 12), 11, tone);
-    name.x = member.x + 5;
-    name.y = member.y + 5;
+    const name = label(member.name.slice(0, 12), Math.round(11 * scale), tone);
+    name.x = member.x + 5 * scale;
+    name.y = member.y + 5 * scale;
     container.addChild(name);
 
-    const hp = label(member.down ? 'down' : `${member.hitPoints}/${member.maxHitPoints}`, 11, tone);
-    hp.x = member.x + 5;
-    hp.y = member.y + 23;
+    const hp = label(member.down ? 'down' : `${member.hitPoints}/${member.maxHitPoints}`, Math.round(11 * scale), tone);
+    hp.x = member.x + 5 * scale;
+    hp.y = member.y + member.height - hp.height - 5 * scale;
     container.addChild(hp);
   };
 
@@ -255,18 +257,18 @@ function drawFight(container, plan) {
     const who = plan.party.find((c) => c.id === plan.pending.characterId);
     const prompt = label(
       `${who?.name ?? plan.pending.characterId}: ${plan.pending.targets ? 'at whom?' : 'what will you do?'}`,
-      14, FIGHT_COLOURS.text,
+      Math.round(14 * scale), FIGHT_COLOURS.text,
     );
     prompt.x = x + pad;
     prompt.y = cursor;
     container.addChild(prompt);
-    cursor += 26;
+    cursor += 26 * scale;
   }
 
   for (const [i, line] of plan.log.entries()) {
-    const entry = label(line, 12, FIGHT_COLOURS.dim);
+    const entry = label(line, Math.round(12 * scale), FIGHT_COLOURS.dim);
     entry.x = x + pad;
-    entry.y = cursor + i * 15;
+    entry.y = cursor + i * 15 * scale;
     container.addChild(entry);
   }
 
@@ -278,19 +280,19 @@ function drawFight(container, plan) {
     panel.rect(b.x, b.y, b.width, b.height).stroke({ width: 2, color: FIGHT_COLOURS.banner });
     container.addChild(panel);
 
-    const outcome = label(plan.banner.outcome, 20, FIGHT_COLOURS.banner);
+    const outcome = label(plan.banner.outcome, Math.round(20 * scale), FIGHT_COLOURS.banner);
     outcome.x = b.x + b.width / 2 - outcome.width / 2;
-    outcome.y = b.y + 18;
+    outcome.y = b.y + 18 * scale;
     container.addChild(outcome);
 
     if (plan.banner.pot) {
-      const learned = label(`the party learns ${plan.banner.pot}`, 13, FIGHT_COLOURS.text);
+      const learned = label(`the party learns ${plan.banner.pot}`, Math.round(13 * scale), FIGHT_COLOURS.text);
       learned.x = b.x + b.width / 2 - learned.width / 2;
-      learned.y = b.y + 46;
+      learned.y = b.y + 46 * scale;
       container.addChild(learned);
     }
   }
 
   // @spec PRESENT-FIGHT-017
-  for (const control of plan.controls ?? []) drawControl(container, control, { alpha: 0.7 });
+  for (const control of plan.controls ?? []) drawControl(container, control, { alpha: 0.7, scale });
 }

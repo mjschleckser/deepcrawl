@@ -170,10 +170,14 @@ export function carveCorridor(floor, carved, rng, from, to, record) {
   if (horizontalFirst) { walkX(); walkY(); } else { walkY(); walkX(); }
 }
 
-function inAnyRoom(rooms, x, y) {
-  return rooms.some(
+function roomIndexAt(rooms, x, y) {
+  return rooms.findIndex(
     (r) => x >= r.x && x < r.x + r.width && y >= r.y && y < r.y + r.height,
   );
+}
+
+function inAnyRoom(rooms, x, y) {
+  return roomIndexAt(rooms, x, y) !== -1;
 }
 
 /** Flood the carved tiles, treating the given edge kinds as impassable. */
@@ -259,6 +263,8 @@ function placeDoors(floor, carved, rng, rooms, junctions, loopEdges, archetype) 
  * @spec GEN-CONNECT-004
  * @spec GEN-PLACE-001
  * @spec GEN-PLACE-002
+ * @spec GEN-PLACE-008
+ * @spec GEN-PLACE-009
  * @spec GEN-PLACE-003
  * @spec GEN-PLACE-005
  */
@@ -314,14 +320,38 @@ export function generateFloor({ id, seed, archetype = DEFAULT_ARCHETYPE, depthLa
   const roomTiles = carvedList.filter((t) => inAnyRoom(rooms, t.x, t.y));
   const spots = placeRng.shuffle(roomTiles.length >= 4 ? roomTiles : carvedList);
 
-  // Every floor holds a way back up, so an arrival by stairs always resolves.
-  let cursor = 0;
-  const stairsUp = spots[cursor++];
+  // One tile is claimed at a time from the shuffled list, so nothing is ever placed on
+  // top of anything else.
+  const taken = new Set();
+  const take = (allows = () => true) => {
+    for (const spot of spots) {
+      const key = `${spot.x},${spot.y}`;
+      if (taken.has(key) || !allows(spot)) continue;
+      taken.add(key);
+      return spot;
+    }
+    return null;
+  };
+
+  // Every floor holds a way back up, so an arrival by stairs always resolves. The way
+  // up claims no room: a landing that also holds a way onward is a legitimate room.
+  const stairsUp = take();
   setTileFeature(floor, stairsUp.x, stairsUp.y, TileFeature.STAIRS_UP);
 
+  // Each way down claims a room of its own. Several descents are what make the dungeon
+  // a graph, but two in one room turn a choice of route into a choice of tile.
+  const claimedRooms = new Set();
   for (const link of links) {
-    const spot = spots[cursor++];
+    const spot = take((t) => {
+      const room = roomIndexAt(rooms, t.x, t.y);
+      return room === -1 || !claimedRooms.has(room);
+    });
+    // A floor with more descents than rooms places as many as it has rooms for.
     if (!spot) break;
+
+    const room = roomIndexAt(rooms, spot.x, spot.y);
+    if (room !== -1) claimedRooms.add(room);
+
     const feature = link.via === TileFeature.PIT ? TileFeature.PIT : TileFeature.STAIRS_DOWN;
     setTileFeature(floor, spot.x, spot.y, feature, {
       target: { floorId: link.toFloorId, arriveAt: link.arriveAt },
@@ -330,8 +360,9 @@ export function generateFloor({ id, seed, archetype = DEFAULT_ARCHETYPE, depthLa
 
   const trapCount = placeRng.int(archetype.traps.min, archetype.traps.max);
   const traps = [];
-  for (let i = 0; i < trapCount && cursor < spots.length; i++) {
-    const spot = spots[cursor++];
+  for (let i = 0; i < trapCount; i++) {
+    const spot = take();
+    if (!spot) break;
     traps.push({ x: spot.x, y: spot.y });
   }
 

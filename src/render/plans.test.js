@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { LightLevel, TileFeature, EdgeKind, Direction } from '../sim/floor.js';
-import { depthFrames, tapRegionsFor, hitTest, TouchLayout } from './geometry.js';
+import {
+  depthFrames, tapRegionsFor, hitTest, TouchLayout, contentColumn, Anchor,
+} from './geometry.js';
 import { buildViewPlan } from './viewplan.js';
 import { buildMapPlan } from './mapplan.js';
 
@@ -248,11 +250,46 @@ describe('tap regions', () => {
   });
 
   // @spec PRESENT-INPUT-005
-  it('scales the regions with the viewport', () => {
-    const small = tapRegionsFor({ width: 400, height: 300 });
-    const large = tapRegionsFor({ width: 800, height: 600 });
+  it('scales a zone with the viewport, covering the screen being its job', () => {
+    const at = (vp, name) => tapRegionsFor(vp).find((r) => r.region === name);
 
-    expect(large[0].width).toBeCloseTo(small[0].width * 2);
+    expect(at({ width: 800, height: 600 }, 'FORWARD').width)
+      .toBeCloseTo(at({ width: 400, height: 300 }, 'FORWARD').width * 2);
+  });
+
+  // @spec PRESENT-CTRL-012
+  it('bounds every button, so none of them spans a wide window', () => {
+    const wide = { width: 2400, height: 1000 };
+    const column = contentColumn(wide);
+    const buttons = tapRegionsFor(wide).filter(
+      (r) => !['FORWARD', 'TURN_LEFT', 'TURN_RIGHT'].includes(r.region),
+    );
+
+    expect(buttons.length).toBeGreaterThan(0);
+    for (const button of buttons) expect(button.width).toBeLessThan(column.width);
+  });
+
+  // @spec PRESENT-CTRL-012
+  it('keeps the row along the bottom inside the centred column', () => {
+    const wide = { width: 2400, height: 1000 };
+    const column = contentColumn(wide);
+    const inColumn = TouchLayout.filter((r) => r.anchor === Anchor.COLUMN).map((r) => r.region);
+    const regions = tapRegionsFor(wide).filter((r) => inColumn.includes(r.region));
+
+    expect(regions.length).toBeGreaterThan(0);
+    for (const region of regions) {
+      expect(region.x).toBeGreaterThanOrEqual(column.x - 1);
+      expect(region.x + region.width).toBeLessThanOrEqual(column.x + column.width + 1);
+    }
+  });
+
+  // @spec PRESENT-CTRL-012
+  it('leaves a corner widget in its corner rather than dragging it inward', () => {
+    const wide = { width: 2400, height: 1000 };
+    const map = tapRegionsFor(wide).find((r) => r.region === 'MAP');
+
+    // Still over on the right, where the automap's opposite number belongs.
+    expect(map.x + map.width).toBeGreaterThan(wide.width * 0.9);
   });
 
   // @spec PRESENT-INPUT-002

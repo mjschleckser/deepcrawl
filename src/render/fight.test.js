@@ -296,3 +296,96 @@ describe('what a won fight teaches', () => {
     }
   });
 });
+
+describe('a fight on a wide screen', () => {
+  const phone = { width: 390, height: 780 };
+  const desktop = { width: 2116, height: 1264 };
+  const planFor = (vp) => buildFightPlan(fightState(), vp, {
+    phase: FightPhase.SELECTING,
+    pending: { characterId: 'bram', options: [{ label: 'Attack' }, { label: 'Defend' }, { label: 'Flee' }], targets: null },
+  });
+
+  // @spec PRESENT-FIGHT-020
+  it('lays out in a centred column rather than across the whole window', () => {
+    const plan = planFor(desktop);
+
+    expect(plan.bounds.width).toBeLessThan(desktop.width);
+    expect(plan.bounds.x).toBeCloseTo((desktop.width - plan.bounds.width) / 2, 5);
+  });
+
+  // @spec PRESENT-FIGHT-020
+  it('gives a phone its whole width, the column being the screen', () => {
+    const plan = planFor(phone);
+
+    expect(plan.bounds.x).toBe(0);
+    expect(plan.bounds.width).toBe(phone.width);
+  });
+
+  // @spec PRESENT-FIGHT-021
+  it('keeps every control inside the column', () => {
+    const plan = planFor(desktop);
+
+    expect(plan.controls.length).toBeGreaterThan(0);
+    for (const control of plan.controls) {
+      expect(control.x).toBeGreaterThanOrEqual(plan.bounds.x);
+      expect(control.x + control.width).toBeLessThanOrEqual(plan.bounds.x + plan.bounds.width);
+    }
+  });
+
+  // @spec PRESENT-FIGHT-022
+  it('draws bigger cards on a bigger screen', () => {
+    const small = planFor(phone).party[0];
+    const large = planFor(desktop).party[0];
+
+    expect(large.width).toBeGreaterThan(small.width);
+    expect(large.height).toBeGreaterThan(small.height);
+  });
+
+  // @spec PRESENT-CTRL-013
+  it('carries the scale on the plan, so nothing works it out while drawing', () => {
+    expect(planFor(phone).scale).toBe(1);
+    expect(planFor(desktop).scale).toBeGreaterThan(1);
+  });
+});
+
+describe('the panel is sized to what is in it', () => {
+  const desktop = { width: 1920, height: 1080 };
+  const withPending = (over) => buildFightPlan(fightState(over), desktop, {
+    phase: FightPhase.SELECTING,
+    pending: { characterId: 'bram', options: [{ label: 'Attack' }, { label: 'Defend' }, { label: 'Flee' }], targets: null },
+  });
+
+  // @spec PRESENT-FIGHT-001
+  it('leaves more corridor showing for a smaller fight', () => {
+    const crowd = withPending({
+      enemies: Array.from({ length: 6 }, (_, i) =>
+        createEnemy({ id: `g${i}`, name: 'Goblin', row: i < 3 ? Row.FRONT : Row.BACK, hitPoints: 9, potValue: 14 })),
+    });
+    const skirmish = withPending({
+      enemies: [createEnemy({ id: 'g1', name: 'Goblin', row: Row.FRONT, hitPoints: 9, potValue: 14 })],
+    });
+
+    expect(skirmish.bounds.height).toBeLessThan(crowd.bounds.height);
+  });
+
+  // @spec PRESENT-FIGHT-001
+  it('never takes more than its share of the screen, however crowded', () => {
+    const swarm = withPending({
+      enemies: Array.from({ length: 20 }, (_, i) =>
+        createEnemy({ id: `g${i}`, name: 'Goblin', row: i < 10 ? Row.FRONT : Row.BACK, hitPoints: 9, potValue: 14 })),
+    });
+
+    expect(swarm.bounds.height).toBeLessThan(desktop.height);
+    expect(swarm.bounds.y).toBeGreaterThan(0);
+  });
+
+  // @spec PRESENT-FIGHT-021
+  it('puts the controls at the foot of the panel, not adrift in the middle of it', () => {
+    const plan = withPending();
+    const lowest = Math.max(...plan.controls.map((c) => c.y + c.height));
+    const panelBottom = plan.bounds.y + plan.bounds.height;
+
+    expect(panelBottom - lowest).toBeLessThan(plan.scale * 20);
+    expect(plan.controlsTop).toBeGreaterThan(plan.cardsBottom);
+  });
+});

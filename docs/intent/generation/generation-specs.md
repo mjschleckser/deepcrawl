@@ -42,6 +42,8 @@ guarantees it with.
 
 - [x] **GEN-PLACE-001**: The system shall place at least one `stairsUp` on every floor, so that an arrival by stairs can always be resolved.
 - [x] **GEN-PLACE-002**: The system shall place a connector only on a tile belonging to a room or corridor, and never on a tile the party must cross to pass through a doorway.
+- [x] **GEN-PLACE-008**: The system shall place no two ways down in the same room, counting a staircase down and a pit connector alike as a way down.
+- [x] **GEN-PLACE-009**: When a floor has more ways down than rooms, the system shall place one in each room and no more.
 - [x] **GEN-PLACE-003**: The system shall lay traps numbering within the archetype's trap range.
 - [ ] **GEN-PLACE-004**: The system shall lay every trap at generation, and shall neither add nor remove a trap on a floor thereafter.
 - [x] **GEN-PLACE-005**: The system shall set every tile's intrinsic light to dark, except the rooms the archetype marks lit.

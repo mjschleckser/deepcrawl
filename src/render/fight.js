@@ -11,7 +11,7 @@
  */
 
 import { Condition, Row, Skill, roster } from '../sim/party.js';
-import { MIN_TAP_PX, ControlKind } from './geometry.js';
+import { MIN_TAP_PX, ControlKind, uiScale, contentColumn } from './geometry.js';
 import {
   Action, Band, Outcome, meleeTargets, rangedTargets,
   encounterOutcome, selectAction, resolveRound, attemptFlee,
@@ -28,36 +28,42 @@ export const FightAction = {
 const PANEL_FRACTION = 0.62;
 const LOG_LINES = 5;
 
+/** A card at the scale the phone layout was designed against. */
 const CARD_WIDTH = 108;
 const CARD_HEIGHT = 44;
 const CARD_GAP = 8;
 
 /**
- * Lay a rank out centred across the panel, so the two sides read as facing one another
+ * Lay a rank out centred across the column, so the two sides read as facing one another
  * down a corridor rather than as two lists sharing a left margin.
  *
  * @spec PRESENT-FIGHT-018
  * @spec PRESENT-FIGHT-019
+ * @spec PRESENT-FIGHT-022
  */
-function layOutRank(cards, bounds, top) {
+function layOutRank(cards, column, top, scale) {
   if (cards.length === 0) return [];
 
-  // Squeeze rather than overflow: a crowded rank still has to fit the panel.
-  const available = bounds.width - CARD_GAP * 2;
-  const natural = cards.length * CARD_WIDTH + (cards.length - 1) * CARD_GAP;
-  const width = natural <= available
-    ? CARD_WIDTH
-    : (available - (cards.length - 1) * CARD_GAP) / cards.length;
+  const gap = CARD_GAP * scale;
+  const natural = CARD_WIDTH * scale;
+  const height = CARD_HEIGHT * scale;
 
-  const rankWidth = cards.length * width + (cards.length - 1) * CARD_GAP;
-  const startX = bounds.x + (bounds.width - rankWidth) / 2;
+  // Squeeze rather than overflow: a crowded rank still has to fit the column.
+  const available = column.width - gap * 2;
+  const total = cards.length * natural + (cards.length - 1) * gap;
+  const width = total <= available
+    ? natural
+    : (available - (cards.length - 1) * gap) / cards.length;
+
+  const rankWidth = cards.length * width + (cards.length - 1) * gap;
+  const startX = column.x + (column.width - rankWidth) / 2;
 
   return cards.map((card, i) => ({
     ...card,
-    x: startX + i * (width + CARD_GAP),
+    x: startX + i * (width + gap),
     y: top,
     width,
-    height: CARD_HEIGHT,
+    height,
   }));
 }
 
@@ -81,7 +87,9 @@ const standing = (e) => e.condition === Condition.OK && e.hitPoints > 0;
  * @spec PRESENT-FIGHT-014
  */
 export function buildFightPlan(encounter, viewport, { phase, outcome = null, pending = null, log = [] } = {}) {
-  const height = viewport.height * PANEL_FRACTION;
+  const scale = uiScale(viewport);
+  const column = contentColumn(viewport);
+  const pad = CARD_GAP * scale;
 
   const drawEnemy = (e) => ({
     id: e.id, name: e.name, row: e.row,
@@ -97,9 +105,35 @@ export function buildFightPlan(encounter, viewport, { phase, outcome = null, pen
     down: c.condition !== Condition.OK,
   });
 
-  const bounds = { x: 0, y: viewport.height - height, width: viewport.width, height };
-  const bannerHeight = Math.max(MIN_TAP_PX * 2.6, 150);
-  const bannerWidth = Math.min(viewport.width - 24, 420);
+  const byRow = (cards, row) => cards.filter((c) => c.row === row);
+  const enemyCards = encounter.enemies.members.map(drawEnemy);
+  const partyCards = roster(encounter.party).map(drawMember);
+
+  const rankOrder = [
+    [enemyCards, Row.BACK], [enemyCards, Row.FRONT],
+    [partyCards, Row.FRONT], [partyCards, Row.BACK],
+  ];
+  const occupied = rankOrder.filter(([cards, row]) => byRow(cards, row).length > 0).length;
+
+  // The panel is sized to what is in it rather than to a fixed share of the screen: a
+  // fixed share leaves a wide window mostly empty between the log and the controls.
+  const metrics = controlMetrics({ column, pending, scale });
+  const shownLog = log.slice(-LOG_LINES);
+  const contentHeight =
+    pad
+    + occupied * (CARD_HEIGHT + CARD_GAP) * scale
+    + (pending ? 26 * scale : 0)
+    + shownLog.length * 15 * scale
+    + (metrics.height > 0 ? metrics.gap + metrics.height : 0)
+    + pad;
+  // Never more than most of the screen, however crowded the fight.
+  const height = Math.min(viewport.height * PANEL_FRACTION, contentHeight);
+
+  // The fight is a centred surface, not a band across the whole screen: on a wide
+  // window the corridor stays visible either side of it.
+  const bounds = { x: column.x, y: viewport.height - height, width: column.width, height };
+  const bannerHeight = Math.max(MIN_TAP_PX * 2.6, 150) * scale;
+  const bannerWidth = Math.min(column.width - 24, 420 * scale);
   const banner = phase === FightPhase.ENDED && outcome
     ? {
         outcome: outcome.outcome,
@@ -115,20 +149,16 @@ export function buildFightPlan(encounter, viewport, { phase, outcome = null, pen
       }
     : null;
 
-  const byRow = (cards, row) => cards.filter((c) => c.row === row);
-  const enemyCards = encounter.enemies.members.map(drawEnemy);
-  const partyCards = roster(encounter.party).map(drawMember);
-
   // Enemy back, enemy front, then the party's two ranks facing them.
-  let top = bounds.y + CARD_GAP;
+  let top = bounds.y + pad;
   const ranks = [];
-  for (const [cards, row] of [
-    [enemyCards, Row.BACK], [enemyCards, Row.FRONT],
-    [partyCards, Row.FRONT], [partyCards, Row.BACK],
-  ]) {
+  for (const [cards, row] of rankOrder) {
     const rank = byRow(cards, row);
-    ranks.push({ owner: cards === enemyCards ? 'enemies' : 'party', laid: layOutRank(rank, bounds, top) });
-    if (rank.length > 0) top += CARD_HEIGHT + CARD_GAP;
+    ranks.push({
+      owner: cards === enemyCards ? 'enemies' : 'party',
+      laid: layOutRank(rank, column, top, scale),
+    });
+    if (rank.length > 0) top += (CARD_HEIGHT + CARD_GAP) * scale;
   }
   const laidEnemies = ranks.filter((r) => r.owner === 'enemies').flatMap((r) => r.laid);
   const laidParty = ranks.filter((r) => r.owner === 'party').flatMap((r) => r.laid);
@@ -138,15 +168,47 @@ export function buildFightPlan(encounter, viewport, { phase, outcome = null, pen
     // were caught.
     overlaysView: true,
     bounds,
+    // Carried, never recomputed while drawing: layout lives in one place.
+    // @spec PRESENT-CTRL-013
+    scale,
     cardsBottom: top,
+    controlsTop: bounds.y + bounds.height - pad - metrics.height + metrics.gap,
     enemies: laidEnemies,
     party: laidParty,
     pending,
-    log: log.slice(-LOG_LINES),
+    log: shownLog,
     banner,
     // Drawn and tapped are one thing: a fight nobody can touch is a fight a phone
     // player can watch and not play.
-    controls: fightControls({ bounds, pending, banner, viewport }),
+    controls: fightControls({
+      bounds, pending, banner, metrics,
+      top: bounds.y + bounds.height - pad - metrics.height + metrics.gap,
+    }),
+  };
+}
+
+/**
+ * How much room the controls need, and how they divide the column. Worked out before
+ * the panel is sized, because the panel is sized to fit them.
+ */
+function controlMetrics({ column, pending, scale }) {
+  const gap = 8 * scale;
+  const buttonHeight = Math.max(MIN_TAP_PX, 52 * scale);
+  if (!pending) return { gap, buttonHeight, columns: 0, rows: 0, width: 0, height: 0 };
+
+  const count = pending.targets ? pending.targets.length : pending.options.length;
+
+  // Wrap onto as many rows as the width needs, so a narrow phone never squeezes a
+  // control below a thumb.
+  const perRow = Math.max(1, Math.floor((column.width - gap) / (MIN_TAP_PX * 1.8 * scale + gap)));
+  const columns = Math.min(perRow, Math.max(1, count));
+  const rows = Math.ceil(count / columns);
+
+  return {
+    gap, buttonHeight, columns, rows,
+    width: Math.max(MIN_TAP_PX, (column.width - gap * (columns + 1)) / columns),
+    // The option rows, then the way back on a row of its own.
+    height: (rows + 1) * (buttonHeight + gap),
   };
 }
 
@@ -158,18 +220,18 @@ export function buildFightPlan(encounter, viewport, { phase, outcome = null, pen
  * @spec PRESENT-CTRL-003
  * @spec PRESENT-CTRL-004
  * @spec PRESENT-FIGHT-017
+ * @spec PRESENT-FIGHT-021
  */
-function fightControls({ bounds, pending, banner, viewport }) {
-  const gap = 8;
-  const buttonHeight = Math.max(MIN_TAP_PX, 52);
+function fightControls({ bounds, pending, banner, metrics, top }) {
+  const { gap, buttonHeight, columns, width } = metrics;
 
   if (banner) {
-    const width = Math.min(banner.bounds.width - gap * 2, 320);
+    const bannerWidth = Math.min(banner.bounds.width - gap * 2, 320 * (buttonHeight / 52));
     return [{
       kind: ControlKind.BUTTON, role: 'DISMISS', label: 'Onward', hint: 'Enter',
-      x: banner.bounds.x + (banner.bounds.width - width) / 2,
+      x: banner.bounds.x + (banner.bounds.width - bannerWidth) / 2,
       y: banner.bounds.y + banner.bounds.height - buttonHeight - gap,
-      width, height: buttonHeight,
+      width: bannerWidth, height: buttonHeight,
     }];
   }
   if (!pending) return [];
@@ -178,33 +240,21 @@ function fightControls({ bounds, pending, banner, viewport }) {
     ? pending.targets.map((t) => t.name)
     : pending.options.map((o) => o.label);
 
-  // Wrap onto as many rows as the width needs, so a narrow phone never squeezes a
-  // control below a thumb.
-  const perRow = Math.max(1, Math.floor((bounds.width - gap) / (MIN_TAP_PX * 1.8 + gap)));
-  const columns = Math.min(perRow, Math.max(1, choices.length));
-  const width = Math.max(MIN_TAP_PX, (bounds.width - gap * (columns + 1)) / columns);
-  const baseY = bounds.y + bounds.height - buttonHeight * 2 - gap * 3;
+  const controls = choices.map((label, index) => ({
+    kind: ControlKind.BUTTON,
+    role: pending.targets ? 'TARGET' : 'OPTION',
+    optionIndex: index,
+    label,
+    hint: String(index + 1),
+    x: bounds.x + gap + (index % columns) * (width + gap),
+    y: top + Math.floor(index / columns) * (buttonHeight + gap),
+    width, height: buttonHeight,
+  }));
 
-  const controls = choices.map((label, index) => {
-    const column = index % columns;
-    const row = Math.floor(index / columns);
-    return {
-      kind: ControlKind.BUTTON,
-      role: pending.targets ? 'TARGET' : 'OPTION',
-      optionIndex: index,
-      label,
-      hint: String(index + 1),
-      x: bounds.x + gap + column * (width + gap),
-      y: baseY + row * (buttonHeight + gap),
-      width, height: buttonHeight,
-    };
-  });
-
-  const rows = Math.ceil(choices.length / columns);
   controls.push({
     kind: ControlKind.BUTTON, role: 'BACK', label: 'Back', hint: 'Esc',
     x: bounds.x + gap,
-    y: Math.min(baseY + rows * (buttonHeight + gap), viewport.height - buttonHeight - gap),
+    y: top + metrics.rows * (buttonHeight + gap),
     width: Math.max(MIN_TAP_PX, bounds.width * 0.3),
     height: buttonHeight,
   });

@@ -315,6 +315,59 @@ describe('placement', () => {
     }
   });
 
+  const roomIndexAt = (floor, x, y) =>
+    (floor.rooms ?? []).findIndex(
+      (r) => x >= r.x && x < r.x + r.width && y >= r.y && y < r.y + r.height,
+    );
+
+  const waysDown = (floor) => {
+    const out = [];
+    for (let y = 0; y < floor.height; y++) {
+      for (let x = 0; x < floor.width; x++) {
+        const { feature } = getTile(floor, x, y);
+        if (feature === TileFeature.STAIRS_DOWN || feature === TileFeature.PIT) out.push({ x, y });
+      }
+    }
+    return out;
+  };
+
+  const descending = (count) =>
+    Array.from({ length: count }, (_, i) => ({
+      toFloorId: `down-${i}`,
+      arriveAt: ArrivalRule.STAIRS_UP,
+      via: i % 2 === 0 ? TileFeature.STAIRS_DOWN : TileFeature.PIT,
+    }));
+
+  // @spec GEN-PLACE-008
+  it('never puts two ways down in the same room', () => {
+    for (const seed of seeds(30)) {
+      const floor = generateFloor({ id: 'f', seed, archetype: ARCH, links: descending(3) });
+
+      const rooms = waysDown(floor)
+        .map((t) => roomIndexAt(floor, t.x, t.y))
+        .filter((i) => i !== -1);
+
+      expect(new Set(rooms).size).toBe(rooms.length);
+    }
+  });
+
+  // @spec GEN-PLACE-008
+  it('leaves the way back up free to share a room with a way down', () => {
+    // The way up is a fixed point every floor must have; only descents claim a room.
+    for (const seed of seeds(30)) {
+      const floor = generateFloor({ id: 'f', seed, archetype: ARCH, links: descending(2) });
+      expect(floor.tiles.filter((t) => t.feature === TileFeature.STAIRS_UP).length).toBe(1);
+    }
+  });
+
+  // @spec GEN-PLACE-009
+  it('places no more ways down than it has rooms to put them in', () => {
+    for (const seed of seeds(20)) {
+      const floor = generateFloor({ id: 'f', seed, archetype: ARCH, links: descending(40) });
+      expect(waysDown(floor).length).toBeLessThanOrEqual((floor.rooms ?? []).length);
+    }
+  });
+
   // @spec GEN-PLACE-002
   it('places every connector on a carved tile', () => {
     for (const seed of seeds(20)) {

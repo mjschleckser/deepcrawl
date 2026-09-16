@@ -301,6 +301,37 @@ when something has changed:
 Resizing recomputes the depth frames and the tap regions from the new viewport, then
 redraws. Nothing else in the segment is size-dependent.
 
+### One layout, two screens
+
+The layout is designed against a phone held upright, and every position is a fraction
+of the viewport — so the same arrangement holds on any screen. Fractions alone are not
+enough, though, and the two ways they fail pull in opposite directions.
+
+**Things that must not shrink** — a control under a thumb, a line of text — are held to
+a floor in real pixels. That is what `MIN_TAP_PX` is for.
+
+**Things that must not stretch** — a row of buttons, a column of text, a rank of
+combatant cards — are held to a ceiling. A button spanning a third of a desktop window
+is not a bigger button, it is a worse one, and a line of text the full width of a
+monitor is not easier to read. Content therefore lays out inside a **centred column**
+of bounded width, with the corridor showing either side of it.
+
+Between the floor and the ceiling everything is drawn at a **scale** derived from the
+viewport:
+
+```
+scale = clamp(min(width / 390, height / 780), 1, 2)
+```
+
+A phone gets 1 and the layout it was designed for. A desktop window gets up to 2, so
+cards, controls and text grow to suit the screen instead of huddling at phone size in
+the middle of it. It is capped at 2 because past that the game stops looking like a
+bigger version of itself and starts looking like a zoomed screenshot.
+
+The scale belongs to the **plan**, not to the drawing. Every position and size is
+decided before anything is emitted, which is the same rule the combatant cards already
+follow — an adapter that recomputed scale would be a second place where layout lived.
+
 ### The viewport is what can be seen
 
 The drawing surface is sized to the **visible** viewport, not the layout one. On a
@@ -325,6 +356,8 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 
 | Decision | Chosen | Alternatives Considered | Rationale |
 |---|---|---|---|
+| Wide screens | A centred column of bounded width, at a scale that grows to twice the phone layout | Pure fractions of the viewport; a fixed pixel layout centred with letterboxing | Pure fractions stretch a button across a third of a monitor and a text column across all of it, neither of which is more readable for being larger. A fixed layout leaves a desktop player with a phone-sized game marooned in the middle of the screen. Bounding the column and scaling within it gives both screens a layout built for them. |
+| Where the scale lives | On the plan | Computed in the Pixi adapter as it draws | Layout lives in one place. An adapter that worked out its own scale would be a second place to look when something is the wrong size, and the plans already own every other position. |
 | Redraw trigger | On state change only; the ticker is stopped | A conventional per-frame render loop | The world advances only when the player acts, so a render loop would redraw an unchanged corridor sixty times a second. On the phone this game is built for, that is battery spent on nothing. |
 | Absent layers | Every drawing names every layer, empty where there is nothing to show | Listing only the layers with something in them | A layer merely left out of a drawing is a layer nobody clears, so what it drew last stays on screen. That is the one way this design leaks, so it is made impossible rather than remembered. |
 | Layer updates | Clear and rebuild the changed layer | Diffing against a retained scene model | A corridor is a few dozen polygons and a map a few hundred cells. Rebuilding removes the class of bug where the screen and the state disagree because an update was missed. |

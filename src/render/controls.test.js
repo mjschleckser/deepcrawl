@@ -2,7 +2,10 @@ import { describe, it, expect, vi } from 'vitest';
 import { makeRng } from '../sim/rng.js';
 import { Row, CharacterClass, createParty, createCharacter, addCharacter } from '../sim/party.js';
 import { beginEncounter, createEnemy, createEnemyGroup } from '../sim/combat.js';
-import { tapRegionsFor, MIN_TAP_PX, controlsFor, ControlKind } from './geometry.js';
+import {
+  tapRegionsFor, MIN_TAP_PX, controlsFor, ControlKind,
+  uiScale, contentColumn, MAX_UI_SCALE,
+} from './geometry.js';
 import { buildFightPlan, createFightController, FightPhase } from './fight.js';
 import { buildPromptPlan } from './promptplan.js';
 import { createController, pressPointer, layers } from './controller.js';
@@ -432,5 +435,43 @@ describe('the formations in a fight', () => {
       expect(card.x).toBeGreaterThanOrEqual(plan.bounds.x - 0.001);
       expect(card.x + card.width).toBeLessThanOrEqual(plan.bounds.x + plan.bounds.width + 0.001);
     }
+  });
+});
+
+describe('scaling to the screen', () => {
+  const phone = { width: 390, height: 780 };
+  const desktop = { width: 2116, height: 1264 };
+
+  // @spec PRESENT-CTRL-012
+  it('draws the phone layout at its own size', () => {
+    expect(uiScale(phone)).toBe(1);
+  });
+
+  // @spec PRESENT-CTRL-012
+  it('grows with the screen, and stops growing', () => {
+    expect(uiScale(desktop)).toBeGreaterThan(1);
+    expect(uiScale({ width: 8000, height: 6000 })).toBe(MAX_UI_SCALE);
+  });
+
+  // @spec PRESENT-CTRL-012
+  it('never shrinks below the phone layout, however small the window', () => {
+    expect(uiScale({ width: 240, height: 320 })).toBe(1);
+  });
+
+  // @spec PRESENT-CTRL-012
+  it('takes the smaller dimension, so a wide short window does not inflate', () => {
+    // A landscape phone is wide and short; scaling on width alone would push the
+    // controls off the bottom of it.
+    expect(uiScale({ width: 2000, height: 400 })).toBe(1);
+  });
+
+  // @spec PRESENT-FIGHT-020
+  it('gives a phone the whole width and a desktop a centred column', () => {
+    expect(contentColumn(phone)).toEqual({ x: 0, width: 390 });
+
+    const column = contentColumn(desktop);
+    expect(column.width).toBeLessThan(desktop.width);
+    // Centred: the margins either side match.
+    expect(column.x).toBeCloseTo((desktop.width - column.width) / 2, 5);
   });
 });

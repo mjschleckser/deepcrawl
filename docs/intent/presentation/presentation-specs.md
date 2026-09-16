@@ -64,6 +64,8 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [ ] **PRESENT-CTRL-007**: The system shall draw a navigation zone as its label alone, without a panel or an outline, while it is not pressed.
 - [ ] **PRESENT-CTRL-010**: The system shall draw a button with a panel and a frame whether or not it is pressed.
 - [x] **PRESENT-CTRL-011**: The system shall carry on each control which of the two kinds it is, rather than leaving it to be worked out while drawing.
+- [x] **PRESENT-CTRL-012**: The system shall scale drawn controls and their text with the viewport, from the size the phone layout uses up to twice it, and no further.
+- [x] **PRESENT-CTRL-013**: The system shall carry the scale on the plan rather than working it out while drawing.
 - [x] **PRESENT-CTRL-008**: While a pointer is held on a control, the system shall draw that control's outline, and shall stop drawing it when the pointer is released.
 - [x] **PRESENT-CTRL-009**: The system shall mark at most one control as pressed at a time.
 
@@ -81,6 +83,9 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-FIGHT-002**: The system shall draw both the enemy formation and the party in their two rows.
 - [x] **PRESENT-FIGHT-018**: The system shall centre each rank across the width of the fight panel.
 - [x] **PRESENT-FIGHT-019**: The system shall decide every combatant card's position in the plan rather than while drawing.
+- [x] **PRESENT-FIGHT-020**: The system shall lay a fight out within a column centred on the viewport, no wider than the readable maximum the scale allows.
+- [x] **PRESENT-FIGHT-021**: The system shall keep every fight control within that column, so that a control never spans a wide window.
+- [x] **PRESENT-FIGHT-022**: The system shall scale a combatant card and the text on it with the viewport, by the same scale the controls use.
 - [x] **PRESENT-FIGHT-003**: The system shall draw a combatant who is down in the place they occupied, rather than removing them from their row.
 - [x] **PRESENT-FIGHT-004**: The system shall draw each combatant's remaining and maximum hit points.
 - [x] **PRESENT-FIGHT-005**: The system shall ask each conscious party member for an action in turn, in a fixed order.

@@ -16,7 +16,7 @@ import {
   resolveConfirmation,
   PartyAction,
 } from '../sim/exploration.js';
-import { hitTest, controlsFor } from './geometry.js';
+import { hitTest, controlsFor, uiScale } from './geometry.js';
 import { buildPromptPlan } from './promptplan.js';
 import { buildViewPlan } from './viewplan.js';
 import { buildMapPlan } from './mapplan.js';
@@ -118,7 +118,7 @@ export function layers(controller) {
           log: fight.log,
         }),
       },
-      { name: 'hud', plan: { prompt: null, viewport, controls: [] } },
+      { name: 'hud', plan: { prompt: null, viewport, scale: uiScale(viewport), controls: [] } },
     ];
   }
   return [
@@ -132,6 +132,8 @@ export function layers(controller) {
       plan: {
         prompt: buildPromptPlan(state.pendingConfirmation ?? null, viewport),
         viewport,
+        // @spec PRESENT-CTRL-013
+        scale: uiScale(viewport),
         // Nothing to walk toward while a prompt stands, so the walking controls go.
         controls: state.pendingConfirmation
           ? []

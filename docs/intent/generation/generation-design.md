@@ -109,8 +109,20 @@ is the sole way into somewhere is not a secret, it is a wall the party never get
 ### 6. Connectors, traps, and light
 
 Stairs and pits are placed on floor tiles away from doorways, so a connector is never
-the tile a party is forced to cross. Traps are laid within the archetype's budget,
-weighted toward corridors and doorways. Intrinsic light is dark by default; an
+the tile a party is forced to cross.
+
+**No two ways down share a room.** A floor may hold several descents — that is what
+makes the dungeon a graph rather than a stack — but finding one has to be worth
+something, and two staircases in the same room turn a choice of route into a choice of
+tile. Each descent therefore claims a room of its own, whether it is a staircase or a
+pit, and a floor with more descents than rooms places as many as it has rooms to put
+them in.
+
+The way back up is not bound by this. It is a fixed point every floor must have for an
+arrival to resolve, and a landing that also holds a way onward is a legitimate room
+rather than a degenerate one.
+
+Traps are laid within the archetype's budget, weighted toward corridors and doorways. Intrinsic light is dark by default; an
 archetype may specify lit rooms, and the floor holding the dungeon entrance always
 lights the arrival tile.
 
@@ -189,6 +201,7 @@ not converge on one arrangement.
 
 | Decision | Chosen | Alternatives Considered | Rationale |
 |---|---|---|---|
+| Two ways down | Each descent claims a room of its own | Any free room tile, several descents per room allowed; one descent per floor | Several ways down is what makes the dungeon a graph, but two of them in one room collapses the choice into a tile the player picks without exploring for it. Restricting to one per floor would throw away the branching instead of protecting it. |
 | Randomness | A seeded generator passed explicitly into every call | A module-level generator; `Math.random` | The HLD makes reproducibility a falsification signal. An explicit generator also lets a test assert a property across a thousand seeds, which is the only way a generator can be meaningfully tested. |
 | Room placement | Recursive splitting, one room per leaf region | Scattering rooms and rejecting overlaps; cellular automata caves | A split cannot overlap, so there is no rejection loop that can fail or run long on an unlucky seed. Caves suit a different genre; this one wants rooms and corridors. |
 | Connectivity | Guaranteed by construction, joining sibling regions | Generating freely, then detecting and repairing disconnection | A repair pass is a second generator with its own failure modes. A floor that cannot come out disconnected needs no check. |
