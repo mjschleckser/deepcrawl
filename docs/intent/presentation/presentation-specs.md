@@ -76,6 +76,15 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-CTRL-009**: The system shall mark at most one control as pressed at a time.
 - [x] **PRESENT-CTRL-014**: The system shall offer a navigation zone for stepping backward beneath the one for stepping forward, giving neither any part of the other's area.
 
+## Build stamp
+
+- [x] **PRESENT-BUILD-001**: The system shall draw the build's version in the bottom-left corner of the viewport, above every other layer.
+- [x] **PRESENT-BUILD-002**: The system shall place the version stamp clear of everything else the screen draws, moving it above whatever occupies that corner rather than over it.
+- [x] **PRESENT-BUILD-003**: The system shall read the version from a constant fixed when the app was built, rather than deriving one while drawing.
+- [x] **PRESENT-BUILD-004**: The system shall compose the version from the authored major and minor numbers, a patch equal to the number of commits, and the short commit hash.
+- [x] **PRESENT-BUILD-005**: If the build supplied no version, then the system shall draw a stand-in rather than nothing, so that the stamp is never silently absent.
+- [x] **PRESENT-BUILD-006**: The system shall decide the stamp's position in the draw plan rather than while drawing.
+
 ## Prompts
 
 - [x] **PRESENT-PROMPT-001**: While the simulation holds a pending confirmation, the system shall draw a prompt describing it.

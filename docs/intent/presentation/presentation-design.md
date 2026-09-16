@@ -305,6 +305,29 @@ and the normal mapping resumes.
 A prompt is drawn from the pending confirmation the simulation is holding, so a prompt
 can never be shown for a confirmation that is not actually pending.
 
+## The Build Stamp
+
+The version of the build being played is drawn small and dim in the bottom-left
+corner, over everything else.
+
+It exists to answer one question that cannot otherwise be answered from inside the
+game: *is what I am looking at the build I think it is?* A player reporting that a fix
+did not work and a player looking at a cached copy of yesterday's build write the same
+sentence, and with nothing on the screen to compare there is no way to tell the two
+apart. This is a progressive web app, and an installed one goes on serving what it
+already has until it decides otherwise, so the second case is common rather than
+exotic.
+
+The version reads `MAJOR.MINOR.PATCH+SHA`. Major and minor are authored; **the patch is
+the number of commits on the branch**, so every commit ships a version that is both new
+and correctly ordered without anyone remembering to raise it, and the short commit hash
+after it names the exact source. All of it is fixed when the app is built and read from
+a constant — nothing works out a version while drawing.
+
+The stamp never sits on top of a control. Where the controls reach that corner it moves
+above them, because it is information for the player who goes looking for it and
+furniture for everyone else.
+
 ## Redraw Discipline
 
 The Pixi ticker is stopped. Presentation renders once at startup and thereafter only
@@ -399,6 +422,7 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 | Illegal options | Not offered at all | Offered and refused when chosen | An option that cannot be taken should not be presented. Refusing after the fact teaches the rules by failure, which in a fight is expensive. |
 | Backing out | Steps back to the previous character | Cancelling only the current choice | The party commits to a whole round before any of it resolves, so reconsidering should reach the whole round rather than only its last decision. |
 | The fallen | Drawn in place, not removed | Removing them from the formation | The shape of a line that has lost its middle is information, and a body still occupies its row. |
+| The build stamp | Drawn in the corner of the running game, with the commit count as its patch | A version on an about screen; no version at all; a build date | "It does not work" and "you are looking at a cached build" are the same report without it, and a service worker makes the second common. Taking the patch from the commit count means nobody has to remember to raise a number, and it orders correctly by construction. |
 | Starter floor | Hand-authored data, deleted when generation lands | Waiting for dungeon generation; generating a floor here | The segment cannot be seen to work without a floor to walk, and building a generator inside the presentation segment would put it in the wrong place permanently. |
 
 ## Open Questions & Future Decisions
@@ -417,6 +441,7 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 14. ✅ **Stepping back is a zone of its own**, beneath the forward zone.
 15. ✅ **A door is drawn on the frame the corridor stops at**, closed as a panel with a handle and open as its frame alone.
 16. ✅ **An enemy the corridor report names is drawn standing at that depth**, with the same horned head the automap uses.
+17. ✅ **The build's version is drawn in the bottom-left corner**, its patch number the commit count, fixed at build time.
 12. ✅ **Turning about has a key but no control**, being two taps of one the player already uses.
 10. ✅ **Labels name the action**, with any keyboard hint as secondary text.
 7. ✅ **Prompts are drawn from the simulation's pending confirmation**, never from the renderer's own flag.

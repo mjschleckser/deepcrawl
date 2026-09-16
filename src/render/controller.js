@@ -16,7 +16,8 @@ import {
   resolveConfirmation,
   PartyAction,
 } from '../sim/exploration.js';
-import { hitTest, controlsFor, uiScale } from './geometry.js';
+import { hitTest, controlsFor, uiScale, versionStamp } from './geometry.js';
+import { APP_VERSION } from '../version.js';
 import { buildPromptPlan } from './promptplan.js';
 import { buildViewPlan } from './viewplan.js';
 import { buildMapPlan } from './mapplan.js';
@@ -106,21 +107,33 @@ export function layers(controller) {
   syncFight(controller);
   const { state, viewport, expanded, fight } = controller;
   if (fight) {
+    const fightPlan = buildFightPlan(fight.encounter, viewport, {
+      phase: fight.phase,
+      outcome: fight.outcome,
+      pending: fight.pending,
+      log: fight.log,
+    });
     return [
       { name: 'view', plan: buildViewPlan(corridorAhead(state), viewport) },
       { name: 'map', plan: null },
+      { name: 'fight', plan: fightPlan },
       {
-        name: 'fight',
-        plan: buildFightPlan(fight.encounter, viewport, {
-          phase: fight.phase,
-          outcome: fight.outcome,
-          pending: fight.pending,
-          log: fight.log,
-        }),
+        name: 'hud',
+        plan: {
+          prompt: null,
+          viewport,
+          scale: uiScale(viewport),
+          controls: [],
+          // The fight's own panel is what stands in the corner during a fight.
+          stamp: stampFor(viewport, [fightPlan.bounds]),
+        },
       },
-      { name: 'hud', plan: { prompt: null, viewport, scale: uiScale(viewport), controls: [] } },
     ];
   }
+  const controls = state.pendingConfirmation
+    ? []
+    : controlsFor(viewport, { pressedRegion: controller.pressedRegion });
+
   return [
     { name: 'view', plan: buildViewPlan(corridorAhead(state), viewport) },
     { name: 'map', plan: buildMapPlan(automapView(state), viewport, { expanded }) },
@@ -135,12 +148,23 @@ export function layers(controller) {
         // @spec PRESENT-CTRL-013
         scale: uiScale(viewport),
         // Nothing to walk toward while a prompt stands, so the walking controls go.
-        controls: state.pendingConfirmation
-          ? []
-          : controlsFor(viewport, { pressedRegion: controller.pressedRegion }),
+        controls,
+        stamp: stampFor(viewport, controls),
       },
     },
   ];
+}
+
+/**
+ * Which build this is, in the corner. Placed here rather than while drawing, like
+ * every other position.
+ *
+ * @spec PRESENT-BUILD-001
+ * @spec PRESENT-BUILD-003
+ * @spec PRESENT-BUILD-006
+ */
+function stampFor(viewport, controls) {
+  return versionStamp({ viewport, controls, text: APP_VERSION, scale: uiScale(viewport) });
 }
 
 function redraw(controller) {

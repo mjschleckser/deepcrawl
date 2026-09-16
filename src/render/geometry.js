@@ -80,6 +80,42 @@ export function contentColumn(viewport) {
   return { x: (viewport.width - width) / 2, width };
 }
 
+/** Room around the build stamp, and how wide one monospace character is at its size. */
+const STAMP_PAD = 6;
+const STAMP_SIZE = 9;
+const STAMP_CHAR_RATIO = 0.62;
+
+/**
+ * Where the build's version sits: the bottom-left corner, unless something is already
+ * there. The stamp is what moves, because everything else in that corner is something
+ * the player is trying to press.
+ *
+ * @spec PRESENT-BUILD-001
+ * @spec PRESENT-BUILD-002
+ * @spec PRESENT-BUILD-006
+ */
+export function versionStamp({ viewport, controls = [], text, scale = 1 }) {
+  const size = Math.round(STAMP_SIZE * scale);
+  const pad = STAMP_PAD * scale;
+  const width = text.length * size * STAMP_CHAR_RATIO;
+  const x = pad;
+  const floor = viewport.height - pad - size;
+
+  // Climb until the slot is clear. Each pass moves above the highest thing overlapping
+  // it, so a stack of controls is cleared rather than only the lowest of them, and the
+  // stamp cannot come to rest on something it merely stepped past.
+  let y = floor;
+  for (let pass = 0; pass <= controls.length; pass++) {
+    const inTheWay = controls.filter(
+      (c) => c.x < x + width && c.x + c.width > x && c.y < y + size && c.y + c.height > y,
+    );
+    if (inTheWay.length === 0) break;
+    y = Math.min(...inTheWay.map((c) => c.y)) - pad - size;
+  }
+
+  return { x, y: Math.max(0, y), size, width, text };
+}
+
 /**
  * The horned head an enemy is drawn with, wherever it is drawn: a head, two horns, and
  * a pair of eyes around a given centre. One shape in one place, so the mark on the map

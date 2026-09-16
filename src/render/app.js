@@ -183,6 +183,29 @@ function drawControl(container, control, { alpha = 0.55, scale = 1 } = {}) {
 
 function drawHud(container, plan) {
   const scale = plan.scale ?? 1;
+  // Which build this is, for telling a fix that did not work from one that has not
+  // arrived. Drawn first of the HUD, so a prompt or a control covers it rather than the
+  // other way round, and on a plate of its own — it sits over whatever the floor
+  // happens to be, and a stamp nobody can read answers nothing.
+  // @spec PRESENT-BUILD-001
+  if (plan.stamp) {
+    const { x, y, size, text } = plan.stamp;
+    const label = new Text({
+      text,
+      style: { fill: 0xe8d9a8, fontSize: size, fontFamily: 'monospace' },
+    });
+    const inset = Math.round(size * 0.4);
+    const plate = new Graphics();
+    plate
+      .roundRect(x - inset, y - inset * 0.6, label.width + inset * 2, size + inset * 1.4, 3)
+      .fill({ color: 0x0b0906, alpha: 0.62 });
+    container.addChild(plate);
+
+    label.x = x;
+    label.y = y;
+    label.alpha = 0.85;
+    container.addChild(label);
+  }
   // A button hides almost nothing, so it can afford to be solid — and needs to be, or
   // it washes out over a brightly lit floor. A zone ignores this and draws no panel.
   for (const control of plan.controls ?? []) drawControl(container, control, { alpha: 0.88, scale });
