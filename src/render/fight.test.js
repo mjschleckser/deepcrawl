@@ -1,11 +1,29 @@
 import { describe, it, expect, vi } from 'vitest';
 import { makeRng } from '../sim/rng.js';
-import { Row, CharacterClass, createParty, createCharacter, addCharacter, applyDamage, Condition } from '../sim/party.js';
-import { beginEncounter, createEnemy, createEnemyGroup, Outcome, Band } from '../sim/combat.js';
+import {
+  Row, CharacterClass, createParty, createCharacter, addCharacter, applyDamage, character, Condition,
+} from '../sim/party.js';
+import { beginEncounter, createEnemy, createEnemyGroup, Action, Outcome, Band } from '../sim/combat.js';
+import { createRule, When, Aim } from '../sim/orders.js';
 import {
   buildFightPlan, createFightController, chooseOption, goBack, dismissOutcome,
-  FightPhase, FightAction, describeEvent,
+  playEnemyTurn, takeProposal, cancelProposal, advanceClock, fightIsPlaying,
+  FightPhase, FightAction, describeEvent, BEAT_MS, COUNTDOWN_MS,
 } from './fight.js';
+
+/** Take the Defend option, whatever number it happens to be on this character. */
+function defend(fight) {
+  const index = fight.pending.options.findIndex((o) => o.action === FightAction.DEFEND);
+  return chooseOption(fight, index);
+}
+
+/** Walk the fight on until the party is being asked something, or it ends. */
+function untilAsked(fight, limit = 40) {
+  for (let i = 0; i < limit && fight.phase === FightPhase.ACTING && !fight.pending; i++) {
+    playEnemyTurn(fight);
+  }
+  return fight;
+}
 
 const viewport = { width: 900, height: 640 };
 
@@ -38,7 +56,7 @@ const controller = (over = {}) =>
 describe('what a fight draws', () => {
   // @spec PRESENT-FIGHT-002
   it('draws both formations in their two rows', () => {
-    const plan = buildFightPlan(fightState(), viewport, { phase: FightPhase.SELECTING });
+    const plan = buildFightPlan(fightState(), viewport, { phase: FightPhase.ACTING });
 
     expect(plan.enemies.filter((e) => e.row === Row.FRONT)).toHaveLength(2);
     expect(plan.enemies.filter((e) => e.row === Row.BACK)).toHaveLength(1);
@@ -48,7 +66,7 @@ describe('what a fight draws', () => {
 
   // @spec PRESENT-FIGHT-004
   it('draws remaining and maximum hit points for everyone', () => {
-    const plan = buildFightPlan(fightState(), viewport, { phase: FightPhase.SELECTING });
+    const plan = buildFightPlan(fightState(), viewport, { phase: FightPhase.ACTING });
 
     for (const drawn of [...plan.enemies, ...plan.party]) {
       expect(typeof drawn.hitPoints).toBe('number');
@@ -64,7 +82,7 @@ describe('what a fight draws', () => {
     encounter.enemies.members[0].hitPoints = 0;
     encounter.enemies.members[0].condition = Condition.DEAD;
 
-    const plan = buildFightPlan(encounter, viewport, { phase: FightPhase.SELECTING });
+    const plan = buildFightPlan(encounter, viewport, { phase: FightPhase.ACTING });
 
     expect(plan.party).toHaveLength(3);
     expect(plan.enemies).toHaveLength(3);
@@ -74,7 +92,7 @@ describe('what a fight draws', () => {
 
   // @spec PRESENT-FIGHT-001
   it('leaves room for the corridor beneath it rather than covering the screen', () => {
-    const plan = buildFightPlan(fightState(), viewport, { phase: FightPhase.SELECTING });
+    const plan = buildFightPlan(fightState(), viewport, { phase: FightPhase.ACTING });
 
     expect(plan.overlaysView).toBe(true);
     expect(plan.bounds.height).toBeLessThan(viewport.height);
@@ -100,7 +118,10 @@ describe('choosing what to do', () => {
   it('skips anyone who cannot act', () => {
     const fight = controller();
     applyDamage(fight.encounter.party, 'bram', 9999);
-    fight.restart();
+    // The turn passes to whoever is next ready; a body is never asked anything.
+    chooseOption(fight, 0);
+    chooseOption(fight, 0);
+    untilAsked(fight);
 
     expect(fight.pending.characterId).toBe('tam');
   });
@@ -127,38 +148,40 @@ describe('choosing what to do', () => {
 
   // @spec PRESENT-FIGHT-007
   it('opens the enemy back row once their front rank has fallen', () => {
-    const fight = controller();
+    const encounter = fightState();
     for (const id of ['g1', 'g2']) {
-      const foe = fight.encounter.enemies.members.find((e) => e.id === id);
+      const foe = encounter.enemies.members.find((e) => e.id === id);
       foe.hitPoints = 0;
       foe.condition = Condition.DEAD;
     }
-    fight.restart();
+    const fight = createFightController({ encounter, viewport, onDraw: vi.fn() });
     chooseOption(fight, 0);
 
     expect(fight.pending.targets.map((t) => t.id)).toEqual(['a1']);
   });
 
-  // @spec PRESENT-FIGHT-008
-  it('resolves the round once the last member has chosen, and asks again', () => {
+  // @spec COMBAT-TIME-009
+  it('resolves each turn as it is taken rather than banking them up', () => {
     const fight = controller();
+    const before = fight.encounter.enemies.members.find((e) => e.id === 'g1').hitPoints;
 
-    for (let i = 0; i < 3; i++) { chooseOption(fight, 0); chooseOption(fight, 0); }
+    chooseOption(fight, 0); // attack
+    chooseOption(fight, 0); // the first legal target
 
-    expect(fight.roundsResolved).toBe(1);
-    expect(fight.pending.characterId).toBe('bram');
+    expect(fight.turnsTaken).toBe(1);
+    expect(fight.encounter.enemies.members.find((e) => e.id === 'g1').hitPoints)
+      .toBeLessThan(before);
   });
 
   // @spec PRESENT-FIGHT-009
-  it('steps back to the previous character rather than only cancelling the choice', () => {
+  it('reaches no further back than the turn being taken', () => {
     const fight = controller();
-    chooseOption(fight, 0); chooseOption(fight, 0); // bram is done
-    expect(fight.pending.characterId).toBe('tam');
+    chooseOption(fight, 0); chooseOption(fight, 0); // bram has swung; it is spent
+    const whose = fight.pending?.characterId;
 
-    goBack(fight);
-
-    expect(fight.pending.characterId).toBe('bram');
-    expect(fight.pending.targets).toBeNull();
+    // A turn resolves the instant it is taken, so there is nothing behind this one.
+    expect(goBack(fight)).toBe(false);
+    expect(fight.pending?.characterId).toBe(whose);
   });
 
   // @spec PRESENT-FIGHT-009
@@ -171,6 +194,119 @@ describe('choosing what to do', () => {
 
     expect(fight.pending.characterId).toBe('bram');
     expect(fight.pending.targets).toBeNull();
+  });
+});
+
+describe('standing orders in a fight', () => {
+  const order = (over) => createRule({ when: When.ALWAYS, action: { kind: Action.ATTACK }, aim: Aim.WEAKEST_ENEMY, ...over });
+
+  function ordered(rules, id = 'bram') {
+    const encounter = fightState();
+    character(encounter.party, id).orders = rules;
+    return createFightController({ encounter, viewport, onDraw: vi.fn() });
+  }
+
+  // @spec COMBAT-ORDER-003
+  // @spec COMBAT-ORDER-014
+  it("fills in the action and the target a character's orders name", () => {
+    const fight = ordered([order()]);
+
+    expect(fight.pending.characterId).toBe('bram');
+    // The archer is the weakest thing on the field, but out of a melee swing's reach,
+    // so the proposal names the weakest of what can actually be reached.
+    expect(fight.pending.proposal.action.kind).toBe(Action.ATTACK);
+    expect(['g1', 'g2']).toContain(fight.pending.proposal.targetId);
+  });
+
+  // @spec COMBAT-ORDER-005
+  // @spec COMBAT-ORDER-019
+  it('proposes nothing for a character with no orders, and waits', () => {
+    const fight = controller();
+
+    expect(fight.pending.proposal).toBeNull();
+    expect(fight.phase).toBe(FightPhase.ACTING);
+    expect(fight.pending.options.length).toBeGreaterThan(0);
+  });
+
+  // @spec COMBAT-ORDER-006
+  // @spec COMBAT-ORDER-017
+  it('takes the proposal, as the countdown running out would', () => {
+    const fight = ordered([order()]);
+    const targetId = fight.pending.proposal.targetId;
+    const before = fight.encounter.enemies.members.find((e) => e.id === targetId).hitPoints;
+
+    expect(takeProposal(fight)).toBe(true);
+
+    expect(fight.encounter.enemies.members.find((e) => e.id === targetId).hitPoints)
+      .toBeLessThan(before);
+    expect(fight.turnsTaken).toBe(1);
+  });
+
+  // @spec COMBAT-ORDER-018
+  it('drops the proposal the moment the player reaches for the screen', () => {
+    const fight = ordered([order()]);
+
+    expect(cancelProposal(fight)).toBe(true);
+
+    expect(fight.pending.proposal).toBeNull();
+    // And nothing brings it back for this turn.
+    expect(takeProposal(fight)).toBe(false);
+  });
+
+  // @spec COMBAT-ORDER-007
+  // @spec COMBAT-ORDER-018
+  it('lets the player take another action instead, which stops the countdown', () => {
+    const fight = ordered([order()]);
+
+    chooseOption(fight, 1); // Defend, rather than the attack proposed
+
+    expect(fight.turnsTaken).toBe(1);
+    // Every enemy is untouched: the proposal was not taken on the way past.
+    for (const foe of fight.encounter.enemies.members) {
+      expect(foe.hitPoints).toBe(foe.maxHitPoints ?? foe.hitPoints);
+    }
+  });
+
+  // @spec COMBAT-ORDER-009
+  it('takes a once-this-encounter rule once, then reads past it', () => {
+    const fight = ordered([
+      createRule({ when: When.ONCE, action: { kind: Action.DEFEND }, aim: Aim.SELF }),
+      order(),
+    ]);
+    expect(fight.pending.proposal.ruleIndex).toBe(0);
+
+    takeProposal(fight);
+    for (let i = 0; i < 20; i++) {
+      if (!fight.pending) { playEnemyTurn(fight); continue; }
+      if (fight.pending.characterId === 'bram') break;
+      defend(fight);
+    }
+
+    // The shield is spent; the same list now settles into the attack below it.
+    expect(fight.pending.proposal.ruleIndex).toBe(1);
+  });
+
+  // @spec COMBAT-ORDER-013
+  it("takes an enemy's turn without asking anybody", () => {
+    const fight = controller();
+    // Walk the party's turns off and let whatever is ready on the other side move.
+    for (let i = 0; i < 10 && fight.pending; i++) defend(fight);
+
+    expect(fight.pending).toBeNull();
+    expect(playEnemyTurn(fight)).toBe(true);
+    expect(fight.turnsTaken).toBeGreaterThan(0);
+  });
+
+  // @spec COMBAT-TIME-004
+  it("stops the fight's own time while somebody is being asked", () => {
+    const fight = controller();
+    const beats = fight.encounter.beats;
+
+    // Reading the screen, thinking about it, reading it again: the fight does not move.
+    buildFightPlan(fight.encounter, viewport, { phase: fight.phase, pending: fight.pending });
+    buildFightPlan(fight.encounter, viewport, { phase: fight.phase, pending: fight.pending });
+
+    expect(fight.encounter.beats).toBe(beats);
   });
 });
 
@@ -249,7 +385,7 @@ describe('ending', () => {
 
   // @spec PRESENT-FIGHT-014
   it('draws no banner while the fight is still on', () => {
-    const plan = buildFightPlan(fightState(), viewport, { phase: FightPhase.SELECTING });
+    const plan = buildFightPlan(fightState(), viewport, { phase: FightPhase.ACTING });
 
     expect(plan.banner).toBeNull();
   });
@@ -301,7 +437,7 @@ describe('a fight on a wide screen', () => {
   const phone = { width: 390, height: 780 };
   const desktop = { width: 2116, height: 1264 };
   const planFor = (vp) => buildFightPlan(fightState(), vp, {
-    phase: FightPhase.SELECTING,
+    phase: FightPhase.ACTING,
     pending: { characterId: 'bram', options: [{ label: 'Attack' }, { label: 'Defend' }, { label: 'Flee' }], targets: null },
   });
 
@@ -351,7 +487,7 @@ describe('a fight on a wide screen', () => {
 describe('the panel is sized to what is in it', () => {
   const desktop = { width: 1920, height: 1080 };
   const withPending = (over) => buildFightPlan(fightState(over), desktop, {
-    phase: FightPhase.SELECTING,
+    phase: FightPhase.ACTING,
     pending: { characterId: 'bram', options: [{ label: 'Attack' }, { label: 'Defend' }, { label: 'Flee' }], targets: null },
   });
 
@@ -387,5 +523,123 @@ describe('the panel is sized to what is in it', () => {
 
     expect(panelBottom - lowest).toBeLessThan(plan.scale * 20);
     expect(plan.controlsTop).toBeGreaterThan(plan.cardsBottom);
+  });
+});
+
+describe('a fight that plays itself out', () => {
+  const alwaysAttack = () => [createRule({
+    when: When.ALWAYS, action: { kind: Action.ATTACK }, aim: Aim.WEAKEST_ENEMY,
+  })];
+
+  function ordered(rules, id = 'bram') {
+    const encounter = fightState();
+    character(encounter.party, id).orders = rules;
+    return createFightController({ encounter, viewport, onDraw: vi.fn() });
+  }
+
+  const planOf = (fight) => buildFightPlan(fight.encounter, viewport, {
+    phase: fight.phase,
+    pending: fight.pending,
+    log: fight.log,
+    actor: fight.actor,
+    countdown: fight.countdown,
+  });
+
+  // @spec PRESENT-READY-001
+  // @spec PRESENT-READY-002
+  it('carries how full every bar is, as the simulation has it', () => {
+    const fight = controller();
+    const plan = planOf(fight);
+
+    for (const card of [...plan.party, ...plan.enemies]) {
+      expect(card.readiness).toBeGreaterThanOrEqual(0);
+      expect(card.readiness).toBeLessThanOrEqual(1);
+    }
+    // Whoever is up is full; that is what being up means.
+    expect(plan.party.find((c) => c.id === fight.actor.id).readiness).toBe(1);
+  });
+
+  // @spec PRESENT-READY-003
+  // @spec PRESENT-READY-004
+  it('marks the one acting, and only the one', () => {
+    const plan = planOf(controller());
+
+    const acting = [...plan.party, ...plan.enemies].filter((c) => c.acting);
+    expect(acting).toHaveLength(1);
+  });
+
+  // @spec PRESENT-READY-007
+  // @spec PRESENT-READY-011
+  it('places the countdown ring on the acting card, filled by how long has run', () => {
+    const fight = ordered(alwaysAttack());
+    expect(planOf(fight).countdown.progress).toBe(0);
+
+    advanceClock(fight, COUNTDOWN_MS / 2);
+    const ring = planOf(fight).countdown;
+
+    expect(ring.progress).toBeCloseTo(0.5, 2);
+    expect(ring.label).toBe('A');
+    const card = planOf(fight).party.find((c) => c.id === 'bram');
+    expect(ring.x).toBeGreaterThan(card.x);
+    expect(ring.x).toBeLessThan(card.x + card.width);
+  });
+
+  // @spec PRESENT-READY-008
+  it('takes the proposal when the countdown runs out, and not before', () => {
+    const fight = ordered(alwaysAttack());
+
+    advanceClock(fight, COUNTDOWN_MS - 1);
+    expect(fight.turnsTaken).toBe(0);
+
+    advanceClock(fight, 2);
+    expect(fight.turnsTaken).toBe(1);
+  });
+
+  // @spec PRESENT-READY-009
+  it('draws no ring once the player has taken the turn back', () => {
+    const fight = ordered(alwaysAttack());
+    advanceClock(fight, COUNTDOWN_MS / 2);
+
+    cancelProposal(fight);
+
+    expect(planOf(fight).countdown).toBeNull();
+    // And the clock no longer runs for this turn.
+    expect(advanceClock(fight, COUNTDOWN_MS * 2)).toBe(false);
+    expect(fight.turnsTaken).toBe(0);
+  });
+
+  // @spec PRESENT-READY-010
+  // @spec PRESENT-SCENE-011
+  it('stops entirely while it is waiting on somebody with nothing proposed', () => {
+    const fight = controller();
+
+    expect(fightIsPlaying(fight)).toBe(false);
+    expect(planOf(fight).countdown).toBeNull();
+    expect(advanceClock(fight, 10000)).toBe(false);
+  });
+
+  // @spec PRESENT-READY-005
+  it('plays an enemy turn a beat after the last action, not the instant it is due', () => {
+    const fight = controller();
+    for (let i = 0; i < 10 && fight.pending; i++) defend(fight);
+    expect(fight.pending).toBeNull();
+    const taken = fight.turnsTaken;
+
+    advanceClock(fight, BEAT_MS - 1);
+    expect(fight.turnsTaken).toBe(taken);
+
+    advanceClock(fight, 2);
+    expect(fight.turnsTaken).toBe(taken + 1);
+  });
+
+  // @spec PRESENT-READY-006
+  it("leaves the fight's own time alone, however many seconds pass", () => {
+    const fight = ordered(alwaysAttack());
+    const beats = fight.encounter.beats;
+
+    advanceClock(fight, COUNTDOWN_MS - 1);
+
+    // Seconds are the player's; beats are the fight's, and only an action spends them.
+    expect(fight.encounter.beats).toBe(beats);
   });
 });

@@ -282,6 +282,15 @@ row, equipment slots, class, and accumulated skill experience. A lost character 
 kept in the save as a record rather than deleted, because a campaign should be able to
 show what it cost.
 
+## Standing Orders
+
+A character carries the order list combat reads when their turn comes. It is a field on
+the character for the same reason their skills are: it belongs to the person, survives
+every encounter, and goes with them whatever party they are in.
+
+What a rule may say, and how the list is read, is combat's. This segment holds it and
+hands it over.
+
 ## Decisions & Alternatives
 
 | Decision | Chosen | Alternatives Considered | Rationale |

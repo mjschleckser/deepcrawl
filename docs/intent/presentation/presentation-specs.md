@@ -9,7 +9,8 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 ## Scene
 
 - [x] **PRESENT-SCENE-001**: The system shall draw three layers in order: the first-person view, the automap, then the HUD.
-- [x] **PRESENT-SCENE-002**: The system shall keep the renderer's ticker stopped, so that no redraw occurs merely because time has passed.
+- [x] **PRESENT-SCENE-002**: The system shall keep the renderer's ticker stopped while nothing is playing out on its own, so that no redraw occurs merely because time has passed.
+- [x] **PRESENT-SCENE-011**: While a fight has actions left to play out, the system shall run the ticker, and shall stop it as soon as the fight is waiting on the player.
 - [x] **PRESENT-SCENE-003**: When an action changes simulation state, the system shall redraw — including a turn, which changes facing without advancing the clock.
 - [x] **PRESENT-SCENE-004**: When a prompt is answered, the map is expanded or collapsed, or the window is resized, the system shall redraw.
 - [x] **PRESENT-SCENE-005**: If an action changes no simulation state, then the system shall not redraw.
@@ -84,6 +85,20 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-BUILD-004**: The system shall compose the version from the authored major and minor numbers, a patch equal to the number of commits, and the short commit hash.
 - [x] **PRESENT-BUILD-005**: If the build supplied no version, then the system shall draw a stand-in rather than nothing, so that the stamp is never silently absent.
 - [x] **PRESENT-BUILD-006**: The system shall decide the stamp's position in the draw plan rather than while drawing.
+
+## A fight's readiness
+
+- [x] **PRESENT-READY-001**: The system shall draw a readiness bar on every combatant's card, filled to the proportion the simulation reports.
+- [x] **PRESENT-READY-002**: The system shall draw the readiness bar from the simulation's value and from no count of its own.
+- [x] **PRESENT-READY-003**: While a combatant is acting, the system shall draw that combatant's card as highlighted, on either side alike.
+- [x] **PRESENT-READY-004**: The system shall highlight at most one combatant at a time.
+- [x] **PRESENT-READY-005**: When the simulation resolves an action, the system shall pause for a fixed beat before playing the next.
+- [x] **PRESENT-READY-006**: The system shall measure the beat and the proposal countdown in real seconds, and shall not let either advance the fight's own time.
+- [x] **PRESENT-READY-007**: While a character's standing orders propose an action, the system shall draw a countdown ring beside that character's readiness bar, its outer ring filled to the proportion of the countdown elapsed and the letter `A` at its centre.
+- [x] **PRESENT-READY-008**: When a proposal's countdown completes, the system shall take the proposed action.
+- [x] **PRESENT-READY-009**: When the player acts on a character's turn, the system shall stop that countdown, draw no ring for that turn, and not resume it.
+- [x] **PRESENT-READY-010**: While a character has no proposal, the system shall draw no countdown ring and shall wait for the player without limit.
+- [x] **PRESENT-READY-011**: The system shall decide the ring's position and size in the draw plan rather than while drawing.
 
 ## Prompts
 

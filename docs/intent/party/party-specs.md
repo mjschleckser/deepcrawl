@@ -21,6 +21,7 @@ are fed into, never the numbers.
 - [ ] **PARTY-CHAR-003**: The system shall change a character's hit points, condition, row, class, equipment, or skill ranks only through a party operation, whichever segment asked.
 - [x] **PARTY-CHAR-004**: The system shall give every character a class, and shall record their equipment as the item occupying each slot.
 - [ ] **PARTY-CHAR-006**: The system shall set a character's maximum hit points from their class's base multiplied by one twentieth of their Constitution above ten, and shall not change it as they advance.
+- [x] **PARTY-CHAR-008**: The system shall hold a standing-order list on each character, carried with them between encounters and between parties.
 - [ ] **PARTY-CHAR-007**: The system shall draw a weapon's governing attribute for damage from the weapon, and shall always draw accuracy from Perception whatever the weapon.
 
 ## Condition

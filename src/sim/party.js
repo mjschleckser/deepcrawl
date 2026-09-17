@@ -122,7 +122,9 @@ const DEFAULT_ATTRIBUTES = {
  * @spec PARTY-SKILL-002
  * @spec PARTY-CLASS-001
  */
-export function createCharacter({ id, name, characterClass, row, attributes = {}, maxHitPoints = 20 }) {
+export function createCharacter({
+  id, name, characterClass, row, attributes = {}, maxHitPoints = 20, orders = [],
+}) {
   const table = CLASS_TABLE[characterClass];
   const ranks = {};
   // Every class shares a floor of competence, then its own specialities on top.
@@ -143,6 +145,11 @@ export function createCharacter({ id, name, characterClass, row, attributes = {}
     ranks,
     skillExperience: {},
     equipment: {},
+    // What this character usually does in a fight, read from the top when their turn
+    // comes. Combat proposes from it; the list itself is the character's and survives
+    // from one encounter to the next.
+    // @spec COMBAT-ORDER-002
+    orders: [...orders],
     trainable: Object.keys(table.rates),
   };
 }

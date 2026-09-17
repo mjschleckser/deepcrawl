@@ -5,11 +5,14 @@ import {
   Condition, Row, CharacterClass, Skill, roster,
 } from './party.js';
 import {
-  beginEncounter, selectAction, resolveRound, attackBand, damageFor,
-  turnOrder, meleeTargets, rangedTargets, frontRowHolds, attemptFlee,
+  beginEncounter, takeAction, nextActor, advanceBeats, attackBand, damageFor,
+  actingOrder, readinessOf, meleeTargets, rangedTargets, frontRowHolds, attemptFlee,
   createEnemy, createEnemyGroup, encounterOutcome,
-  Band, Action, Outcome, MAX_ENEMY_ROW, MIN_DAMAGE_FRACTION,
+  Band, Action, Outcome, MAX_ENEMY_ROW, MIN_DAMAGE_FRACTION, FULL_BAR,
 } from './combat.js';
+
+/** Bring one combatant to a full bar without waiting out the beats. */
+const readyUp = (state, id) => state.readiness.set(id, FULL_BAR);
 
 const hero = (id, over = {}) =>
   createCharacter({ id, name: id, characterClass: CharacterClass.FIGHTER, row: Row.FRONT, ...over });
@@ -117,43 +120,43 @@ describe('damage', () => {
   });
 });
 
-describe('turn order', () => {
-  // @spec COMBAT-ROUND-002
-  it('resolves in descending Dexterity', () => {
+describe('the order of acting', () => {
+  // @spec COMBAT-TIME-008
+  it('acts in descending Dexterity', () => {
     const quick = hero('quick', { attributes: { DEXTERITY: 18 } });
     const slow = hero('slow', { attributes: { DEXTERITY: 6 }, row: Row.BACK });
     const state = encounter({ members: [quick, slow], enemies: [orc('o1', { dexterity: 12 })] });
 
-    expect(turnOrder(state).map((c) => c.id)).toEqual(['quick', 'o1', 'slow']);
+    expect(actingOrder(state).map((c) => c.id)).toEqual(['quick', 'o1', 'slow']);
   });
 
-  // @spec COMBAT-ROUND-003
+  // @spec COMBAT-TIME-008
   it('gives a tie to the party', () => {
     const c = hero('hero', { attributes: { DEXTERITY: 12 } });
     const state = encounter({ members: [c], enemies: [orc('o1', { dexterity: 12 })] });
 
-    expect(turnOrder(state).map((c) => c.id)).toEqual(['hero', 'o1']);
+    expect(actingOrder(state).map((c) => c.id)).toEqual(['hero', 'o1']);
   });
 
-  // @spec COMBAT-ROUND-004
+  // @spec COMBAT-TIME-008
   it('settles a tie within the party by a fixed order of position', () => {
     const a = hero('a', { attributes: { DEXTERITY: 10 } });
     const b = hero('b', { attributes: { DEXTERITY: 10 } });
     const state = encounter({ members: [a, b], enemies: [orc('o1', { dexterity: 1 })] });
 
-    expect(turnOrder(state).map((c) => c.id).slice(0, 2)).toEqual(['a', 'b']);
+    expect(actingOrder(state).map((c) => c.id).slice(0, 2)).toEqual(['a', 'b']);
     // And it is stable across repeated reads.
-    expect(turnOrder(state).map((c) => c.id)).toEqual(turnOrder(state).map((c) => c.id));
+    expect(actingOrder(state).map((c) => c.id)).toEqual(actingOrder(state).map((c) => c.id));
   });
 
-  // @spec COMBAT-ROUND-005
-  it('gives every combatant exactly one turn in a round', () => {
+  // @spec COMBAT-TIME-008
+  it('places every combatant able to act exactly once', () => {
     const state = encounter({
       members: [hero('a'), hero('b', { row: Row.BACK })],
       enemies: [orc('o1'), orc('o2')],
     });
 
-    const ids = turnOrder(state).map((c) => c.id);
+    const ids = actingOrder(state).map((c) => c.id);
     expect(ids).toHaveLength(4);
     expect(new Set(ids).size).toBe(4);
   });
@@ -246,57 +249,33 @@ describe('enemy groups', () => {
   });
 });
 
-describe('surprise', () => {
-  // @spec COMBAT-SURPRISE-001
-  it('gives the aware side a free round when the other is unaware', () => {
-    const ambushed = encounter({ members: [hero('a')], enemies: [orc('o1')], partyAware: false });
-    const ambushing = encounter({ members: [hero('a')], enemies: [orc('o1')], enemiesAware: false });
-
-    expect(ambushed.surpriseRoundFor).toBe('ENEMIES');
-    expect(ambushing.surpriseRoundFor).toBe('PARTY');
-  });
-
-  // @spec COMBAT-SURPRISE-002
-  it('begins ordinarily when both sides are aware, or neither', () => {
-    expect(encounter({ members: [hero('a')], enemies: [orc('o1')] }).surpriseRoundFor).toBeNull();
-    expect(encounter({
-      members: [hero('a')], enemies: [orc('o1')], partyAware: false, enemiesAware: false,
-    }).surpriseRoundFor).toBeNull();
-  });
-});
-
-describe('fizzling', () => {
-  // @spec COMBAT-ROUND-006
-  it('spends an action aimed at a target that is already gone, and resolves nothing', () => {
-    const quick = hero('quick', { attributes: { DEXTERITY: 18 } });
-    const slow = hero('slow', { attributes: { DEXTERITY: 4 }, row: Row.BACK });
-    const state = encounter({ members: [quick, slow], enemies: [orc('o1', { dexterity: 10, hitPoints: 1 })] });
-
-    selectAction(state, 'quick', { action: Action.ATTACK, targetId: 'o1', baseDamage: 50, accuracy: 100 });
-    selectAction(state, 'slow', { action: Action.ATTACK, targetId: 'o1', baseDamage: 50, accuracy: 100 });
-
-    const log = resolveRound(state);
-    const fizzled = log.filter((e) => e.fizzled);
-
-    expect(fizzled).toHaveLength(1);
-    expect(fizzled[0].actorId).toBe('slow');
-  });
-
-  // @spec COMBAT-ROUND-006
-  it('does not pick a substitute target when the chosen one is gone', () => {
-    const quick = hero('quick', { attributes: { DEXTERITY: 18 } });
-    const slow = hero('slow', { attributes: { DEXTERITY: 4 } });
+describe('aiming at what is there', () => {
+  // @spec COMBAT-TIME-010
+  it('resolves nothing against a target that has already fallen, and finds no other', () => {
     const state = encounter({
-      members: [quick, slow],
-      enemies: [orc('o1', { dexterity: 10, hitPoints: 1 }), orc('o2', { dexterity: 10, hitPoints: 40 })],
+      members: [hero('a')],
+      enemies: [orc('o1', { hitPoints: 1 }), orc('o2', { hitPoints: 40 })],
     });
+    readyUp(state, 'a');
+    takeAction(state, 'a', { kind: Action.ATTACK, targetId: 'o1', baseDamage: 50, accuracy: 100 });
 
-    selectAction(state, 'quick', { action: Action.ATTACK, targetId: 'o1', baseDamage: 50, accuracy: 100 });
-    selectAction(state, 'slow', { action: Action.ATTACK, targetId: 'o1', baseDamage: 50, accuracy: 100 });
-    resolveRound(state);
+    readyUp(state, 'a');
+    const event = takeAction(state, 'a', { kind: Action.ATTACK, targetId: 'o1', baseDamage: 50, accuracy: 100 });
 
-    // The other orc is untouched: the fizzled swing did not wander onto it.
+    expect(event.targetId).toBeNull();
+    // The other orc is untouched: a swing at nothing does not wander onto it.
     expect(state.enemies.members.find((e) => e.id === 'o2').hitPoints).toBe(40);
+  });
+
+  // @spec COMBAT-TIME-010
+  it('aims at the fight as it stands when the blow is struck', () => {
+    const state = encounter({ members: [hero('a')], enemies: [orc('o1', { hitPoints: 40 })] });
+    readyUp(state, 'a');
+
+    const event = takeAction(state, 'a', { kind: Action.ATTACK, targetId: 'o1', baseDamage: 12, accuracy: 100 });
+
+    expect(event.targetId).toBe('o1');
+    expect(state.enemies.members[0].hitPoints).toBeLessThan(40);
   });
 });
 
@@ -404,8 +383,8 @@ describe('ending', () => {
   // @spec COMBAT-END-003
   it('ends in victory and reports the pot with the skills used', () => {
     const state = encounter({ members: [hero('a')], enemies: [orc('o1', { hitPoints: 1, potValue: 30 })] });
-    selectAction(state, 'a', { action: Action.ATTACK, targetId: 'o1', baseDamage: 50, accuracy: 100, skill: Skill.BLADE });
-    resolveRound(state);
+    readyUp(state, 'a');
+    takeAction(state, 'a', { kind: Action.ATTACK, targetId: 'o1', baseDamage: 50, accuracy: 100, skill: Skill.BLADE });
 
     const result = encounterOutcome(state);
     expect(result.outcome).toBe(Outcome.VICTORY);
@@ -414,15 +393,15 @@ describe('ending', () => {
   });
 
   // @spec COMBAT-END-004
-  it('reports the same pot however many rounds it took', () => {
+  it('reports the same pot however long the fight ran', () => {
     const quick = encounter({ members: [hero('a')], enemies: [orc('o1', { hitPoints: 1, potValue: 30 })] });
-    selectAction(quick, 'a', { action: Action.ATTACK, targetId: 'o1', baseDamage: 99, accuracy: 100, skill: Skill.BLADE });
-    resolveRound(quick);
+    readyUp(quick, 'a');
+    takeAction(quick, 'a', { kind: Action.ATTACK, targetId: 'o1', baseDamage: 99, accuracy: 100, skill: Skill.BLADE });
 
     const slow = encounter({ members: [hero('a')], enemies: [orc('o1', { hitPoints: 40, potValue: 30 })] });
     for (let i = 0; i < 12 && encounterOutcome(slow).outcome === Outcome.ONGOING; i++) {
-      selectAction(slow, 'a', { action: Action.ATTACK, targetId: 'o1', baseDamage: 6, accuracy: 100, skill: Skill.BLADE });
-      resolveRound(slow);
+      readyUp(slow, 'a');
+      takeAction(slow, 'a', { kind: Action.ATTACK, targetId: 'o1', baseDamage: 6, accuracy: 100, skill: Skill.BLADE });
     }
 
     expect(encounterOutcome(slow).outcome).toBe(Outcome.VICTORY);
@@ -443,58 +422,47 @@ describe('ending', () => {
     expect(character(state.party, 'a').condition).toBe(Condition.UNCONSCIOUS);
   });
 
-  // @spec COMBAT-ROUND-007
-  it('restores nothing merely because rounds passed', () => {
+  // @spec COMBAT-TIME-011
+  it('restores nothing merely because the fight ran on', () => {
     const state = encounter({ members: [hero('a')], enemies: [orc('o1', { hitPoints: 80 })] });
     applyDamage(state.party, 'a', 5);
     const wounded = character(state.party, 'a').hitPoints;
 
     for (let i = 0; i < 5; i++) {
-      selectAction(state, 'a', { action: Action.DEFEND });
-      resolveRound(state);
+      readyUp(state, 'a');
+      takeAction(state, 'a', { kind: Action.DEFEND });
+      advanceBeats(state, 10);
     }
 
     expect(character(state.party, 'a').hitPoints).toBe(wounded);
   });
 });
 
-describe('the shape of a round', () => {
-  // @spec COMBAT-ROUND-001
-  it('resolves nothing until every action has been chosen', () => {
+describe('taking a turn', () => {
+  // @spec COMBAT-TIME-009
+  it('gives the turn back only once the action has been taken', () => {
     const state = encounter({
       members: [hero('a', { attributes: { DEXTERITY: 18 } })],
-      enemies: [orc('o1', { hitPoints: 20 })],
+      enemies: [orc('o1', { hitPoints: 20, dexterity: 1 })],
     });
 
-    selectAction(state, 'a', { action: Action.ATTACK, targetId: 'o1', baseDamage: 50, accuracy: 100 });
+    expect(nextActor(state).id).toBe('a');
+    takeAction(state, 'a', { kind: Action.ATTACK, targetId: 'o1', baseDamage: 50, accuracy: 100 });
 
-    // Choosing is not doing: the orc is untouched until the round resolves.
-    expect(state.enemies.members[0].hitPoints).toBe(20);
-    resolveRound(state);
     expect(state.enemies.members[0].hitPoints).toBeLessThan(20);
-  });
-
-  // @spec COMBAT-ROUND-001
-  it('clears its selections once a round has resolved, so none carries over', () => {
-    const state = encounter({ members: [hero('a')], enemies: [orc('o1', { hitPoints: 60 })] });
-    selectAction(state, 'a', { action: Action.ATTACK, targetId: 'o1', baseDamage: 5, accuracy: 100 });
-    resolveRound(state);
-
-    const after = state.enemies.members[0].hitPoints;
-    resolveRound(state); // nothing selected this time
-
-    expect(state.enemies.members[0].hitPoints).toBe(after);
+    // The bar is spent, so the turn has genuinely passed on.
+    expect(readinessOf(state, 'a')).toBeLessThan(FULL_BAR);
   });
 
   // @spec COMBAT-ATTACK-001
   it('resolves an attack from one roll set against accuracy and defence', () => {
     const feeble = encounter({ members: [hero('a')], enemies: [orc('armoured', { hitPoints: 99, armour: 200 })], seed: 3 });
-    selectAction(feeble, 'a', { action: Action.ATTACK, targetId: 'armoured', baseDamage: 40, accuracy: 0 });
-    const weak = resolveRound(feeble)[0];
+    readyUp(feeble, 'a');
+    const weak = takeAction(feeble, 'a', { kind: Action.ATTACK, targetId: 'armoured', baseDamage: 40, accuracy: 0 });
 
     const sharp = encounter({ members: [hero('a')], enemies: [orc('soft', { hitPoints: 99, armour: 0 })], seed: 3 });
-    selectAction(sharp, 'a', { action: Action.ATTACK, targetId: 'soft', baseDamage: 40, accuracy: 200 });
-    const strong = resolveRound(sharp)[0];
+    readyUp(sharp, 'a');
+    const strong = takeAction(sharp, 'a', { kind: Action.ATTACK, targetId: 'soft', baseDamage: 40, accuracy: 200 });
 
     // Same roll, opposite circumstances: accuracy and defence decide the band.
     expect(weak.band).toBe(Band.MISS);
@@ -536,29 +504,48 @@ describe('the shape of a round', () => {
   });
 });
 
-describe('what a resolved round reports', () => {
-  // @spec COMBAT-ROUND-006
+describe('what a turn reports', () => {
+  // @spec COMBAT-TIME-009
   it('credits the felling blow to the blow that felled, not to every blow that landed', () => {
     const a = hero('a', { attributes: { DEXTERITY: 18 } });
     const b = hero('b', { attributes: { DEXTERITY: 12 } });
     const state = encounter({ members: [a, b], enemies: [orc('o1', { hitPoints: 20, dexterity: 1 })] });
 
     // Both swing at the same orc; the first wounds it, the second finishes it.
-    selectAction(state, 'a', { action: Action.ATTACK, targetId: 'o1', baseDamage: 12, accuracy: 100 });
-    selectAction(state, 'b', { action: Action.ATTACK, targetId: 'o1', baseDamage: 12, accuracy: 100 });
-    const log = resolveRound(state);
+    readyUp(state, 'a');
+    const first = takeAction(state, 'a', { kind: Action.ATTACK, targetId: 'o1', baseDamage: 12, accuracy: 100 });
+    readyUp(state, 'b');
+    const second = takeAction(state, 'b', { kind: Action.ATTACK, targetId: 'o1', baseDamage: 12, accuracy: 100 });
 
-    const felling = log.filter((e) => e.felled);
-    expect(felling).toHaveLength(1);
-    expect(felling[0].actorId).toBe('b');
-    expect(log.find((e) => e.actorId === 'a').felled).toBe(false);
+    expect(first.felled).toBe(false);
+    expect(second.felled).toBe(true);
   });
 
-  // @spec COMBAT-ROUND-006
-  it('names the target of each resolved attack', () => {
+  // @spec COMBAT-TIME-009
+  it('names the target of the attack it resolved', () => {
     const state = encounter({ members: [hero('a')], enemies: [orc('o1')] });
-    selectAction(state, 'a', { action: Action.ATTACK, targetId: 'o1', baseDamage: 5, accuracy: 100 });
+    readyUp(state, 'a');
 
-    expect(resolveRound(state)[0].targetId).toBe('o1');
+    expect(takeAction(state, 'a', { kind: Action.ATTACK, targetId: 'o1', baseDamage: 5, accuracy: 100 }).targetId)
+      .toBe('o1');
+  });
+
+  // @spec COMBAT-FLEE-003
+  it('spends the bar of whoever called a retreat that failed, and nobody else', () => {
+    const state = encounter({
+      members: [
+        hero('swift', { attributes: { DEXTERITY: 18 } }),
+        hero('lame', { attributes: { DEXTERITY: 4 }, row: Row.BACK }),
+      ],
+      enemies: [orc('o1', { dexterity: 10 })],
+    });
+    readyUp(state, 'swift');
+    readyUp(state, 'lame');
+
+    expect(attemptFlee(state, 'swift').escaped).toBe(false);
+
+    expect(readinessOf(state, 'swift')).toBe(0);
+    // The one who stayed put still has their turn to spend.
+    expect(readinessOf(state, 'lame')).toBe(FULL_BAR);
   });
 });

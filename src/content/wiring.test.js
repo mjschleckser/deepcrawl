@@ -6,7 +6,7 @@ import {
   recordTrapDetected, Verb,
 } from '../sim/exploration.js';
 import { Condition, Row, CharacterClass, Skill, character, roster, skillRank, applyDamage } from '../sim/party.js';
-import { Outcome, Action, encounterOutcome, selectAction, resolveRound } from '../sim/combat.js';
+import { Outcome, Action, encounterOutcome, nextActor, takeAction } from '../sim/combat.js';
 import { isAware } from '../sim/enemies.js';
 import { createCampaign } from './campaign.js';
 
@@ -185,19 +185,24 @@ describe('walking into a warband', () => {
 describe('winning a fight', () => {
   function fightToTheEnd(campaign) {
     const encounter = campaign.encounter;
-    for (let round = 0; round < 60; round++) {
+    // One combatant at a time, whoever is ready, until a side is finished.
+    for (let turn = 0; turn < 200; turn++) {
       const result = encounterOutcome(encounter);
       if (result.outcome !== Outcome.ONGOING) return result;
 
-      for (const c of roster(campaign.party).filter((m) => m.condition === Condition.OK)) {
-        const target = encounter.enemies.members.find((e) => e.condition === Condition.OK && e.hitPoints > 0);
-        if (!target) break;
-        selectAction(encounter, c.id, {
-          action: Action.ATTACK, targetId: target.id,
-          baseDamage: 40, accuracy: 300, skill: Skill.BLADE,
-        });
+      const actor = nextActor(encounter);
+      if (!actor) break;
+
+      if (actor.side !== 'PARTY') {
+        takeAction(encounter, actor.id, { kind: Action.DEFEND });
+        continue;
       }
-      resolveRound(encounter);
+      const target = encounter.enemies.members.find((e) => e.condition === Condition.OK && e.hitPoints > 0);
+      if (!target) break;
+      takeAction(encounter, actor.id, {
+        kind: Action.ATTACK, targetId: target.id,
+        baseDamage: 40, accuracy: 300, skill: Skill.BLADE,
+      });
     }
     return encounterOutcome(encounter);
   }

@@ -22,7 +22,8 @@ import { buildPromptPlan } from './promptplan.js';
 import { buildViewPlan } from './viewplan.js';
 import { buildMapPlan } from './mapplan.js';
 import {
-  buildFightPlan, createFightController, chooseOption, goBack, dismissOutcome, FightPhase,
+  buildFightPlan, createFightController, chooseOption, goBack, dismissOutcome,
+  advanceClock, fightIsPlaying, cancelProposal, FightPhase,
 } from './fight.js';
 
 const CONFIRM_KEYS = ['Enter', ' '];
@@ -112,6 +113,8 @@ export function layers(controller) {
       outcome: fight.outcome,
       pending: fight.pending,
       log: fight.log,
+      actor: fight.actor,
+      countdown: fight.countdown,
     });
     return [
       { name: 'view', plan: buildViewPlan(corridorAhead(state), viewport) },
@@ -334,6 +337,30 @@ export function answerPrompt(controller, accepted) {
  * @spec PRESENT-SCENE-004
  * @spec PRESENT-INPUT-005
  */
+/**
+ * Run the fight's pacing on by the milliseconds that really passed. The renderer calls
+ * this while, and only while, something is going to happen without the player.
+ *
+ * @spec PRESENT-READY-005
+ * @spec PRESENT-READY-008
+ * @spec PRESENT-SCENE-011
+ */
+export function tick(controller, ms) {
+  syncFight(controller);
+  if (!controller.fight) return false;
+  if (!advanceClock(controller.fight, ms)) return false;
+
+  // A fight can end on a beat nobody pressed anything for.
+  syncFight(controller);
+  redraw(controller);
+  return true;
+}
+
+/** Whether anything is going to move without the player touching the screen. */
+export function isPlaying(controller) {
+  return fightIsPlaying(controller.fight);
+}
+
 export function resize(controller, viewport) {
   controller.viewport = viewport;
   redraw(controller);

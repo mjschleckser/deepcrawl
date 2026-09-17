@@ -5,19 +5,32 @@
  * a fight looks like, the controller walks the party through choosing, and the Pixi
  * adapter only emits what they decided.
  *
- * Nothing animates, so a round lands in one frame. The log is therefore not
- * decoration — it is the fight as the player perceives it, built from the events a
- * resolved round actually reported.
+ * Combatants act one at a time as their readiness fills, so the log is not decoration —
+ * it is the fight as the player perceives it, built from what each turn reported.
  */
 
-import { Condition, Row, Skill, roster } from '../sim/party.js';
+import { Condition, Row, Skill, character, roster } from '../sim/party.js';
 import { MIN_TAP_PX, ControlKind, uiScale, contentColumn } from './geometry.js';
 import {
-  Action, Band, Outcome, meleeTargets, rangedTargets,
-  encounterOutcome, selectAction, resolveRound, attemptFlee,
+  Action, Band, Outcome, meleeTargets, rangedTargets, frontRowHolds,
+  encounterOutcome, nextActor, takeAction, attemptFlee, readinessOf, FULL_BAR,
 } from '../sim/combat.js';
+import { proposeFrom } from '../sim/orders.js';
 
-export const FightPhase = { SELECTING: 'SELECTING', ENDED: 'ENDED' };
+export const FightPhase = { ACTING: 'ACTING', ENDED: 'ENDED' };
+
+/**
+ * The player's clocks, in real milliseconds. Neither has anything to do with the
+ * fight's own time, which advances in beats and stops while anybody is being asked.
+ *
+ * The beat is what stops a fight run on standing orders landing between two frames;
+ * the countdown is how long a proposal waits before taking itself.
+ *
+ * @spec PRESENT-READY-005
+ * @spec PRESENT-READY-006
+ */
+export const BEAT_MS = 420;
+export const COUNTDOWN_MS = 1500;
 
 export const FightAction = {
   ATTACK: 'ATTACK',
@@ -86,16 +99,27 @@ const standing = (e) => e.condition === Condition.OK && e.hitPoints > 0;
  * @spec PRESENT-FIGHT-004
  * @spec PRESENT-FIGHT-014
  */
-export function buildFightPlan(encounter, viewport, { phase, outcome = null, pending = null, log = [] } = {}) {
+export function buildFightPlan(
+  encounter,
+  viewport,
+  { phase, outcome = null, pending = null, log = [], actor = null, countdown = 0 } = {},
+) {
   const scale = uiScale(viewport);
   const column = contentColumn(viewport);
   const pad = CARD_GAP * scale;
+
+  // How full a bar is, as a share of one. Read from the simulation rather than counted
+  // here, so the screen and the fight cannot disagree about who is next.
+  // @spec PRESENT-READY-002
+  const filled = (id) => Math.min(1, readinessOf(encounter, id) / FULL_BAR);
 
   const drawEnemy = (e) => ({
     id: e.id, name: e.name, row: e.row,
     hitPoints: e.hitPoints, maxHitPoints: e.maxHitPoints,
     // Kept in place: the shape of a line that has lost its middle is information.
     down: !standing(e),
+    readiness: filled(e.id),
+    acting: actor?.id === e.id,
   });
 
   const drawMember = (c) => ({
@@ -103,6 +127,8 @@ export function buildFightPlan(encounter, viewport, { phase, outcome = null, pen
     hitPoints: c.hitPoints, maxHitPoints: c.maxHitPoints,
     condition: c.condition,
     down: c.condition !== Condition.OK,
+    readiness: filled(c.id),
+    acting: actor?.id === c.id,
   });
 
   const byRow = (cards, row) => cards.filter((c) => c.row === row);
@@ -163,6 +189,22 @@ export function buildFightPlan(encounter, viewport, { phase, outcome = null, pen
   const laidEnemies = ranks.filter((r) => r.owner === 'enemies').flatMap((r) => r.laid);
   const laidParty = ranks.filter((r) => r.owner === 'party').flatMap((r) => r.laid);
 
+  // The ring sits on the acting character's own card, beside the bar it is counting
+  // against, so what is about to happen is shown where it is about to happen.
+  // @spec PRESENT-READY-007
+  // @spec PRESENT-READY-011
+  const actingCard = [...laidParty, ...laidEnemies].find((c) => c.acting);
+  const ringRadius = 7 * scale;
+  const ring = pending?.proposal && actingCard
+    ? {
+        x: actingCard.x + actingCard.width - ringRadius - 4 * scale,
+        y: actingCard.y + actingCard.height - ringRadius - 3 * scale,
+        radius: ringRadius,
+        progress: Math.min(1, countdown / COUNTDOWN_MS),
+        label: 'A',
+      }
+    : null;
+
   return {
     // Over the corridor, never instead of it: the party is still standing where they
     // were caught.
@@ -176,6 +218,7 @@ export function buildFightPlan(encounter, viewport, { phase, outcome = null, pen
     enemies: laidEnemies,
     party: laidParty,
     pending,
+    countdown: ring,
     log: shownLog,
     banner,
     // Drawn and tapped are one thing: a fight nobody can touch is a fight a phone
@@ -313,40 +356,120 @@ function targetsFor(encounter, characterId, action) {
     .map((t) => ({ id: t.id, name: t.name, row: t.row }));
 }
 
+/**
+ * What the fight looks like from one character's position, for their standing orders to
+ * read. Assembled here because only this layer knows both the encounter and what a
+ * character may legally do in it.
+ *
+ * @spec COMBAT-ORDER-003
+ * @spec COMBAT-ORDER-015
+ */
+function situationFor(fight, characterId) {
+  const { encounter } = fight;
+  const reachable = targetsFor(encounter, characterId, FightAction.ATTACK) ?? [];
+
+  return {
+    actorId: characterId,
+    // The character is one of their own allies, so a cleric alone still has somebody
+    // to heal. Listed in the acting order, which is what settles equal candidates.
+    allies: roster(encounter.party).map((c) => ({
+      id: c.id,
+      hitPoints: c.hitPoints,
+      maxHitPoints: c.maxHitPoints,
+      conscious: c.condition === Condition.OK,
+    })),
+    enemies: encounter.enemies.members.filter(standing).map((e) => ({
+      id: e.id,
+      hitPoints: e.hitPoints,
+      row: e.row,
+      targetable: reachable.some((t) => t.id === e.id),
+    })),
+    frontBroken: !frontRowHolds(encounter.party),
+    slots: character(encounter.party, characterId)?.slots ?? {},
+    taken: fight.ordersTaken.get(characterId) ?? new Set(),
+    isLegal: (action, targetId) => {
+      if (action.kind !== Action.ATTACK) return true;
+      return reachable.some((t) => t.id === targetId);
+    },
+  };
+}
+
 export function createFightController({ encounter, viewport, onDraw }) {
   const fight = {
     encounter, viewport, onDraw,
-    phase: FightPhase.SELECTING,
-    order: [],
-    index: 0,
-    chosen: new Map(),
+    phase: FightPhase.ACTING,
+    // Whose turn it is. A party member waits on the player; an enemy waits only on the
+    // beat that plays it.
+    actor: null,
     pending: null,
     log: [],
-    roundsResolved: 0,
+    turnsTaken: 0,
     outcome: null,
     dismissed: false,
+    // Which "once this encounter" rules have fired, per character.
+    ordersTaken: new Map(),
+    // The player's two clocks, in milliseconds: how long this proposal has been
+    // standing, and how long since the last action played.
+    countdown: 0,
+    beat: 0,
   };
 
-  /** @spec PRESENT-FIGHT-005 */
-  fight.restart = () => {
-    fight.order = roster(encounter.party).filter((c) => c.condition === Condition.OK).map((c) => c.id);
-    fight.index = 0;
-    fight.chosen = new Map();
-    ask(fight);
-  };
-
-  fight.restart();
+  nextTurn(fight);
   return fight;
 }
 
-function ask(fight) {
-  const characterId = fight.order[fight.index];
-  if (!characterId) return;
+/**
+ * Hand the turn to whoever is ready. A party member is asked; an enemy is left standing
+ * until the beat that plays it.
+ *
+ * @spec COMBAT-TIME-003
+ * @spec COMBAT-TIME-009
+ * @spec PRESENT-FIGHT-005
+ */
+function nextTurn(fight) {
+  const result = encounterOutcome(fight.encounter);
+  if (result.outcome !== Outcome.ONGOING) return end(fight, result);
+
+  const actor = nextActor(fight.encounter);
+  if (!actor) return end(fight, encounterOutcome(fight.encounter));
+
+  fight.actor = actor;
+  if (actor.side !== 'PARTY') {
+    fight.pending = null;
+    fight.beat = 0;
+    return;
+  }
+  ask(fight, actor.id);
+}
+
+function end(fight, result) {
+  fight.phase = FightPhase.ENDED;
+  fight.outcome = result;
+  fight.pending = null;
+  fight.actor = null;
+}
+
+/**
+ * Ask a character what to do, with whatever their orders propose already filled in.
+ *
+ * @spec COMBAT-ORDER-003
+ * @spec COMBAT-ORDER-005
+ * @spec COMBAT-ORDER-014
+ */
+function ask(fight, characterId) {
+  // A fresh turn is a fresh countdown; nothing carries over from the last one.
+  fight.countdown = 0;
+  const rules = character(fight.encounter.party, characterId)?.orders ?? [];
+  // Composed now rather than when they came ready, so it accounts for everything
+  // resolved in between.
+  const proposal = proposeFrom(rules, situationFor(fight, characterId));
+
   fight.pending = {
     characterId,
     options: optionsFor(fight.encounter, characterId),
     targets: null,
     action: null,
+    proposal,
   };
 }
 
@@ -358,53 +481,118 @@ function names(fight) {
 }
 
 /**
- * Resolve the round everyone has now committed to, and write down what happened.
+ * Take one action, write down what it did, and pass the turn on.
  *
+ * @spec COMBAT-TIME-009
  * @spec PRESENT-FIGHT-008
  * @spec PRESENT-FIGHT-010
  */
-function resolve(fight) {
-  const { encounter } = fight;
-
-  for (const [characterId, choice] of fight.chosen) {
-    if (choice.action === FightAction.ATTACK) {
-      selectAction(encounter, characterId, {
-        action: Action.ATTACK,
-        targetId: choice.targetId,
-        ...PLACEHOLDER_ATTACK,
-      });
-    } else {
-      selectAction(encounter, characterId, { action: Action.DEFEND });
-    }
+function resolveOne(fight, actorId, action) {
+  const event = takeAction(fight.encounter, actorId, action);
+  if (event && event.action === Action.ATTACK) {
+    fight.log.push(describeEvent(event, names(fight), event.targetId, event.felled === true));
   }
+  fight.turnsTaken += 1;
+  nextTurn(fight);
+  return event;
+}
 
-  // Enemies act too, each against something it may legally reach.
-  for (const foe of encounter.enemies.members.filter(standing)) {
-    const legal = meleeTargets(encounter, foe.id);
-    if (legal.length === 0) continue;
-    selectAction(encounter, foe.id, {
-      action: Action.ATTACK, targetId: legal[0].id, baseDamage: 5, accuracy: foe.accuracy,
+/**
+ * Play the turn of whatever is standing ready that is not the party's. One at a time,
+ * because a beat passes between them.
+ *
+ * @spec COMBAT-ORDER-013
+ * @spec COMBAT-TIME-009
+ */
+export function playEnemyTurn(fight) {
+  if (fight.phase !== FightPhase.ACTING || fight.pending || !fight.actor) return false;
+
+  const foe = fight.actor;
+  const legal = meleeTargets(fight.encounter, foe.id);
+  resolveOne(fight, foe.id, legal.length === 0
+    ? { kind: Action.DEFEND }
+    : {
+      kind: Action.ATTACK,
+      targetId: legal[0].id,
+      baseDamage: 5,
+      accuracy: fight.encounter.enemies.members.find((e) => e.id === foe.id)?.accuracy ?? 0,
     });
+  return true;
+}
+
+/**
+ * Take the action a character's orders proposed. The countdown reaches here, and so
+ * does a player who confirms before it runs out; nothing downstream can tell which.
+ *
+ * @spec COMBAT-ORDER-006
+ * @spec COMBAT-ORDER-017
+ */
+export function takeProposal(fight) {
+  const proposal = fight.pending?.proposal;
+  if (fight.phase !== FightPhase.ACTING || !proposal) return false;
+
+  const characterId = fight.pending.characterId;
+  const taken = fight.ordersTaken.get(characterId) ?? new Set();
+  taken.add(proposal.ruleIndex);
+  fight.ordersTaken.set(characterId, taken);
+
+  resolveOne(fight, characterId, {
+    ...proposal.action,
+    targetId: proposal.targetId,
+    ...(proposal.action.kind === Action.ATTACK ? PLACEHOLDER_ATTACK : {}),
+  });
+  return true;
+}
+
+/**
+ * The player reached for the screen. Whatever was about to happen on its own stops,
+ * and does not start again this turn.
+ *
+ * @spec COMBAT-ORDER-018
+ * @spec PRESENT-READY-009
+ */
+export function cancelProposal(fight) {
+  if (!fight.pending?.proposal) return false;
+  fight.pending = { ...fight.pending, proposal: null };
+  fight.countdown = 0;
+  return true;
+}
+
+/**
+ * Whether anything is going to happen without the player doing something. A fight with
+ * nothing queued and nobody counting down is a fight waiting, and waiting costs no
+ * frames.
+ *
+ * @spec PRESENT-SCENE-011
+ * @spec PRESENT-READY-010
+ */
+export function fightIsPlaying(fight) {
+  if (!fight || fight.phase !== FightPhase.ACTING) return false;
+  return fight.pending ? Boolean(fight.pending.proposal) : true;
+}
+
+/**
+ * Run the player's clock on by the milliseconds that actually passed: the beat between
+ * actions, and the countdown on a proposal. Neither touches the fight's own time.
+ *
+ * @spec PRESENT-READY-005
+ * @spec PRESENT-READY-006
+ * @spec PRESENT-READY-008
+ */
+export function advanceClock(fight, ms) {
+  if (!fightIsPlaying(fight)) return false;
+
+  if (fight.pending) {
+    fight.countdown += ms;
+    if (fight.countdown < COUNTDOWN_MS) return true;
+    takeProposal(fight);
+    return true;
   }
 
-  const events = resolveRound(encounter);
-  const who = names(fight);
-
-  for (const event of events) {
-    if (event.action !== Action.ATTACK) continue;
-    fight.log.push(describeEvent(event, who, event.targetId, event.felled === true));
-  }
-
-  fight.roundsResolved += 1;
-
-  const result = encounterOutcome(encounter);
-  if (result.outcome !== Outcome.ONGOING) {
-    fight.phase = FightPhase.ENDED;
-    fight.outcome = result;
-    fight.pending = null;
-    return;
-  }
-  fight.restart();
+  fight.beat += ms;
+  if (fight.beat < BEAT_MS) return true;
+  playEnemyTurn(fight);
+  return true;
 }
 
 /**
@@ -414,17 +602,19 @@ function resolve(fight) {
  * @spec PRESENT-FIGHT-013
  */
 export function chooseOption(fight, index) {
-  if (fight.phase !== FightPhase.SELECTING || !fight.pending) return false;
+  if (fight.phase !== FightPhase.ACTING || !fight.pending) return false;
+  // Reaching for the screen takes the turn back from whatever was about to take it.
+  cancelProposal(fight);
+
+  const characterId = fight.pending.characterId;
 
   // Choosing a target for an action already picked.
   if (fight.pending.targets) {
     const target = fight.pending.targets[index];
     if (!target) return false;
-    fight.chosen.set(fight.pending.characterId, {
-      action: fight.pending.action,
-      targetId: target.id,
+    resolveOne(fight, characterId, {
+      kind: Action.ATTACK, targetId: target.id, ...PLACEHOLDER_ATTACK,
     });
-    advance(fight);
     return true;
   }
 
@@ -432,57 +622,44 @@ export function chooseOption(fight, index) {
   if (!option) return false;
 
   if (option.action === FightAction.FLEE) {
-    fight.fled = attemptFlee(fight.encounter);
+    // One character calls the retreat and pays for it; the whole party leaves or
+    // nobody does.
+    fight.fled = attemptFlee(fight.encounter, characterId);
     if (fight.fled.escaped) {
-      fight.phase = FightPhase.ENDED;
-      fight.outcome = encounterOutcome(fight.encounter);
-      fight.pending = null;
+      end(fight, encounterOutcome(fight.encounter));
       return true;
     }
-    // A failed attempt costs the round and nothing else.
     fight.log.push('The way out is shut.');
-    fight.chosen.set(fight.pending.characterId, { action: FightAction.DEFEND });
-    advance(fight);
+    fight.turnsTaken += 1;
+    nextTurn(fight);
     return true;
   }
 
-  const targets = targetsFor(fight.encounter, fight.pending.characterId, option.action);
+  const targets = targetsFor(fight.encounter, characterId, option.action);
   if (targets && targets.length > 0) {
     fight.pending = { ...fight.pending, action: option.action, targets };
     return true;
   }
 
-  fight.chosen.set(fight.pending.characterId, { action: option.action });
-  advance(fight);
+  resolveOne(fight, characterId, { kind: Action.DEFEND });
   return true;
 }
 
-function advance(fight) {
-  fight.index += 1;
-  if (fight.index >= fight.order.length) resolve(fight);
-  else ask(fight);
-}
-
 /**
- * Back out. The party commits to a whole round before any of it resolves, so
- * reconsidering reaches the whole round rather than only its last decision.
+ * Back out of a half-made choice. A turn belongs to one character and resolves the
+ * instant it is taken, so there is nothing behind this one to reach back to.
  *
  * @spec PRESENT-FIGHT-009
  */
 export function goBack(fight) {
-  if (fight.phase !== FightPhase.SELECTING || !fight.pending) return false;
+  if (fight.phase !== FightPhase.ACTING || !fight.pending) return false;
+  cancelProposal(fight);
 
-  // Mid-choice: drop the target question and ask this character again.
   if (fight.pending.targets) {
     fight.pending = { ...fight.pending, action: null, targets: null };
     return true;
   }
-  if (fight.index === 0) return false;
-
-  fight.index -= 1;
-  fight.chosen.delete(fight.order[fight.index]);
-  ask(fight);
-  return true;
+  return false;
 }
 
 /** @spec PRESENT-FIGHT-015 */

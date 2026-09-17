@@ -6,21 +6,28 @@ Band thresholds, graze and crit multipliers, darkness penalties, and how accurac
 defence are assembled from skill, attribute and equipment are all content data. These
 specs fix the structure those numbers are fed into.
 
-## Rounds
+## The fight's time
 
-- [x] **COMBAT-ROUND-001**: The system shall collect an action from every combatant able to act before resolving any of them.
-- [x] **COMBAT-ROUND-002**: The system shall resolve the actions of a round one at a time, in descending order of the actor's Dexterity.
-- [x] **COMBAT-ROUND-003**: When two combatants have equal Dexterity, the system shall resolve the party's action first.
-- [x] **COMBAT-ROUND-004**: When two party members have equal Dexterity, the system shall resolve them in a fixed order of position.
-- [x] **COMBAT-ROUND-005**: The system shall give each combatant exactly one action per round.
-- [x] **COMBAT-ROUND-006**: If the target of an action is no longer a legal target when that action resolves, then the system shall spend the action and resolve nothing, and shall not select a substitute target.
-- [x] **COMBAT-ROUND-007**: The system shall not restore hit points, spell slots, or any other resource merely because a round has passed.
-- [ ] **COMBAT-ROUND-008**: The system shall not advance the exploration clock for any reason while an encounter is running.
+- [x] **COMBAT-TIME-001**: The system shall give every combatant a readiness that rises by their Dexterity for each beat of the fight's time.
+- [x] **COMBAT-TIME-002**: The system shall raise a combatant's readiness by at least one for each beat, however low their Dexterity.
+- [x] **COMBAT-TIME-003**: While no combatant is ready, the system shall advance the fight's time one beat at a time until at least one combatant is ready.
+- [x] **COMBAT-TIME-004**: The system shall not advance the fight's time while a combatant's action is awaiting the player.
+- [x] **COMBAT-TIME-005**: The system shall treat a combatant as ready when their readiness reaches a full bar.
+- [x] **COMBAT-TIME-006**: When a combatant acts, the system shall subtract that action's cost from their readiness and carry the remainder forward.
+- [x] **COMBAT-TIME-007**: The system shall take an action's cost from the action itself rather than from a value fixed in the resolver, and shall cost every action one full bar.
+- [x] **COMBAT-TIME-008**: When several combatants become ready on the same beat, the system shall act them in descending order of Dexterity, the party before the enemies at equal Dexterity, and party members in a fixed order of position.
+- [x] **COMBAT-TIME-009**: The system shall resolve one combatant's action completely before another combatant acts.
+- [x] **COMBAT-TIME-010**: The system shall resolve an action's target at the moment that action is taken, so that no action is aimed at a combatant that has since stopped being a legal target.
+- [x] **COMBAT-TIME-011**: The system shall not restore hit points, spell slots, or any other resource because the fight's time has passed.
+- [ ] **COMBAT-TIME-012**: The system shall not advance the exploration clock for any reason while an encounter is running.
+- [x] **COMBAT-TIME-013**: When a combatant stops being able to act, the system shall discard the readiness they had accumulated rather than holding it for their return.
+- [x] **COMBAT-TIME-014**: The system shall not raise the readiness of a combatant unable to act.
+- [x] **COMBAT-TIME-015**: The system shall allow a combatant whose readiness fills more than once between two actions of a slower combatant to act that many times.
 
 ## Surprise
 
-- [x] **COMBAT-SURPRISE-001**: When one side begins an encounter unaware of the other, the system shall give the aware side a full round before the first ordinary round.
-- [x] **COMBAT-SURPRISE-002**: When both sides are aware or both unaware, the system shall begin with an ordinary round.
+- [x] **COMBAT-SURPRISE-001**: When one side begins an encounter unaware of the other, the system shall begin every combatant on the aware side with a full bar of readiness and every combatant on the unaware side with none.
+- [x] **COMBAT-SURPRISE-002**: When both sides are aware or both unaware, the system shall begin every combatant with no readiness.
 
 ## Resolving an attack
 
@@ -50,10 +57,32 @@ specs fix the structure those numbers are fed into.
 
 - [ ] **COMBAT-ACTION-001**: When a character casts a spell, the system shall spend one spell slot of that spell's rank, and shall refuse the cast when no slot of that rank remains.
 - [ ] **COMBAT-ACTION-002**: The system shall not restore a spell slot during an encounter.
-- [ ] **COMBAT-ACTION-003**: When a character defends, the system shall raise their defence until their next turn.
-- [ ] **COMBAT-ACTION-004**: When a character swaps places with an ally, the system shall spend that character's action for the round.
-- [ ] **COMBAT-ACTION-005**: When a character relights a doused light source, the system shall spend that character's action for the round.
+- [ ] **COMBAT-ACTION-003**: When a character defends, the system shall raise their defence until that character next acts.
+- [ ] **COMBAT-ACTION-004**: When a character swaps places with an ally, the system shall spend a full bar of that character's readiness.
+- [ ] **COMBAT-ACTION-005**: When a character relights a doused light source, the system shall spend a full bar of that character's readiness.
 - [x] **COMBAT-ACTION-006**: The system shall apply every change to a character's hit points or condition through the party segment's operations.
+
+## Standing orders
+
+- [x] **COMBAT-ORDER-001**: The system shall hold for each character an ordered list of rules, each naming a condition, an action, and a target.
+- [x] **COMBAT-ORDER-002**: The system shall keep a character's order list from one encounter to the next.
+- [x] **COMBAT-ORDER-003**: When a character is about to act, the system shall read their rules from the first and shall propose the action and target of the first rule whose condition holds and whose action is legal for that character.
+- [x] **COMBAT-ORDER-004**: If a rule's action is not legal for that character, then the system shall pass over that rule and read the next.
+- [x] **COMBAT-ORDER-005**: If no rule holds and offers a legal action, then the system shall propose nothing and shall ask the player as it would for a character with no orders at all.
+- [x] **COMBAT-ORDER-006**: The system shall take a proposed action when the player confirms it or when its countdown expires, whichever comes first.
+- [x] **COMBAT-ORDER-017**: The system shall resolve a proposal taken by its countdown exactly as one the player confirmed, with no difference in what happens.
+- [x] **COMBAT-ORDER-018**: When the player takes any action on a character's turn, the system shall stop that turn's countdown and shall not resume it.
+- [x] **COMBAT-ORDER-019**: While a character has no proposal, the system shall run no countdown and shall wait for the player without limit.
+- [x] **COMBAT-ORDER-007**: The system shall allow the player to take any legal action in place of the one proposed.
+- [x] **COMBAT-ORDER-008**: The system shall offer these conditions and no others: always; an ally below a share of their hit points; no ally below a share of their hit points; a rule not yet taken this encounter; a spell slot of the required rank remaining; the actor's own front row broken.
+- [x] **COMBAT-ORDER-009**: The system shall count a rule guarded by "not yet taken this encounter" as taken only when its action is actually taken, and shall forget that it was taken when the encounter ends.
+- [x] **COMBAT-ORDER-010**: The system shall offer these targets and no others: the legal enemy with the fewest hit points; a legal enemy standing in the front row; the conscious ally with the fewest hit points; a named ally; the actor.
+- [x] **COMBAT-ORDER-011**: The system shall resolve an order's target from the state of the fight at the moment the action is taken.
+- [ ] **COMBAT-ORDER-012**: While an encounter is in darkness, the system shall keep an order's action and replace its target with the random legal target the darkness rules impose.
+- [x] **COMBAT-ORDER-013**: The system shall give no enemy an order list, and shall take an enemy's action without awaiting the player.
+- [x] **COMBAT-ORDER-015**: The system shall count the character whose order it is among their own allies, for every condition and every target that names an ally.
+- [x] **COMBAT-ORDER-016**: When two candidates are equal for a target the order names, the system shall choose between them by the same fixed order it acts combatants in.
+- [x] **COMBAT-ORDER-014**: The system shall compose a proposal when a character is about to act rather than when they become ready, so that a proposal accounts for everything resolved before it.
 
 ## Darkness
 
@@ -65,7 +94,7 @@ specs fix the structure those numbers are fed into.
 
 - [x] **COMBAT-FLEE-001**: The system shall resolve a flee attempt once for the whole party, never for individual characters.
 - [x] **COMBAT-FLEE-002**: When a flee attempt succeeds, the system shall end the encounter, return the party to the tile it came from, and award nothing.
-- [x] **COMBAT-FLEE-003**: If a flee attempt fails, then the system shall spend the round and impose no further penalty, and shall allow another attempt on a later round.
+- [x] **COMBAT-FLEE-003**: If a flee attempt fails, then the system shall spend the readiness of the character who attempted it, impose no further penalty, and allow another attempt as soon as any character is ready.
 - [x] **COMBAT-FLEE-004**: The system shall fail a flee attempt when the fastest enemy's Dexterity exceeds the party's slowest member's Dexterity by more than a quarter.
 - [x] **COMBAT-FLEE-005**: The system shall fail a flee attempt when any enemy present carries an ability that forbids escape.
 - [x] **COMBAT-FLEE-006**: The system shall allow a flee attempt in darkness on the same terms as in light.
@@ -82,7 +111,7 @@ specs fix the structure those numbers are fed into.
 - [x] **COMBAT-END-001**: When no enemy remains able to act, the system shall end the encounter in victory.
 - [x] **COMBAT-END-002**: When no party member remains conscious, the system shall end the encounter in defeat.
 - [x] **COMBAT-END-003**: When an encounter ends in victory, the system shall report the experience pot from the enemies defeated together with the distinct skills the party used.
-- [x] **COMBAT-END-004**: The system shall determine the pot from the enemies defeated and never from the number of rounds the encounter took.
+- [x] **COMBAT-END-004**: The system shall determine the pot from the enemies defeated and never from how long the encounter took.
 - [x] **COMBAT-END-005**: When an encounter ends in defeat, the system shall report the defeat and the floor and tile the party fell on, and shall not alter the party further.
 - [x] **COMBAT-END-006**: When an encounter ends in escape or defeat, the system shall report no experience pot.
 

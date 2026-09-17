@@ -3,7 +3,9 @@ import { createCampaign } from './content/campaign.js';
 import { computeSight } from './sim/exploration.js';
 import { createRenderer } from './render/app.js';
 import { playableViewport } from './render/viewport.js';
-import { createController, pressKey, pressPointer, releasePointer, resize, layers } from './render/controller.js';
+import {
+  createController, pressKey, pressPointer, releasePointer, resize, layers, tick, isPlaying,
+} from './render/controller.js';
 
 async function bootstrap() {
   const mount = document.querySelector('#app');
@@ -29,14 +31,37 @@ async function bootstrap() {
     window.__controller = controller;
   }
 
+  /**
+   * The ticker runs while, and only while, a fight has something to play out on its
+   * own. A stopped ticker is a rule about not redrawing an unchanged screen; a screen
+   * changing by itself is the one case it was never written for.
+   *
+   * @spec PRESENT-SCENE-002
+   * @spec PRESENT-SCENE-011
+   */
+  const pump = () => {
+    if (isPlaying(controller)) {
+      if (!renderer.app.ticker.started) renderer.app.ticker.start();
+    } else if (renderer.app.ticker.started) {
+      renderer.app.ticker.stop();
+    }
+  };
+
+  renderer.app.ticker.add((ticker) => {
+    tick(controller, ticker.deltaMS);
+    pump();
+  });
+
   window.addEventListener('keydown', (event) => {
     if (event.metaKey || event.ctrlKey || event.altKey) return;
     if (pressKey(controller, event.key)) event.preventDefault();
+    pump();
   });
 
   renderer.app.canvas.addEventListener('pointerdown', (event) => {
     const bounds = renderer.app.canvas.getBoundingClientRect();
     pressPointer(controller, event.clientX - bounds.left, event.clientY - bounds.top);
+    pump();
   });
 
   // The outline is shown for as long as the finger is down, and no longer.
@@ -58,6 +83,7 @@ async function bootstrap() {
   };
 
   fit();
+  pump();
   window.visualViewport?.addEventListener('resize', fit);
   window.addEventListener('resize', fit);
   window.addEventListener('orientationchange', fit);

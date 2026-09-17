@@ -110,7 +110,10 @@ justification.
 
 ## Non-Goals
 
-- **Real-time or action combat.** No timing windows, no reaction tests, no ATB.
+- **Real-time or action combat.** No timing windows, no reaction tests, and no
+  clock that advances while the player is deciding. Combat orders its turns by a
+  readiness that fills in the fight's own time, but that time stops the moment
+  anyone needs asking — a turn order wearing a bar, never a test of speed.
 - **Roguelike run structure.** No permadeath, no run-scoped meta-progression, no
   wiping the save on a party loss.
 - **Free-grid tactical combat.** Positioning is front row / back row, not an
@@ -241,7 +244,7 @@ work first reaches it rather than all at once.
 
 | Decision | Alternatives considered | Rationale |
 |---|---|---|
-| Everything turn-based; nothing real-time | Real-time action; hybrid ATB | The game is about decisions, not execution. Also makes the simulation a deterministic state machine — testable without a renderer, which the development workflow depends on. |
+| Turn-based throughout, with combat's order of acting set by a readiness that fills in the fight's own time | A round in which everyone acts once, resolved in initiative order; real-time action on a live clock | The game is about decisions, not execution, and the simulation has to stay a deterministic state machine testable without a renderer. A readiness bar costs neither: the fight's time advances only between actions, never while a decision is pending, so an hour of thought costs exactly what a second of it costs. A round in which everyone acts once would make a quick character and a slow one differ only in who moves first, wasting the attribute that decides speed everywhere else in the game. |
 | Single persistent save, campaign-shaped | Roguelike runs with permadeath; multiple save slots | Consequences have to persist for decisions to weigh anything. One slot rather than many keeps the player from save-scumming around the consequence. |
 | Front row / back row positioning | Free tactical grid (XCOM/FFT); no positioning at all | Positioning matters for reach and exposure without the UI cost of a grid on a phone screen, and without the AI cost of pathfinding and cover. No positioning at all would flatten combat into a stat comparison. |
 | Party of five, at most three per row | Six, filling both rows; four, one row of three plus one reserve | Six makes composition a non-choice — both rows fill and every party looks alike. Five cannot fill both rows, so each party is a live decision about whether to weight the front for durability and reach or the back for casters and ranged attacks. An odd size also removes mirror symmetry between the rows. |

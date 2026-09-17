@@ -303,8 +303,27 @@ function drawFight(container, plan) {
   const drawCard = (member, downColour, upColour) => {
     graphics.rect(member.x, member.y, member.width, member.height)
       .fill(member.down ? downColour : upColour);
+    // Something has to say "this one, now", or a fight resolved one at a time reads as
+    // a log that writes itself.
+    // @spec PRESENT-READY-003
     graphics.rect(member.x, member.y, member.width, member.height)
-      .stroke({ width: 1, color: FIGHT_COLOURS.frame });
+      .stroke({
+        width: member.acting ? 2.5 : 1,
+        color: member.acting ? FIGHT_COLOURS.banner : FIGHT_COLOURS.frame,
+      });
+
+    // How full their bar is, along the foot of the card.
+    // @spec PRESENT-READY-001
+    if (!member.down && member.readiness !== undefined) {
+      const barHeight = Math.max(2, 3 * scale);
+      const inset = 3 * scale;
+      const width = member.width - inset * 2;
+      const y = member.y + member.height - barHeight - inset * 0.6;
+      graphics.rect(member.x + inset, y, width, barHeight)
+        .fill({ color: FIGHT_COLOURS.frame, alpha: 0.35 });
+      graphics.rect(member.x + inset, y, width * member.readiness, barHeight)
+        .fill(member.readiness >= 1 ? FIGHT_COLOURS.banner : FIGHT_COLOURS.dim);
+    }
 
     const tone = member.down ? FIGHT_COLOURS.dim : FIGHT_COLOURS.text;
     const name = label(member.name.slice(0, 12), Math.round(11 * scale), tone);
@@ -343,6 +362,28 @@ function drawFight(container, plan) {
   }
 
   // @spec PRESENT-FIGHT-014
+  // The ring on a proposal: filling as the seconds run, an A at its centre for the
+  // action about to take itself.
+  // @spec PRESENT-READY-007
+  if (plan.countdown) {
+    const { x, y, radius, progress } = plan.countdown;
+    const ring = new Graphics();
+    ring.circle(x, y, radius).fill({ color: FIGHT_COLOURS.panel, alpha: 0.85 });
+    ring.circle(x, y, radius).stroke({ width: 1, color: FIGHT_COLOURS.frame, alpha: 0.7 });
+    // An arc from the top, clockwise, as much of the circle as has run. Started from
+    // its own first point, or the path drags a line in from wherever it last was.
+    const start = -Math.PI / 2;
+    ring.moveTo(x, y - radius)
+      .arc(x, y, radius, start, start + Math.PI * 2 * progress)
+      .stroke({ width: Math.max(1.5, radius * 0.3), color: FIGHT_COLOURS.banner });
+    container.addChild(ring);
+
+    const mark = label(plan.countdown.label ?? 'A', Math.round(8 * scale), FIGHT_COLOURS.text);
+    mark.x = x - mark.width / 2;
+    mark.y = y - mark.height / 2;
+    container.addChild(mark);
+  }
+
   if (plan.banner) {
     const b = plan.banner.bounds;
     const panel = new Graphics();

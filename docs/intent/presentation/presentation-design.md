@@ -247,6 +247,48 @@ Each rank is **centred**, so the two sides read as facing one another down a cor
 rather than as two lists sharing a left margin. Where every card sits is decided in the
 plan, like everything else, rather than worked out while drawing.
 
+### Readiness, and the fight that plays
+
+Every combatant's card carries a **readiness bar**: how full their bar is, drawn from
+the simulation and from nothing else. A fight is legible at a glance from those bars
+alone — who is about to act, who is a long way off, and which side is quicker.
+
+**The combatant acting is highlighted while they act**, on both sides alike. Something
+has to say *this one, now*, or a fight resolved one combatant at a time reads as a log
+that writes itself.
+
+**Actions play out a beat at a time.** Each one lands, its actor highlighted, and a
+short pause follows before the next. Without the pause a fight run on standing orders
+would resolve between two frames and arrive as a wall of text nobody watched happen.
+
+That pause is the one thing in this segment that needs a clock. **The ticker is stopped
+except while a fight has actions to play out** — it starts when there is a beat to wait
+and stops the moment the fight is waiting on the player instead. A stopped ticker is a
+rule about not redrawing an unchanged screen, not a vow of poverty; a screen that is
+changing on its own is precisely the case it was never meant to cover.
+
+Two clocks are in play and they are not the same one. The **fight's time** is the
+simulation's, advances in beats, and never moves while a decision is pending. The
+**beat between actions** and the **countdown on a proposal** are the player's, measured
+in seconds, and have no effect on anything the simulation resolves.
+
+### The countdown on a proposal
+
+Where a character's standing orders propose an action, the proposal is shown with a
+**countdown ring**: a small circle beside that character's readiness bar, its outer ring
+filling as the seconds run, with an `A` at its centre for the action about to be taken
+on its own. It runs for a second and a half.
+
+The ring is the whole of the affordance. It says three things at once — that something
+is about to happen, how long there is to stop it, and that it is happening because of
+an order rather than because of the player.
+
+**Any move the player makes stops it.** Choosing an action, choosing a target, backing
+out: all of them take the turn back, the ring goes, and the fight waits as long as it
+is asked to. Nothing resumes a stopped countdown.
+
+A character with no proposal has no ring, and the fight simply waits.
+
 ### The log carries the fight
 
 Nothing animates. A round resolves in a single frame, so without a record the player
@@ -418,6 +460,10 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 | Labels | Name the action, with any key hint as secondary text | Naming the key that triggers it | "[Enter] Descend" instructs a phone player to press a key they do not have. One drawing has to serve both without telling either to use the other's device. |
 | Hit regions | Computed in the plan, beside the drawing they belong to | Registered as handlers on the drawn objects | Keeping them together means what is drawn and what is tapped cannot drift apart, and it keeps hit-testing in the pure layer where it can be tested. |
 | Combat over the corridor | Drawn on top of the first-person view, which stays visible | Replacing the view with a combat screen | The party is still standing in the passage they were caught in, and seeing it is part of knowing how bad this is. A separate screen would also throw away the light and the place. |
+| Readiness | A bar on every card, drawn from the simulation's own value | A numbered initiative list; an order-of-play queue along one edge | A bar is read without counting and compares two combatants at a glance, which is the question a player actually has in a fight. A queue would have to be recomputed and redrawn on every action and still would not show how close anybody is. |
+| The beat between actions | A short pause, with the acting combatant highlighted | Resolving everything down to the next decision at once; animating each action properly | Without a pause a fight on standing orders lands between two frames and is read afterwards as text, which is the thing the log exists to rescue rather than the thing to build on. Real animation is a larger project and would need the ticker running throughout rather than between actions. |
+| The ticker | Stopped, except while a fight has actions left to play out | Stopped always, with actions resolved instantly; a conventional render loop | The rule was never about the ticker; it was about not redrawing an unchanged screen sixty times a second. A screen that is changing on its own is the one case it was not written for, and the exception is bounded to a fight with work queued. |
+| The countdown | A ring beside the readiness bar, filling over a second and a half, marked `A` | A number counting down; a progress bar across the panel; no visible countdown at all | A ring is small enough to sit on a card and legible enough to read without being looked at directly. A bare number says how long but not what is about to happen; nothing at all makes an action appear to have been taken by nobody. |
 | Showing a round | A text log built from the round's own event log | Animating each action; showing only the resulting state | Nothing animates, so a round lands in one frame. Without a record the player sees the aftermath and never learns what happened. The log is the fight as perceived. |
 | Illegal options | Not offered at all | Offered and refused when chosen | An option that cannot be taken should not be presented. Refusing after the fact teaches the rules by failure, which in a fight is expensive. |
 | Backing out | Steps back to the previous character | Cancelling only the current choice | The party commits to a whole round before any of it resolves, so reconsidering should reach the whole round rather than only its last decision. |
@@ -442,6 +488,9 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 15. ✅ **A door is drawn on the frame the corridor stops at**, closed as a panel with a handle and open as its frame alone.
 16. ✅ **An enemy the corridor report names is drawn standing at that depth**, with the same horned head the automap uses.
 17. ✅ **The build's version is drawn in the bottom-left corner**, its patch number the commit count, fixed at build time.
+18. ✅ **Every combatant's card carries a readiness bar**, and the combatant acting is highlighted.
+19. ✅ **Actions play out a beat at a time**, and the ticker runs only while a fight has actions left to play.
+20. ✅ **A proposal is shown with a countdown ring** marked `A`, which any move by the player stops for good.
 12. ✅ **Turning about has a key but no control**, being two taps of one the player already uses.
 10. ✅ **Labels name the action**, with any keyboard hint as secondary text.
 7. ✅ **Prompts are drawn from the simulation's pending confirmation**, never from the renderer's own flag.
@@ -456,6 +505,7 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 5. **Expanded-map interaction.** Panning and zooming an expanded map, and whether tapping a tile does anything, are unspecified. Auto-travel is already deferred in exploration.
 6. **Wide-screen framing.** On a very wide desktop window the corridor frames may want letterboxing rather than stretching; untested.
 7. **Accessibility.** Keyboard focus, screen-reader description of the map, and colour-blind-safe stroke distinctions are unaddressed.
+8. **Pacing controls.** The beat and the countdown are fixed lengths. Whether a player may speed them up, slow them down, or hold every proposal indefinitely is unanswered; combat records the same question from its own side.
 
 ## References
 

@@ -7,10 +7,11 @@ prefix: COMBAT
 
 ## Context and Design Philosophy
 
-Combat is where the party's composition is tested. It runs entirely outside the clock,
-resolves one character at a time, and ends by handing the party what it learned.
+Combat is where the party's composition is tested. It runs entirely outside the
+exploration clock, resolves one combatant at a time as each becomes ready, and ends by
+handing the party what it learned.
 
-Three principles shape the design.
+Four principles shape the design.
 
 **Where they stand decides it.** Reach is a hard rule, not a modifier: melee cannot
 touch the back row while a front rank stands. Every other part of the design — how
@@ -24,48 +25,82 @@ they are swinging at; ordinarily a poor roll grazes. A turn that produces nothin
 turn the player did not get to play, and combat is short enough that losing one hurts
 out of proportion to its arithmetic.
 
-**Nothing accrues for staying longer.** The clock is stopped, so hunger does not
-advance and torches do not burn. That is a constraint on this segment rather than a
-licence: nothing here may regenerate, recharge, or accumulate per round, and the
-encounter pot is fixed by the enemies rather than by the number of rounds taken.
+**Nothing accrues for staying longer.** The exploration clock is stopped, so hunger
+does not advance and torches do not burn. That is a constraint on this segment rather
+than a licence: nothing here may regenerate, recharge, or accumulate as the fight's own
+time passes, and the encounter pot is fixed by the enemies rather than by how long the
+fight ran.
+
+**Time orders the fight; it never hurries the player.** Readiness fills, whoever fills
+first acts, and the fight's clock stops dead whenever anybody has to be asked what to
+do. Thinking for an hour costs exactly what thinking for a second costs.
 
 ## The Shape of an Encounter
 
 ```
-exploration hands over ──▶ surprise ──▶ ROUND ──▶ … ──▶ outcome ──▶ pot awarded
-                                         │  ▲
-                                  select │  │ resolve
-                                         └──┘
+exploration hands over ──▶ surprise ──▶ ACT ──▶ … ──▶ outcome ──▶ pot awarded
+                                        │  ▲
+                    time runs on until  │  │  the one who is ready acts,
+                    somebody is ready   └──┘  alone, and spends the bar
 ```
 
 Exploration begins an encounter with a payload naming the enemy group, the light level
-of the tile it began on, and which side was aware of the other. Combat runs rounds
-until one side is finished or the party escapes, then reports the outcome and the
-experience pot back.
+of the tile it began on, and which side was aware of the other. Combat runs until one
+side is finished or the party escapes, then reports the outcome and the experience pot
+back.
 
-### A round
+## Readiness
 
-Every round has two phases, and they do not interleave.
+A fight has a clock of its own. It is not the exploration clock, which is stopped for
+the whole encounter and which nothing here advances, and it is not divided into rounds,
+because there are none.
 
-1. **Selection.** Every character able to act chooses an action. Enemies choose too.
-   Nothing is resolved, so a player cannot see the results of one choice before making
-   the next.
-2. **Resolution.** Actions resolve one at a time in descending Dexterity. Ties go to
-   the party; ties within the party are settled by a fixed order of position.
+Every combatant carries a **readiness** that rises as the fight's time passes. When it
+reaches the top, that combatant acts — alone, immediately, and without waiting on
+anybody — and acting spends the bar so that the filling begins again.
 
-Because selection completes before anything resolves, an action can be aimed at a
-target that is gone by the time it lands. When that happens the action **fizzles**: it
-is spent, and nothing else happens. It does not seek a substitute.
+| | |
+|---|---|
+| Readiness rises by | the combatant's Dexterity, each beat of the fight's time |
+| A combatant acts at | a full bar |
+| Acting costs | one full bar, whatever the action |
+| Anything left over | carries forward, so nothing is lost by coming ready a fraction late |
 
-That is intended, and it is the cost of committing before you know. A heal aimed at an
-ally who dies first is wasted, and the lesson is to protect them earlier rather than to
-react faster.
+**Speed is Dexterity, undisguised.** A combatant of Dexterity 18 fills three bars while
+one of Dexterity 6 fills a single bar, and acts three times to their once. That spread
+is the point rather than an accident of the numbers: it is what makes a quick party
+something other than a party that goes first, and it is the same attribute that already
+decides how fast the party walks and whether it can outrun what is chasing it. Nothing
+is ever slower than one point of Dexterity, so nothing is frozen out of its own fight.
+
+The fight advances one beat at a time until at least one combatant is ready, and never
+past that. **It does not advance at all while anybody is being asked what to do.** Time
+in a fight is a way of ordering actions; it is not something the player races.
+
+**Ties are settled, not rolled.** Combatants who come ready on the same beat act in
+descending Dexterity; a tie there goes to the party; a tie within the party is settled
+by a fixed order of position.
+
+**An action's cost belongs to the action.** Every action costs one full bar today, and
+the cost is carried on the action rather than assumed by the resolver — so a dagger's
+flick and a two-handed wind-up can come to differ without the structure moving. They do
+not differ yet, because there is no weapon table for them to differ in.
+
+**Nothing accrues for waiting.** No hit point, no spell slot, and no other resource
+recovers because a beat has passed. A bar that fills with time is exactly the mechanism
+that invites a party to stall until something refills; nothing here refills.
+
+**A combatant who falls loses what they had banked.** Readiness is discarded rather than
+held, so a character brought back to consciousness begins filling from empty instead of
+acting the instant they open their eyes.
 
 ### Surprise
 
-If one side was unaware, the aware side takes a full round before the first ordinary
-round begins. Awareness comes from exploration — light, and whether the party saw what
-was coming.
+If one side was unaware, that side begins the fight with empty bars and the aware side
+with full ones. The aware side therefore acts first, and a quick aware side may act more
+than once before the surprised one moves at all — which is a truer account of catching
+somebody unready than one free round handed to each side alike. Awareness comes from
+exploration: light, and whether the party saw what was coming.
 
 ## Resolving an Attack
 
@@ -184,17 +219,18 @@ to their own defence.
 
 | Action | Costs | Notes |
 |---|---|---|
-| Attack | the actor's action | melee or ranged, per the weapon |
-| Cast | the actor's action, and a spell slot of that rank | |
-| Use ability | the actor's action | unlocked by a skill rank |
-| Swap places | the actor's action | dragging an ally out of the front rank is work |
-| Relight | the actor's action | a doused light source, per exploration |
-| Defend | the actor's action | raises defence until their next turn |
-| Flee | the whole party's round | see below |
+| Attack | a full bar | melee or ranged, per the weapon |
+| Cast | a full bar, and a spell slot of that rank | |
+| Use ability | a full bar | unlocked by a skill rank |
+| Swap places | a full bar | dragging an ally out of the front rank is work |
+| Relight | a full bar | a doused light source, per exploration |
+| Defend | a full bar | raises defence until that character next acts |
+| Flee | a full bar, of the character who attempts it | resolved for the whole party; see below |
 
-A character acts once per round. Nothing grants an extra action per round in the base
-design; abilities that would are a matter for the abilities content, not for this
-structure.
+A combatant acts when their bar is full and not otherwise, so how often anyone acts is
+a question about Dexterity rather than about turn structure. Nothing in the base design
+grants an action off the bar; abilities that would are a matter for the abilities
+content.
 
 ### Spell slots
 
@@ -206,6 +242,123 @@ This is what makes magic an attrition resource rather than a rotation. The quest
 caster faces on the fourth floor is not which spell is optimal but whether this is the
 fight worth spending the last heal on. Slots deliberately do not recover between
 fights, or per round, because either would make descending deeper cost nothing.
+
+## Standing Orders
+
+A fight in which every character must be told what to do every time they come ready is
+a fight the player transcribes rather than plays. **Standing orders are how a party says
+once what it usually does**, so the repetitive nine tenths of an encounter can be
+confirmed instead of composed.
+
+**A proposal takes itself if it is left alone.** It is shown with a countdown, and when
+that runs out the action is taken as proposed. Any move the player makes on that
+character's turn stops the countdown dead and hands the turn back: the proposal is a
+default, not a commitment, and the moment a player has an opinion the default stops
+having one.
+
+That is what makes a fight play rather than transcribe. A party whose orders fit the
+situation fights itself while the player watches; a party whose orders do not is
+exactly where the player's attention was wanted anyway. How long the countdown runs,
+and what it looks like while it does, belong to the presentation segment.
+
+A character with no proposal has no countdown. The fight waits, indefinitely and
+without penalty, because there is nothing to take by default.
+
+### What an order is
+
+An order list belongs to a character, is authored outside a fight, and survives from one
+encounter to the next. It is an **ordered list of rules**:
+
+```
+when <condition>   do <action>   on <target>
+```
+
+When that character comes ready, the rules are read from the top, and the first one
+whose condition holds — and whose action is legal from where they stand — becomes the
+**proposal**: the action pre-chosen, the target pre-aimed. The player may take it at
+once, wait and let it take itself, or ignore it and choose something else entirely.
+Where no rule matches, nothing is proposed and the player is asked exactly as they would
+have been.
+
+### Three parties' worth of orders
+
+A fighter who always swings at whatever is closest to falling:
+
+```
+1. always                      attack        the enemy with the fewest hit points
+```
+
+A mage who opens with a shield and then commits to the offensive:
+
+```
+1. once this encounter         cast shield   the front rank
+2. while a slot remains        cast missile  the enemy with the fewest hit points
+```
+
+A cleric who heals when healing is wanted and fights when it is not:
+
+```
+1. while an ally is below half  cast heal    the ally with the fewest hit points
+2. always                       attack       the enemy with the fewest hit points
+```
+
+Read from the top and first match wins, so the cleric's second rule is what happens
+whenever the first does not — which is the whole of "or attack if everyone is healthy",
+written without a word for "otherwise".
+
+### What a rule may ask about
+
+**A character is one of their own allies.** Every condition and every target that says
+*ally* counts the character whose order it is among them, so a cleric on three hit
+points is the ally with the fewest and heals themselves. The alternative — allies
+meaning everyone else — gives a lone survivor an order list that proposes nothing at
+exactly the moment they need one.
+
+| Condition | Holds when |
+|---|---|
+| always | always |
+| an ally is below a share of their health | any conscious ally's hit points fall below that share |
+| no ally is below a share | no conscious ally's hit points fall below it |
+| once this encounter | this rule has not yet been taken in this encounter |
+| a slot remains | the actor holds an unspent slot of the rank the action needs |
+| the front rank is broken | no conscious character stands in the actor's own front row |
+
+**"Once this encounter" is what says *open with the buff, then settle in*** while status
+effects remain unbuilt. When they exist, *while the fighter lacks that blessing* will say
+it better and will be a rule of exactly the same shape.
+
+### What a rule may aim at
+
+| Target | Resolves to |
+|---|---|
+| the enemy with the fewest hit points | the legal enemy target with the fewest hit points remaining |
+| the enemy in the front row | a legal enemy target standing in the front row |
+| the ally with the fewest hit points | the conscious ally with the fewest hit points remaining |
+| a named ally | that character, while they are a legal target |
+| the actor | the character whose order it is |
+
+**A target is resolved when the action is taken, never before.** The enemy with the
+fewest hit points is whoever that is at the moment of the swing, so there is nothing to
+aim at a corpse and nothing to fizzle.
+
+**Equal candidates are settled, not rolled.** Two enemies on the same hit points are
+separated by the same fixed order combatants act in, so the same fight from the same
+seed picks the same one every time.
+
+### Where an order does not reach
+
+**An illegal proposal falls through.** A rule whose action cannot be taken — a spell with
+no slot left, a melee swing from the back row, a heal with nobody hurt — is skipped and
+the next rule is read. An order never proposes something the player would only be
+refused.
+
+**Darkness overrides the aim, not the act.** Deliberate targeting is impossible in the
+dark, so an order's target selector gives way to the random legal target the darkness
+rules impose. What a character does in the dark is still theirs; who it lands on is not.
+
+**Enemies have no orders.** What an enemy does is its roster's business, and giving the
+player's vocabulary to a monster would be a way of authoring behaviour in the wrong
+segment.
 
 ## Enemies
 
@@ -281,9 +434,10 @@ something in the group can prevent escape. Speed is compared against the party's
 *slowest* member, because a party flees no faster than whoever is hindmost; an enemy
 more than a quarter faster than that cannot be outrun.
 
-A failed attempt costs the round it was spent on and nothing more. There is no
-additional penalty, no free strike for the enemy, and no bar on trying again next
-round — a party that cannot escape is already in enough trouble.
+A failed attempt costs the bar of whoever attempted it and nothing more. There is no
+additional penalty, no free strike for the enemy, and no bar on another character
+trying the moment they come ready — a party that cannot escape is already in enough
+trouble. One character calls the retreat; the whole party leaves or nobody does.
 
 Fleeing in the dark is allowed. The party came from somewhere and can feel its way back
 whether or not it can see.
@@ -297,7 +451,18 @@ whether or not it can see.
 | Rank value | +5 accuracy and +10% damage per rank | +3/+6%, so gear leads; +8/+15%, so skill dominates | Practice should be the main axis in a game whose progression is practice, while still leaving a found weapon and the right attribute able to decide a fight between two similar characters. |
 | Attack resolution | One roll into four bands: miss, graze, hit, crit | Binary hit or miss; always-hit with variable damage | A binary result makes an unfavourable matchup produce nothing at all, so the player watches turns evaporate. Four bands make it produce less, so a losing fight is still being played. |
 | Band widths | Narrow miss, wide middle, distant crit | Even bands | A miss should mean badly outmatched, not unlucky; a reliable crit should mean a real accuracy advantage rather than a good afternoon. |
-| Round structure | Select everything, then resolve in Dexterity order | Resolving each character's action as it is chosen | Committing before you know the results is what makes initiative worth having, and it stops a round becoming a sequence of individually optimal reactions. |
+| The order of acting | A readiness that fills with the fight's own time; whoever fills first acts, alone | A round in which everyone acts once, resolved in descending Dexterity | A round makes a quick combatant and a slow one differ only in who moves first, which wastes the attribute already deciding speed everywhere else, and it caps the difference between them at one place in a queue. A bar lets the quick act twice while the slow act once, which is the difference actually worth building an attribute on. |
+| Choosing and resolving | Both in the same instant, one combatant at a time | Everyone selects, then everything resolves in order | Committing before you know is worth something, but it costs every action the existence of its target: a heal aimed at somebody who dies first is spent on nothing, and the lesson it teaches is to have acted sooner, which the player had no way to do. Resolving as each combatant comes ready removes the wasted action entirely, and is the only shape a readiness bar admits. |
+| Speed | Dexterity itself, with a floor of one | A derived initiative statistic; a flat rate modified by equipment | A second statistic meaning the same thing is a second statistic to explain and to balance. Using the attribute undisguised also gives the widest honest spread — three actions to one across the range — which is what makes an extraordinarily quick character feel extraordinary. |
+| The cost of an action | One full bar for every action, carried on the action rather than assumed | A constant in the resolver; per-action weights from the start | Putting the cost on the action means weapon weight can arrive later as content rather than as a restructuring. Making them all equal now means there is nothing to balance before there are weapons to balance it against. |
+| Surprise | The aware side starts with full bars, the surprised side with empty ones | A free round for the aware side | A free round hands the same head start to a sluggish ambusher as to a quick one. Starting the bars apart lets speed decide how much an ambush is actually worth, using the mechanism the fight already has. |
+| Standing orders | Propose an action, and take it when a countdown runs out unless the player intervenes | A proposal that waits for a press; orders that act instantly and unattended; no orders at all | A proposal that waits for a press removes the composing but keeps the pressing, so a five-member party is still five presses an exchange. A countdown removes both while leaving every one of them recoverable: the player who wants the turn takes it, and the player who does not gets a fight that plays. Acting instantly would take the turn before anybody could see it was about to be taken. |
+| Interrupting a countdown | Any move the player makes on that turn stops it, and it does not resume | A pause control; a countdown that resumes after a moment's inactivity | A countdown that can come back is one the player has to keep watching. Stopping for good means reaching for the screen is always enough, and there is never a race between a decision and a clock. |
+| Reading an order | First matching rule, top to bottom | Weights and scores; a scripting language | A list read from the top is something a player can predict by looking at it and fix by dragging a line. A scoring system produces behaviour nobody can account for, which in a system meant to reduce fuss is a new kind of fuss. |
+| What "an ally" means | The character whose order it is counts among their own allies | Allies meaning every other member of the party; the actor counted only when nobody else qualifies | A cleric forbidden to heal themselves has an order list that proposes nothing the moment they are the one bleeding, and a lone survivor's orders stop working exactly when they are all that is left. The cost — a cleric lower than the fighter treating themselves first — is precisely what "the ally with the fewest hit points" says it will do. |
+| A failed escape | Costs the bar of whoever attempted it, and nothing else | Every conscious character's bar, as a round once cost; no further attempt until all have acted | A party that cannot escape is already in enough trouble, and charging the whole party for one character's failed attempt punishes the situation rather than the decision. A party that keeps trying is a party spending every action on the door instead of on the fight, which is cost enough without a rule to enforce it. |
+| Defending | Lasts until that character next acts | A fixed span of the fight's time; whichever of the two lasts longer | Every action costs one bar and buys one turn's worth of effect, and Defend is not an exception to a rule the whole economy rests on. A quick character's guard covers less of the fight's time and they come round again sooner, which is the trade Dexterity makes everywhere else in the game. |
+| Orders for enemies | None; the roster decides what a monster does | The same order vocabulary on both sides | Enemy behaviour is authored content belonging to the enemies segment. Sharing the player's vocabulary would put monster design in the combat segment and invite the player to read their opponent's script. |
 | Melee reach | A hard restriction to the front row | A penalty for reaching the back row | Position has to be a commitment rather than an optimisation for the project's objective to hold. A penalty would make the back row merely preferable. |
 | Enemy targeting | Weighted toward the front, never forbidden from the back | Strictly front-first | A back row that cannot be touched turns its occupants into spectators to their own defence, and makes the front row a puzzle to be solved once rather than a line to be held. |
 | Reaching weapons | A weapon property, not a class feature | Polearms usable only by particular classes | A property is what makes a polearm a different decision from a sword rather than a differently-numbered one, and it composes with the finesse property the party segment already anticipates. |
@@ -311,29 +476,46 @@ whether or not it can see.
 ### Resolved
 
 1. ✅ **One roll, four bands** — miss, graze, hit, crit — with a narrow miss and a distant crit.
-2. ✅ **Selection completes before any resolution**, then actions resolve in descending Dexterity.
+2. ✅ **Each combatant chooses and resolves in the same instant**, when their readiness fills.
 3. ✅ **Melee reaches the front row only**, as a hard rule.
 4. ✅ **Ranged and magical attacks reach any row**, weighted toward the front.
 5. ✅ **Reaching and finesse are weapon properties**, not class features.
 6. ✅ **Spell slots per rank**, restored only by camping.
 7. ✅ **Enemies share the row structure and are not capped at five.**
 8. ✅ **Fleeing is one attempt for the whole party**, costing only the round it was spent on, allowed in the dark, and impossible against something far faster or something that forbids escape.
-11. ✅ **An action whose target is gone fizzles**, and does not seek a substitute.
+11. ✅ **A target is resolved at the moment the action is taken**, so no action is ever aimed at something already gone.
 12. ✅ **Only a conscious character blocks the front row.** A body shields nobody.
 13. ✅ **A landed blow always deals at least a twentieth of its base damage**, never less than one.
 14. ✅ **An enemy row holds at most ten**, so a swarm is a shape rather than an unbounded number.
 15. ✅ **A defeated party stays where it fell**, to be abandoned or recovered by a fresh party.
 9. ✅ **Darkness penalises accuracy and removes deliberate targeting**, and never helps the enemy.
-10. ✅ **Nothing recharges per round**, so no round is worth taking for its own sake.
+10. ✅ **Nothing recharges as the fight's time passes**, so no stretch of a fight is worth taking for its own sake.
+16. ✅ **Readiness fills by Dexterity**, at a floor of one point, and a full bar is what an action costs.
+17. ✅ **The fight's time never advances while anyone is being asked what to do.**
+18. ✅ **Surprise starts the aware side's bars full and the surprised side's empty.**
+19. ✅ **A combatant who falls loses the readiness they had banked.**
+20. ✅ **Standing orders propose an action and a target**, which is taken when its countdown runs out unless the player takes the turn first.
+21. ✅ **Orders are an ordered list, read top to bottom, first match winning**, with an illegal proposal falling through to the next rule.
+22. ✅ **Order targets resolve at the moment of acting**, and give way to the random target darkness imposes.
+23. ✅ **A character counts among their own allies** for every condition and target that names one.
+24. ✅ **Equal candidates for a target are settled by the acting order**, never by a roll.
+25. ✅ **A failed escape costs only the bar of the character who attempted it.**
+26. ✅ **Defending lasts until that character next acts**, like every other action's one turn of effect.
+27. ✅ **A proposal left alone is taken**; any move the player makes stops its countdown for good.
+28. ✅ **A character with no proposal has no countdown**, and the fight waits without penalty.
 
 ### Deferred
 
-1. **Ability definitions.** Skill ranks unlock abilities, but what each one does is unauthored content.
-2. **Enemy rosters and their pot values.** What any enemy is, and what it is worth, belongs with the enemies segment.
-3. **Enemy behaviour beyond choosing a legal target.** Focus fire, retreat, protecting casters — all later.
-4. **Status effects.** Poison, fear, paralysis and the rest have no model here.
-5. **Recovering a fallen party.** That a wiped party stays where it fell and can be recovered by a fresh one is settled; a stranded roster, bodies on a floor, and hiring at a tavern all need segments that do not exist.
-6. **The numbers.** Band thresholds, graze and crit multipliers, and how accuracy and defence are assembled from skill, attribute and equipment are all content data with no content yet.
+1. **Per-action costs.** Every action costs one full bar. The cost lives on the action so that a heavy weapon can cost more later, but no action differs from another yet and no weapon exists to make one.
+2. **Conditions and targets beyond the listed set.** The vocabulary is deliberately small. Conditions about status effects, about enemy kinds, and about the party's remaining resources all want to exist and none of them can until the systems they read do.
+3. **Where orders are authored.** That a character carries an order list and that it persists between encounters is settled; the screen on which a player writes one belongs to the party segment and is unbuilt.
+4. **Turning the countdown off.** Whether a player may hold every proposal indefinitely, for a fight or for good, is unanswered. The countdown is stoppable one turn at a time, which is enough to play with and not enough to set a preference.
+5. **Ability definitions.** Skill ranks unlock abilities, but what each one does is unauthored content.
+6. **Enemy rosters and their pot values.** What any enemy is, and what it is worth, belongs with the enemies segment.
+7. **Enemy behaviour beyond choosing a legal target.** Focus fire, retreat, protecting casters — all later.
+8. **Status effects.** Poison, fear, paralysis and the rest have no model here.
+9. **Recovering a fallen party.** That a wiped party stays where it fell and can be recovered by a fresh one is settled; a stranded roster, bodies on a floor, and hiring at a tavern all need segments that do not exist.
+10. **The numbers.** Band thresholds, graze and crit multipliers, and how accuracy and defence are assembled from skill, attribute and equipment are all content data with no content yet.
 
 ## References
 

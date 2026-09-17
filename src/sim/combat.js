@@ -40,6 +40,35 @@ export const FLEE_SPEED_RATIO = 1.25;
 export const DARK_ACCURACY_PENALTY = 40;
 
 /**
+ * A full bar of readiness: what a combatant fills before they act, and what an action
+ * costs them. A round is not a unit here; this is.
+ *
+ * @spec COMBAT-TIME-005
+ */
+export const FULL_BAR = 100;
+
+/**
+ * Speed is Dexterity undisguised, with a floor of one so that nothing is ever frozen
+ * out of its own fight.
+ *
+ * @spec COMBAT-TIME-001
+ * @spec COMBAT-TIME-002
+ */
+export function speedOf(dexterity) {
+  return Math.max(1, dexterity);
+}
+
+/**
+ * What an action takes off the bar. Carried on the action rather than fixed here, so a
+ * heavy weapon can come to cost more without the economy being rebuilt around it.
+ *
+ * @spec COMBAT-TIME-007
+ */
+export function actionCost(action) {
+  return action?.cost ?? FULL_BAR;
+}
+
+/**
  * One roll decides both whether an attack landed and how well.
  *
  * @spec COMBAT-ATTACK-001
@@ -104,17 +133,17 @@ const enemyStanding = (e) => e.condition === Condition.OK && e.hitPoints > 0;
 export function beginEncounter({ party, enemies, light, awareness, rng, origin }) {
   const dark = light === 'DARK';
 
-  let surpriseRoundFor = null;
-  if (awareness.party && !awareness.enemies) surpriseRoundFor = 'PARTY';
-  if (!awareness.party && awareness.enemies) surpriseRoundFor = 'ENEMIES';
+  let surprisedSide = null;
+  if (awareness.party && !awareness.enemies) surprisedSide = 'ENEMIES';
+  if (!awareness.party && awareness.enemies) surprisedSide = 'PARTY';
 
-  return {
+  const state = {
     party,
     enemies,
     light,
     origin,
     rng,
-    surpriseRoundFor,
+    surprisedSide,
     // Kept, not just consumed: who knew what is worth telling the player.
     awareness: { ...awareness },
     // Fighting blind is possible and awful: the party swings wildly at whatever is in
@@ -123,12 +152,27 @@ export function beginEncounter({ party, enemies, light, awareness, rng, origin }
     deliberateTargeting: !dark,
     // Light never helps the enemy. It only lets the party fight properly.
     enemyAccuracyBonus: 0,
-    selections: new Map(),
+    // How full each combatant's bar is, by id. The fight's own clock, in beats, is
+    // beside it; neither has anything to do with the exploration clock, which is
+    // stopped for the whole encounter.
+    readiness: new Map(),
+    beats: 0,
     skillsUsed: new Set(),
     skillsByActor: new Map(),
     escaped: false,
     potBanked: 0,
   };
+
+  // Catching somebody unready is a head start on the bar rather than a free round, so
+  // a quick ambusher gets more out of an ambush than a sluggish one does.
+  // @spec COMBAT-SURPRISE-001
+  // @spec COMBAT-SURPRISE-002
+  for (const combatant of combatants(state)) {
+    const ready = surprisedSide !== null && combatant.side !== surprisedSide;
+    state.readiness.set(combatant.id, ready ? FULL_BAR : 0);
+  }
+
+  return state;
 }
 
 function combatants(state) {
@@ -145,19 +189,81 @@ function combatants(state) {
 }
 
 /**
- * Descending Dexterity, ties to the party, ties within the party by position.
+ * Who goes first among combatants ready together: descending Dexterity, ties to the
+ * party, ties within the party by position. Equal candidates for a target are settled
+ * by this same order, so a seeded fight picks the same one every time.
  *
- * @spec COMBAT-ROUND-002
- * @spec COMBAT-ROUND-003
- * @spec COMBAT-ROUND-004
- * @spec COMBAT-ROUND-005
+ * @spec COMBAT-TIME-008
  */
-export function turnOrder(state) {
+export function actingOrder(state) {
   return combatants(state).sort((a, b) => {
     if (b.dexterity !== a.dexterity) return b.dexterity - a.dexterity;
     if (a.side !== b.side) return a.side === 'PARTY' ? -1 : 1;
     return a.order - b.order;
   });
+}
+
+const ableIds = (state) => new Set(combatants(state).map((c) => c.id));
+
+/**
+ * How full a combatant's bar is. Somebody who cannot act has no readiness at all, and
+ * whatever they had banked is dropped rather than held for their return.
+ *
+ * @spec COMBAT-TIME-013
+ * @spec COMBAT-TIME-014
+ */
+export function readinessOf(state, id) {
+  if (!ableIds(state).has(id)) {
+    state.readiness.delete(id);
+    return 0;
+  }
+  return state.readiness.get(id) ?? 0;
+}
+
+/**
+ * Run the fight's own time on. Nothing recovers because a beat has passed: a bar that
+ * fills with time is exactly the mechanism that invites a party to stall, and there is
+ * nothing here to stall for.
+ *
+ * @spec COMBAT-TIME-001
+ * @spec COMBAT-TIME-011
+ * @spec COMBAT-TIME-014
+ */
+export function advanceBeats(state, beats = 1) {
+  for (let beat = 0; beat < beats; beat++) {
+    const able = combatants(state);
+    for (const id of [...state.readiness.keys()]) {
+      if (!able.some((c) => c.id === id)) state.readiness.delete(id);
+    }
+    for (const combatant of able) {
+      const filled = (state.readiness.get(combatant.id) ?? 0) + speedOf(combatant.dexterity);
+      state.readiness.set(combatant.id, filled);
+    }
+    state.beats += 1;
+  }
+  return state.beats;
+}
+
+const readyNow = (state) =>
+  actingOrder(state).filter((c) => readinessOf(state, c.id) >= FULL_BAR);
+
+/**
+ * Whoever acts next, running the fight's time on until somebody is ready and no
+ * further. The same combatant is returned until they have taken their turn, because a
+ * turn is not over until its action is.
+ *
+ * @spec COMBAT-TIME-003
+ * @spec COMBAT-TIME-005
+ * @spec COMBAT-TIME-009
+ */
+export function nextActor(state) {
+  if (encounterOutcome(state).outcome !== Outcome.ONGOING) return null;
+
+  while (readyNow(state).length === 0) {
+    if (combatants(state).length === 0) return null;
+    advanceBeats(state, 1);
+  }
+  return readyNow(state)[0];
 }
 
 /** @spec COMBAT-REACH-003 */
@@ -211,11 +317,6 @@ export function rangedTargets(state, actorId) {
   return opposingTargets(state, actorId);
 }
 
-/** @spec COMBAT-ROUND-001 */
-export function selectAction(state, actorId, selection) {
-  state.selections.set(actorId, selection);
-}
-
 function findTarget(state, targetId) {
   const enemy = state.enemies.members.find((e) => e.id === targetId);
   if (enemy) return enemyStanding(enemy) ? enemy : null;
@@ -224,71 +325,61 @@ function findTarget(state, targetId) {
 }
 
 /**
- * Resolve a round: every action already chosen, taken one at a time in order.
+ * Take one combatant's turn: chosen and resolved in the same instant, and paid for out
+ * of their bar.
  *
- * @spec COMBAT-ROUND-001
- * @spec COMBAT-ROUND-006
- * @spec COMBAT-ROUND-007
+ * The target is found now rather than earlier, so nothing is ever aimed at something
+ * already gone — which is what removes the wasted action a fight of committed rounds
+ * could not avoid.
+ *
+ * @spec COMBAT-TIME-006
+ * @spec COMBAT-TIME-009
+ * @spec COMBAT-TIME-010
  * @spec COMBAT-ACTION-006
  */
-export function resolveRound(state) {
-  const log = [];
+export function takeAction(state, actorId, action) {
+  const actor = combatants(state).find((c) => c.id === actorId);
+  if (!actor) return null;
 
-  for (const actor of turnOrder(state)) {
-    const selection = state.selections.get(actor.id);
-    if (!selection) continue;
+  state.readiness.set(actorId, readinessOf(state, actorId) - actionCost(action));
 
-    if (selection.skill) {
-      state.skillsUsed.add(selection.skill);
-      const mine = state.skillsByActor.get(actor.id) ?? new Set();
-      mine.add(selection.skill);
-      state.skillsByActor.set(actor.id, mine);
-    }
-
-    if (selection.action !== Action.ATTACK) {
-      log.push({ actorId: actor.id, action: selection.action, fizzled: false });
-      continue;
-    }
-
-    const target = findTarget(state, selection.targetId);
-    if (!target) {
-      // Committing before you know is the cost of selecting a whole round at once.
-      // The action is spent and looks for nothing else.
-      log.push({ actorId: actor.id, action: selection.action, fizzled: true });
-      continue;
-    }
-
-    const roll = state.rng.int(1, 100);
-    const penalty = actor.side === 'PARTY' ? state.accuracyPenalty : 0;
-    const band = attackBand(roll, (selection.accuracy ?? 0) - (target.armour ?? 0) - penalty);
-    const damage = damageFor(band, selection.baseDamage ?? 0, target.armour ?? 0);
-
-    let felled = false;
-    if (character(state.party, target.id)) {
-      // Every change to a character goes through the party's own operation.
-      const wasUp = target.condition === Condition.OK;
-      if (damage > 0) applyDamage(state.party, target.id, damage);
-      felled = wasUp && character(state.party, target.id).condition !== Condition.OK;
-    } else {
-      target.hitPoints = Math.max(0, target.hitPoints - damage);
-      if (target.hitPoints === 0 && target.condition === Condition.OK) {
-        target.condition = Condition.DEAD;
-        felled = true;
-        // The pot belongs to the enemies defeated, never to the rounds taken.
-        state.potBanked += target.potValue;
-      }
-    }
-
-    // Recorded here because only this moment knows it: after the round, every attacker
-    // who struck a target that died at any point would look like the one who felled it.
-    log.push({
-      actorId: actor.id, action: selection.action, targetId: target.id,
-      band, damage, felled, fizzled: false,
-    });
+  if (action.skill) {
+    state.skillsUsed.add(action.skill);
+    const mine = state.skillsByActor.get(actorId) ?? new Set();
+    mine.add(action.skill);
+    state.skillsByActor.set(actorId, mine);
   }
 
-  state.selections.clear();
-  return log;
+  if (action.kind !== Action.ATTACK) {
+    return { actorId, action: action.kind };
+  }
+
+  const target = findTarget(state, action.targetId);
+  // Nothing to swing at is nothing taken: the bar is spent, and the turn is over.
+  if (!target) return { actorId, action: action.kind, targetId: null };
+
+  const roll = state.rng.int(1, 100);
+  const penalty = actor.side === 'PARTY' ? state.accuracyPenalty : 0;
+  const band = attackBand(roll, (action.accuracy ?? 0) - (target.armour ?? 0) - penalty);
+  const damage = damageFor(band, action.baseDamage ?? 0, target.armour ?? 0);
+
+  let felled = false;
+  if (character(state.party, target.id)) {
+    // Every change to a character goes through the party's own operation.
+    const wasUp = target.condition === Condition.OK;
+    if (damage > 0) applyDamage(state.party, target.id, damage);
+    felled = wasUp && character(state.party, target.id).condition !== Condition.OK;
+  } else {
+    target.hitPoints = Math.max(0, target.hitPoints - damage);
+    if (target.hitPoints === 0 && target.condition === Condition.OK) {
+      target.condition = Condition.DEAD;
+      felled = true;
+      // The pot belongs to the enemies defeated, never to how long the fight ran.
+      state.potBanked += target.potValue;
+    }
+  }
+
+  return { actorId, action: action.kind, targetId: target.id, band, damage, felled };
 }
 
 /**
@@ -301,7 +392,12 @@ export function resolveRound(state) {
  * @spec COMBAT-FLEE-005
  * @spec COMBAT-FLEE-006
  */
-export function attemptFlee(state) {
+export function attemptFlee(state, actorId = null) {
+  // A failed attempt costs the bar of whoever called the retreat and nothing else. A
+  // party that keeps trying is a party spending its actions on the door rather than on
+  // the fight, which is cost enough without a rule to enforce it.
+  if (actorId) state.readiness.set(actorId, readinessOf(state, actorId) - FULL_BAR);
+
   if (state.enemies.members.filter(enemyStanding).some((e) => e.forbidsEscape)) {
     return { escaped: false };
   }

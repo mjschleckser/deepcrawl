@@ -40,6 +40,30 @@ function partyOf(...characters) {
   return party;
 }
 
+describe("a character's standing orders", () => {
+  // @spec PARTY-CHAR-008
+  // @spec COMBAT-ORDER-002
+  it('carries an order list that belongs to the character, not to an encounter', () => {
+    const rules = [{ when: 'ALWAYS', action: { kind: 'ATTACK' }, aim: 'WEAKEST_ENEMY' }];
+    const c = createCharacter({
+      id: 'wren', name: 'Wren', characterClass: CharacterClass.CLERIC, row: Row.BACK, orders: rules,
+    });
+
+    expect(c.orders).toEqual(rules);
+    // A copy, so a shared template cannot be edited through one character.
+    expect(c.orders).not.toBe(rules);
+  });
+
+  // @spec PARTY-CHAR-008
+  it('gives a character with no orders an empty list rather than nothing', () => {
+    const c = createCharacter({
+      id: 'bram', name: 'Bram', characterClass: CharacterClass.FIGHTER, row: Row.FRONT,
+    });
+
+    expect(c.orders).toEqual([]);
+  });
+});
+
 describe('the roster', () => {
   // @spec PARTY-ROSTER-001
   it('holds at most five characters', () => {

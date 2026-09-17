@@ -21,13 +21,30 @@ import {
   createRoamer, giveTicks, giveGround, forgetParty, isAware, occupantsFor,
 } from '../sim/enemies.js';
 import {
-  beginEncounter, createEnemy, createEnemyGroup, encounterOutcome, attemptFlee, Outcome,
+  beginEncounter, createEnemy, createEnemyGroup, encounterOutcome, attemptFlee, Action, Outcome,
 } from '../sim/combat.js';
+import { createRule, When, Aim } from '../sim/orders.js';
+
+/**
+ * What the front rank does when nobody tells them otherwise: swing at whatever is
+ * closest to falling. Authored here because an order list is content, and because a
+ * party that has to be told every swing is a party nobody wants to play.
+ *
+ * The back row is given nothing: with no bow and no spell there is nothing legal for a
+ * rule to propose, and an order that proposes nothing is worse than none at all.
+ */
+const CUT_DOWN_THE_WEAKEST = [
+  createRule({
+    when: When.ALWAYS,
+    action: { kind: Action.ATTACK },
+    aim: Aim.WEAKEST_ENEMY,
+  }),
+];
 
 const STARTING_PARTY = [
-  { id: 'bram', name: 'Bram', characterClass: CharacterClass.FIGHTER, row: Row.FRONT },
-  { id: 'rook', name: 'Rook', characterClass: CharacterClass.FIGHTER, row: Row.FRONT },
-  { id: 'tam', name: 'Tam', characterClass: CharacterClass.THIEF, row: Row.FRONT },
+  { id: 'bram', name: 'Bram', characterClass: CharacterClass.FIGHTER, row: Row.FRONT, orders: CUT_DOWN_THE_WEAKEST },
+  { id: 'rook', name: 'Rook', characterClass: CharacterClass.FIGHTER, row: Row.FRONT, orders: CUT_DOWN_THE_WEAKEST },
+  { id: 'tam', name: 'Tam', characterClass: CharacterClass.THIEF, row: Row.FRONT, orders: CUT_DOWN_THE_WEAKEST },
   { id: 'isolde', name: 'Isolde', characterClass: CharacterClass.MAGE, row: Row.BACK },
   { id: 'wren', name: 'Wren', characterClass: CharacterClass.CLERIC, row: Row.BACK },
 ];
