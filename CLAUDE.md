@@ -34,6 +34,13 @@ directly rather than through the UI.
 _To be filled in as conventions get established. Nothing formal yet beyond
 what the Vite/PixiJS defaults imply._
 
+## Commit and push
+
+**Always commit and push to `main` at the end of every round of changes**, without
+waiting to be asked. A push deploys, and during early development that is the point:
+the live build is how changes get tried. Only commit once tests pass and the build
+succeeds, and say in the report that it was pushed.
+
 ## LID
 - Mode: Full
 - Version: 1.3.0
