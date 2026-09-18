@@ -23,7 +23,7 @@ import { buildViewPlan } from './viewplan.js';
 import { buildMapPlan } from './mapplan.js';
 import {
   buildFightPlan, createFightController, chooseOption, goBack, dismissOutcome,
-  advanceClock, fightIsPlaying, cancelProposal, FightPhase,
+  advanceClock, fightIsPlaying, cancelProposal, dismissNotice, FightPhase,
 } from './fight.js';
 
 const CONFIRM_KEYS = ['Enter', ' '];
@@ -115,6 +115,10 @@ export function layers(controller) {
       log: fight.log,
       actor: fight.actor,
       countdown: fight.countdown,
+      autoConfirm: fight.autoConfirm,
+      notice: fight.notice,
+      shakingId: fight.shakingId,
+      shake: fight.shake,
     });
     return [
       { name: 'view', plan: buildViewPlan(corridorAhead(state), viewport) },
@@ -218,6 +222,14 @@ function applyAction(controller, action) {
 function pressKeyInFight(controller, key) {
   const fight = controller.fight;
 
+  // Anything at all puts the ambush card away, for a player who already knows.
+  // @spec PRESENT-READY-016
+  if (fight.notice) {
+    dismissNotice(fight);
+    redraw(controller);
+    return true;
+  }
+
   if (fight.phase === FightPhase.ENDED) {
     if (key !== 'Enter' && key !== ' ' && key !== 'Escape') return false;
     dismissOutcome(fight);
@@ -284,6 +296,12 @@ export function pressPointer(controller, px, py) {
   syncFight(controller);
 
   if (controller.fight) {
+    // @spec PRESENT-READY-016
+    if (controller.fight.notice) {
+      dismissNotice(controller.fight);
+      redraw(controller);
+      return true;
+    }
     const plan = layers(controller).find((l) => l.name === 'fight').plan;
     const control = hit(plan.controls, px, py);
     if (!control) return false;

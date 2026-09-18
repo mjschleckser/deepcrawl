@@ -299,8 +299,10 @@ function drawFight(container, plan) {
   graphics.moveTo(x, y).lineTo(x + width, y).stroke({ width: 2, color: FIGHT_COLOURS.frame });
   container.addChild(graphics);
 
-  // Every card was placed by the plan; this only paints it.
-  const drawCard = (member, downColour, upColour) => {
+  // Every card was placed by the plan; this only paints it, at whatever offset the
+  // plan gave it.
+  const drawCard = (card, downColour, upColour) => {
+    const member = { ...card, y: card.y + (card.offsetY ?? 0) };
     graphics.rect(member.x, member.y, member.width, member.height)
       .fill(member.down ? downColour : upColour);
     // Something has to say "this one, now", or a fight resolved one at a time reads as
@@ -342,12 +344,10 @@ function drawFight(container, plan) {
 
   let cursor = plan.cardsBottom + pad;
 
-  if (plan.pending) {
-    const who = plan.party.find((c) => c.id === plan.pending.characterId);
-    const prompt = label(
-      `${who?.name ?? plan.pending.characterId}: ${plan.pending.targets ? 'at whom?' : 'what will you do?'}`,
-      Math.round(14 * scale), FIGHT_COLOURS.text,
-    );
+  // @spec PRESENT-READY-013
+  // @spec PRESENT-READY-014
+  if (plan.prompt) {
+    const prompt = label(plan.prompt, Math.round(14 * scale), FIGHT_COLOURS.text);
     prompt.x = x + pad;
     prompt.y = cursor;
     container.addChild(prompt);
@@ -382,6 +382,24 @@ function drawFight(container, plan) {
     mark.x = x - mark.width / 2;
     mark.y = y - mark.height / 2;
     container.addChild(mark);
+  }
+
+  // Bars that start full are otherwise unexplained, and the reasonable conclusion is
+  // that the fight is broken.
+  // @spec PRESENT-READY-015
+  if (plan.notice) {
+    const { text, bounds } = plan.notice;
+    const card = new Graphics();
+    card.roundRect(bounds.x, bounds.y, bounds.width, bounds.height, 8 * scale)
+      .fill({ color: FIGHT_COLOURS.panel, alpha: 0.95 });
+    card.roundRect(bounds.x, bounds.y, bounds.width, bounds.height, 8 * scale)
+      .stroke({ width: 2 * scale, color: FIGHT_COLOURS.banner });
+    container.addChild(card);
+
+    const shout = label(text, Math.round(26 * scale), FIGHT_COLOURS.banner);
+    shout.x = bounds.x + bounds.width / 2 - shout.width / 2;
+    shout.y = bounds.y + bounds.height / 2 - shout.height / 2;
+    container.addChild(shout);
   }
 
   if (plan.banner) {

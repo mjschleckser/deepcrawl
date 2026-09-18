@@ -29,10 +29,31 @@ export const FightPhase = { ACTING: 'ACTING', ENDED: 'ENDED' };
  * @spec PRESENT-READY-005
  * @spec PRESENT-READY-006
  */
-export const BEAT_MS = 420;
+export const BEAT_MS = 630;
 export const COUNTDOWN_MS = 1500;
 
+/** How long an ambush card is held over the fight before it begins. */
+export const AMBUSH_MS = 2200;
+
+/**
+ * Whether a proposal takes itself when its countdown runs out.
+ *
+ * Off: every action is taken by a press. The countdown machinery is kept whole and
+ * under test behind this one constant, because whether a fight should be able to play
+ * itself for a player who has set their orders is a question worth being able to
+ * answer twice.
+ *
+ * @spec COMBAT-ORDER-006
+ * @spec PRESENT-READY-008
+ */
+export const AUTO_CONFIRM = false;
+
+/** How far an attacker's card jumps, before the judder decays over the beat. */
+export const SHAKE_PIXELS = 5;
+
 export const FightAction = {
+  // Taking what this character's standing orders already worked out.
+  CONFIRM: 'CONFIRM',
   ATTACK: 'ATTACK',
   DEFEND: 'DEFEND',
   FLEE: 'FLEE',
@@ -54,6 +75,11 @@ const CARD_GAP = 8;
  * @spec PRESENT-FIGHT-019
  * @spec PRESENT-FIGHT-022
  */
+const nameOf = (encounter, id) =>
+  roster(encounter.party).find((c) => c.id === id)?.name
+  ?? encounter.enemies.members.find((e) => e.id === id)?.name
+  ?? id;
+
 function layOutRank(cards, column, top, scale) {
   if (cards.length === 0) return [];
 
@@ -102,7 +128,10 @@ const standing = (e) => e.condition === Condition.OK && e.hitPoints > 0;
 export function buildFightPlan(
   encounter,
   viewport,
-  { phase, outcome = null, pending = null, log = [], actor = null, countdown = 0 } = {},
+  {
+    phase, outcome = null, pending = null, log = [], actor = null,
+    countdown = 0, autoConfirm = false, notice = null, shakingId = null, shake = 0,
+  } = {},
 ) {
   const scale = uiScale(viewport);
   const column = contentColumn(viewport);
@@ -113,6 +142,17 @@ export function buildFightPlan(
   // @spec PRESENT-READY-002
   const filled = (id) => Math.min(1, readinessOf(encounter, id) / FULL_BAR);
 
+  // A quick vertical judder on whoever just swung, decaying to nothing over the beat.
+  // Decided here rather than while drawing, like every other position.
+  // @spec PRESENT-READY-018
+  // @spec PRESENT-READY-019
+  const offsetOf = (id) => {
+    if (id !== shakingId) return 0;
+    const left = Math.max(0, 1 - shake / BEAT_MS);
+    // Cosine, so it jumps the moment the blow lands rather than easing into it.
+    return Math.round(Math.cos(shake / 28) * SHAKE_PIXELS * left * scale);
+  };
+
   const drawEnemy = (e) => ({
     id: e.id, name: e.name, row: e.row,
     hitPoints: e.hitPoints, maxHitPoints: e.maxHitPoints,
@@ -120,6 +160,7 @@ export function buildFightPlan(
     down: !standing(e),
     readiness: filled(e.id),
     acting: actor?.id === e.id,
+    offsetY: offsetOf(e.id),
   });
 
   const drawMember = (c) => ({
@@ -129,6 +170,7 @@ export function buildFightPlan(
     down: c.condition !== Condition.OK,
     readiness: filled(c.id),
     acting: actor?.id === c.id,
+    offsetY: offsetOf(c.id),
   });
 
   const byRow = (cards, row) => cards.filter((c) => c.row === row);
@@ -195,7 +237,7 @@ export function buildFightPlan(
   // @spec PRESENT-READY-011
   const actingCard = [...laidParty, ...laidEnemies].find((c) => c.acting);
   const ringRadius = 7 * scale;
-  const ring = pending?.proposal && actingCard
+  const ring = autoConfirm && pending?.proposal && actingCard
     ? {
         x: actingCard.x + actingCard.width - ringRadius - 4 * scale,
         y: actingCard.y + actingCard.height - ringRadius - 3 * scale,
@@ -219,6 +261,27 @@ export function buildFightPlan(
     party: laidParty,
     pending,
     countdown: ring,
+    // Who the next press belongs to, or nothing at all while nothing waits: a prompt
+    // over a fight that is playing invites a press nothing is listening for.
+    // @spec PRESENT-READY-013
+    // @spec PRESENT-READY-014
+    prompt: pending
+      ? (pending.targets
+        ? `${nameOf(encounter, pending.characterId)}: at whom?`
+        : `${nameOf(encounter, pending.characterId)} is ready to act!`)
+      : null,
+    // @spec PRESENT-READY-015
+    notice: notice
+      ? {
+        text: notice.text,
+        bounds: {
+          x: column.x + (column.width - bannerWidth) / 2,
+          y: bounds.y - bannerHeight - pad,
+          width: bannerWidth,
+          height: bannerHeight * 0.6,
+        },
+      }
+      : null,
     log: shownLog,
     banner,
     // Drawn and tapped are one thing: a fight nobody can touch is a fight a phone
@@ -333,8 +396,22 @@ export function describeEvent(event, names, targetId, felled) {
  * @spec PRESENT-FIGHT-006
  * @spec PRESENT-FIGHT-007
  */
-function optionsFor(encounter, characterId) {
+/**
+ * What the row of controls offers. A proposal comes first and names its target, because
+ * a turn the character's orders already answer should be one press.
+ *
+ * @spec PRESENT-READY-020
+ */
+function optionsFor(encounter, characterId, proposal = null) {
   const options = [];
+
+  if (proposal) {
+    const verb = proposal.action.kind === Action.ATTACK ? 'Attack' : 'Cast';
+    options.push({
+      action: FightAction.CONFIRM,
+      label: `${verb} ${nameOf(encounter, proposal.targetId)}`,
+    });
+  }
   // The reaching property lives on a weapon, which does not exist yet; until it does,
   // a back-row character has nothing to swing.
   const reachable = meleeTargets(encounter, characterId, { reaching: false });
@@ -408,13 +485,21 @@ export function createFightController({ encounter, viewport, onDraw }) {
     dismissed: false,
     // Which "once this encounter" rules have fired, per character.
     ordersTaken: new Map(),
-    // The player's two clocks, in milliseconds: how long this proposal has been
-    // standing, and how long since the last action played.
+    // The player's clocks, in milliseconds: how long this proposal has been standing,
+    // how long since the last action played, and how long the shake has been running.
     countdown: 0,
     beat: 0,
+    shake: 0,
+    shakingId: null,
+    autoConfirm: AUTO_CONFIRM,
+    // A card held over the fight before it starts. Bars that begin full are the one
+    // thing on the screen with no cause visible anywhere.
+    // @spec PRESENT-READY-015
+    // @spec PRESENT-READY-017
+    notice: encounter.surprisedSide ? { text: 'Ambush!', elapsed: 0 } : null,
   };
 
-  nextTurn(fight);
+  if (!fight.notice) nextTurn(fight);
   return fight;
 }
 
@@ -466,7 +551,7 @@ function ask(fight, characterId) {
 
   fight.pending = {
     characterId,
-    options: optionsFor(fight.encounter, characterId),
+    options: optionsFor(fight.encounter, characterId, proposal),
     targets: null,
     action: null,
     proposal,
@@ -491,6 +576,11 @@ function resolveOne(fight, actorId, action) {
   const event = takeAction(fight.encounter, actorId, action);
   if (event && event.action === Action.ATTACK) {
     fight.log.push(describeEvent(event, names(fight), event.targetId, event.felled === true));
+    // The card that moves is the card that swung: nothing else in a fight moves, so a
+    // blow is otherwise a number changing on a panel of numbers.
+    // @spec PRESENT-READY-018
+    fight.shakingId = actorId;
+    fight.shake = 0;
   }
   fight.turnsTaken += 1;
   nextTurn(fight);
@@ -545,6 +635,20 @@ export function takeProposal(fight) {
 }
 
 /**
+ * Put the ambush card away and start the fight. The span running out reaches here, and
+ * so does a player who already knows what happened.
+ *
+ * @spec PRESENT-READY-015
+ * @spec PRESENT-READY-016
+ */
+export function dismissNotice(fight) {
+  if (!fight.notice) return false;
+  fight.notice = null;
+  nextTurn(fight);
+  return true;
+}
+
+/**
  * The player reached for the screen. Whatever was about to happen on its own stops,
  * and does not start again this turn.
  *
@@ -568,7 +672,10 @@ export function cancelProposal(fight) {
  */
 export function fightIsPlaying(fight) {
   if (!fight || fight.phase !== FightPhase.ACTING) return false;
-  return fight.pending ? Boolean(fight.pending.proposal) : true;
+  if (fight.notice) return true;
+  if (fight.shakingId) return true;
+  if (!fight.pending) return true;
+  return fight.autoConfirm && Boolean(fight.pending.proposal);
 }
 
 /**
@@ -582,7 +689,24 @@ export function fightIsPlaying(fight) {
 export function advanceClock(fight, ms) {
   if (!fightIsPlaying(fight)) return false;
 
+  // The judder decays on its own clock, so it outlives the turn that caused it.
+  if (fight.shakingId) {
+    fight.shake += ms;
+    if (fight.shake >= BEAT_MS) {
+      fight.shake = 0;
+      fight.shakingId = null;
+    }
+  }
+
+  // Nothing at all moves behind the card.
+  if (fight.notice) {
+    fight.notice = { ...fight.notice, elapsed: fight.notice.elapsed + ms };
+    if (fight.notice.elapsed >= AMBUSH_MS) dismissNotice(fight);
+    return true;
+  }
+
   if (fight.pending) {
+    if (!fight.autoConfirm || !fight.pending.proposal) return true;
     fight.countdown += ms;
     if (fight.countdown < COUNTDOWN_MS) return true;
     takeProposal(fight);
@@ -603,7 +727,14 @@ export function advanceClock(fight, ms) {
  */
 export function chooseOption(fight, index) {
   if (fight.phase !== FightPhase.ACTING || !fight.pending) return false;
-  // Reaching for the screen takes the turn back from whatever was about to take it.
+
+  // Taking the proposal is one press, and the only press that keeps it.
+  // @spec PRESENT-READY-021
+  if (!fight.pending.targets && fight.pending.options[index]?.action === FightAction.CONFIRM) {
+    return takeProposal(fight);
+  }
+
+  // Anything else is the player choosing for themselves, which drops the proposal.
   cancelProposal(fight);
 
   const characterId = fight.pending.characterId;

@@ -8,7 +8,8 @@ import { createRule, When, Aim } from '../sim/orders.js';
 import {
   buildFightPlan, createFightController, chooseOption, goBack, dismissOutcome,
   playEnemyTurn, takeProposal, cancelProposal, advanceClock, fightIsPlaying,
-  FightPhase, FightAction, describeEvent, BEAT_MS, COUNTDOWN_MS,
+  dismissNotice, AUTO_CONFIRM, SHAKE_PIXELS,
+  FightPhase, FightAction, describeEvent, BEAT_MS, COUNTDOWN_MS, AMBUSH_MS,
 } from './fight.js';
 
 /** Take the Defend option, whatever number it happens to be on this character. */
@@ -30,7 +31,7 @@ const viewport = { width: 900, height: 640 };
 const hero = (id, cls, row) =>
   createCharacter({ id, name: id, characterClass: cls, row });
 
-function fightState({ enemies, light = 'BRIGHT' } = {}) {
+function fightState({ enemies, light = 'BRIGHT', partyAware = true, enemiesAware = true } = {}) {
   const party = createParty();
   addCharacter(party, hero('bram', CharacterClass.FIGHTER, Row.FRONT));
   addCharacter(party, hero('tam', CharacterClass.THIEF, Row.FRONT));
@@ -44,7 +45,7 @@ function fightState({ enemies, light = 'BRIGHT' } = {}) {
       createEnemy({ id: 'a1', name: 'Goblin Archer', row: Row.BACK, hitPoints: 7, potValue: 18 }),
     ]),
     light,
-    awareness: { party: true, enemies: true },
+    awareness: { party: partyAware, enemies: enemiesAware },
     rng: makeRng(4),
     origin: { floorId: 'f1', x: 2, y: 3 },
   });
@@ -255,16 +256,47 @@ describe('standing orders in a fight', () => {
 
   // @spec COMBAT-ORDER-007
   // @spec COMBAT-ORDER-018
-  it('lets the player take another action instead, which stops the countdown', () => {
+  it('lets the player take another action instead, which drops the proposal', () => {
     const fight = ordered([order()]);
 
-    chooseOption(fight, 1); // Defend, rather than the attack proposed
+    defend(fight); // rather than the attack proposed
 
     expect(fight.turnsTaken).toBe(1);
     // Every enemy is untouched: the proposal was not taken on the way past.
     for (const foe of fight.encounter.enemies.members) {
       expect(foe.hitPoints).toBe(foe.maxHitPoints ?? foe.hitPoints);
     }
+  });
+
+  // @spec PRESENT-READY-020
+  it('offers the proposal as the first control, named for what it would do', () => {
+    const fight = ordered([order()]);
+
+    const [first] = fight.pending.options;
+    expect(first.action).toBe(FightAction.CONFIRM);
+    // Attack Goblin, not Attack: the target is the half an order actually saves.
+    expect(first.label).toMatch(/^Attack /);
+    expect(first.label.length).toBeGreaterThan('Attack '.length);
+  });
+
+  // @spec PRESENT-READY-021
+  it('takes the proposal when that control is pressed, in one press', () => {
+    const fight = ordered([order()]);
+    const targetId = fight.pending.proposal.targetId;
+    const before = fight.encounter.enemies.members.find((e) => e.id === targetId).hitPoints;
+
+    chooseOption(fight, 0);
+
+    expect(fight.turnsTaken).toBe(1);
+    expect(fight.encounter.enemies.members.find((e) => e.id === targetId).hitPoints)
+      .toBeLessThan(before);
+  });
+
+  // @spec PRESENT-READY-020
+  it('offers no such control to a character whose orders propose nothing', () => {
+    const fight = controller();
+
+    expect(fight.pending.options.some((o) => o.action === FightAction.CONFIRM)).toBe(false);
   });
 
   // @spec COMBAT-ORDER-009
@@ -543,6 +575,10 @@ describe('a fight that plays itself out', () => {
     log: fight.log,
     actor: fight.actor,
     countdown: fight.countdown,
+    autoConfirm: fight.autoConfirm,
+    notice: fight.notice,
+    shakingId: fight.shakingId,
+    shake: fight.shake,
   });
 
   // @spec PRESENT-READY-001
@@ -568,54 +604,140 @@ describe('a fight that plays itself out', () => {
     expect(acting).toHaveLength(1);
   });
 
+  // @spec PRESENT-READY-008
+  // @spec COMBAT-ORDER-006
+  it('takes nothing the player has not pressed for, however long it is left', () => {
+    const fight = ordered(alwaysAttack());
+
+    advanceClock(fight, COUNTDOWN_MS * 10);
+
+    expect(AUTO_CONFIRM).toBe(false);
+    expect(fight.turnsTaken).toBe(0);
+    expect(fight.pending.proposal).not.toBeNull();
+  });
+
+  // @spec PRESENT-READY-008
+  it('draws no ring while nothing is going to take itself', () => {
+    const fight = ordered(alwaysAttack());
+
+    expect(planOf(fight).countdown).toBeNull();
+  });
+
+  // @spec PRESENT-READY-012
   // @spec PRESENT-READY-007
   // @spec PRESENT-READY-011
-  it('places the countdown ring on the acting card, filled by how long has run', () => {
+  it('would take the proposal on its countdown, were that switched on', () => {
     const fight = ordered(alwaysAttack());
-    expect(planOf(fight).countdown.progress).toBe(0);
+    // The machinery is kept alive rather than kept in a branch nobody runs.
+    fight.autoConfirm = true;
 
-    advanceClock(fight, COUNTDOWN_MS / 2);
+    advanceClock(fight, COUNTDOWN_MS - 1);
+    expect(fight.turnsTaken).toBe(0);
+
     const ring = planOf(fight).countdown;
-
-    expect(ring.progress).toBeCloseTo(0.5, 2);
+    expect(ring.progress).toBeCloseTo(1, 1);
     expect(ring.label).toBe('A');
     const card = planOf(fight).party.find((c) => c.id === 'bram');
     expect(ring.x).toBeGreaterThan(card.x);
     expect(ring.x).toBeLessThan(card.x + card.width);
-  });
-
-  // @spec PRESENT-READY-008
-  it('takes the proposal when the countdown runs out, and not before', () => {
-    const fight = ordered(alwaysAttack());
-
-    advanceClock(fight, COUNTDOWN_MS - 1);
-    expect(fight.turnsTaken).toBe(0);
 
     advanceClock(fight, 2);
     expect(fight.turnsTaken).toBe(1);
   });
 
   // @spec PRESENT-READY-009
-  it('draws no ring once the player has taken the turn back', () => {
+  it('drops the proposal once the player has taken the turn back', () => {
     const fight = ordered(alwaysAttack());
-    advanceClock(fight, COUNTDOWN_MS / 2);
 
     cancelProposal(fight);
 
+    expect(fight.pending.proposal).toBeNull();
     expect(planOf(fight).countdown).toBeNull();
-    // And the clock no longer runs for this turn.
-    expect(advanceClock(fight, COUNTDOWN_MS * 2)).toBe(false);
-    expect(fight.turnsTaken).toBe(0);
   });
 
   // @spec PRESENT-READY-010
   // @spec PRESENT-SCENE-011
-  it('stops entirely while it is waiting on somebody with nothing proposed', () => {
+  it('stops entirely while it is waiting on somebody', () => {
     const fight = controller();
 
     expect(fightIsPlaying(fight)).toBe(false);
     expect(planOf(fight).countdown).toBeNull();
     expect(advanceClock(fight, 10000)).toBe(false);
+  });
+
+  // @spec PRESENT-READY-013
+  it('names whoever is waiting to be told what to do', () => {
+    const fight = controller();
+
+    expect(planOf(fight).prompt).toBe(`${fight.pending.characterId} is ready to act!`);
+  });
+
+  // @spec PRESENT-READY-014
+  it('says nothing at all while the fight is playing rather than waiting', () => {
+    const fight = controller();
+    for (let i = 0; i < 10 && fight.pending; i++) defend(fight);
+
+    expect(fight.pending).toBeNull();
+    expect(planOf(fight).prompt).toBeNull();
+  });
+
+  // @spec PRESENT-READY-015
+  // @spec PRESENT-READY-016
+  it('opens an ambush with a card, and holds the fight behind it', () => {
+    const encounter = fightState({ enemiesAware: false });
+    const fight = createFightController({ encounter, viewport, onDraw: vi.fn() });
+
+    expect(planOf(fight).notice).toMatchObject({ text: 'Ambush!' });
+    // Nothing moves behind it, however long it stands.
+    expect(fight.pending).toBeNull();
+    advanceClock(fight, AMBUSH_MS - 1);
+    expect(fight.turnsTaken).toBe(0);
+    expect(planOf(fight).notice).not.toBeNull();
+
+    dismissNotice(fight);
+
+    expect(planOf(fight).notice).toBeNull();
+    expect(fight.pending).not.toBeNull();
+  });
+
+  // @spec PRESENT-READY-015
+  it('clears the ambush card once its span has run, without anybody pressing', () => {
+    const encounter = fightState({ enemiesAware: false });
+    const fight = createFightController({ encounter, viewport, onDraw: vi.fn() });
+
+    advanceClock(fight, AMBUSH_MS + 1);
+
+    expect(planOf(fight).notice).toBeNull();
+    expect(fight.pending).not.toBeNull();
+  });
+
+  // @spec PRESENT-READY-017
+  it('announces nothing when neither side was caught out', () => {
+    const fight = controller();
+
+    expect(planOf(fight).notice).toBeNull();
+  });
+
+  // @spec PRESENT-READY-018
+  // @spec PRESENT-READY-019
+  it('shakes the card of whoever just swung, decaying to nothing over the beat', () => {
+    const fight = ordered(alwaysAttack());
+    takeProposal(fight);
+
+    const struck = planOf(fight).party.find((c) => c.id === 'bram');
+    expect(Math.abs(struck.offsetY)).toBeGreaterThan(0);
+    expect(Math.abs(struck.offsetY)).toBeLessThanOrEqual(SHAKE_PIXELS * 2);
+
+    advanceClock(fight, BEAT_MS * 2);
+
+    expect(planOf(fight).party.find((c) => c.id === 'bram').offsetY).toBe(0);
+  });
+
+  // @spec PRESENT-READY-018
+  it('shakes nobody who has not just swung', () => {
+    const plan = planOf(controller());
+
+    for (const card of [...plan.party, ...plan.enemies]) expect(card.offsetY).toBe(0);
   });
 
   // @spec PRESENT-READY-005

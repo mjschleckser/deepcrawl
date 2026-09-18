@@ -94,10 +94,20 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-READY-004**: The system shall highlight at most one combatant at a time.
 - [x] **PRESENT-READY-005**: When the simulation resolves an action, the system shall pause for a fixed beat before playing the next.
 - [x] **PRESENT-READY-006**: The system shall measure the beat and the proposal countdown in real seconds, and shall not let either advance the fight's own time.
-- [x] **PRESENT-READY-007**: While a character's standing orders propose an action, the system shall draw a countdown ring beside that character's readiness bar, its outer ring filled to the proportion of the countdown elapsed and the letter `A` at its centre.
-- [x] **PRESENT-READY-008**: When a proposal's countdown completes, the system shall take the proposed action.
-- [x] **PRESENT-READY-009**: When the player acts on a character's turn, the system shall stop that countdown, draw no ring for that turn, and not resume it.
-- [x] **PRESENT-READY-010**: While a character has no proposal, the system shall draw no countdown ring and shall wait for the player without limit.
+- [x] **PRESENT-READY-007**: While automatic confirmation is enabled and a character's standing orders propose an action, the system shall draw a countdown ring beside that character's readiness bar, its outer ring filled to the proportion of the countdown elapsed and the letter `A` at its centre.
+- [x] **PRESENT-READY-008**: While automatic confirmation is disabled, the system shall draw no countdown ring, run no countdown, and take no action the player has not pressed for.
+- [x] **PRESENT-READY-012**: While automatic confirmation is enabled and a proposal's countdown completes, the system shall take the proposed action.
+- [x] **PRESENT-READY-009**: When the player acts on a character's turn, the system shall drop that turn's proposal and draw no ring for it.
+- [x] **PRESENT-READY-010**: The system shall wait for the player at every character's turn without limit, whether or not anything is proposed.
+- [x] **PRESENT-READY-020**: While a character's orders propose an action, the system shall offer that proposal as the first control, named for both the action and the target it would take.
+- [x] **PRESENT-READY-021**: When the player takes the control offering a proposal, the system shall take that proposal.
+- [x] **PRESENT-READY-013**: While a character is waiting to be told what to do, the system shall name that character as ready to act.
+- [x] **PRESENT-READY-014**: While nothing is waiting on the player, the system shall draw no prompt at all.
+- [x] **PRESENT-READY-015**: When an encounter begins with one side unready, the system shall draw a card announcing the ambush and shall hold the fight behind it for a fixed span.
+- [x] **PRESENT-READY-016**: The system shall let the player dismiss an ambush card before its span has run.
+- [x] **PRESENT-READY-017**: When an encounter begins with neither side unready, the system shall draw no ambush card.
+- [x] **PRESENT-READY-018**: When an attack resolves, the system shall offset the attacker's card vertically by an amount that decays to nothing over the beat.
+- [x] **PRESENT-READY-019**: The system shall decide each card's offset in the draw plan rather than while drawing.
 - [x] **PRESENT-READY-011**: The system shall decide the ring's position and size in the draw plan rather than while drawing.
 
 ## Prompts

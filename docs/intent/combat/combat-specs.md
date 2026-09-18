@@ -69,10 +69,10 @@ specs fix the structure those numbers are fed into.
 - [x] **COMBAT-ORDER-003**: When a character is about to act, the system shall read their rules from the first and shall propose the action and target of the first rule whose condition holds and whose action is legal for that character.
 - [x] **COMBAT-ORDER-004**: If a rule's action is not legal for that character, then the system shall pass over that rule and read the next.
 - [x] **COMBAT-ORDER-005**: If no rule holds and offers a legal action, then the system shall propose nothing and shall ask the player as it would for a character with no orders at all.
-- [x] **COMBAT-ORDER-006**: The system shall take a proposed action when the player confirms it or when its countdown expires, whichever comes first.
-- [x] **COMBAT-ORDER-017**: The system shall resolve a proposal taken by its countdown exactly as one the player confirmed, with no difference in what happens.
-- [x] **COMBAT-ORDER-018**: When the player takes any action on a character's turn, the system shall stop that turn's countdown and shall not resume it.
-- [x] **COMBAT-ORDER-019**: While a character has no proposal, the system shall run no countdown and shall wait for the player without limit.
+- [x] **COMBAT-ORDER-006**: The system shall not take a proposed action until the player confirms it.
+- [x] **COMBAT-ORDER-017**: The system shall resolve a proposal the player confirmed exactly as one chosen by hand, with no difference in what happens.
+- [x] **COMBAT-ORDER-018**: When the player takes any action other than the one proposed, the system shall drop the proposal for that turn.
+- [x] **COMBAT-ORDER-019**: The system shall wait for the player at every character's turn, without limit, whether or not anything is proposed.
 - [x] **COMBAT-ORDER-007**: The system shall allow the player to take any legal action in place of the one proposed.
 - [x] **COMBAT-ORDER-008**: The system shall offer these conditions and no others: always; an ally below a share of their hit points; no ally below a share of their hit points; a rule not yet taken this encounter; a spell slot of the required rank remaining; the actor's own front row broken.
 - [x] **COMBAT-ORDER-009**: The system shall count a rule guarded by "not yet taken this encounter" as taken only when its action is actually taken, and shall forget that it was taken when the encounter ends.

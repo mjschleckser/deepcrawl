@@ -250,19 +250,17 @@ a fight the player transcribes rather than plays. **Standing orders are how a pa
 once what it usually does**, so the repetitive nine tenths of an encounter can be
 confirmed instead of composed.
 
-**A proposal takes itself if it is left alone.** It is shown with a countdown, and when
-that runs out the action is taken as proposed. Any move the player makes on that
-character's turn stops the countdown dead and hands the turn back: the proposal is a
-default, not a commitment, and the moment a player has an opinion the default stops
-having one.
+**A proposal is never taken without a press.** It fills the choice in and offers itself
+as one control — *Attack Goblin* rather than *Attack*, and then *which goblin* — so a
+turn a character's orders already answer is one press instead of three, and never zero.
+An order removes the composing and leaves the deciding exactly where it was.
 
-That is what makes a fight play rather than transcribe. A party whose orders fit the
-situation fights itself while the player watches; a party whose orders do not is
-exactly where the player's attention was wanted anyway. How long the countdown runs,
-and what it looks like while it does, belong to the presentation segment.
+The fight therefore waits, indefinitely and without penalty, at every character. That
+is the point at which a player looks at the screen, and a fight that moved past it on
+its own would be a fight they watched rather than fought.
 
-A character with no proposal has no countdown. The fight waits, indefinitely and
-without penalty, because there is nothing to take by default.
+A character with no matching rule is asked with nothing filled in, which is the same
+wait with more to think about.
 
 ### What an order is
 
@@ -456,8 +454,8 @@ whether or not it can see.
 | Speed | Dexterity itself, with a floor of one | A derived initiative statistic; a flat rate modified by equipment | A second statistic meaning the same thing is a second statistic to explain and to balance. Using the attribute undisguised also gives the widest honest spread — three actions to one across the range — which is what makes an extraordinarily quick character feel extraordinary. |
 | The cost of an action | One full bar for every action, carried on the action rather than assumed | A constant in the resolver; per-action weights from the start | Putting the cost on the action means weapon weight can arrive later as content rather than as a restructuring. Making them all equal now means there is nothing to balance before there are weapons to balance it against. |
 | Surprise | The aware side starts with full bars, the surprised side with empty ones | A free round for the aware side | A free round hands the same head start to a sluggish ambusher as to a quick one. Starting the bars apart lets speed decide how much an ambush is actually worth, using the mechanism the fight already has. |
-| Standing orders | Propose an action, and take it when a countdown runs out unless the player intervenes | A proposal that waits for a press; orders that act instantly and unattended; no orders at all | A proposal that waits for a press removes the composing but keeps the pressing, so a five-member party is still five presses an exchange. A countdown removes both while leaving every one of them recoverable: the player who wants the turn takes it, and the player who does not gets a fight that plays. Acting instantly would take the turn before anybody could see it was about to be taken. |
-| Interrupting a countdown | Any move the player makes on that turn stops it, and it does not resume | A pause control; a countdown that resumes after a moment's inactivity | A countdown that can come back is one the player has to keep watching. Stopping for good means reaching for the screen is always enough, and there is never a race between a decision and a clock. |
+| Standing orders | Propose an action and a target, and wait for a press | Taking the proposal when a countdown runs out; orders that act instantly and unattended; no orders at all | An order's work is the composing — which action, against which of six goblins — and that is what a proposal removes. Taking the turn on a timer removes the press as well, and with it the moment the player looks at the screen: a fight that advances on its own is one they watch. One press a turn is the price of it still being their fight. |
+| The countdown mechanism | Built, and switched off | Removed entirely; left running | Whether a fight should play itself is a question worth being able to answer twice. The machinery is a constant and a branch, it stays under test, and turning it on is a one-line change rather than a rebuild. |
 | Reading an order | First matching rule, top to bottom | Weights and scores; a scripting language | A list read from the top is something a player can predict by looking at it and fix by dragging a line. A scoring system produces behaviour nobody can account for, which in a system meant to reduce fuss is a new kind of fuss. |
 | What "an ally" means | The character whose order it is counts among their own allies | Allies meaning every other member of the party; the actor counted only when nobody else qualifies | A cleric forbidden to heal themselves has an order list that proposes nothing the moment they are the one bleeding, and a lone survivor's orders stop working exactly when they are all that is left. The cost — a cleric lower than the fighter treating themselves first — is precisely what "the ally with the fewest hit points" says it will do. |
 | A failed escape | Costs the bar of whoever attempted it, and nothing else | Every conscious character's bar, as a round once cost; no further attempt until all have acted | A party that cannot escape is already in enough trouble, and charging the whole party for one character's failed attempt punishes the situation rather than the decision. A party that keeps trying is a party spending every action on the door instead of on the fight, which is cost enough without a rule to enforce it. |
@@ -494,22 +492,21 @@ whether or not it can see.
 17. ✅ **The fight's time never advances while anyone is being asked what to do.**
 18. ✅ **Surprise starts the aware side's bars full and the surprised side's empty.**
 19. ✅ **A combatant who falls loses the readiness they had banked.**
-20. ✅ **Standing orders propose an action and a target**, which is taken when its countdown runs out unless the player takes the turn first.
+20. ✅ **Standing orders propose an action and a target**, which is taken only when the player presses for it.
 21. ✅ **Orders are an ordered list, read top to bottom, first match winning**, with an illegal proposal falling through to the next rule.
 22. ✅ **Order targets resolve at the moment of acting**, and give way to the random target darkness imposes.
 23. ✅ **A character counts among their own allies** for every condition and target that names one.
 24. ✅ **Equal candidates for a target are settled by the acting order**, never by a roll.
 25. ✅ **A failed escape costs only the bar of the character who attempted it.**
 26. ✅ **Defending lasts until that character next acts**, like every other action's one turn of effect.
-27. ✅ **A proposal left alone is taken**; any move the player makes stops its countdown for good.
-28. ✅ **A character with no proposal has no countdown**, and the fight waits without penalty.
+27. ✅ **Every action is taken by a press**, proposed or not; the fight waits at every character without penalty.
 
 ### Deferred
 
 1. **Per-action costs.** Every action costs one full bar. The cost lives on the action so that a heavy weapon can cost more later, but no action differs from another yet and no weapon exists to make one.
 2. **Conditions and targets beyond the listed set.** The vocabulary is deliberately small. Conditions about status effects, about enemy kinds, and about the party's remaining resources all want to exist and none of them can until the systems they read do.
 3. **Where orders are authored.** That a character carries an order list and that it persists between encounters is settled; the screen on which a player writes one belongs to the party segment and is unbuilt.
-4. **Turning the countdown off.** Whether a player may hold every proposal indefinitely, for a fight or for good, is unanswered. The countdown is stoppable one turn at a time, which is enough to play with and not enough to set a preference.
+4. **Taking a proposal on a timer.** The countdown that would take a proposal unattended is built and switched off. Whether a fight should be able to play itself — for a player who has set their orders and wants to watch — is a real question, and the answer is one constant away.
 5. **Ability definitions.** Skill ranks unlock abilities, but what each one does is unauthored content.
 6. **Enemy rosters and their pot values.** What any enemy is, and what it is worth, belongs with the enemies segment.
 7. **Enemy behaviour beyond choosing a legal target.** Focus fire, retreat, protecting casters — all later.

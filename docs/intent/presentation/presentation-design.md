@@ -258,8 +258,13 @@ has to say *this one, now*, or a fight resolved one combatant at a time reads as
 that writes itself.
 
 **Actions play out a beat at a time.** Each one lands, its actor highlighted, and a
-short pause follows before the next. Without the pause a fight run on standing orders
-would resolve between two frames and arrive as a wall of text nobody watched happen.
+short pause follows before the next. Without the pause a fight would resolve between two
+frames and arrive as a wall of text nobody watched happen.
+
+**An attack shakes its attacker's card**, a quick vertical judder that decays over the
+beat. Nothing else in the fight moves, so a blow that lands is otherwise a number
+changing somewhere on a panel of numbers — easy to miss entirely, and easier still to
+miss *whose* it was. The card that moves is the card that swung.
 
 That pause is the one thing in this segment that needs a clock. **The ticker is stopped
 except while a fight has actions to play out** — it starts when there is a beat to wait
@@ -272,22 +277,45 @@ simulation's, advances in beats, and never moves while a decision is pending. Th
 **beat between actions** and the **countdown on a proposal** are the player's, measured
 in seconds, and have no effect on anything the simulation resolves.
 
-### The countdown on a proposal
+### Being told whose turn it is
 
-Where a character's standing orders propose an action, the proposal is shown with a
-**countdown ring**: a small circle beside that character's readiness bar, its outer ring
-filling as the seconds run, with an `A` at its centre for the action about to be taken
-on its own. It runs for a second and a half.
+While a character is waiting to be told what to do, the panel says so in as many words:
+**"Bram is ready to act!"**. It names the character rather than asking a question,
+because the question is answered by the buttons underneath it and the thing the player
+actually needs to know is which of five cards the next press belongs to.
 
-The ring is the whole of the affordance. It says three things at once — that something
-is about to happen, how long there is to stop it, and that it is happening because of
-an order rather than because of the player.
+**While nothing is waiting on the player, that line is not there at all.** Bars filling
+and enemies swinging are not a prompt, and a prompt left standing over them would be
+inviting a press that nothing is listening for.
 
-**Any move the player makes stops it.** Choosing an action, choosing a target, backing
-out: all of them take the turn back, the ring goes, and the fight waits as long as it
-is asked to. Nothing resumes a stopped countdown.
+**A proposal is a control of its own**, first in the row and named for what it would
+actually do — *Attack Goblin*, not *Attack*. Taking it is the whole turn in one press,
+which is what an order was for; every other control is still there, and taking one of
+them drops the proposal.
 
-A character with no proposal has no ring, and the fight simply waits.
+### Announcing an ambush
+
+An encounter one side walked into unready opens with a card across the view saying
+**Ambush!**, held for a few seconds before the fight begins.
+
+Bars that start full are otherwise unexplained. A player who sees three goblins act
+before anybody on their side moves has been given the rule and no way to read it, and
+the reasonable conclusion — that the fight is broken — is worse than the rule itself.
+The card is the smallest thing that says *this is why*.
+
+The fight does not advance behind it. Nothing plays, nothing counts, and the card can
+be dismissed early by anyone who already knows what happened.
+
+### The countdown on a proposal, built and switched off
+
+A proposal can be shown with a **countdown ring** — a small circle beside that
+character's readiness bar, its outer ring filling as the seconds run, an `A` at its
+centre — which takes the action when it completes.
+
+**It is switched off.** Every action is taken by a press, so the ring would be counting
+down to nothing. The machinery stays, under test and behind one constant, because
+whether a fight should be able to play itself for a player who has set their orders is
+a question worth being able to answer twice without rebuilding anything.
 
 ### The log carries the fight
 
@@ -463,7 +491,9 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 | Readiness | A bar on every card, drawn from the simulation's own value | A numbered initiative list; an order-of-play queue along one edge | A bar is read without counting and compares two combatants at a glance, which is the question a player actually has in a fight. A queue would have to be recomputed and redrawn on every action and still would not show how close anybody is. |
 | The beat between actions | A short pause, with the acting combatant highlighted | Resolving everything down to the next decision at once; animating each action properly | Without a pause a fight on standing orders lands between two frames and is read afterwards as text, which is the thing the log exists to rescue rather than the thing to build on. Real animation is a larger project and would need the ticker running throughout rather than between actions. |
 | The ticker | Stopped, except while a fight has actions left to play out | Stopped always, with actions resolved instantly; a conventional render loop | The rule was never about the ticker; it was about not redrawing an unchanged screen sixty times a second. A screen that is changing on its own is the one case it was not written for, and the exception is bounded to a fight with work queued. |
-| The countdown | A ring beside the readiness bar, filling over a second and a half, marked `A` | A number counting down; a progress bar across the panel; no visible countdown at all | A ring is small enough to sit on a card and legible enough to read without being looked at directly. A bare number says how long but not what is about to happen; nothing at all makes an action appear to have been taken by nobody. |
+| Announcing an ambush | A card across the view saying Ambush!, held a few seconds | Colouring the bars that start full; a line in the log; explaining nothing | Bars that start full are the one thing on the screen with no cause visible anywhere, and a player who cannot read them concludes the fight is broken. The log is read after the fact, and a colour is a code nobody has been taught. |
+| The prompt | Naming who is ready, and absent while nothing waits | Asking what the character will do; a prompt that stays up throughout | The buttons already say what may be done; what the player needs is which of five cards the next press belongs to. A prompt standing over a fight that is playing invites a press nothing is listening for. |
+| Showing an attack | A vertical judder on the attacker's card, decaying over the beat | Moving the card toward its target; flashing the one that was hit; a larger animation | Nothing else in the fight moves, so the smallest honest motion is enough, and putting it on the attacker answers *whose blow was that* rather than only *that something happened*. Moving toward a target is a real animation and wants a real animation system. |
 | Showing a round | A text log built from the round's own event log | Animating each action; showing only the resulting state | Nothing animates, so a round lands in one frame. Without a record the player sees the aftermath and never learns what happened. The log is the fight as perceived. |
 | Illegal options | Not offered at all | Offered and refused when chosen | An option that cannot be taken should not be presented. Refusing after the fact teaches the rules by failure, which in a fight is expensive. |
 | Backing out | Steps back to the previous character | Cancelling only the current choice | The party commits to a whole round before any of it resolves, so reconsidering should reach the whole round rather than only its last decision. |
@@ -490,7 +520,10 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 17. ✅ **The build's version is drawn in the bottom-left corner**, its patch number the commit count, fixed at build time.
 18. ✅ **Every combatant's card carries a readiness bar**, and the combatant acting is highlighted.
 19. ✅ **Actions play out a beat at a time**, and the ticker runs only while a fight has actions left to play.
-20. ✅ **A proposal is shown with a countdown ring** marked `A`, which any move by the player stops for good.
+20. ✅ **Every action is taken by a press.** The countdown ring that would take a proposal unattended is built, tested, and switched off.
+21. ✅ **The prompt names who is ready to act**, and is absent while nothing waits on the player.
+22. ✅ **An ambush is announced by a card** held over the view before the fight begins.
+23. ✅ **An attack shakes its attacker's card**, which is the only motion in a fight.
 12. ✅ **Turning about has a key but no control**, being two taps of one the player already uses.
 10. ✅ **Labels name the action**, with any keyboard hint as secondary text.
 7. ✅ **Prompts are drawn from the simulation's pending confirmation**, never from the renderer's own flag.
