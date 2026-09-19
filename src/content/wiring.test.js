@@ -5,7 +5,9 @@ import {
   computeSight, perform, partyPosition, tickCount, isTileDiscovered, isTrapKnown,
   recordTrapDetected, Verb,
 } from '../sim/exploration.js';
-import { Condition, Row, CharacterClass, Skill, character, roster, skillRank, applyDamage } from '../sim/party.js';
+import {
+  Attribute, Condition, Row, CharacterClass, Skill, character, roster, skillRank, applyDamage,
+} from '../sim/party.js';
 import { Outcome, Action, encounterOutcome, nextActor, takeAction } from '../sim/combat.js';
 import { isAware } from '../sim/enemies.js';
 import { createCampaign } from './campaign.js';
@@ -57,6 +59,18 @@ describe('a campaign has a party', () => {
     expect(roster(party)).toHaveLength(5);
     expect(roster(party).filter((c) => c.row === Row.FRONT)).toHaveLength(3);
     expect(roster(party).filter((c) => c.row === Row.BACK)).toHaveLength(2);
+  });
+
+  it('gives every character their own speed, so no two bars fill together', () => {
+    const { party } = booted();
+    const speeds = roster(party).map((c) => c.attributes[Attribute.DEXTERITY]);
+
+    // Five scores, five rates: a fight in lockstep shows nothing about who is quick.
+    expect(new Set(speeds).size).toBe(5);
+    // Far enough apart to be read off the bars, and no slower at the back than the
+    // speed a party needs to outrun what it walks into.
+    expect(Math.max(...speeds)).toBeGreaterThanOrEqual(1.5 * Math.min(...speeds));
+    expect(Math.min(...speeds)).toBeGreaterThanOrEqual(10);
   });
 
   it('brings one of each class, so every system has someone to use it', () => {

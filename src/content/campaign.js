@@ -14,6 +14,7 @@ import {
   resolveTileLight, isTileDiscovered, setCombatActive,
 } from '../sim/exploration.js';
 import {
+  Attribute,
   createParty, createCharacter, addCharacter, awardEncounter, partyStepCost,
   Row, CharacterClass,
 } from '../sim/party.js';
@@ -41,12 +42,18 @@ const CUT_DOWN_THE_WEAKEST = [
   }),
 ];
 
+/**
+ * Dexterity is speed, so five scores are five rates of filling, and a goblin's 11
+ * falls in among them rather than ahead of them all. The floor is held at ten because
+ * a party flees no faster than its hindmost, and a slower one could never outrun the
+ * first thing it meets.
+ */
 const STARTING_PARTY = [
-  { id: 'bram', name: 'Bram', characterClass: CharacterClass.FIGHTER, row: Row.FRONT, orders: CUT_DOWN_THE_WEAKEST },
-  { id: 'rook', name: 'Rook', characterClass: CharacterClass.FIGHTER, row: Row.FRONT, orders: CUT_DOWN_THE_WEAKEST },
-  { id: 'tam', name: 'Tam', characterClass: CharacterClass.THIEF, row: Row.FRONT, orders: CUT_DOWN_THE_WEAKEST },
-  { id: 'isolde', name: 'Isolde', characterClass: CharacterClass.MAGE, row: Row.BACK },
-  { id: 'wren', name: 'Wren', characterClass: CharacterClass.CLERIC, row: Row.BACK },
+  { id: 'bram', name: 'Bram', characterClass: CharacterClass.FIGHTER, row: Row.FRONT, attributes: { [Attribute.DEXTERITY]: 13 }, orders: CUT_DOWN_THE_WEAKEST },
+  { id: 'rook', name: 'Rook', characterClass: CharacterClass.FIGHTER, row: Row.FRONT, attributes: { [Attribute.DEXTERITY]: 11 }, orders: CUT_DOWN_THE_WEAKEST },
+  { id: 'tam', name: 'Tam', characterClass: CharacterClass.THIEF, row: Row.FRONT, attributes: { [Attribute.DEXTERITY]: 16 }, orders: CUT_DOWN_THE_WEAKEST },
+  { id: 'isolde', name: 'Isolde', characterClass: CharacterClass.MAGE, row: Row.BACK, attributes: { [Attribute.DEXTERITY]: 12 } },
+  { id: 'wren', name: 'Wren', characterClass: CharacterClass.CLERIC, row: Row.BACK, attributes: { [Attribute.DEXTERITY]: 10 } },
 ];
 
 /** Bands standing on a freshly built floor, before anyone has disturbed it. */
