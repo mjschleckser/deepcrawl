@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { LightLevel, STEP_DELTA } from '../sim/floor.js';
+import { LightLevel, STEP_DELTA, EdgeKind, setEdge, isEdgeOpen } from '../sim/floor.js';
 import { makeRng } from '../sim/rng.js';
 import {
   computeSight, perform, partyPosition, tickCount, isTileDiscovered, isTrapKnown,
@@ -183,6 +183,27 @@ describe('walking into a warband', () => {
     walkUntil(campaign, (c) => c.encounter !== null || shared(c), 400);
 
     expect(shared(campaign)).toBe(false);
+  });
+
+  // @spec EXPLORE-BOUND-012
+  it('opens the door it met a warband through, and is not ambushed by it', () => {
+    const campaign = booted();
+    const { state } = campaign;
+    const floor = state.floors.get(state.party.floorId);
+    const { dx, dy } = STEP_DELTA[state.party.facing];
+    const ahead = { x: state.party.tile.x + dx, y: state.party.tile.y + dy };
+    setEdge(floor, state.party.tile.x, state.party.tile.y, state.party.facing, EdgeKind.DOOR);
+    const planted = state.roamers[0];
+    planted.floorId = state.party.floorId;
+    planted.x = ahead.x;
+    planted.y = ahead.y;
+
+    perform(state, { verb: Verb.STEP_FORWARD });
+
+    expect(campaign.encounter).not.toBeNull();
+    expect(isEdgeOpen(floor, state.party.tile.x, state.party.tile.y, state.party.facing)).toBe(true);
+    // Seen through the door they opened, so the warband is not ambushing them.
+    expect(campaign.encounter.surprisedSide).not.toBe('PARTY');
   });
 
   it('stops the party walking while a fight is on', () => {

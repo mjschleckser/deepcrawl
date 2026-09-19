@@ -490,6 +490,10 @@ export function advanceForCamp(state, ticks) {
   return advance(state, ticks);
 }
 
+/** An edge a step opens on its way through, as against one it cannot pass at all. */
+const isDoorway = (kind) =>
+  kind === EdgeKind.DOOR || kind === EdgeKind.LOCKED_DOOR || kind === EdgeKind.SECRET_DOOR;
+
 /**
  * Why a step cannot be taken, or null if it can. Every blocked reason presents
  * identically to the caller, so an undiscovered secret door gives nothing away.
@@ -667,6 +671,14 @@ function takeStep(state, heading) {
   // on the far tile resolves — and a fight broken off from leaves real ground between
   // them rather than ending with the pursuer standing on the party.
   if (state.hooks.isTileOccupied({ floorId: state.party.floorId, tile: { ...target } })) {
+    // The door opens all the same, and the party looks through it before the meeting
+    // is resolved: a fight through a shut door is one nobody can see, fought against
+    // a warband the party is counted unaware of while standing face to face with it.
+    // @spec EXPLORE-BOUND-012
+    if (isDoorway(getEdge(floor, from.x, from.y, heading))) {
+      openEdge(floor, from.x, from.y, heading);
+      computeSight(state);
+    }
     state.hooks.onContactCheck({
       floorId: state.party.floorId,
       tile: { ...from },
@@ -687,8 +699,7 @@ function takeStep(state, heading) {
     return { blocked: false, events: [], confirmationRequired: state.pendingConfirmation };
   }
 
-  const edgeKind = getEdge(floor, from.x, from.y, heading);
-  if (edgeKind === EdgeKind.DOOR || edgeKind === EdgeKind.LOCKED_DOOR || edgeKind === EdgeKind.SECRET_DOOR) {
+  if (isDoorway(getEdge(floor, from.x, from.y, heading))) {
     // Opening is part of the step, not a second action charged separately.
     openEdge(floor, from.x, from.y, heading);
   }

@@ -8,6 +8,7 @@ import {
   TileFeature,
   Direction,
 } from './floor.js';
+import { createLightSource } from './light.js';
 import {
   createExploration,
   perform,
@@ -15,6 +16,7 @@ import {
   discoverEdge,
   tickCount,
   partyPosition,
+  isTileDiscovered,
   Verb,
   PartyAction,
   StepEvent,
@@ -33,6 +35,7 @@ function exploration(floors, opts = {}) {
     facing: opts.facing ?? Direction.NORTH,
     hooks: opts.hooks,
     keys: opts.keys,
+    lightSources: opts.lightSources,
   });
 }
 
@@ -554,6 +557,25 @@ describe('stepping into something', () => {
       floorId: 'f1', tile: { x: 1, y: 1 }, at: { x: 1, y: 0 },
     });
     expect(result.events).toEqual([StepEvent.CONTACT_CHECKED]);
+  });
+
+  // @spec EXPLORE-BOUND-012
+  it('opens the door it met the warband through, and looks through it', () => {
+    const floor = openFloor();
+    setEdge(floor, 1, 1, Direction.NORTH, EdgeKind.DOOR);
+    const hooks = occupiedAhead();
+    const state = exploration([floor], {
+      hooks,
+      lightSources: [createLightSource({ id: 'torch', brightRadius: 2, dimRadius: 4, remainingTicks: 99, lit: true })],
+    });
+
+    perform(state, { verb: Verb.STEP_FORWARD });
+
+    expect(isEdgeOpen(floor, 1, 1, Direction.NORTH)).toBe(true);
+    // Sight was recomputed through the open door before contact was checked, so the
+    // tile they are about to fight on is one they have seen.
+    expect(isTileDiscovered(state, 'f1', 1, 0)).toBe(true);
+    expect(hooks.onContactCheck).toHaveBeenCalledTimes(1);
   });
 
   // @spec EXPLORE-BOUND-010

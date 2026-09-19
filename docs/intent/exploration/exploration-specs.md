@@ -166,6 +166,7 @@ tuning the game does not rewrite its specs.
 ## Segment boundaries
 
 - [x] **EXPLORE-BOUND-001**: When the party attempts to step into a tile a roaming enemy occupies, the system shall begin an encounter with that enemy instead of taking the step.
+- [x] **EXPLORE-BOUND-012**: When a step into a tile a roaming enemy occupies crosses a door or a discovered secret door, the system shall open that edge and recompute sight before checking contact.
 - [x] **EXPLORE-BOUND-010**: While a step is barred by a roaming enemy, the system shall leave the party's tile, facing, and clock unchanged and resolve no tile feature, trap, or re-stocking.
 - [x] **EXPLORE-BOUND-011**: When a roaming enemy reaches the party while spending the ticks a step consumed, the system shall begin an encounter at that step's contact check.
 - [x] **EXPLORE-BOUND-002**: When an encounter begins, the system shall hand combat a payload naming the enemy group, the light level of the encounter tile, and which side was aware of the other.

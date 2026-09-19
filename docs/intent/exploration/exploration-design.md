@@ -231,6 +231,14 @@ share a tile. That invariant is what makes breaking off a fight worth anything â
 warband cannot be standing on the party when they turn to walk away, and so cannot
 re-open the fight with their next step.
 
+**A door between the two opens anyway, before the meeting is resolved.** Pushing a
+door open is the same act whichever side of it something is standing on, and the
+alternative is a fight through a shut door: the party cannot see what they walked into,
+and the encounter counts them unaware of a warband they are standing face to face with.
+The door opens, sight is recomputed against it, and only then does contact resolve â€” so
+whether the party was surprised is decided by what they can see now rather than by what
+the door hid a moment ago.
+
 On a successful step, these resolve in a fixed order:
 
 1. The party's tile becomes the target tile.
