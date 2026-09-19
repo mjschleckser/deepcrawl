@@ -574,14 +574,15 @@ function nextTurn(fight) {
 
 /**
  * Keep the ambush card up while any ambusher still holds the full bar they began with.
- * Acting spends it and falling drops it, so either ends that one's part in the ambush.
+ * Acting spends it and falling drops it, so either ends that one's part in the ambush
+ * for good: a quick ambusher who fills again is simply fast, not ambushing twice.
  *
  * @spec PRESENT-READY-015
  * @spec PRESENT-READY-026
  */
 function announce(fight) {
-  const waiting = fight.ambushers.some((id) => readinessOf(fight.encounter, id) >= FULL_BAR);
-  fight.notice = waiting ? { text: 'Ambush!' } : null;
+  fight.ambushers = fight.ambushers.filter((id) => readinessOf(fight.encounter, id) >= FULL_BAR);
+  fight.notice = fight.ambushers.length > 0 ? { text: 'Ambush!' } : null;
 }
 
 function end(fight, result) {

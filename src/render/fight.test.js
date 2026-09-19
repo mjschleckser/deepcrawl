@@ -717,6 +717,22 @@ describe('a fight that plays itself out', () => {
   });
 
   // @spec PRESENT-READY-015
+  it('does not bring the card back when an ambusher comes ready a second time', () => {
+    const quick = (id) => createEnemy({ id, name: 'Goblin', row: Row.FRONT, hitPoints: 30, dexterity: 30 });
+    const fight = opening({ partyAware: false, enemies: [quick('g1'), quick('g2')] });
+
+    playEnemyTurn(fight);
+    playEnemyTurn(fight);
+    expect(planOf(fight).notice).toBeNull();
+
+    // Three times the party's speed: the goblins are full again before anybody else.
+    untilReady(fight);
+    expect(fight.actor.side).toBe('ENEMIES');
+
+    expect(planOf(fight).notice).toBeNull();
+  });
+
+  // @spec PRESENT-READY-015
   it('keeps the card up while an ambushing party is still to act', () => {
     const fight = opening({ enemiesAware: false });
 
