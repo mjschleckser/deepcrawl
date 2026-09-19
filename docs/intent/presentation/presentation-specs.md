@@ -10,7 +10,7 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 
 - [x] **PRESENT-SCENE-001**: The system shall draw three layers in order: the first-person view, the automap, then the HUD.
 - [x] **PRESENT-SCENE-002**: The system shall keep the renderer's ticker stopped while nothing is playing out on its own, so that no redraw occurs merely because time has passed.
-- [x] **PRESENT-SCENE-011**: While a fight has actions left to play out, the system shall run the ticker, and shall stop it as soon as the fight is waiting on the player.
+- [x] **PRESENT-SCENE-011**: While a fight is playing rather than waiting on the player, the system shall run the ticker, and shall stop it as soon as the fight is waiting on the player.
 - [x] **PRESENT-SCENE-003**: When an action changes simulation state, the system shall redraw — including a turn, which changes facing without advancing the clock.
 - [x] **PRESENT-SCENE-004**: When a prompt is answered, the map is expanded or collapsed, or the window is resized, the system shall redraw.
 - [x] **PRESENT-SCENE-005**: If an action changes no simulation state, then the system shall not redraw.
@@ -88,12 +88,16 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 
 ## A fight's readiness
 
-- [x] **PRESENT-READY-001**: The system shall draw a readiness bar on every combatant's card, filled to the proportion the simulation reports.
+- [x] **PRESENT-READY-001**: The system shall draw each standing combatant's readiness as a fill across their whole card, from the left edge to the proportion the simulation reports, in a brighter shade of the card's colour laid over a subdued one.
+- [x] **PRESENT-READY-022**: The system shall draw a hit-point bar along the foot of every standing combatant's card, filled to the proportion of their maximum hit points they have left.
+- [x] **PRESENT-READY-023**: The system shall colour a hit-point bar as healthy above half of maximum, wounded above a quarter, and critical at or below a quarter.
+- [x] **PRESENT-READY-024**: While no combatant is ready and nothing is waiting on the player, the system shall advance the fight's time by one beat for each fixed span of real time.
+- [x] **PRESENT-READY-025**: While a beat of filling is in progress, the system shall draw each fill at the readiness the simulation reports for that point in the beat.
 - [x] **PRESENT-READY-002**: The system shall draw the readiness bar from the simulation's value and from no count of its own.
 - [x] **PRESENT-READY-003**: While a combatant is acting, the system shall draw that combatant's card as highlighted, on either side alike.
 - [x] **PRESENT-READY-004**: The system shall highlight at most one combatant at a time.
 - [x] **PRESENT-READY-005**: When the simulation resolves an action, the system shall pause for a fixed beat before playing the next.
-- [x] **PRESENT-READY-006**: The system shall measure the beat and the proposal countdown in real seconds, and shall not let either advance the fight's own time.
+- [x] **PRESENT-READY-006**: The system shall measure the beat between actions and the proposal countdown in real seconds, and shall not let either advance the fight's own time.
 - [x] **PRESENT-READY-007**: While automatic confirmation is enabled and a character's standing orders propose an action, the system shall draw a countdown ring beside that character's readiness bar, its outer ring filled to the proportion of the countdown elapsed and the letter `A` at its centre.
 - [x] **PRESENT-READY-008**: While automatic confirmation is disabled, the system shall draw no countdown ring, run no countdown, and take no action the player has not pressed for.
 - [x] **PRESENT-READY-012**: While automatic confirmation is enabled and a proposal's countdown completes, the system shall take the proposed action.
@@ -103,8 +107,8 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-READY-021**: When the player takes the control offering a proposal, the system shall take that proposal.
 - [x] **PRESENT-READY-013**: While a character is waiting to be told what to do, the system shall name that character as ready to act.
 - [x] **PRESENT-READY-014**: While nothing is waiting on the player, the system shall draw no prompt at all.
-- [x] **PRESENT-READY-015**: When an encounter begins with one side unready, the system shall draw a card announcing the ambush and shall hold the fight behind it for a fixed span.
-- [x] **PRESENT-READY-016**: The system shall let the player dismiss an ambush card before its span has run.
+- [x] **PRESENT-READY-015**: When an encounter begins with one side unready, the system shall draw a card announcing the ambush until every combatant who began it with a full bar has acted or stopped being able to act.
+- [x] **PRESENT-READY-026**: While an ambush card is drawn, the system shall play the fight as it would without the card.
 - [x] **PRESENT-READY-017**: When an encounter begins with neither side unready, the system shall draw no ambush card.
 - [x] **PRESENT-READY-018**: When an attack resolves, the system shall offset the attacker's card vertically by an amount that decays to nothing over the beat.
 - [x] **PRESENT-READY-019**: The system shall decide each card's offset in the draw plan rather than while drawing.

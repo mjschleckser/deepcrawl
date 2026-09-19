@@ -268,10 +268,18 @@ export async function createRenderer(mount) {
 const FIGHT_COLOURS = {
   panel: 0x0b0906,
   frame: 0x6b5640,
-  enemy: 0x6b3a2c,
+  // Each side's card in two shades: the subdued ground, and the brighter fill that
+  // readiness lays across it.
+  enemy: 0x3a211a,
+  enemyReady: 0x8a4a35,
   enemyDown: 0x241713,
-  ally: 0x3a4a30,
+  ally: 0x232d1d,
+  allyReady: 0x56703f,
   allyDown: 0x1a1d16,
+  // Hit points, by how bad it is.
+  healthy: 0x6fae4f,
+  wounded: 0xd8a33a,
+  critical: 0xc8412e,
   text: 0xe8d9a8,
   dim: 0x8a7354,
   banner: 0xd8b46a,
@@ -301,10 +309,18 @@ function drawFight(container, plan) {
 
   // Every card was placed by the plan; this only paints it, at whatever offset the
   // plan gave it.
-  const drawCard = (card, downColour, upColour) => {
+  const drawCard = (card, downColour, upColour, readyColour) => {
     const member = { ...card, y: card.y + (card.offsetY ?? 0) };
     graphics.rect(member.x, member.y, member.width, member.height)
       .fill(member.down ? downColour : upColour);
+
+    // The card is the readiness bar: a brighter shade swept in from the left edge.
+    // @spec PRESENT-READY-001
+    if (!member.down && member.readiness > 0) {
+      graphics.rect(member.x, member.y, member.width * member.readiness, member.height)
+        .fill(readyColour);
+    }
+
     // Something has to say "this one, now", or a fight resolved one at a time reads as
     // a log that writes itself.
     // @spec PRESENT-READY-003
@@ -314,17 +330,22 @@ function drawFight(container, plan) {
         color: member.acting ? FIGHT_COLOURS.banner : FIGHT_COLOURS.frame,
       });
 
-    // How full their bar is, along the foot of the card.
-    // @spec PRESENT-READY-001
-    if (!member.down && member.readiness !== undefined) {
-      const barHeight = Math.max(2, 3 * scale);
+    // Hit points along the foot of the card, coloured by how bad it is.
+    // @spec PRESENT-READY-022
+    // @spec PRESENT-READY-023
+    if (!member.down && member.health !== undefined) {
+      const barHeight = Math.max(3, 4 * scale);
       const inset = 3 * scale;
       const width = member.width - inset * 2;
       const y = member.y + member.height - barHeight - inset * 0.6;
+      const colour = {
+        HEALTHY: FIGHT_COLOURS.healthy,
+        WOUNDED: FIGHT_COLOURS.wounded,
+        CRITICAL: FIGHT_COLOURS.critical,
+      }[member.wound];
       graphics.rect(member.x + inset, y, width, barHeight)
-        .fill({ color: FIGHT_COLOURS.frame, alpha: 0.35 });
-      graphics.rect(member.x + inset, y, width * member.readiness, barHeight)
-        .fill(member.readiness >= 1 ? FIGHT_COLOURS.banner : FIGHT_COLOURS.dim);
+        .fill({ color: 0x000000, alpha: 0.45 });
+      graphics.rect(member.x + inset, y, width * member.health, barHeight).fill(colour);
     }
 
     const tone = member.down ? FIGHT_COLOURS.dim : FIGHT_COLOURS.text;
@@ -335,12 +356,16 @@ function drawFight(container, plan) {
 
     const hp = label(member.down ? 'down' : `${member.hitPoints}/${member.maxHitPoints}`, Math.round(11 * scale), tone);
     hp.x = member.x + 5 * scale;
-    hp.y = member.y + member.height - hp.height - 5 * scale;
+    hp.y = member.y + member.height - hp.height - 9 * scale;
     container.addChild(hp);
   };
 
-  for (const member of plan.enemies) drawCard(member, FIGHT_COLOURS.enemyDown, FIGHT_COLOURS.enemy);
-  for (const member of plan.party) drawCard(member, FIGHT_COLOURS.allyDown, FIGHT_COLOURS.ally);
+  for (const member of plan.enemies) {
+    drawCard(member, FIGHT_COLOURS.enemyDown, FIGHT_COLOURS.enemy, FIGHT_COLOURS.enemyReady);
+  }
+  for (const member of plan.party) {
+    drawCard(member, FIGHT_COLOURS.allyDown, FIGHT_COLOURS.ally, FIGHT_COLOURS.allyReady);
+  }
 
   let cursor = plan.cardsBottom + pad;
 

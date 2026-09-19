@@ -6,7 +6,9 @@ import {
   tapRegionsFor, MIN_TAP_PX, controlsFor, ControlKind,
   uiScale, contentColumn, MAX_UI_SCALE,
 } from './geometry.js';
-import { buildFightPlan, createFightController, FightPhase } from './fight.js';
+import {
+  buildFightPlan, createFightController, advanceClock, FightPhase, FILL_BEAT_MS,
+} from './fight.js';
 import { buildPromptPlan } from './promptplan.js';
 import { createController, pressPointer, layers } from './controller.js';
 import { createExploration } from '../sim/exploration.js';
@@ -35,6 +37,8 @@ function fightOf(viewport) {
     origin: { floorId: 'f1', x: 1, y: 1 },
   });
   const fight = createFightController({ encounter, viewport, onDraw: vi.fn() });
+  // Let the bars fill until the party is asked, which is where every control appears.
+  advanceClock(fight, FILL_BEAT_MS * 20);
   return { encounter, fight };
 }
 

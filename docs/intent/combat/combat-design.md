@@ -62,6 +62,7 @@ anybody — and acting spends the bar so that the filling begins again.
 | | |
 |---|---|
 | Readiness rises by | the combatant's Dexterity, each beat of the fight's time |
+| Readiness starts at | nothing, except the aware side's full bar in a surprise |
 | A combatant acts at | a full bar |
 | Acting costs | one full bar, whatever the action |
 | Anything left over | carries forward, so nothing is lost by coming ready a fraction late |

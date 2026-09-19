@@ -22,6 +22,8 @@ specs fix the structure those numbers are fed into.
 - [ ] **COMBAT-TIME-012**: The system shall not advance the exploration clock for any reason while an encounter is running.
 - [x] **COMBAT-TIME-013**: When a combatant stops being able to act, the system shall discard the readiness they had accumulated rather than holding it for their return.
 - [x] **COMBAT-TIME-014**: The system shall not raise the readiness of a combatant unable to act.
+- [x] **COMBAT-TIME-016**: The system shall report which combatant is ready to act without advancing the fight's time.
+- [x] **COMBAT-TIME-017**: The system shall report a combatant's readiness partway through a beat as their readiness plus that fraction of what the beat will add, and shall report no readiness for a combatant unable to act.
 - [x] **COMBAT-TIME-015**: The system shall allow a combatant whose readiness fills more than once between two actions of a slower combatant to act that many times.
 
 ## Surprise

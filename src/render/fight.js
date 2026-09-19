@@ -13,7 +13,8 @@ import { Condition, Row, Skill, character, roster } from '../sim/party.js';
 import { MIN_TAP_PX, ControlKind, uiScale, contentColumn } from './geometry.js';
 import {
   Action, Band, Outcome, meleeTargets, rangedTargets, frontRowHolds,
-  encounterOutcome, nextActor, takeAction, attemptFlee, readinessOf, FULL_BAR,
+  encounterOutcome, readyActor, advanceBeats, takeAction, attemptFlee, readinessOf,
+  readinessPartway, FULL_BAR,
 } from '../sim/combat.js';
 import { proposeFrom } from '../sim/orders.js';
 
@@ -32,8 +33,23 @@ export const FightPhase = { ACTING: 'ACTING', ENDED: 'ENDED' };
 export const BEAT_MS = 630;
 export const COUNTDOWN_MS = 1500;
 
-/** How long an ambush card is held over the fight before it begins. */
-export const AMBUSH_MS = 2200;
+/**
+ * How long one beat of the fight's time takes on screen while the bars are filling. It
+ * sets only the pace: at Dexterity 10 a bar fills in ten beats, whatever this is.
+ *
+ * @spec PRESENT-READY-024
+ */
+export const FILL_BEAT_MS = 250;
+
+/** How badly hurt a combatant is, by the share of their hit points left. */
+export const Wound = { HEALTHY: 'HEALTHY', WOUNDED: 'WOUNDED', CRITICAL: 'CRITICAL' };
+
+/** @spec PRESENT-READY-023 */
+export function woundOf(share) {
+  if (share > 0.5) return Wound.HEALTHY;
+  if (share > 0.25) return Wound.WOUNDED;
+  return Wound.CRITICAL;
+}
 
 /**
  * Whether a proposal takes itself when its countdown runs out.
@@ -131,16 +147,27 @@ export function buildFightPlan(
   {
     phase, outcome = null, pending = null, log = [], actor = null,
     countdown = 0, autoConfirm = false, notice = null, shakingId = null, shake = 0,
+    partway = 0,
   } = {},
 ) {
   const scale = uiScale(viewport);
   const column = contentColumn(viewport);
   const pad = CARD_GAP * scale;
 
-  // How full a bar is, as a share of one. Read from the simulation rather than counted
-  // here, so the screen and the fight cannot disagree about who is next.
+  // How full a bar is, as a share of one, partway through whatever beat is filling it.
+  // Read from the simulation rather than counted here, so the screen and the fight
+  // cannot disagree about who is next.
   // @spec PRESENT-READY-002
-  const filled = (id) => Math.min(1, readinessOf(encounter, id) / FULL_BAR);
+  // @spec PRESENT-READY-025
+  const filled = (id) => Math.min(1, readinessPartway(encounter, id, partway) / FULL_BAR);
+
+  // How much of their hit points somebody has left, and how bad that is.
+  // @spec PRESENT-READY-022
+  // @spec PRESENT-READY-023
+  const healthOf = (who) => {
+    const share = who.maxHitPoints > 0 ? Math.max(0, who.hitPoints) / who.maxHitPoints : 0;
+    return { health: share, wound: woundOf(share) };
+  };
 
   // A quick vertical judder on whoever just swung, decaying to nothing over the beat.
   // Decided here rather than while drawing, like every other position.
@@ -158,6 +185,7 @@ export function buildFightPlan(
     hitPoints: e.hitPoints, maxHitPoints: e.maxHitPoints,
     // Kept in place: the shape of a line that has lost its middle is information.
     down: !standing(e),
+    ...healthOf(e),
     readiness: filled(e.id),
     acting: actor?.id === e.id,
     offsetY: offsetOf(e.id),
@@ -168,6 +196,7 @@ export function buildFightPlan(
     hitPoints: c.hitPoints, maxHitPoints: c.maxHitPoints,
     condition: c.condition,
     down: c.condition !== Condition.OK,
+    ...healthOf(c),
     readiness: filled(c.id),
     acting: actor?.id === c.id,
     offsetY: offsetOf(c.id),
@@ -486,20 +515,26 @@ export function createFightController({ encounter, viewport, onDraw }) {
     // Which "once this encounter" rules have fired, per character.
     ordersTaken: new Map(),
     // The player's clocks, in milliseconds: how long this proposal has been standing,
-    // how long since the last action played, and how long the shake has been running.
+    // how long since the last action played, how long the shake has been running, and
+    // how far into the beat of filling now under way.
     countdown: 0,
     beat: 0,
     shake: 0,
     shakingId: null,
+    fill: 0,
+    partway: 0,
     autoConfirm: AUTO_CONFIRM,
-    // A card held over the fight before it starts. Bars that begin full are the one
-    // thing on the screen with no cause visible anywhere.
+    // Whoever began with a full bar. The ambush lasts until the last of them has spent
+    // it, and the card announcing it lasts exactly as long.
     // @spec PRESENT-READY-015
     // @spec PRESENT-READY-017
-    notice: encounter.surprisedSide ? { text: 'Ambush!', elapsed: 0 } : null,
+    ambushers: encounter.surprisedSide
+      ? [...encounter.readiness.keys()].filter((id) => readinessOf(encounter, id) >= FULL_BAR)
+      : [],
+    notice: null,
   };
 
-  if (!fight.notice) nextTurn(fight);
+  nextTurn(fight);
   return fight;
 }
 
@@ -512,11 +547,21 @@ export function createFightController({ encounter, viewport, onDraw }) {
  * @spec PRESENT-FIGHT-005
  */
 function nextTurn(fight) {
+  announce(fight);
   const result = encounterOutcome(fight.encounter);
   if (result.outcome !== Outcome.ONGOING) return end(fight, result);
 
-  const actor = nextActor(fight.encounter);
-  if (!actor) return end(fight, encounterOutcome(fight.encounter));
+  // Nobody full yet: the bars fill in front of the player, on the fill clock, rather
+  // than jumping straight to whoever wins the race.
+  // @spec PRESENT-READY-024
+  const actor = readyActor(fight.encounter);
+  fight.fill = 0;
+  fight.partway = 0;
+  if (!actor) {
+    fight.actor = null;
+    fight.pending = null;
+    return;
+  }
 
   fight.actor = actor;
   if (actor.side !== 'PARTY') {
@@ -525,6 +570,18 @@ function nextTurn(fight) {
     return;
   }
   ask(fight, actor.id);
+}
+
+/**
+ * Keep the ambush card up while any ambusher still holds the full bar they began with.
+ * Acting spends it and falling drops it, so either ends that one's part in the ambush.
+ *
+ * @spec PRESENT-READY-015
+ * @spec PRESENT-READY-026
+ */
+function announce(fight) {
+  const waiting = fight.ambushers.some((id) => readinessOf(fight.encounter, id) >= FULL_BAR);
+  fight.notice = waiting ? { text: 'Ambush!' } : null;
 }
 
 function end(fight, result) {
@@ -635,20 +692,6 @@ export function takeProposal(fight) {
 }
 
 /**
- * Put the ambush card away and start the fight. The span running out reaches here, and
- * so does a player who already knows what happened.
- *
- * @spec PRESENT-READY-015
- * @spec PRESENT-READY-016
- */
-export function dismissNotice(fight) {
-  if (!fight.notice) return false;
-  fight.notice = null;
-  nextTurn(fight);
-  return true;
-}
-
-/**
  * The player reached for the screen. Whatever was about to happen on its own stops,
  * and does not start again this turn.
  *
@@ -672,19 +715,20 @@ export function cancelProposal(fight) {
  */
 export function fightIsPlaying(fight) {
   if (!fight || fight.phase !== FightPhase.ACTING) return false;
-  if (fight.notice) return true;
   if (fight.shakingId) return true;
   if (!fight.pending) return true;
   return fight.autoConfirm && Boolean(fight.pending.proposal);
 }
 
 /**
- * Run the player's clock on by the milliseconds that actually passed: the beat between
- * actions, and the countdown on a proposal. Neither touches the fight's own time.
+ * Run the player's clock on by the milliseconds that actually passed: the bars filling,
+ * the beat between actions, and the countdown on a proposal. Only the filling moves the
+ * fight's own time, and only while nobody is up.
  *
  * @spec PRESENT-READY-005
  * @spec PRESENT-READY-006
  * @spec PRESENT-READY-008
+ * @spec PRESENT-READY-024
  */
 export function advanceClock(fight, ms) {
   if (!fightIsPlaying(fight)) return false;
@@ -698,10 +742,17 @@ export function advanceClock(fight, ms) {
     }
   }
 
-  // Nothing at all moves behind the card.
-  if (fight.notice) {
-    fight.notice = { ...fight.notice, elapsed: fight.notice.elapsed + ms };
-    if (fight.notice.elapsed >= AMBUSH_MS) dismissNotice(fight);
+  if (!fight.actor) {
+    fight.fill += ms;
+    while (fight.fill >= FILL_BEAT_MS) {
+      fight.fill -= FILL_BEAT_MS;
+      advanceBeats(fight.encounter, 1);
+      if (readyActor(fight.encounter)) {
+        nextTurn(fight);
+        return true;
+      }
+    }
+    fight.partway = fight.fill / FILL_BEAT_MS;
     return true;
   }
 

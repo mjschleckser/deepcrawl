@@ -7,6 +7,7 @@ import {
 import {
   beginEncounter, createEnemy, createEnemyGroup,
   advanceBeats, nextActor, takeAction, readinessOf, actionCost,
+  readyActor, readinessPartway,
   Action, FULL_BAR,
 } from './combat.js';
 
@@ -251,5 +252,46 @@ describe('what time does not buy', () => {
     advanceBeats(state, 200);
 
     expect({ ...(character(state.party, 'bram').slots ?? {}) }).toEqual(slots);
+  });
+});
+
+describe('reading the bars without moving the fight', () => {
+  // @spec COMBAT-TIME-016
+  it('names nobody while nobody is full, and leaves the fight where it was', () => {
+    const state = encounter({ members: [hero('bram', 12)], enemies: [orc('o1', 10)] });
+
+    expect(readyActor(state)).toBeNull();
+    expect(state.beats).toBe(0);
+    expect(readinessOf(state, 'bram')).toBe(0);
+  });
+
+  // @spec COMBAT-TIME-016
+  it('names whoever is full, in acting order', () => {
+    const state = encounter({ members: [hero('bram', 12)], enemies: [orc('o1', 10)] });
+    advanceBeats(state, 10);
+
+    expect(readyActor(state).id).toBe('bram');
+    expect(state.beats).toBe(10);
+  });
+
+  // @spec COMBAT-TIME-017
+  it('reports a bar partway through a beat as that share of what the beat adds', () => {
+    const state = encounter({ members: [hero('bram', 12)], enemies: [orc('o1', 10)] });
+    advanceBeats(state, 2);
+
+    expect(readinessPartway(state, 'bram', 0)).toBe(24);
+    expect(readinessPartway(state, 'bram', 0.5)).toBe(30);
+    expect(readinessPartway(state, 'o1', 0.25)).toBe(22.5);
+    // Partway is a report, not a beat.
+    expect(state.beats).toBe(2);
+  });
+
+  // @spec COMBAT-TIME-017
+  it('reports nothing for somebody who cannot act', () => {
+    const state = encounter({ members: [hero('bram', 12), hero('tam', 12)], enemies: [orc('o1', 10)] });
+    advanceBeats(state, 3);
+    applyDamage(state.party, 'bram', 9999);
+
+    expect(readinessPartway(state, 'bram', 0.5)).toBe(0);
   });
 });

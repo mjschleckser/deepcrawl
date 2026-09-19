@@ -248,6 +248,29 @@ const readyNow = (state) =>
   actingOrder(state).filter((c) => readinessOf(state, c.id) >= FULL_BAR);
 
 /**
+ * Whoever is ready to act right now, or nobody. Unlike nextActor this never runs the
+ * fight's time on, so a caller can let the bars fill at a pace of its own choosing.
+ *
+ * @spec COMBAT-TIME-016
+ */
+export function readyActor(state) {
+  if (encounterOutcome(state).outcome !== Outcome.ONGOING) return null;
+  return readyNow(state)[0] ?? null;
+}
+
+/**
+ * How full a combatant's bar is some share of the way through the beat now filling it.
+ * A report and not a beat: nothing moves, and nobody becomes ready because of it.
+ *
+ * @spec COMBAT-TIME-017
+ */
+export function readinessPartway(state, id, fraction) {
+  const combatant = combatants(state).find((c) => c.id === id);
+  if (!combatant) return 0;
+  return readinessOf(state, id) + speedOf(combatant.dexterity) * fraction;
+}
+
+/**
  * Whoever acts next, running the fight's time on until somebody is ready and no
  * further. The same combatant is returned until they have taken their turn, because a
  * turn is not over until its action is.

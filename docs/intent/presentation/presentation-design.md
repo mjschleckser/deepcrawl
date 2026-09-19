@@ -249,9 +249,25 @@ plan, like everything else, rather than worked out while drawing.
 
 ### Readiness, and the fight that plays
 
-Every combatant's card carries a **readiness bar**: how full their bar is, drawn from
-the simulation and from nothing else. A fight is legible at a glance from those bars
-alone — who is about to act, who is a long way off, and which side is quicker.
+**A combatant's card is their readiness.** The card is laid in a subdued shade of its
+side's colour, and a brighter shade of the same colour fills it from the left edge as
+readiness rises, its leading edge a vertical line sweeping to the right; a card filled
+edge to edge is a combatant ready to act. The value is the simulation's and nothing
+else's. A fight is legible at a glance from the cards alone — who is about to act, who
+is a long way off, and which side is quicker — and the whole card is a far larger thing
+to read than a sliver along its foot.
+
+**The bar along the foot of a card is hit points**, filled to the share of their
+maximum a combatant has left and coloured by how much that is: healthy above half,
+wounded above a quarter, critical at or below it. The number stays beside it, but the
+question a player has mid-fight is *how badly hurt is everybody*, and a row of bars
+answers it in one look where a row of fractions has to be read one at a time.
+
+**Bars fill in front of the player.** Every combatant starts a fight with an empty bar
+and it rises over real time, a beat of the fight's time per fixed span, so that who is
+catching up on whom is something watched rather than something that has already
+happened by the time the screen is drawn. Between beats the fill is drawn partway, as
+the simulation reports it, so it glides rather than steps.
 
 **The combatant acting is highlighted while they act**, on both sides alike. Something
 has to say *this one, now*, or a fight resolved one combatant at a time reads as a log
@@ -266,16 +282,18 @@ beat. Nothing else in the fight moves, so a blow that lands is otherwise a numbe
 changing somewhere on a panel of numbers — easy to miss entirely, and easier still to
 miss *whose* it was. The card that moves is the card that swung.
 
-That pause is the one thing in this segment that needs a clock. **The ticker is stopped
-except while a fight has actions to play out** — it starts when there is a beat to wait
-and stops the moment the fight is waiting on the player instead. A stopped ticker is a
+Filling bars and that pause are the things in this segment that need a clock. **The
+ticker is stopped except while a fight is playing** — bars filling, a beat to wait, a
+card still shaking — and stops the moment the fight is waiting on the player instead. A stopped ticker is a
 rule about not redrawing an unchanged screen, not a vow of poverty; a screen that is
 changing on its own is precisely the case it was never meant to cover.
 
 Two clocks are in play and they are not the same one. The **fight's time** is the
-simulation's, advances in beats, and never moves while a decision is pending. The
-**beat between actions** and the **countdown on a proposal** are the player's, measured
-in seconds, and have no effect on anything the simulation resolves.
+simulation's, counts beats, and never moves while a decision is pending or while
+anybody stands ready. The player's clock, measured in seconds, sets only the pace: how
+long a beat of filling takes on screen, the **beat between actions**, and the
+**countdown on a proposal**. None of it changes what the simulation resolves; a fight
+played at any pace comes out the same.
 
 ### Being told whose turn it is
 
@@ -295,16 +313,20 @@ them drops the proposal.
 
 ### Announcing an ambush
 
-An encounter one side walked into unready opens with a card across the view saying
-**Ambush!**, held for a few seconds before the fight begins.
+An encounter one side walked into unready opens with a card above the fight saying
+**Ambush!**. The ambushers' cards start full and every other card empty — the only
+fight that does not start with every bar empty.
 
 Bars that start full are otherwise unexplained. A player who sees three goblins act
 before anybody on their side moves has been given the rule and no way to read it, and
 the reasonable conclusion — that the fight is broken — is worse than the rule itself.
 The card is the smallest thing that says *this is why*.
 
-The fight does not advance behind it. Nothing plays, nothing counts, and the card can
-be dismissed early by anyone who already knows what happened.
+**The card stays up for exactly as long as the ambush lasts**: until every combatant who
+began with a full bar has acted, or has fallen before they could. The fight plays
+beneath it as it would without it, so the card is what explains the ambush while it is
+happening rather than a pause before it — and it goes when the last ambusher's bar
+empties, which is the moment the fight becomes an ordinary one.
 
 ### The countdown on a proposal, built and switched off
 
@@ -319,9 +341,9 @@ a question worth being able to answer twice without rebuilding anything.
 
 ### The log carries the fight
 
-Nothing animates. A round resolves in a single frame, so without a record the player
-would see only the state that came out the other side and never learn what happened in
-between.
+An action resolves in a single frame, and the only motion it leaves is its attacker's
+judder, so without a record the player would see only the state that came out the other
+side and never learn what happened in between.
 
 The log is therefore not decoration. It is the fight, as perceived: one line per
 resolved action, naming who acted, what band the attack fell in, what it cost, and
@@ -488,10 +510,12 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 | Labels | Name the action, with any key hint as secondary text | Naming the key that triggers it | "[Enter] Descend" instructs a phone player to press a key they do not have. One drawing has to serve both without telling either to use the other's device. |
 | Hit regions | Computed in the plan, beside the drawing they belong to | Registered as handlers on the drawn objects | Keeping them together means what is drawn and what is tapped cannot drift apart, and it keeps hit-testing in the pure layer where it can be tested. |
 | Combat over the corridor | Drawn on top of the first-person view, which stays visible | Replacing the view with a combat screen | The party is still standing in the passage they were caught in, and seeing it is part of knowing how bad this is. A separate screen would also throw away the light and the place. |
-| Readiness | A bar on every card, drawn from the simulation's own value | A numbered initiative list; an order-of-play queue along one edge | A bar is read without counting and compares two combatants at a glance, which is the question a player actually has in a fight. A queue would have to be recomputed and redrawn on every action and still would not show how close anybody is. |
+| Readiness | The card itself filling from the left, a brighter shade over a subdued one, from the simulation's own value | A thin bar along the card's foot; a numbered initiative list; an order-of-play queue along one edge | A fill is read without counting and compares two combatants at a glance, which is the question a player actually has in a fight, and a whole card is read from across the screen where a sliver is not. A queue would have to be recomputed and redrawn on every action and still would not show how close anybody is. |
+| Hit points | A bar along the foot of every card, coloured by the share left, with the number beside it | The number alone | A row of fractions has to be read one card at a time; a row of bars shows how hurt the whole party is in one look, and the colour carries the urgency before the length is even judged. |
+| How bars fill | Over real time from empty, a beat per fixed span, drawn partway between beats | Jumping straight to whoever is next ready | A jump shows the result of the race and never the race, so the player cannot see a quick combatant pulling ahead of a slow one, which is the thing the bars exist to show. |
 | The beat between actions | A short pause, with the acting combatant highlighted | Resolving everything down to the next decision at once; animating each action properly | Without a pause a fight on standing orders lands between two frames and is read afterwards as text, which is the thing the log exists to rescue rather than the thing to build on. Real animation is a larger project and would need the ticker running throughout rather than between actions. |
-| The ticker | Stopped, except while a fight has actions left to play out | Stopped always, with actions resolved instantly; a conventional render loop | The rule was never about the ticker; it was about not redrawing an unchanged screen sixty times a second. A screen that is changing on its own is the one case it was not written for, and the exception is bounded to a fight with work queued. |
-| Announcing an ambush | A card across the view saying Ambush!, held a few seconds | Colouring the bars that start full; a line in the log; explaining nothing | Bars that start full are the one thing on the screen with no cause visible anywhere, and a player who cannot read them concludes the fight is broken. The log is read after the fact, and a colour is a code nobody has been taught. |
+| The ticker | Stopped, except while a fight is playing rather than waiting on the player | Stopped always, with actions resolved instantly; a conventional render loop | The rule was never about the ticker; it was about not redrawing an unchanged screen sixty times a second. A screen that is changing on its own is the one case it was not written for, and the exception is bounded to a fight that is not waiting on anybody. |
+| Announcing an ambush | A card above the fight saying Ambush!, up until every ambusher has acted, with the fight playing beneath it | Colouring the bars that start full; a line in the log; a card held for a fixed span before the fight begins | Bars that start full are the one thing on the screen with no cause visible anywhere, and a player who cannot read them concludes the fight is broken. A card held before the fight explains an ambush nobody has seen yet and is gone by the time the ambushers swing; one that lasts as long as the ambush explains it while it happens. The log is read after the fact, and a colour is a code nobody has been taught. |
 | The prompt | Naming who is ready, and absent while nothing waits | Asking what the character will do; a prompt that stays up throughout | The buttons already say what may be done; what the player needs is which of five cards the next press belongs to. A prompt standing over a fight that is playing invites a press nothing is listening for. |
 | Showing an attack | A vertical judder on the attacker's card, decaying over the beat | Moving the card toward its target; flashing the one that was hit; a larger animation | Nothing else in the fight moves, so the smallest honest motion is enough, and putting it on the attacker answers *whose blow was that* rather than only *that something happened*. Moving toward a target is a real animation and wants a real animation system. |
 | Showing a round | A text log built from the round's own event log | Animating each action; showing only the resulting state | Nothing animates, so a round lands in one frame. Without a record the player sees the aftermath and never learns what happened. The log is the fight as perceived. |
@@ -518,11 +542,13 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 15. ✅ **A door is drawn on the frame the corridor stops at**, closed as a panel with a handle and open as its frame alone.
 16. ✅ **An enemy the corridor report names is drawn standing at that depth**, with the same horned head the automap uses.
 17. ✅ **The build's version is drawn in the bottom-left corner**, its patch number the commit count, fixed at build time.
-18. ✅ **Every combatant's card carries a readiness bar**, and the combatant acting is highlighted.
-19. ✅ **Actions play out a beat at a time**, and the ticker runs only while a fight has actions left to play.
+18. ✅ **A combatant's card fills with their readiness**, and the combatant acting is highlighted.
+19. ✅ **Actions play out a beat at a time**, and the ticker runs only while a fight is playing rather than waiting.
+24. ✅ **The bar along a card's foot is hit points**, coloured by the share left.
+25. ✅ **Bars fill over real time from empty**, drawn partway between beats.
 20. ✅ **Every action is taken by a press.** The countdown ring that would take a proposal unattended is built, tested, and switched off.
 21. ✅ **The prompt names who is ready to act**, and is absent while nothing waits on the player.
-22. ✅ **An ambush is announced by a card** held over the view before the fight begins.
+22. ✅ **An ambush is announced by a card** that stays up until every ambusher has acted, with the fight playing beneath it.
 23. ✅ **An attack shakes its attacker's card**, which is the only motion in a fight.
 12. ✅ **Turning about has a key but no control**, being two taps of one the player already uses.
 10. ✅ **Labels name the action**, with any keyboard hint as secondary text.

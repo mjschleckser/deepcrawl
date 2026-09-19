@@ -8,8 +8,8 @@ import { createRule, When, Aim } from '../sim/orders.js';
 import {
   buildFightPlan, createFightController, chooseOption, goBack, dismissOutcome,
   playEnemyTurn, takeProposal, cancelProposal, advanceClock, fightIsPlaying,
-  dismissNotice, AUTO_CONFIRM, SHAKE_PIXELS,
-  FightPhase, FightAction, describeEvent, BEAT_MS, COUNTDOWN_MS, AMBUSH_MS,
+  AUTO_CONFIRM, SHAKE_PIXELS, FILL_BEAT_MS, Wound,
+  FightPhase, FightAction, describeEvent, BEAT_MS, COUNTDOWN_MS,
 } from './fight.js';
 
 /** Take the Defend option, whatever number it happens to be on this character. */
@@ -18,10 +18,19 @@ function defend(fight) {
   return chooseOption(fight, index);
 }
 
+/** Let the bars fill, a beat at a time, until somebody is up. */
+function untilReady(fight, limit = 200) {
+  for (let i = 0; i < limit && fight.phase === FightPhase.ACTING && !fight.actor; i++) {
+    advanceClock(fight, FILL_BEAT_MS);
+  }
+  return fight;
+}
+
 /** Walk the fight on until the party is being asked something, or it ends. */
-function untilAsked(fight, limit = 40) {
+function untilAsked(fight, limit = 200) {
   for (let i = 0; i < limit && fight.phase === FightPhase.ACTING && !fight.pending; i++) {
-    playEnemyTurn(fight);
+    if (fight.actor) playEnemyTurn(fight);
+    else advanceClock(fight, FILL_BEAT_MS);
   }
   return fight;
 }
@@ -51,7 +60,12 @@ function fightState({ enemies, light = 'BRIGHT', partyAware = true, enemiesAware
   });
 }
 
+/** A fight run on to its first turn, which is where most of what is tested begins. */
 const controller = (over = {}) =>
+  untilReady(createFightController({ encounter: fightState(over), viewport, onDraw: vi.fn() }));
+
+/** A fight exactly as it opens, before any time has passed. */
+const opening = (over = {}) =>
   createFightController({ encounter: fightState(over), viewport, onDraw: vi.fn() });
 
 describe('what a fight draws', () => {
@@ -155,7 +169,7 @@ describe('choosing what to do', () => {
       foe.hitPoints = 0;
       foe.condition = Condition.DEAD;
     }
-    const fight = createFightController({ encounter, viewport, onDraw: vi.fn() });
+    const fight = untilReady(createFightController({ encounter, viewport, onDraw: vi.fn() }));
     chooseOption(fight, 0);
 
     expect(fight.pending.targets.map((t) => t.id)).toEqual(['a1']);
@@ -204,7 +218,7 @@ describe('standing orders in a fight', () => {
   function ordered(rules, id = 'bram') {
     const encounter = fightState();
     character(encounter.party, id).orders = rules;
-    return createFightController({ encounter, viewport, onDraw: vi.fn() });
+    return untilReady(createFightController({ encounter, viewport, onDraw: vi.fn() }));
   }
 
   // @spec COMBAT-ORDER-003
@@ -309,7 +323,7 @@ describe('standing orders in a fight', () => {
 
     takeProposal(fight);
     for (let i = 0; i < 20; i++) {
-      if (!fight.pending) { playEnemyTurn(fight); continue; }
+      untilAsked(fight);
       if (fight.pending.characterId === 'bram') break;
       defend(fight);
     }
@@ -566,7 +580,7 @@ describe('a fight that plays itself out', () => {
   function ordered(rules, id = 'bram') {
     const encounter = fightState();
     character(encounter.party, id).orders = rules;
-    return createFightController({ encounter, viewport, onDraw: vi.fn() });
+    return untilReady(createFightController({ encounter, viewport, onDraw: vi.fn() }));
   }
 
   const planOf = (fight) => buildFightPlan(fight.encounter, viewport, {
@@ -579,6 +593,7 @@ describe('a fight that plays itself out', () => {
     notice: fight.notice,
     shakingId: fight.shakingId,
     shake: fight.shake,
+    partway: fight.partway,
   });
 
   // @spec PRESENT-READY-001
@@ -682,33 +697,48 @@ describe('a fight that plays itself out', () => {
   });
 
   // @spec PRESENT-READY-015
-  // @spec PRESENT-READY-016
-  it('opens an ambush with a card, and holds the fight behind it', () => {
-    const encounter = fightState({ enemiesAware: false });
-    const fight = createFightController({ encounter, viewport, onDraw: vi.fn() });
+  // @spec PRESENT-READY-026
+  it('keeps the ambush card up while the ambushers act, and plays the fight beneath it', () => {
+    const fight = opening({ partyAware: false });
 
     expect(planOf(fight).notice).toMatchObject({ text: 'Ambush!' });
-    // Nothing moves behind it, however long it stands.
-    expect(fight.pending).toBeNull();
-    advanceClock(fight, AMBUSH_MS - 1);
-    expect(fight.turnsTaken).toBe(0);
+    // The first ambusher is up at once; the card holds nothing back.
+    expect(fight.actor.side).toBe('ENEMIES');
+
+    playEnemyTurn(fight);
+    playEnemyTurn(fight);
+    // One goblin still has its full bar, so the ambush is not over.
+    expect(fight.turnsTaken).toBe(2);
     expect(planOf(fight).notice).not.toBeNull();
 
-    dismissNotice(fight);
+    playEnemyTurn(fight);
 
     expect(planOf(fight).notice).toBeNull();
-    expect(fight.pending).not.toBeNull();
   });
 
   // @spec PRESENT-READY-015
-  it('clears the ambush card once its span has run, without anybody pressing', () => {
-    const encounter = fightState({ enemiesAware: false });
-    const fight = createFightController({ encounter, viewport, onDraw: vi.fn() });
+  it('keeps the card up while an ambushing party is still to act', () => {
+    const fight = opening({ enemiesAware: false });
 
-    advanceClock(fight, AMBUSH_MS + 1);
+    expect(planOf(fight).notice).not.toBeNull();
+    defend(fight);
+    defend(fight);
+    expect(planOf(fight).notice).not.toBeNull();
+
+    defend(fight);
 
     expect(planOf(fight).notice).toBeNull();
-    expect(fight.pending).not.toBeNull();
+  });
+
+  // @spec PRESENT-READY-015
+  it('counts an ambusher who falls before acting as done', () => {
+    const fight = opening({ enemiesAware: false });
+    defend(fight);
+    // The last ambusher goes down before their turn comes.
+    applyDamage(fight.encounter.party, 'isolde', 9999);
+    defend(fight);
+
+    expect(planOf(fight).notice).toBeNull();
   });
 
   // @spec PRESENT-READY-017
@@ -716,6 +746,85 @@ describe('a fight that plays itself out', () => {
     const fight = controller();
 
     expect(planOf(fight).notice).toBeNull();
+  });
+
+  // @spec PRESENT-READY-024
+  // @spec COMBAT-SURPRISE-002
+  it('opens with every bar empty and nobody up', () => {
+    const fight = opening();
+    const plan = planOf(fight);
+
+    expect(fight.actor).toBeNull();
+    expect(fight.pending).toBeNull();
+    for (const card of [...plan.party, ...plan.enemies]) expect(card.readiness).toBe(0);
+    expect(fightIsPlaying(fight)).toBe(true);
+  });
+
+  // @spec PRESENT-READY-024
+  it('fills the bars a beat per span of real time, and not faster', () => {
+    const fight = opening();
+
+    advanceClock(fight, FILL_BEAT_MS - 1);
+    expect(fight.encounter.beats).toBe(0);
+
+    advanceClock(fight, 1);
+    expect(fight.encounter.beats).toBe(1);
+
+    // Dexterity 10 against a bar of 100: ten beats to fill, and not one sooner.
+    for (let i = 0; i < 8; i++) advanceClock(fight, FILL_BEAT_MS);
+    expect(fight.actor).toBeNull();
+    advanceClock(fight, FILL_BEAT_MS);
+    expect(fight.pending.characterId).toBe('bram');
+  });
+
+  // @spec PRESENT-READY-024
+  it('stops filling the moment somebody is up', () => {
+    const fight = controller();
+    const beats = fight.encounter.beats;
+
+    advanceClock(fight, FILL_BEAT_MS * 20);
+
+    expect(fight.encounter.beats).toBe(beats);
+  });
+
+  // @spec PRESENT-READY-025
+  it('draws a bar partway through the beat that is filling it', () => {
+    const fight = opening();
+    advanceClock(fight, FILL_BEAT_MS * 2 + FILL_BEAT_MS / 2);
+
+    const bram = planOf(fight).party.find((c) => c.id === 'bram');
+
+    // Two beats and half of a third, at ten a beat, of a hundred.
+    expect(bram.readiness).toBeCloseTo(0.25, 5);
+  });
+
+  // @spec PRESENT-READY-022
+  it('carries how much of their hit points everybody has left', () => {
+    const fight = controller();
+    applyDamage(fight.encounter.party, 'bram', 3);
+    const bram = character(fight.encounter.party, 'bram');
+
+    const card = planOf(fight).party.find((c) => c.id === 'bram');
+
+    expect(card.health).toBeCloseTo(bram.hitPoints / bram.maxHitPoints, 5);
+    for (const e of planOf(fight).enemies) expect(e.health).toBe(1);
+  });
+
+  // @spec PRESENT-READY-023
+  it('marks how badly hurt somebody is by the share they have left', () => {
+    const fight = controller();
+    const bram = character(fight.encounter.party, 'bram');
+    const woundAt = (hp) => {
+      bram.hitPoints = hp;
+      return planOf(fight).party.find((c) => c.id === 'bram').wound;
+    };
+    const max = bram.maxHitPoints;
+
+    expect(woundAt(max)).toBe(Wound.HEALTHY);
+    expect(woundAt(Math.floor(max / 2) + 1)).toBe(Wound.HEALTHY);
+    expect(woundAt(Math.floor(max / 2))).toBe(Wound.WOUNDED);
+    expect(woundAt(Math.floor(max / 4) + 1)).toBe(Wound.WOUNDED);
+    expect(woundAt(Math.floor(max / 4))).toBe(Wound.CRITICAL);
   });
 
   // @spec PRESENT-READY-018
