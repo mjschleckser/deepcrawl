@@ -52,8 +52,8 @@ tuning the game does not rewrite its specs.
 - [x] **EXPLORE-MOVE-009**: When the party enters a tile whose feature is `pit`, the system shall relocate the party to that connector's destination floor, at the tile its arrival rule resolves to, without asking for confirmation.
 - [x] **EXPLORE-MOVE-015**: When the party attempts to step onto a tile whose feature is `stairsUp` or `stairsDown`, the system shall raise a confirmation before moving the party.
 - [x] **EXPLORE-MOVE-016**: When the player confirms a staircase prompt, the system shall relocate the party to that connector's destination floor, at the tile its arrival rule resolves to on that floor.
-- [x] **EXPLORE-MOVE-017**: If the player declines a staircase prompt, then the system shall leave the party on its current tile and shall not advance the clock.
-- [x] **EXPLORE-MOVE-018**: While the party occupies a tile whose feature is `stairsUp` or `stairsDown` (having arrived by relocation rather than by stepping), the system shall offer that staircase as an `INTERACT` target.
+- [x] **EXPLORE-MOVE-017**: If the player declines a staircase prompt, then the system shall complete the step onto the staircase's tile without taking the connector, resolving that step's effects as it would any other step's.
+- [x] **EXPLORE-MOVE-018**: While the party occupies a tile whose feature is `stairsUp` or `stairsDown`, however they came to be standing on it, the system shall offer that staircase as an `INTERACT` target.
 - [x] **EXPLORE-MOVE-010**: When a relocation occurs mid-step, the system shall resolve re-stocking, the trap trigger hook, sight, roaming enemy movement, and contact check against the floor and tile the party occupies after relocating.
 - [x] **EXPLORE-MOVE-011**: When a step relocates the party through a `pit`, the system shall advance the clock by one tick for the whole step.
 - [x] **EXPLORE-MOVE-012**: If a relocation lands the party on a tile whose feature is also a `pit`, then the system shall not resolve that pit until the party's next step, which it claims in place of a move.

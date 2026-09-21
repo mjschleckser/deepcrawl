@@ -106,10 +106,16 @@ drops the party to a target floor with no return connector at the landing tile.
 
 Stairs and pits are taken differently. A `pit` fires the moment the party enters its
 tile, with no say in the matter. Stairs ask: attempting to step onto a staircase
-raises a confirmation, and declining leaves the party on its current tile having
-spent no tick, so a staircase is never merely walked across. A party that arrives on
-a staircase some other way — dropped there by a pit, which does not chain — is simply
-standing on it, and takes it with an `INTERACT`.
+raises a confirmation. Confirming takes the connector; **declining completes the step
+onto the staircase's own tile**, costing the tick that step costs and resolving its
+effects like any other. A staircase is therefore a tile like any other to walk over,
+and never a connector taken by accident.
+
+Declining has to leave the party *on* the staircase rather than in front of it,
+because a staircase that cannot be crossed is a wall with a prompt on it: a floor that
+puts one in a corridor seals off everything beyond it. A party standing on a
+staircase — having declined it, or having been dropped there by a pit, which does not
+chain — is simply standing on it, and takes it with an `INTERACT`.
 
 ## The Clock
 
@@ -603,7 +609,7 @@ widget occupies a corner and expands to full screen on tap.
 | Dim light | Penalises trap and secret-door detection, and hides enemies | Dim as purely cosmetic; dim also degrading mapping accuracy | Detection penalties make a failing torch dangerous without making the map itself lie, which would undermine the record the player is building. |
 | Relighting a doused source | Costs a tick in exploration, an action in combat | Free relighting; automatic relighting after a dousing | A dousing has to cost something or the attack that caused it accomplishes nothing. Automatic relighting stays for ordinary burnout, where friction would only be tedium. |
 | Step resolution order | Fixed seven-step order | Resolving side effects in any order | Light burning before sight is computed, and roamers moving after discovery, are both observable behaviours that must be specified rather than emergent. |
-| Stairs versus pits | Stairs prompt on attempted entry and cost nothing to decline; pits fire on entry with no say | Stairs taken by a verb while standing on them; stairs firing automatically like pits | A staircase that fires automatically cannot be walked past, which breaks down once a floor has several. A confirmation keeps the tile passable in intent while never letting the party take stairs by accident. |
+| Stairs versus pits | Stairs prompt on attempted entry; declining completes the step onto the tile. Pits fire on entry with no say | Declining cancels the step; stairs taken only by a verb while standing on them; stairs firing automatically like pits | A staircase that cannot be crossed is a wall with a prompt on it, and one generated in a corridor seals off the floor beyond it. Completing the step keeps the tile as passable as any other while the prompt still means no connector is ever taken by accident. Taking stairs only by a verb would leave a party no way to descend but one they have to be told about. |
 | Action classes | Movement verbs, plus party actions that open free and commit for a tick | Charging a tick to open any menu; charging nothing for any party action | Charging for looking punishes careful play, and charging for nothing removes the cost of acting. The split puts the price on the commitment. |
 | Traps and re-stocking | Traps are untouched: laid at generation, and party knowledge of them only grows | Clearing known-trap flags on refilled rooms; re-laying traps as part of re-stocking | A trap the party disarmed reappearing, or a map marking a brand-new trap as already known, are both worse than a floor whose traps are simply permanent. |
 | Relighting | Resumes the same doused instance | Consuming a fresh source on relight | A doused torch still holds its fuel; making the party throw it away would turn one enemy attack into the loss of a whole item. |
@@ -637,7 +643,7 @@ widget occupies a corner and expands to full screen on tap.
 18. ✅ **Dim light penalises trap and secret-door detection**, on top of hiding enemies. It does not degrade mapping.
 19. ✅ **Relighting a doused source costs a tick in exploration and an action in combat**, and resumes the same instance. Burnout still relights automatically.
 20. ✅ **Sight is a true 90° cone** — 45° either side of facing.
-21. ✅ **Stairs prompt on attempted entry**; declining costs nothing and leaves the party in place. Pits fire without asking.
+21. ✅ **Stairs prompt on attempted entry**; declining walks onto the staircase rather than cancelling the step. Pits fire without asking.
 22. ✅ **Party actions open free and commit for a tick.** Exploration routes them and charges the clock; the owning segments hold the rules.
 23. ✅ **Trap detection and trap triggering are separate hooks.** Detection runs at sight and search and carries the light level; triggering runs on entry and does not.
 24. ✅ **Carried light is out for the duration of a camp**, so camp ticks do not burn it.

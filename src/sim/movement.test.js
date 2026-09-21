@@ -494,16 +494,51 @@ describe('stairs', () => {
   });
 
   // @spec EXPLORE-MOVE-017
-  it('leaves the party in place and spends no tick when the prompt is declined', () => {
+  it('walks onto the staircase when the prompt is declined, taking no connector', () => {
+    const { upper, lower } = stairSetup();
+    const state = exploration([upper, lower]);
+    const before = tickCount(state);
+
+    perform(state, { verb: Verb.STEP_FORWARD });
+    const result = resolveConfirmation(state, false);
+
+    expect(partyPosition(state).floorId).toBe('upper');
+    expect(partyPosition(state).tile).toEqual({ x: 1, y: 0 });
+    // A step declined is still a step: it costs what a step costs.
+    expect(result.events).toContain(StepEvent.MOVED);
+    expect(tickCount(state)).toBeGreaterThan(before);
+  });
+
+  // @spec EXPLORE-MOVE-017
+  it('lets the party walk over a staircase rather than sealing the way past it', () => {
+    const upper = openFloor('upper', 3, 4);
+    const lower = openFloor('lower');
+    setTileFeature(upper, 1, 1, TileFeature.STAIRS_DOWN, {
+      target: { floorId: 'lower', x: 0, y: 0 },
+    });
+    // Facing north from (1,2): the staircase is the only way through to (1,0).
+    const state = exploration([upper, lower], { tile: { x: 1, y: 2 } });
+
+    perform(state, { verb: Verb.STEP_FORWARD });
+    resolveConfirmation(state, false);
+    perform(state, { verb: Verb.STEP_FORWARD });
+
+    expect(partyPosition(state).floorId).toBe('upper');
+    expect(partyPosition(state).tile).toEqual({ x: 1, y: 0 });
+  });
+
+  // @spec EXPLORE-MOVE-018
+  it('offers the staircase it is standing on after declining it', () => {
     const { upper, lower } = stairSetup();
     const state = exploration([upper, lower]);
 
     perform(state, { verb: Verb.STEP_FORWARD });
     resolveConfirmation(state, false);
+    const offered = perform(state, { partyAction: PartyAction.INTERACT });
 
-    expect(partyPosition(state).floorId).toBe('upper');
-    expect(partyPosition(state).tile).toEqual({ x: 1, y: 1 });
-    expect(tickCount(state)).toBe(0);
+    expect(offered.targets).toContainEqual(
+      expect.objectContaining({ feature: TileFeature.STAIRS_DOWN }),
+    );
   });
 
   // @spec EXPLORE-MOVE-018

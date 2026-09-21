@@ -226,14 +226,15 @@ describe('prompts', () => {
 
   // @spec PRESENT-PROMPT-004
   // @spec PRESENT-PROMPT-005
-  it('declines on Escape, leaving the party where it stood at no cost', () => {
+  it('declines on Escape, walking onto the staircase instead of through it', () => {
     const { controller, state } = harness({ withStairs: true });
     pressKey(controller, 'w');
 
     pressKey(controller, 'Escape');
 
-    expect(partyPosition(state).tile).toEqual({ x: 3, y: 3 });
-    expect(tickCount(state)).toBe(0);
+    // The step is taken; the connector is not.
+    expect(partyPosition(state).tile).toEqual({ x: 3, y: 2 });
+    expect(partyPosition(state).floorId).toBe('f1');
     expect(hud(controller).prompt).toBeNull();
   });
 

@@ -713,7 +713,10 @@ function takeStep(state, heading) {
 }
 
 /**
- * Answer a pending prompt. Declining costs nothing and leaves the party where it was.
+ * Answer a pending prompt. Confirming takes the connector; declining takes the step
+ * the prompt interrupted, which lands the party on the staircase rather than in front
+ * of it — a staircase nobody can cross is a wall with a prompt on it, and one in a
+ * corridor would seal off the floor beyond it.
  *
  * @spec EXPLORE-MOVE-016
  * @spec EXPLORE-MOVE-017
@@ -724,9 +727,16 @@ export function resolveConfirmation(state, accepted) {
   if (!pending) return { blocked: false, events: [] };
   state.pendingConfirmation = null;
 
-  if (!accepted) return { blocked: false, events: [], declined: true };
-
   const events = [];
+  if (!accepted) {
+    // The staircase is under their feet now and is taken with an INTERACT, so the
+    // step resolves like any other and the prompt does not come round again.
+    state.party.tile = { ...pending.tile };
+    events.push(StepEvent.MOVED);
+    resolveStepEffects(state, events, { alreadyRelocated: true });
+    return { blocked: false, events, declined: true };
+  }
+
   relocate(state, pending.target);
   events.push(StepEvent.MOVED);
   resolveStepEffects(state, events, { alreadyRelocated: true });
