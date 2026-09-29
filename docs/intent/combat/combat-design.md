@@ -13,11 +13,12 @@ handing the party what it learned.
 
 Four principles shape the design.
 
-**Where they stand decides it.** Reach is a hard rule, not a modifier: melee cannot
-touch the back row while a front rank stands. Every other part of the design — how
-enemies choose targets, what a polearm is for, why losing the front row is a crisis —
-follows from that one restriction. A combat system where position was merely an
-optimisation would leave the project's own objective unmet.
+**Everyone is in reach of everyone.** There is no battlefield: no rows, no distance,
+no shielding one combatant with another. Any combatant may act on any other, on either
+side, at any time. What varies is not who may be reached but who is worth reaching, and
+with what — so every turn is a choice of where to spend it rather than a check of what
+the fight permits. Reach and exposure return later as properties of weapons and
+abilities, which are decisions made inside the fight rather than before it.
 
 **A bad roll should cost damage, not a turn.** An attack resolves into four bands
 rather than two. Missing outright is reserved for a character badly outmatched by what
@@ -95,13 +96,26 @@ that invites a party to stall until something refills; nothing here refills.
 held, so a character brought back to consciousness begins filling from empty instead of
 acting the instant they open their eyes.
 
+### Where the bars start
+
+**Every combatant opens somewhere.** A fight begins with each bar set to a random share
+of a full one, drawn independently. Fights therefore open differently every time and
+nobody is owed the first turn by the roster order, which is what keeps an encounter with
+the same warband from playing out as the same fight twice.
+
+The randomness is in the opening only. From the first beat onwards the bars are the
+plain arithmetic of Dexterity, so a quick combatant handed a low opening still overtakes
+a slow one handed a high one, and the fight remains readable off the bars.
+
 ### Surprise
 
-If one side was unaware, that side begins the fight with empty bars and the aware side
-with full ones. The aware side therefore acts first, and a quick aware side may act more
-than once before the surprised one moves at all — which is a truer account of catching
-somebody unready than one free round handed to each side alike. Awareness comes from
-exploration: light, and whether the party saw what was coming.
+Surprise is a head start rather than a free strike: the aware side's opening share is
+raised by a large fixed amount, capped at a full bar, and the unaware side keeps
+whatever it drew. An aware side will almost always act first and a quick one may act
+twice before the surprised side moves, but a wretched roll can leave a sluggish
+ambusher only barely ahead — which is a truer account of catching somebody unready than
+either a free round or a guaranteed opening blow. Awareness comes from exploration:
+light, and whether the party saw what was coming.
 
 ## Resolving an Attack
 
@@ -188,33 +202,21 @@ around; and guaranteeing them would take an advantage of +99, which no campaign
 casually produces. Each rank is worth +5 accuracy and +10% damage, so enemy defence has
 to climb by about five per floor tier for parity to hold.
 
-## Reach and Targeting
+## Targeting
 
-Reach is a hard rule. Targeting is a soft one.
+**Every standing combatant is a legal target for every other.** An attack names anyone
+on the opposing side; a heal or a buff names anyone on its own, the actor included.
+Nothing stands between a target and whoever wants them, and no combatant is ever left
+with nothing legal to do because of where they are.
 
-| | May be attacked by melee | May attack with melee | May attack at range |
-|---|---|---|---|
-| Front row | yes | yes | yes |
-| Back row | only once no *conscious* character stands in front | no, unless the weapon reaches | yes |
+What a combatant may do is still bounded, but by what they hold and know rather than by
+where they stand: a character with no weapon has no attack, a caster with no slots left
+cannot cast. Those are the limits worth having, because a player chooses them.
 
-A body does not shield anyone. The front row blocks melee only while at least one
-character standing in it is conscious, so the line falls the moment its last upright
-member does — and a front rank reduced to one is a genuine emergency rather than a
-formality.
-
-A **reaching** weapon — a polearm, by default — lets a back-row character strike the
-enemy front row without standing in the front themselves. That is the entire purpose of
-the property, and it is what makes a polearm a different decision from a sword rather
-than a differently-numbered one.
-
-Ranged attacks and spells reach any row on either side. A bow is what makes a back row
-offensive rather than merely safe.
-
-**Targeting is weighted, not forced.** An enemy choosing a melee target must pick from
-the front row, but an enemy choosing a ranged or magical target prefers the front row
-while remaining able to strike the back. A back row is much safer than a front row and
-is never wholly safe, which is what keeps a back-row character from being a spectator
-to their own defence.
+**Enemies choose by rule, not by rank.** With every target legal, an enemy's choice is a
+question of behaviour and belongs with enemies, which are their own segment. Combat
+supplies the legality and the resolution, and asks nothing about how the choice was
+made.
 
 ## Actions
 
@@ -223,7 +225,6 @@ to their own defence.
 | Attack | a full bar | melee or ranged, per the weapon |
 | Cast | a full bar, and a spell slot of that rank | |
 | Use ability | a full bar | unlocked by a skill rank |
-| Swap places | a full bar | dragging an ally out of the front rank is work |
 | Relight | a full bar | a doused light source, per exploration |
 | Defend | a full bar | raises defence until that character next acts |
 | Flee | a full bar, of the character who attempts it | resolved for the whole party; see below |
@@ -273,7 +274,7 @@ when <condition>   do <action>   on <target>
 ```
 
 When that character comes ready, the rules are read from the top, and the first one
-whose condition holds — and whose action is legal from where they stand — becomes the
+whose condition holds — and whose action they can actually take — becomes the
 **proposal**: the action pre-chosen, the target pre-aimed. The player may take it at
 once, wait and let it take itself, or ignore it and choose something else entirely.
 Where no rule matches, nothing is proposed and the player is asked exactly as they would
@@ -290,7 +291,7 @@ A fighter who always swings at whatever is closest to falling:
 A mage who opens with a shield and then commits to the offensive:
 
 ```
-1. once this encounter         cast shield   the front rank
+1. once this encounter         cast shield   a named ally
 2. while a slot remains        cast missile  the enemy with the fewest hit points
 ```
 
@@ -320,7 +321,6 @@ exactly the moment they need one.
 | no ally is below a share | no conscious ally's hit points fall below it |
 | once this encounter | this rule has not yet been taken in this encounter |
 | a slot remains | the actor holds an unspent slot of the rank the action needs |
-| the front rank is broken | no conscious character stands in the actor's own front row |
 
 **"Once this encounter" is what says *open with the buff, then settle in*** while status
 effects remain unbuilt. When they exist, *while the fighter lacks that blessing* will say
@@ -330,8 +330,7 @@ it better and will be a rule of exactly the same shape.
 
 | Target | Resolves to |
 |---|---|
-| the enemy with the fewest hit points | the legal enemy target with the fewest hit points remaining |
-| the enemy in the front row | a legal enemy target standing in the front row |
+| the enemy with the fewest hit points | the standing enemy with the fewest hit points remaining |
 | the ally with the fewest hit points | the conscious ally with the fewest hit points remaining |
 | a named ally | that character, while they are a legal target |
 | the actor | the character whose order it is |
@@ -344,11 +343,11 @@ aim at a corpse and nothing to fizzle.
 separated by the same fixed order combatants act in, so the same fight from the same
 seed picks the same one every time.
 
-### Where an order does not reach
+### Where an order stops short
 
-**An illegal proposal falls through.** A rule whose action cannot be taken — a spell with
-no slot left, a melee swing from the back row, a heal with nobody hurt — is skipped and
-the next rule is read. An order never proposes something the player would only be
+**An illegal proposal falls through.** A rule whose action cannot be taken — a spell
+with no slot left, a heal with nobody hurt, an attack with nothing standing — is skipped
+and the next rule is read. An order never proposes something the player would only be
 refused.
 
 **Darkness overrides the aim, not the act.** Deliberate targeting is impossible in the
@@ -361,24 +360,20 @@ segment.
 
 ## Enemies
 
-An enemy group has a front row and a back row and obeys the same reach rules the party
-does — an enemy caster shelters behind its own front rank exactly as the party's does,
-and can be reached by a bow exactly as the party's can.
+An enemy group is a flat band of combatants, on the same footing as the party: each one
+fills a bar, acts alone when it is full, and may be struck by anybody.
 
 Enemy groups are **not capped at five**. Being outnumbered is a real and common threat,
-and it is the pressure that makes a front rank holding matter. A group of eight with
-three casters behind five bodies is a different problem from a single large enemy, and
-both should be expressible.
+and it is the pressure that a party of five is measured against. A group of eight
+including three casters is a different problem from a single large enemy, and both
+should be expressible.
 
-An enemy row holds at most ten. Most groups are far smaller — three to five a row is
-ordinary — but the ceiling exists so a swarm is a shape the game can express rather
-than an unbounded number. Without it, "front row" would stop meaning anything, since an
-arbitrary number of enemies could stand in front and the reach rules would describe
-nothing.
+A group holds at most twenty. Most are far smaller — four to eight is ordinary — but the
+ceiling exists so a swarm is a shape the game can express rather than an unbounded
+number, and so the screen can hold one legibly.
 
-Enemy behaviour is deliberately simple at this stage: choose a legal target, preferring
-the front row, and attack. Anything cleverer belongs with enemies, which are their own
-segment.
+Enemy behaviour is deliberately simple at this stage: pick a standing character and
+attack. Anything cleverer belongs with enemies, which are their own segment.
 
 ## Darkness
 
@@ -454,7 +449,8 @@ whether or not it can see.
 | Choosing and resolving | Both in the same instant, one combatant at a time | Everyone selects, then everything resolves in order | Committing before you know is worth something, but it costs every action the existence of its target: a heal aimed at somebody who dies first is spent on nothing, and the lesson it teaches is to have acted sooner, which the player had no way to do. Resolving as each combatant comes ready removes the wasted action entirely, and is the only shape a readiness bar admits. |
 | Speed | Dexterity itself, with a floor of one | A derived initiative statistic; a flat rate modified by equipment | A second statistic meaning the same thing is a second statistic to explain and to balance. Using the attribute undisguised also gives the widest honest spread — three actions to one across the range — which is what makes an extraordinarily quick character feel extraordinary. |
 | The cost of an action | One full bar for every action, carried on the action rather than assumed | A constant in the resolver; per-action weights from the start | Putting the cost on the action means weapon weight can arrive later as content rather than as a restructuring. Making them all equal now means there is nothing to balance before there are weapons to balance it against. |
-| Surprise | The aware side starts with full bars, the surprised side with empty ones | A free round for the aware side | A free round hands the same head start to a sluggish ambusher as to a quick one. Starting the bars apart lets speed decide how much an ambush is actually worth, using the mechanism the fight already has. |
+| Where the bars start | Each combatant on an independent random share of a bar | Every bar empty; every bar set by Dexterity | Empty bars make the opening of every fight the same fight, decided before anybody has done anything: the quickest combatant always moves first and the roster order settles every tie. A random opening makes the first few turns of an encounter genuinely uncertain while leaving everything after them to the arithmetic, so the same warband met twice is not the same fight twice. |
+| Surprise | A large fixed addition to the aware side's opening share, capped at a full bar | The aware side starting full and the surprised side empty; a free round for the aware side | Filling the aware side's bars outright would discard the random opening in exactly the fights where tension is highest, and it hands a sluggish ambusher the same head start as a quick one. An addition keeps surprise decisive without making it a guaranteed opening blow, and it composes with speed rather than overriding it. |
 | Standing orders | Propose an action and a target, and wait for a press | Taking the proposal when a countdown runs out; orders that act instantly and unattended; no orders at all | An order's work is the composing — which action, against which of six goblins — and that is what a proposal removes. Taking the turn on a timer removes the press as well, and with it the moment the player looks at the screen: a fight that advances on its own is one they watch. One press a turn is the price of it still being their fight. |
 | The countdown mechanism | Built, and switched off | Removed entirely; left running | Whether a fight should play itself is a question worth being able to answer twice. The machinery is a constant and a branch, it stays under test, and turning it on is a one-line change rather than a rebuild. |
 | Reading an order | First matching rule, top to bottom | Weights and scores; a scripting language | A list read from the top is something a player can predict by looking at it and fix by dragging a line. A scoring system produces behaviour nobody can account for, which in a system meant to reduce fuss is a new kind of fuss. |
@@ -462,11 +458,10 @@ whether or not it can see.
 | A failed escape | Costs the bar of whoever attempted it, and nothing else | Every conscious character's bar, as a round once cost; no further attempt until all have acted | A party that cannot escape is already in enough trouble, and charging the whole party for one character's failed attempt punishes the situation rather than the decision. A party that keeps trying is a party spending every action on the door instead of on the fight, which is cost enough without a rule to enforce it. |
 | Defending | Lasts until that character next acts | A fixed span of the fight's time; whichever of the two lasts longer | Every action costs one bar and buys one turn's worth of effect, and Defend is not an exception to a rule the whole economy rests on. A quick character's guard covers less of the fight's time and they come round again sooner, which is the trade Dexterity makes everywhere else in the game. |
 | Orders for enemies | None; the roster decides what a monster does | The same order vocabulary on both sides | Enemy behaviour is authored content belonging to the enemies segment. Sharing the player's vocabulary would put monster design in the combat segment and invite the player to read their opponent's script. |
-| Melee reach | A hard restriction to the front row | A penalty for reaching the back row | Position has to be a commitment rather than an optimisation for the project's objective to hold. A penalty would make the back row merely preferable. |
-| Enemy targeting | Weighted toward the front, never forbidden from the back | Strictly front-first | A back row that cannot be touched turns its occupants into spectators to their own defence, and makes the front row a puzzle to be solved once rather than a line to be held. |
-| Reaching weapons | A weapon property, not a class feature | Polearms usable only by particular classes | A property is what makes a polearm a different decision from a sword rather than a differently-numbered one, and it composes with the finesse property the party segment already anticipates. |
+| Reach | None: every standing combatant may act on every other | Front and back rows, where melee reaches the front only; a reach penalty rather than a restriction | Rows decide a character's options before the fight starts, so most turns have one legal answer and a back-rank character with a sword has none at all — a player watching their own turn be skipped. With no reach rule at all, every turn is a choice of whom to spend it on, and the interesting version of protecting a caster becomes something equipment and abilities do rather than something a seating plan does. |
+| What bounds an action | What the combatant holds and knows | Where the combatant stands | A limit the player chose — this weapon, these slots, that ability — is one they can plan around and change. A limit imposed by a position assigned outside the fight is one they can only discover. |
 | Magic cost | Slots per rank, restored only by camping | A regenerating mana pool; per-round cooldowns | Slots make magic attrition, so the question is whether this is the fight worth the last heal. A pool or a cooldown would make descending deeper cost nothing, which is the whole pressure of a dungeon crawl. |
-| Enemy group size | Uncapped, with the same row structure | Mirroring the party's five | Being outnumbered is what makes the front rank matter. The same row structure means the reach rules are written once and read the same from both sides. |
+| Enemy group size | Uncapped by the party's five, ceiling of twenty | Mirroring the party's five; genuinely unbounded | Being outnumbered is a real threat and a party of five should meet eight. A ceiling keeps a swarm a shape the game can express and the screen can hold, rather than an arbitrary number. |
 | Fleeing | One attempt for the whole party, costing the round | Per-character escape | A party does not leave one member behind, and per-character escape would turn a losing fight into a triage puzzle about who is abandoned. |
 | Darkness | Heavy accuracy penalty and no deliberate targeting | Forbidding combat in the dark; no effect | Fighting blind should be possible and awful. Forbidding it would make a failed torch a softlock; ignoring it would make light pointless in the place it matters most. |
 
@@ -476,22 +471,22 @@ whether or not it can see.
 
 1. ✅ **One roll, four bands** — miss, graze, hit, crit — with a narrow miss and a distant crit.
 2. ✅ **Each combatant chooses and resolves in the same instant**, when their readiness fills.
-3. ✅ **Melee reaches the front row only**, as a hard rule.
-4. ✅ **Ranged and magical attacks reach any row**, weighted toward the front.
-5. ✅ **Reaching and finesse are weapon properties**, not class features.
+3. ✅ **There is no reach rule**: every standing combatant may be acted on by every other.
+4. ✅ **What a combatant may do is bounded by what they hold and know**, never by where they stand.
+5. ✅ **Finesse is a weapon property**, not a class feature.
 6. ✅ **Spell slots per rank**, restored only by camping.
-7. ✅ **Enemies share the row structure and are not capped at five.**
+7. ✅ **Enemy groups are not capped at five**, and hold at most twenty.
 8. ✅ **Fleeing is one attempt for the whole party**, costing only the round it was spent on, allowed in the dark, and impossible against something far faster or something that forbids escape.
 11. ✅ **A target is resolved at the moment the action is taken**, so no action is ever aimed at something already gone.
-12. ✅ **Only a conscious character blocks the front row.** A body shields nobody.
+12. ✅ **A body shields nobody**, there being nothing for it to stand in front of.
 13. ✅ **A landed blow always deals at least a twentieth of its base damage**, never less than one.
-14. ✅ **An enemy row holds at most ten**, so a swarm is a shape rather than an unbounded number.
+14. ✅ **An enemy group holds at most twenty**, so a swarm is a shape rather than an unbounded number.
 15. ✅ **A defeated party stays where it fell**, to be abandoned or recovered by a fresh party.
 9. ✅ **Darkness penalises accuracy and removes deliberate targeting**, and never helps the enemy.
 10. ✅ **Nothing recharges as the fight's time passes**, so no stretch of a fight is worth taking for its own sake.
 16. ✅ **Readiness fills by Dexterity**, at a floor of one point, and a full bar is what an action costs.
 17. ✅ **The fight's time never advances while anyone is being asked what to do.**
-18. ✅ **Surprise starts the aware side's bars full and the surprised side's empty.**
+18. ✅ **Every bar opens on a random share of full**, and surprise adds a large head start to the aware side's.
 19. ✅ **A combatant who falls loses the readiness they had banked.**
 20. ✅ **Standing orders propose an action and a target**, which is taken only when the player presses for it.
 21. ✅ **Orders are an ordered list, read top to bottom, first match winning**, with an illegal proposal falling through to the next rule.
@@ -517,6 +512,6 @@ whether or not it can see.
 
 ## References
 
-- `docs/high-level-design.md` — party-versus-party with rows, and the tenets combat answers to.
+- `docs/high-level-design.md` — party-versus-party without position, and the tenets combat answers to.
 - `docs/intent/party/party-design.md` — the operations combat calls, and the pot it hands back.
 - `docs/intent/exploration/exploration-design.md` — the payload that begins an encounter, and the clock that stops for it.

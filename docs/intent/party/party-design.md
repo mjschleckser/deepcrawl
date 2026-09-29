@@ -15,9 +15,8 @@ Three principles shape the design.
 
 **One owner, many callers.** A potion drunk in a corridor and a mace swung in a fight
 both change a character's hit points. Neither segment writes the field. Both call an
-operation here, so the floor at zero, the death chain, and the five-member and
-three-per-row limits are enforced in exactly one place, no matter what caused the
-change.
+operation here, so the floor at zero, the death chain, and the five-member limit are
+enforced in exactly one place, no matter what caused the change.
 
 **Characters are what they have done.** Progression is not a number awarded for
 surviving; it is a record of use. A character who has spent a campaign picking locks
@@ -34,7 +33,7 @@ action worth taking.
 
 | | Owned by the party | Owned elsewhere |
 |---|---|---|
-| Characters | attributes, skills, condition, class, row | — |
+| Characters | attributes, skills, condition, class, total level | — |
 | Equipment | which item sits in which slot | items define what an item *is* |
 | Skills | ranks, advancement, what is unlocked | combat resolves what an ability does |
 | Condition | the state machine and its transitions | combat and exploration cause transitions |
@@ -42,12 +41,10 @@ action worth taking.
 
 ## The Roster
 
-A party holds at most five characters. At most three stand in the front row and at
-most three in the back, so a full party is three and two, never three and three — the
-asymmetry is the point, and it makes every composition a standing decision.
-
-A row assignment is part of a character, not a separate seating chart, so a character
-cannot be in two places or nowhere.
+A party holds at most five characters. There is no seating: a character is in the party
+or not, and combat reaches all five alike. What a party is made of is therefore a
+question about classes, skills and equipment rather than about an arrangement, which is
+the only kind of composition decision this game asks anyone to make.
 
 ## Attributes
 
@@ -123,6 +120,24 @@ exist. **Cartography** owns mapping range, deferred in exploration since sight w
 built.
 
 The skill list itself is content data. Adding a skill is authoring, not designing.
+
+### Total level
+
+**Total level is the sum of a character's skill ranks.** It is derived, never stored and
+never awarded: it moves when a rank moves and at no other time.
+
+It is how much of a character there is, in one number. A character is otherwise a table
+of ranks, which answers *what are they good at* and refuses to answer *how far along are
+they* — a question that comes up whenever two characters, or a party and a floor, have
+to be compared at a glance. Because it counts ranks rather than kills, a character who
+has spent a campaign picking locks and a character who has spent it fighting can be the
+same total level while sharing nothing, which is the honest answer in a game whose
+progression is a record of use.
+
+It confers nothing on its own. Nothing reads it to decide a roll, a reward, or what a
+character may attempt; every such rule reads the ranks themselves, which is where the
+meaning is. Total level is for showing, and for later systems that want one number to
+weigh a party by.
 
 ### Advancement
 
@@ -215,7 +230,7 @@ stateDiagram-v2
     LOST --> [*]: gone
 ```
 
-An unconscious character is still in the party, occupying their row, taking no action
+An unconscious character is still in the party, taking no action
 and defending nothing. Another character may swap places with them, but that costs an
 action — dragging a body out of the front rank is work, not bookkeeping. A dead one is
 carried. Each recovery costs more than the last and can fail, and each failure
@@ -246,8 +261,6 @@ segment writes a character field. The operations are few on purpose.
 | `applyDamage` | combat, traps | the floor at zero, and the slide into unconsciousness or death |
 | `applyHealing` | combat, exploration | the ceiling at maximum, and waking the unconscious |
 | `attemptRevival` | camp, town, a hired cleric, a consumed scroll | the condition chain, and degrading on failure |
-| `swapPlaces` | combat | that the swap costs the actor their action |
-| `assignRow` | the player, through the party screen | at most three a row, at most five in all |
 | `equip` | the player | slot rules, and what a class may wield |
 | `awardEncounter` | combat | the pot divided equally among skills used |
 | `trainSkill` | camp | the clock's cost, and what a class may train |
@@ -278,7 +291,7 @@ failed.
 ## Persistence
 
 The whole roster is saved: every character's attributes, skills and ranks, condition,
-row, equipment slots, class, and accumulated skill experience. A lost character is
+equipment slots, class, and accumulated skill experience. A lost character is
 kept in the save as a record rather than deleted, because a campaign should be able to
 show what it cost.
 
@@ -295,7 +308,8 @@ hands it over.
 
 | Decision | Chosen | Alternatives Considered | Rationale |
 |---|---|---|---|
-| Hit-point growth | None: class base and Constitution, fixed for life | Growth with the best armour skill rank; a Toughness skill trained by being hit; character levels | Every growth mechanism needs enemy damage to grow alongside it, and a campaign that inflates both ends changes nothing except the size of the numbers. Fixed hit points keep a deep floor genuinely lethal to a veteran, and route survivability through armour, healing and positioning, which are decisions made in the fight. |
+| Hit-point growth | None: class base and Constitution, fixed for life | Growth with the best armour skill rank; a Toughness skill trained by being hit; character levels | Every growth mechanism needs enemy damage to grow alongside it, and a campaign that inflates both ends changes nothing except the size of the numbers. Fixed hit points keep a deep floor genuinely lethal to a veteran, and route survivability through armour and healing, which are decisions made in the fight. |
+| Total level | The sum of skill ranks, derived on demand | A level awarded for experience, with ranks bought from it; a stored number kept in step with the ranks | A character is their ranks; any number claiming to summarise them should be recomputable from them, or it is a second truth to keep in step and eventually to contradict them. An awarded level would also be a second progression track competing with the one the whole segment is built on. |
 | Constitution's shape | Multiplicative, 5% per point over 10 | Flat hit points per point | Flat would make a point of Constitution worth the same to a mage as to a fighter, compressing the classes together at high scores until a tough mage outlasts a frail fighter. |
 | Rank cost | 300 × r to leave rank r, capped at rank 10 | A flat cost per rank; a geometric curve | A flat cost makes floor one exactly as efficient at rank 9 as at rank 2, so nothing ever pulls a party downward. A geometric curve makes the last ranks a grind measured in hundreds of fights. A linear-cost curve decays farming gently while leaving it available. |
 | Rank ceiling | 10 | Uncapped ranks | Without a ceiling there is no top to the accuracy and damage curves, and the deepest floor cannot be built against anything. |
@@ -326,7 +340,8 @@ hands it over.
 8. ✅ **Attributes are not bound to skills**; weapons declare which attribute they draw on.
 9. ✅ **The death chain degrades on failed recovery**, and a character can be lost.
 10. ✅ **Class governs availability and rate**, and changing it keeps every rank already earned.
-11. ✅ **At most five characters, at most three a row.**
+11. ✅ **At most five characters**, with no seating among them.
+12. ✅ **Total level is the sum of a character's skill ranks**, derived rather than stored, and confers nothing by itself.
 12. ✅ **A lost character stays in the save** as a record.
 
 ### Deferred
@@ -342,5 +357,5 @@ hands it over.
 
 ## References
 
-- `docs/high-level-design.md` — the five-member party, the rows, and *setbacks, not erasure*.
+- `docs/high-level-design.md` — the five-member party and *setbacks, not erasure*.
 - `docs/intent/exploration/exploration-design.md` — the operations exploration calls, and the skills that own its deferred behaviour.

@@ -217,57 +217,82 @@ top of it.
 ### What is drawn
 
 ```
-┌─────────────────────────────────────────────┐
-│           ╔═══════════════════╗             │ ← the corridor, still there
-│  ┌──────┐ ┌──────┐                          │
-│  │shaman│ │shaman│          enemy back row  │
-│  └──────┘ └──────┘                          │
-│  ┌──────┐ ┌──────┐ ┌──────┐                 │
-│  │goblin│ │goblin│ │goblin│  enemy front    │
-│  │ 9/9  │ │ 4/9  │ │ dead │                 │
-│  └──────┘ └──────┘ └──────┘                 │
-├─────────────────────────────────────────────┤
-│ Bram 14/20 │ Rook 20/20 │ Tam 20/20         │ ← your front row
-│ Isolde 20/20 │ Wren 20/20                   │ ← your back row
-├─────────────────────────────────────────────┤
-│ Bram: what will you do?                     │
-│  [1] Attack   [2] Defend   [3] Flee         │ ← only the legal ones
-├─────────────────────────────────────────────┤
-│ Rook grazes Goblin for 3.                   │
-│ Goblin hits Bram for 6.                     │ ← the log
-│ Tam crits Goblin for 14. Goblin falls.      │
-└─────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────┐
+│                  ╔═════════════════════╗                          │ ← the corridor,
+│  ┌──┐▸▸▸▸▸▸▸▸▹▹▹▹▹▹▹▹      ┌──┐▸▸▸▸▸▸▸▸▸▸▸▸▸▸▸▸▸▸▸▸▸▸▸▸           │   still there
+│  │()│ Goblin      Lv 6     │()│ Bram         Lv 41  poisoned      │
+│  └──┘ 9/9                  └──┘ 14/20                             │
+│  ┌──┐▸▸▸▸▹▹▹▹▹▹▹▹▹▹▹▹      ┌──┐▸▸▸▸▸▸▸▸▸▸▸▸▹▹▹▹▹▹▹▹▹▹▹▹           │
+│  │()│ Goblin      Lv 6     │()│ Rook         Lv 38                │
+│  └──┘ 4/9                  └──┘ 20/20                             │
+│  ┌──┐░░░░░░░░░░░░░░░░      ┌──┐▸▸▸▸▸▸▸▸▸▸▸▸▸▸▸▸▸▸▸▸▹▹▹▹           │
+│  │()│ Goblin     dead      │()│ Isolde       Lv 33                │
+│  └──┘ 0/9                  └──┘ 20/20  3 slots                    │
+│         ↑ enemies, left            ↑ the party, right             │
+├───────────────────────────────────────────────────────────────────┤
+│ Bram is ready to act!                                             │
+│  [1] Attack Goblin   [2] Attack   [3] Defend   [4] Flee           │
+├───────────────────────────────────────────────────────────────────┤
+│ Rook grazes Goblin for 3.                                         │
+│ Goblin hits Bram for 6.                                           │ ← the log
+│ Tam crits Goblin for 14. Goblin falls.                            │
+└───────────────────────────────────────────────────────────────────┘
 ```
 
-Both formations are drawn as rows, because rows are what the fight is about. A
-character or enemy who is down is drawn in place rather than removed — the shape of a
-line that has lost its middle is information.
+**Enemies on the left, the party on the right**, each side a single column of
+combatants however many there are. There are no ranks to draw, because there are none
+in the fight: a column is the honest shape of a side whose members are all equally
+reachable, and it reads the same whether a side holds two or twelve.
 
-Each rank is **centred**, so the two sides read as facing one another down a corridor
-rather than as two lists sharing a left margin. Where every card sits is decided in the
-plan, like everything else, rather than worked out while drawing.
+**A combatant is an icon and three stacked bars.** The icon is a portrait, at the left
+of their own side's column and the same size for everybody. The bars sit to its right,
+one above another, each answering one question:
+
+| Bar | Holds | Answers |
+|---|---|---|
+| Top | Readiness, filled left to right with arrowheads | *when do they act* |
+| Middle | Name, total level, and any statuses | *who is this* |
+| Bottom | Hit points, and any other resource the fight spends | *how are they doing* |
+
+The order is not arbitrary. The top bar is the one that changes every frame and the one
+the whole fight is read off, so it is the one the eye finds first; the bottom bar
+changes only when somebody is hit, and the middle bar barely changes at all.
+
+**Readiness fills with arrowheads rather than a plain block**, so the direction of the
+fight is visible in the bar itself: a bar that is filling is pointing at the moment it
+fills. The arrowheads are drawn to the same scale on every bar, which is what makes two
+bars comparable at a glance.
+
+Somebody who is down keeps their place in the column, drawn spent and dimmed. The shape
+of a side that has lost its middle is information, and a column that closed its gaps
+would keep moving under the player's eye as the fight went on.
+
+Where every part of every combatant sits is decided in the plan, like everything else,
+rather than worked out while drawing.
 
 ### Readiness, and the fight that plays
 
-**A combatant's card is their readiness.** The card is laid in a subdued shade of its
-side's colour, and a brighter shade of the same colour fills it from the left edge as
-readiness rises, its leading edge a vertical line sweeping to the right; a card filled
-edge to edge is a combatant ready to act. The value is the simulation's and nothing
-else's. A fight is legible at a glance from the cards alone — who is about to act, who
-is a long way off, and which side is quicker — and the whole card is a far larger thing
-to read than a sliver along its foot.
+**The top bar is readiness**, filled from the left with arrowheads to the share the
+simulation reports, over a subdued ground. A bar filled end to end is a combatant ready
+to act. The value is the simulation's and nothing else's. A fight is legible from those
+bars alone — who is about to act, who is a long way off, which side is quicker — which
+is why they are the widest thing on a combatant and the topmost.
 
-**The bar along the foot of a card is hit points**, filled to the share of their
-maximum a combatant has left and coloured by how much that is: healthy above half,
-wounded above a quarter, critical at or below it. The number stays beside it, but the
-question a player has mid-fight is *how badly hurt is everybody*, and a row of bars
-answers it in one look where a row of fractions has to be read one at a time.
+**The bottom bar is hit points**, filled to the share of their maximum a combatant has
+left and coloured by how much that is: healthy above half, wounded above a quarter,
+critical at or below it. The numbers stay on it, and anything else the fight spends —
+spell slots, and whatever later joins them — sits alongside them, because a resource
+that decides what a character can do belongs where their capacity to act is read.
 
-**Bars fill in front of the player.** Every combatant starts a fight with an empty bar
-and it rises over real time, a beat of the fight's time per fixed span, so that who is
-catching up on whom is something watched rather than something that has already
-happened by the time the screen is drawn. Between beats the fill is drawn partway, as
-the simulation reports it, so it glides rather than steps.
+**The middle bar is who they are**: name, total level, and the statuses they are
+labouring under. It is the bar that changes least, which is why it is neither the one
+the eye lands on first nor the one it checks under pressure.
+
+**Bars fill in front of the player.** Every combatant opens on the share the fight
+rolled for them, and it rises over real time, a beat of the fight's time per fixed
+span, so that who is catching up on whom is something watched rather than something
+that has already happened by the time the screen is drawn. Between beats the fill is
+drawn partway, as the simulation reports it, so it glides rather than steps.
 
 **The combatant acting is highlighted while they act**, on both sides alike. Something
 has to say *this one, now*, or a fight resolved one combatant at a time reads as a log
@@ -277,10 +302,10 @@ that writes itself.
 short pause follows before the next. Without the pause a fight would resolve between two
 frames and arrive as a wall of text nobody watched happen.
 
-**An attack shakes its attacker's card**, a quick vertical judder that decays over the
-beat. Nothing else in the fight moves, so a blow that lands is otherwise a number
-changing somewhere on a panel of numbers — easy to miss entirely, and easier still to
-miss *whose* it was. The card that moves is the card that swung.
+**An attack shakes its attacker**, a quick vertical judder of their icon and bars
+together that decays over the beat. Nothing else in the fight moves, so a blow that
+lands is otherwise a number changing somewhere on a panel of numbers — easy to miss
+entirely, and easier still to miss *whose* it was. What moves is whoever swung.
 
 Filling bars and that pause are the things in this segment that need a clock. **The
 ticker is stopped except while a fight is playing** — bars filling, a beat to wait, a
@@ -300,7 +325,7 @@ played at any pace comes out the same.
 While a character is waiting to be told what to do, the panel says so in as many words:
 **"Bram is ready to act!"**. It names the character rather than asking a question,
 because the question is answered by the buttons underneath it and the thing the player
-actually needs to know is which of five cards the next press belongs to.
+actually needs to know is which of five combatants the next press belongs to.
 
 **While nothing is waiting on the player, that line is not there at all.** Bars filling
 and enemies swinging are not a prompt, and a prompt left standing over them would be
@@ -314,19 +339,19 @@ them drops the proposal.
 ### Announcing an ambush
 
 An encounter one side walked into unready opens with a card above the fight saying
-**Ambush!**. The ambushers' cards start full and every other card empty — the only
-fight that does not start with every bar empty.
+**Ambush!**. Every fight opens with its bars at odds — they are rolled — but an ambushed
+one opens with one side's bars visibly far along and the other's wherever they fell.
 
-Bars that start full are otherwise unexplained. A player who sees three goblins act
-before anybody on their side moves has been given the rule and no way to read it, and
-the reasonable conclusion — that the fight is broken — is worse than the rule itself.
-The card is the smallest thing that says *this is why*.
+That head start is otherwise unexplained. A player who sees three goblins act before
+anybody on their side moves has been given the rule and no way to read it, and the
+reasonable conclusion — that the fight is broken — is worse than the rule itself. The
+card is the smallest thing that says *this is why*.
 
-**The card stays up for exactly as long as the ambush lasts**: until every combatant who
-began with a full bar has acted, or has fallen before they could. The fight plays
-beneath it as it would without it, so the card is what explains the ambush while it is
-happening rather than a pause before it — and it goes when the last ambusher's bar
-empties, which is the moment the fight becomes an ordinary one.
+**The card stays up for exactly as long as the ambush lasts**: until every combatant the
+ambush favoured has acted, or has fallen before they could. The fight plays beneath it
+as it would without it, so the card is what explains the ambush while it is happening
+rather than a pause before it — and it goes when the last of that head start is spent,
+which is the moment the fight becomes an ordinary one.
 
 ### The countdown on a proposal, built and switched off
 
@@ -442,8 +467,8 @@ enough, though, and the two ways they fail pull in opposite directions.
 **Things that must not shrink** — a control under a thumb, a line of text — are held to
 a floor in real pixels. That is what `MIN_TAP_PX` is for.
 
-**Things that must not stretch** — a row of buttons, a column of text, a rank of
-combatant cards — are held to a ceiling. A button spanning a third of a desktop window
+**Things that must not stretch** — a row of buttons, a column of text, a combatant's
+bars — are held to a ceiling. A button spanning a third of a desktop window
 is not a bigger button, it is a worse one, and a line of text the full width of a
 monitor is not easier to read. Content therefore lays out inside a **centred column**
 of bounded width, with the corridor showing either side of it.
@@ -461,7 +486,7 @@ the middle of it. It is capped at 2 because past that the game stops looking lik
 bigger version of itself and starts looking like a zoomed screenshot.
 
 The scale belongs to the **plan**, not to the drawing. Every position and size is
-decided before anything is emitted, which is the same rule the combatant cards already
+decided before anything is emitted, which is the same rule the combatants already
 follow — an adapter that recomputed scale would be a second place where layout lived.
 
 ### The viewport is what can be seen
@@ -510,18 +535,21 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 | Labels | Name the action, with any key hint as secondary text | Naming the key that triggers it | "[Enter] Descend" instructs a phone player to press a key they do not have. One drawing has to serve both without telling either to use the other's device. |
 | Hit regions | Computed in the plan, beside the drawing they belong to | Registered as handlers on the drawn objects | Keeping them together means what is drawn and what is tapped cannot drift apart, and it keeps hit-testing in the pure layer where it can be tested. |
 | Combat over the corridor | Drawn on top of the first-person view, which stays visible | Replacing the view with a combat screen | The party is still standing in the passage they were caught in, and seeing it is part of knowing how bad this is. A separate screen would also throw away the light and the place. |
-| Readiness | The card itself filling from the left, a brighter shade over a subdued one, from the simulation's own value | A thin bar along the card's foot; a numbered initiative list; an order-of-play queue along one edge | A fill is read without counting and compares two combatants at a glance, which is the question a player actually has in a fight, and a whole card is read from across the screen where a sliver is not. A queue would have to be recomputed and redrawn on every action and still would not show how close anybody is. |
-| Hit points | A bar along the foot of every card, coloured by the share left, with the number beside it | The number alone | A row of fractions has to be read one card at a time; a row of bars shows how hurt the whole party is in one look, and the colour carries the urgency before the length is even judged. |
+| How a side is arranged | Enemies in one column on the left, the party in one on the right | Two ranks a side, as the rows once were; one combined list ordered by readiness | A column is the honest shape of a side with no positions in it, and it holds two combatants or twelve without changing shape. Facing columns keep *us* and *them* answerable without reading a single name. A list ordered by readiness would reorder itself under the player's eye on every beat, which is the one thing a display being read under pressure must not do. |
+| What a combatant is drawn as | A portrait, then three stacked bars: readiness, identity, condition | A single card whose fill is readiness; a card with a bar along its foot | Three bars put the three questions a player asks — when do they act, who is this, how are they doing — in three fixed places, so each is found by position rather than by reading. A card carrying everything at once makes readiness compete with the name and the numbers for the same space. |
+| Readiness drawn with arrowheads | A bar filled left to right with arrowheads, from the simulation's own value | A plain block fill; a numbered initiative list; an order-of-play queue along one edge | Arrowheads give the bar a direction, so it reads as travelling toward the moment it fills rather than as a quantity that happens to be growing. A fill is read without counting and compares two combatants at a glance; a queue would be recomputed and redrawn on every action and still would not show how close anybody is. |
+| Hit points | A bar under each combatant, coloured by the share left, with the numbers on it | The number alone | A column of fractions has to be read one at a time; a column of bars shows how hurt the whole party is in one look, and the colour carries the urgency before the length is even judged. |
+| Portraits | An image file per class and per enemy kind, drawn at one size | Shapes drawn in code, as the map's marks are; no portrait at all | A picture is recognised faster than a name is read, which is what makes a column of six scannable. Files mean real art arrives by replacing them rather than by rewriting a draw routine, and one size keeps a column aligned whatever it holds. |
 | How bars fill | Over real time from empty, a beat per fixed span, drawn partway between beats | Jumping straight to whoever is next ready | A jump shows the result of the race and never the race, so the player cannot see a quick combatant pulling ahead of a slow one, which is the thing the bars exist to show. |
 | The beat between actions | A short pause, with the acting combatant highlighted | Resolving everything down to the next decision at once; animating each action properly | Without a pause a fight on standing orders lands between two frames and is read afterwards as text, which is the thing the log exists to rescue rather than the thing to build on. Real animation is a larger project and would need the ticker running throughout rather than between actions. |
 | The ticker | Stopped, except while a fight is playing rather than waiting on the player | Stopped always, with actions resolved instantly; a conventional render loop | The rule was never about the ticker; it was about not redrawing an unchanged screen sixty times a second. A screen that is changing on its own is the one case it was not written for, and the exception is bounded to a fight that is not waiting on anybody. |
 | Announcing an ambush | A card above the fight saying Ambush!, up until every ambusher has acted, with the fight playing beneath it | Colouring the bars that start full; a line in the log; a card held for a fixed span before the fight begins | Bars that start full are the one thing on the screen with no cause visible anywhere, and a player who cannot read them concludes the fight is broken. A card held before the fight explains an ambush nobody has seen yet and is gone by the time the ambushers swing; one that lasts as long as the ambush explains it while it happens. The log is read after the fact, and a colour is a code nobody has been taught. |
 | The prompt | Naming who is ready, and absent while nothing waits | Asking what the character will do; a prompt that stays up throughout | The buttons already say what may be done; what the player needs is which of five cards the next press belongs to. A prompt standing over a fight that is playing invites a press nothing is listening for. |
-| Showing an attack | A vertical judder on the attacker's card, decaying over the beat | Moving the card toward its target; flashing the one that was hit; a larger animation | Nothing else in the fight moves, so the smallest honest motion is enough, and putting it on the attacker answers *whose blow was that* rather than only *that something happened*. Moving toward a target is a real animation and wants a real animation system. |
+| Showing an attack | A vertical judder on the attacker, decaying over the beat | Moving the attacker toward its target; flashing the one that was hit; a larger animation | Nothing else in the fight moves, so the smallest honest motion is enough, and putting it on the attacker answers *whose blow was that* rather than only *that something happened*. Moving toward a target is a real animation and wants a real animation system. |
 | Showing a round | A text log built from the round's own event log | Animating each action; showing only the resulting state | Nothing animates, so a round lands in one frame. Without a record the player sees the aftermath and never learns what happened. The log is the fight as perceived. |
 | Illegal options | Not offered at all | Offered and refused when chosen | An option that cannot be taken should not be presented. Refusing after the fact teaches the rules by failure, which in a fight is expensive. |
 | Backing out | Steps back to the previous character | Cancelling only the current choice | The party commits to a whole round before any of it resolves, so reconsidering should reach the whole round rather than only its last decision. |
-| The fallen | Drawn in place, not removed | Removing them from the formation | The shape of a line that has lost its middle is information, and a body still occupies its row. |
+| The fallen | Drawn in place, spent and dimmed | Removing them from the column | The shape of a side that has lost its middle is information, and a column that closed its gaps would move everything below the gap while the player was looking at it. |
 | The build stamp | Drawn in the corner of the running game, with the commit count as its patch | A version on an about screen; no version at all; a build date | "It does not work" and "you are looking at a cached build" are the same report without it, and a service worker makes the second common. Taking the patch from the commit count means nobody has to remember to raise a number, and it orders correctly by construction. |
 | Starter floor | Hand-authored data, deleted when generation lands | Waiting for dungeon generation; generating a floor here | The segment cannot be seen to work without a floor to walk, and building a generator inside the presentation segment would put it in the wrong place permanently. |
 
@@ -537,14 +565,16 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 6. ✅ **Tap regions are viewport fractions**, recomputed on resize, with a pixel floor on how small one may be drawn.
 9. ✅ **Every tappable region is drawn**, and every drawn control carries its own hit region in the plan.
 11. ✅ **A navigation zone is its label alone**, outlined only while pressed; a button keeps its panel and frame.
-13. ✅ **Each rank in a fight is centred**, and every card's position is decided in the plan.
+13. ✅ **Enemies are a column on the left and the party a column on the right**, every position decided in the plan.
 14. ✅ **Stepping back is a zone of its own**, beneath the forward zone.
 15. ✅ **A door is drawn on the frame the corridor stops at**, closed as a panel with a handle and open as its frame alone.
 16. ✅ **An enemy the corridor report names is drawn standing at that depth**, with the same horned head the automap uses.
 17. ✅ **The build's version is drawn in the bottom-left corner**, its patch number the commit count, fixed at build time.
-18. ✅ **A combatant's card fills with their readiness**, and the combatant acting is highlighted.
+18. ✅ **A combatant is a portrait and three stacked bars** — readiness, identity, condition — and the one acting is highlighted.
 19. ✅ **Actions play out a beat at a time**, and the ticker runs only while a fight is playing rather than waiting.
-24. ✅ **The bar along a card's foot is hit points**, coloured by the share left.
+24. ✅ **The bottom bar is hit points**, coloured by the share left, with the fight's other resources beside them.
+26. ✅ **Readiness is filled with arrowheads**, so a bar points at the moment it fills.
+27. ✅ **A portrait is an image file**, one per class and per enemy kind.
 25. ✅ **Bars fill over real time from empty**, drawn partway between beats.
 20. ✅ **Every action is taken by a press.** The countdown ring that would take a proposal unattended is built, tested, and switched off.
 21. ✅ **The prompt names who is ready to act**, and is absent while nothing waits on the player.

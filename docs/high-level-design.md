@@ -2,8 +2,8 @@
 
 ## Problem
 
-Party-based dungeon crawlers in the Wizardry lineage — a fixed party, positional
-turn-based combat, a dungeon that punishes overreach — are deep, slow-paced games
+Party-based dungeon crawlers in the Wizardry lineage — a fixed party, turn-based
+combat, a dungeon that punishes overreach — are deep, slow-paced games
 that suit short sessions well. Almost none of them are playable in a browser on a
 phone. The ones that exist are either ports that assume a controller and an
 uninterrupted hour, or shallow idle games wearing the genre's clothes.
@@ -65,9 +65,9 @@ acceptable alone.
 - **The short-session player.** Has five to fifteen minutes, on a phone, standing
   up. Needs the game to resume exactly where it was and to be fully playable with
   thumbs. Will not tolerate losing progress to a closed tab.
-- **The systems player.** Comes for the party-building and the positional combat
-  math. Wants classes, equipment, and abilities that interact, and wants to
-  understand why an encounter went badly. Will read numbers.
+- **The systems player.** Comes for the party-building and the combat maths. Wants
+  classes, equipment, and abilities that interact, and wants to understand why an
+  encounter went badly. Will read numbers.
 - **The developer.** Deepcrawl is built solo under Linked-Intent Development. The
   architecture has to stay legible and testable enough that a session picked up
   weeks later can be understood from the docs and the specs alone.
@@ -94,10 +94,10 @@ justification.
 - **Early floors stay worth revisiting.** A player who has reached the tenth floor
   should still find reasons to walk the second. Falsified when optimal play is to
   descend and never look back.
-- **Where characters stand decides fights.** A player should be able to explain why
-  an encounter went badly and change the outcome by rearranging the party or
-  choosing differently. Falsified when the best play is the same regardless of who
-  stands in which row.
+- **Who acts, and on whom, decides fights.** A player should be able to explain why
+  an encounter went badly and change the outcome by building the party differently or
+  spending its turns differently. Falsified when a fight plays out the same whatever
+  the player does with it.
 - **The dungeon is worth mapping.** A player should want to fill the map in, and
   should navigate by looking at the dungeon rather than by reading the map.
   Falsified when players ignore the map, or when they play entirely from it and
@@ -116,9 +116,10 @@ justification.
   anyone needs asking — a turn order wearing a bar, never a test of speed.
 - **Roguelike run structure.** No permadeath, no run-scoped meta-progression, no
   wiping the save on a party loss.
-- **Free-grid tactical combat.** Positioning is front row / back row, not an
-  arbitrary battlefield. Rejecting the grid is what keeps combat readable on a
-  phone and keeps enemy AI tractable.
+- **Positional combat.** There is no battlefield at all: no grid, no rows, no reach.
+  Every combatant can act on every other, and a fight is decided by when each one
+  acts and on whom they spend it. Rejecting position is what keeps combat readable on
+  a phone and keeps enemy AI tractable.
 - **Multiplayer or any server component.** The game is a static PWA; there is no
   backend, no account, and no cloud save.
 - **3D rendering.** The first-person view is drawn in 2D with PixiJS — layered
@@ -159,7 +160,7 @@ flowchart TB
 
     subgraph sim["Simulation core (no renderer, no DOM)"]
         turn["Turn engine — scheduler, action resolution"]
-        combat["Combat — party vs party, rows, targeting"]
+        combat["Combat — party vs party, readiness, targeting"]
         party["Party — characters, stats, death and revival"]
         explore["Exploration — tile and facing, stepping, discovery, encounters"]
         dungeon["Dungeon generation — floors from archetypes"]
@@ -189,14 +190,15 @@ flowchart TB
 — a step down a corridor, a sword swing, a menu confirmation that costs time — is
 an action submitted to the engine, which advances state deterministically.
 
-**Combat.** Party-vs-party resolution. Both sides occupy a front row and a back
-row; row determines reach, targeting weight, and exposure. Owns initiative,
-targeting, ability effects, and damage.
+**Combat.** Party-vs-party resolution, with no position in it: every combatant may
+act on every other, and what a combatant can do is decided by their abilities and
+equipment rather than by where they stand. Owns initiative, targeting, ability
+effects, and damage.
 
-**Party.** The player's characters: stats, classes, progression, equipment
-loadout, row assignment, and the alive / incapacitated / dead / revived state
-machine. A party holds at most five characters, with at most three in either row —
-so a full party is three and two, never three and three.
+**Party.** The player's characters: stats, classes, progression, equipment loadout,
+and the alive / incapacitated / dead / revived state machine. A party holds at most
+five characters. Also owns total level — the sum of a character's skill ranks — which
+is how much of a character there is, in one number, wherever one is needed.
 
 **Exploration.** The party's tile and facing, stepping and turning, and the record
 of which tiles have been discovered. Also encounter triggering, interactables, and
@@ -246,8 +248,8 @@ work first reaches it rather than all at once.
 |---|---|---|
 | Turn-based throughout, with combat's order of acting set by a readiness that fills in the fight's own time | A round in which everyone acts once, resolved in initiative order; real-time action on a live clock | The game is about decisions, not execution, and the simulation has to stay a deterministic state machine testable without a renderer. A readiness bar costs neither: the fight's time advances only between actions, never while a decision is pending, so an hour of thought costs exactly what a second of it costs. A round in which everyone acts once would make a quick character and a slow one differ only in who moves first, wasting the attribute that decides speed everywhere else in the game. |
 | Single persistent save, campaign-shaped | Roguelike runs with permadeath; multiple save slots | Consequences have to persist for decisions to weigh anything. One slot rather than many keeps the player from save-scumming around the consequence. |
-| Front row / back row positioning | Free tactical grid (XCOM/FFT); no positioning at all | Positioning matters for reach and exposure without the UI cost of a grid on a phone screen, and without the AI cost of pathfinding and cover. No positioning at all would flatten combat into a stat comparison. |
-| Party of five, at most three per row | Six, filling both rows; four, one row of three plus one reserve | Six makes composition a non-choice — both rows fill and every party looks alike. Five cannot fill both rows, so each party is a live decision about whether to weight the front for durability and reach or the back for casters and ranged attacks. An odd size also removes mirror symmetry between the rows. |
+| No positioning: any combatant may act on any other | Front row / back row, where row sets reach and exposure; a free tactical grid (XCOM/FFT) | Rows constrain who may be targeted without asking the player anything: a character's options follow from where they were put long before the fight, so most turns have one legal answer and the back rank often has none. Removing them puts every combatant in reach of every other, which makes each turn a choice of *whom to spend it on* rather than a check of who is allowed to act. Reach, exposure and the protective role a front rank played return as properties of equipment and abilities, which are chosen in the fight's own terms. A grid would cost a phone screen and pathfinding for the same question. |
+| Party of five | Six; four | Five is small enough that every member is a deliberate pick and large enough to carry a spread of classes. An odd size keeps a party from resolving into two matched halves. |
 | Death recoverable, at a cost | Permadeath; death impossible | Follows the *setbacks, not erasure* tenet. A death the player can undo for free is not a consequence; one they cannot undo at all contradicts the single-save structure. |
 | Procedural generation constrained by authored data | Fully hand-authored floors; unconstrained generation | Hand-authoring every floor is unsustainable solo; unconstrained generation produces incoherent dungeons. Authored archetypes and tables bound the generator's output space. |
 | First-person 2D view plus a corner automap | Top-down view of the whole floor; first-person with no automap; 3D or raycast rendering | The first-person view makes the dungeon a place to be lost in, which is the genre's appeal; the automap keeps being lost from becoming tedious. A top-down view gives orientation for free and loses the tension. 3D is disproportionate for a 2D sprite game and costs mobile performance. |
@@ -274,7 +276,8 @@ Falsification signals — conditions under which Deepcrawl would be judged broke
 ## References
 
 - Genre prior art: the later Wizardry entries — first-person stepped exploration
-  with a corner automap, and row-based party combat. Etrian Odyssey for mapping as
-  a pleasure in itself; Darkest Dungeon for recoverable-loss design.
+  with a corner automap. Etrian Odyssey for mapping as a pleasure in itself; Darkest
+  Dungeon for recoverable-loss design; Dungeon Encounters for a fight read off filling
+  bars rather than off a battlefield.
 - Development process: Linked-Intent Development — https://linked-intent.dev
 - Live deployment: https://mjschleckser.github.io/deepcrawl/

@@ -492,7 +492,7 @@ deeper than three in a row, no matter which segment triggered the change.
 | Resolved light levels, torch states | exploration | exploration |
 | Floor layouts | dungeon generation | never mutated after creation |
 | Character hit points, status, death state | party | party operations, called by combat and exploration |
-| Party roster and row assignment | party | party operations |
+| Party roster | party | party operations |
 | Hunger per character | hunger | hunger, on exploration's tick |
 | Roaming enemy positions and state | roaming enemies | roaming enemies, on exploration's step |
 
@@ -544,7 +544,7 @@ every action stays *achievable* by touch, not that each has a button of its own.
 
 | Party action | Keyboard | Touch | Owned by |
 |---|---|---|---|
-| `PARTY` — roster, row assignment, statuses | `P` | party bar | party |
+| `PARTY` — roster, statuses | `P` | party bar | party |
 | `INVENTORY` — use and equip items | `I` | pack icon | loot and items |
 | `SPELLS` — out-of-combat magic | `C` | spell icon | abilities |
 | `SEARCH` — look for traps and secret doors | `F` | search control | traps |
@@ -603,7 +603,7 @@ widget occupies a corner and expands to full screen on tap.
 | Roamers on the automap | Shown where their tile is `bright` and nothing opaque stands between | Brightness alone; last-known position; always shown; visible at `dim` too | Seeing where enemies are is what carrying light buys, and a persistent marker would give it away for free. Brightness alone is not sight either: light pools by distance and ignores walls, so it would show a goblin standing in torchlight on the far side of solid stone. |
 | Roamers in the first-person view | Drawn where the corridor report puts them, under the automap's rule | Shown on the automap alone; shown whenever the party's own tile is lit | A monster the map shows and the passage does not is the two views disagreeing about the same tile, which is the one thing answering both projections here is meant to prevent. |
 | Exploration to combat | An explicit encounter payload | Both segments reading shared state freely | The segment boundary is where cascade pauses; a boundary read through freely is not a boundary. The payload is the contract that changes when the segments need to say something new. |
-| Party state | Owned by the party segment; exploration and combat both call its operations | Either segment writing character fields directly | Both segments legitimately change party state — damage in combat, a potion in exploration. Routing both through one owner keeps hit-point floors, the death state machine, and the five-member and three-per-row limits in a single place. |
+| Party state | Owned by the party segment; exploration and combat both call its operations | Either segment writing character fields directly | Both segments legitimately change party state — damage in combat, a potion in exploration. Routing both through one owner keeps hit-point floors, the death state machine, and the five-member limit in a single place. |
 | Floors the party has left | Frozen, then re-stocked on return in proportion to elapsed ticks | Live background simulation; no change at all on return | Background simulation costs time proportional to the campaign for changes nobody observes, while a wholly static dungeon is dead. A re-stocking buys the appearance of a living dungeon at the cost of one arrival-time pass. |
 | Re-stocking and the map | Discovery is never revised; only occupants, doors, and room contents change | Fogging the map again after long absences | The player earned the map. Making its layout decay would punish the mapping the game is built to reward; making its contents unreliable is the interesting half. |
 | Dim light | Penalises trap and secret-door detection, and hides enemies | Dim as purely cosmetic; dim also degrading mapping accuracy | Detection penalties make a failing torch dangerous without making the map itself lie, which would undermine the record the player is building. |

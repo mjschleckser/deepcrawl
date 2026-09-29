@@ -17,9 +17,9 @@ Three principles shape the design.
 and what it is worth. Adding a goblin shaman is authoring. Nothing in the machinery
 knows what a goblin is, which is what lets the dungeon grow without the systems moving.
 
-**Enemies fight by the rules the party fights by.** They stand in rows, melee reaches
-only a front rank, a caster shelters behind its own front line, and a bow reaches past
-it. A monster that ignored positioning would quietly undo the thing the whole combat
+**Enemies fight by the rules the party fights by.** They fill a readiness bar, act
+alone when it is full, may be struck by anybody and may strike anybody. A monster
+exempt from the fight's own rules would quietly undo the thing the whole combat
 design is built on.
 
 **Light never helps them.** A roamer notices the party by proximity, not by seeing
@@ -32,7 +32,7 @@ monster; it only blinded the party.
 
 | | Owned by enemies | Owned elsewhere |
 |---|---|---|
-| Roster | stats, role, row, what an enemy is worth | — |
+| Roster | stats, role, what an enemy is worth | — |
 | Bands | which enemies gather, and how many | generation decides where a band goes |
 | Roaming | where a roamer stands, and how it moves on a floor | exploration owns the tick that moves it |
 | Awareness | whether a roamer knows where the party is | exploration hands the result to combat as surprise |
@@ -46,28 +46,28 @@ An enemy definition carries what combat needs and nothing more.
 |---|---|
 | `id`, `name` | identity |
 | `role` | `MELEE`, `RANGED`, or `CASTER` |
-| `row` | which row it prefers to stand in |
 | `hitPoints`, `dexterity`, `accuracy`, `defence`, `armour`, `damage` | what combat resolves against |
 | `potValue` | what defeating it is worth in skill experience |
 | `forbidsEscape` | whether a party can flee from it |
 
-Role and row are separate on purpose. A melee enemy shoved into a back row by a full
-front rank is a melee enemy that cannot reach anything, and that is a legitimate and
-useful thing for a band to contain.
+Role says what an enemy fights with, and nothing about where it stands — there is
+nowhere to stand. It is what a later behaviour, an ability set, or a portrait reads to
+tell a swordsman from a caster.
 
 ### The goblins
 
 The first floor's inhabitants, and the shape every later roster follows.
 
-| Enemy | Role | Row | Notes |
-|---|---|---|---|
-| **Goblin** | melee | front | the ordinary body in a warband; weak alone, a problem in numbers |
-| **Goblin Archer** | ranged | back | reaches the party's back row from safety behind its own front rank |
-| **Goblin Mage** | caster | back | the reason a party wants a bow of its own |
+| Enemy | Role | Notes |
+|---|---|---|
+| **Goblin** | melee | the ordinary body in a warband; weak alone, a problem in numbers |
+| **Goblin Archer** | ranged | quick and accurate, and no tougher than the bodies around it |
+| **Goblin Mage** | caster | frail, dangerous, and worth the most |
 
-The archer and the mage are what make a goblin band a positioning problem rather than
-an arithmetic one. Killing the bodies in front is not the same decision as reaching
-past them.
+The archer and the mage are what make a goblin band a question of priorities rather
+than of arithmetic. Every one of them can be reached at any time, so which to spend a
+turn on is the whole decision: the mage is the danger, the bodies are the damage, and
+nothing protects either.
 
 An enemy carries **defence** and **armour** as separate numbers, exactly as a character
 does: defence decides whether a blow lands, armour decides what it is worth. A goblin
@@ -97,8 +97,7 @@ goblin warband
 ```
 
 The count is a range drawn from the seed, so no two warbands are the same size and
-none of them is a surprise either. A band never exceeds the row limits combat sets, and
-members are placed in their preferred row until it is full, then into the other.
+none of them is a surprise either. A band never exceeds the group limit combat sets.
 
 More elaborate bands — archers behind a screen of bodies, a mage with a bodyguard — are
 authoring, and the machinery for them is the same.
@@ -196,20 +195,24 @@ anything arrives.
 
 ## Behaviour in a Fight
 
-Deliberately thin at this stage. An enemy chooses a legal target, preferring the
-party's front row, and attacks with whatever its role implies: a melee enemy swings at
-the front rank, an archer or a mage reaches past it while favouring the front.
+Deliberately thin at this stage. An enemy picks a standing character and attacks.
 
-Focus fire, protecting casters, retreating when hurt, and using abilities are all
-later. What matters now is that an enemy never chooses an illegal target, because the
-reach rules are the thing the combat design rests on.
+**The pick is spread rather than fixed.** Every standing character is a candidate and
+the choice is drawn from them, so a band does not put its whole weight on whoever
+happens to be listed first. With no rows to shield anybody, a band that always struck
+the same character would delete one member of the party before the second had acted —
+which is not difficulty, only arithmetic nobody can answer.
+
+Focus fire on the weakest, protecting casters, retreating when hurt, and using
+abilities are all later, and all want a reason more interesting than list order.
 
 ## Decisions & Alternatives
 
 | Decision | Chosen | Alternatives Considered | Rationale |
 |---|---|---|---|
 | Roster | Content data with no behaviour attached | Enemy subclasses with their own logic | Adding a monster should be authoring rather than programming. Behaviour that varies per enemy arrives later as data the machinery reads, not as code it dispatches to. |
-| Role and row | Separate fields | Row implied by role | A melee enemy pushed into the back row by a full front rank is a useful thing for a band to contain, and the two concepts come apart the moment a band is larger than a row. |
+| What role is for | What an enemy fights with, and nothing positional | A field deciding where an enemy stands | There is nowhere to stand: combat has no positions. Role survives because a swordsman and a caster still differ in what they do, what they can be given, and how they are drawn. |
+| Choosing a target | Drawn from every standing character | The first legal target; the weakest character | With everyone reachable, striking the first every time concentrates a whole band on one character by accident of list order, which kills them before the fight is a fight. Aiming at the weakest is a real behaviour worth having, but it belongs with the rest of enemy intelligence rather than arriving as a side effect of removing rows. |
 | Group composition | Named bands with count ranges | Filling an encounter budget from a table | A band is legible: a goblin warband is two to four goblins, and an author can picture it. Budgets are worth having later for variety, but they make it hard to say what any particular fight will be. |
 | Awareness | Proximity alone | Line of sight; noticing the party's light | The exploration segment forbids light affecting enemy awareness. Proximity also produces the asymmetry worth having, where the dark hides the roamer from the party rather than the party from the roamer. |
 | Contact | Neither side may enter the other's tile; the attempted entry is the encounter | Contact when the two share a tile | Sharing a tile makes a chase unresolvable: a pursuer that follows the party step for step is never escaped, because every attempt to break off ends with it still on top of them. Barring the entry hands the outcome of a chase back to speed. |
@@ -224,14 +227,14 @@ reach rules are the thing the combat design rests on.
 ### Resolved
 
 1. ✅ **The roster is content data**; the machinery knows nothing about any particular enemy.
-2. ✅ **Role and row are separate fields.**
+2. ✅ **Role says what an enemy fights with**, never where it stands.
 3. ✅ **A band is a named template** with count ranges, drawn from the seed.
 4. ✅ **Awareness is proximity alone**, and light never affects it.
 5. ✅ **Every roamer pays its own tick cost to cross a tile**, so a faster party can outrun a slower pursuer.
 8. ✅ **Awareness decays over ticks**, but never while the party is in the roamer's line of sight.
 9. ✅ **A successful escape from combat leaves the roamer unaware**, so fleeing buys something real.
 6. ✅ **Roamers move through passages**, never through walls or closed doors.
-7. ✅ **Enemies obey the same reach rules the party does.**
+7. ✅ **Enemies fight under the same rules the party does**, reachable by anyone and able to reach anyone.
 
 ### Deferred
 
@@ -245,5 +248,5 @@ reach rules are the thing the combat design rests on.
 
 ## References
 
-- `docs/intent/combat/combat-design.md` — the rows, reach rules, and pot these enemies feed.
+- `docs/intent/combat/combat-design.md` — the readiness, targeting, and pot these enemies feed.
 - `docs/intent/exploration/exploration-design.md` — the tick that moves a roamer, the re-stocking it serves, and the rule that light must never help it.
