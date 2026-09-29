@@ -13,7 +13,7 @@ import { Condition, Skill, character, roster, totalLevel } from '../sim/party.js
 import { MIN_TAP_PX, ControlKind, uiScale, contentColumn } from './geometry.js';
 import {
   Action, Band, Outcome, attackTargets,
-  encounterOutcome, readyActor, advanceBeats, takeAction, attemptFlee, readinessOf,
+  encounterOutcome, readyActor, advanceBeats, takeAction, attemptFlee,
   readinessPartway, FULL_BAR,
 } from '../sim/combat.js';
 import { proposeFrom } from '../sim/orders.js';

@@ -7,7 +7,7 @@
  * renderer, so it is kept small enough to verify by reading.
  */
 
-import { Application, Container, Graphics, Sprite, Texture, Text } from 'pixi.js';
+import { Application, Assets, Container, Graphics, Sprite, Text } from 'pixi.js';
 import { Direction, EdgeKind, TileFeature } from '../sim/floor.js';
 import { PIXI_APP_OPTIONS, PALETTE } from './appconfig.js';
 
@@ -262,7 +262,21 @@ export async function createRenderer(mount) {
     app.render();
   };
 
-  return { app, draw, viewport: () => ({ width: app.screen.width, height: app.screen.height }) };
+  // A portrait that lands after the frame that wanted it redraws that frame.
+  let lastLayers = null;
+  const drawAndRemember = (layers) => {
+    lastLayers = layers;
+    draw(layers);
+  };
+  onPortraitArrived = () => {
+    if (lastLayers) draw(lastLayers);
+  };
+
+  return {
+    app,
+    draw: drawAndRemember,
+    viewport: () => ({ width: app.screen.width, height: app.screen.height }),
+  };
 }
 
 const FIGHT_COLOURS = {
@@ -286,21 +300,26 @@ const FIGHT_COLOURS = {
 };
 
 /**
- * Portraits, loaded once and kept. A portrait that will not load is simply absent: a
- * missing picture must not cost the player the fight.
+ * Portraits, fetched once and kept. A picture arrives after the frame that wanted it,
+ * so the fight is drawn without it and drawn again when it lands; one that never
+ * arrives is simply absent, because a missing image must not cost the player a fight.
  *
+ * @spec PRESENT-FIGHT-023
  * @spec PRESENT-FIGHT-024
  */
 const PORTRAIT_CACHE = new Map();
+let onPortraitArrived = () => {};
 
 function portraitTexture(url) {
   if (!url) return null;
   if (!PORTRAIT_CACHE.has(url)) {
-    try {
-      PORTRAIT_CACHE.set(url, Texture.from(url));
-    } catch {
-      PORTRAIT_CACHE.set(url, null);
-    }
+    PORTRAIT_CACHE.set(url, null);
+    Assets.load(url)
+      .then((texture) => {
+        PORTRAIT_CACHE.set(url, texture);
+        onPortraitArrived();
+      })
+      .catch(() => {});
   }
   return PORTRAIT_CACHE.get(url);
 }
