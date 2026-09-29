@@ -61,6 +61,11 @@ status — can be given to a monster without new machinery.
 | `potValue` | what defeating it is worth in skill experience |
 | `forbidsEscape` | whether a party can flee from it |
 
+**A fallen enemy is dead**, where a fallen character is unconscious. The condition
+machinery is the same; what differs is that nobody carries a goblin out. This is the one
+place the two sides part, and it is a statement about the campaign rather than about the
+fight.
+
 **An enemy has no class.** Class is the shape of a career — what may be learned, how
 fast, and what a body grows into — and an enemy has no career: it is authored whole,
 fights once, and never trains. So its hit points are stated outright rather than

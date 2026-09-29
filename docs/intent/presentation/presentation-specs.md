@@ -88,17 +88,21 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 
 ## A fight's readiness
 
-- [x] **PRESENT-READY-001**: The system shall draw each standing combatant's readiness as a fill across their whole card, from the left edge to the proportion the simulation reports, in a brighter shade of the card's colour laid over a subdued one.
-- [x] **PRESENT-READY-022**: The system shall draw a hit-point bar along the foot of every standing combatant's card, filled to the proportion of their maximum hit points they have left.
+- [ ] **PRESENT-READY-001**: The system shall draw each combatant's readiness as the topmost of their three bars, filled from its left edge to the proportion the simulation reports.
+- [ ] **PRESENT-READY-027**: The system shall fill a readiness bar with arrowheads pointing toward the direction of filling, at one size on every bar.
+- [ ] **PRESENT-READY-028**: The system shall draw each combatant as a portrait with three bars stacked beside it: readiness above, identity in the middle, and condition below.
+- [ ] **PRESENT-READY-029**: The system shall draw on the identity bar the combatant's name, their total level, and their condition when it is not `OK`.
+- [ ] **PRESENT-READY-030**: The system shall draw the same portrait, bars, and values for an enemy as for a character.
+- [ ] **PRESENT-READY-022**: The system shall draw hit points as the lowest of a combatant's three bars, filled to the proportion of their maximum they have left, with the remaining and maximum written on it.
 - [x] **PRESENT-READY-023**: The system shall colour a hit-point bar as healthy above half of maximum, wounded above a quarter, and critical at or below a quarter.
 - [x] **PRESENT-READY-024**: While no combatant is ready and nothing is waiting on the player, the system shall advance the fight's time by one beat for each fixed span of real time.
 - [x] **PRESENT-READY-025**: While a beat of filling is in progress, the system shall draw each fill at the readiness the simulation reports for that point in the beat.
 - [x] **PRESENT-READY-002**: The system shall draw the readiness bar from the simulation's value and from no count of its own.
-- [x] **PRESENT-READY-003**: While a combatant is acting, the system shall draw that combatant's card as highlighted, on either side alike.
+- [ ] **PRESENT-READY-003**: While a combatant is acting, the system shall draw that combatant as highlighted, on either side alike.
 - [x] **PRESENT-READY-004**: The system shall highlight at most one combatant at a time.
 - [x] **PRESENT-READY-005**: When the simulation resolves an action, the system shall pause for a fixed beat before playing the next.
 - [x] **PRESENT-READY-006**: The system shall measure the beat between actions and the proposal countdown in real seconds, and shall not let either advance the fight's own time.
-- [x] **PRESENT-READY-007**: While automatic confirmation is enabled and a character's standing orders propose an action, the system shall draw a countdown ring beside that character's readiness bar, its outer ring filled to the proportion of the countdown elapsed and the letter `A` at its centre.
+- [ ] **PRESENT-READY-007**: While automatic confirmation is enabled and a character's standing orders propose an action, the system shall draw a countdown ring beside that character's readiness bar, its outer ring filled to the proportion of the countdown elapsed and the letter `A` at its centre.
 - [x] **PRESENT-READY-008**: While automatic confirmation is disabled, the system shall draw no countdown ring, run no countdown, and take no action the player has not pressed for.
 - [x] **PRESENT-READY-012**: While automatic confirmation is enabled and a proposal's countdown completes, the system shall take the proposed action.
 - [x] **PRESENT-READY-009**: When the player acts on a character's turn, the system shall drop that turn's proposal and draw no ring for it.
@@ -107,11 +111,11 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-READY-021**: When the player takes the control offering a proposal, the system shall take that proposal.
 - [x] **PRESENT-READY-013**: While a character is waiting to be told what to do, the system shall name that character as ready to act.
 - [x] **PRESENT-READY-014**: While nothing is waiting on the player, the system shall draw no prompt at all.
-- [x] **PRESENT-READY-015**: When an encounter begins with one side unready, the system shall draw a card announcing the ambush until every combatant who began it with a full bar has acted or stopped being able to act.
+- [ ] **PRESENT-READY-015**: When an encounter begins with one side unready, the system shall draw a card announcing the ambush until every combatant the ambush favoured has acted or stopped being able to act.
 - [x] **PRESENT-READY-026**: While an ambush card is drawn, the system shall play the fight as it would without the card.
 - [x] **PRESENT-READY-017**: When an encounter begins with neither side unready, the system shall draw no ambush card.
-- [x] **PRESENT-READY-018**: When an attack resolves, the system shall offset the attacker's card vertically by an amount that decays to nothing over the beat.
-- [x] **PRESENT-READY-019**: The system shall decide each card's offset in the draw plan rather than while drawing.
+- [ ] **PRESENT-READY-018**: When an attack resolves, the system shall offset the attacker's portrait and bars together, vertically, by an amount that decays to nothing over the beat.
+- [ ] **PRESENT-READY-019**: The system shall decide each combatant's offset in the draw plan rather than while drawing.
 - [x] **PRESENT-READY-011**: The system shall decide the ring's position and size in the draw plan rather than while drawing.
 
 ## Prompts
@@ -125,17 +129,19 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 ## Combat
 
 - [x] **PRESENT-FIGHT-001**: While an encounter is running, the system shall draw the combat layer over the first-person view rather than in place of it.
-- [x] **PRESENT-FIGHT-002**: The system shall draw both the enemy formation and the party in their two rows.
-- [x] **PRESENT-FIGHT-018**: The system shall centre each rank across the width of the fight panel.
-- [x] **PRESENT-FIGHT-019**: The system shall decide every combatant card's position in the plan rather than while drawing.
+- [ ] **PRESENT-FIGHT-002**: The system shall draw the enemies as one column on the left of the fight panel and the party as one column on its right.
+- [ ] **PRESENT-FIGHT-018**: The system shall draw a side's combatants in a single column however many it holds, giving them no arrangement beyond their order in that column.
+- [ ] **PRESENT-FIGHT-019**: The system shall decide every combatant's position, and the position of their portrait and each of their bars, in the plan rather than while drawing.
+- [ ] **PRESENT-FIGHT-023**: The system shall draw a combatant's portrait from an image authored for their class or their enemy kind, at one size for every combatant.
+- [ ] **PRESENT-FIGHT-024**: If a combatant's portrait image is missing or fails to load, then the system shall draw the combatant without it rather than failing to draw the fight.
 - [x] **PRESENT-FIGHT-020**: The system shall lay a fight out within a column centred on the viewport, no wider than the readable maximum the scale allows.
 - [x] **PRESENT-FIGHT-021**: The system shall keep every fight control within that column, so that a control never spans a wide window.
-- [x] **PRESENT-FIGHT-022**: The system shall scale a combatant card and the text on it with the viewport, by the same scale the controls use.
-- [x] **PRESENT-FIGHT-003**: The system shall draw a combatant who is down in the place they occupied, rather than removing them from their row.
+- [ ] **PRESENT-FIGHT-022**: The system shall scale a combatant's portrait, bars, and text with the viewport, by the same scale the controls use.
+- [ ] **PRESENT-FIGHT-003**: The system shall draw a combatant who is down in the place they occupied in their column, rather than removing them from it.
 - [x] **PRESENT-FIGHT-004**: The system shall draw each combatant's remaining and maximum hit points.
 - [x] **PRESENT-FIGHT-005**: The system shall ask each conscious party member for an action in turn, in a fixed order.
 - [x] **PRESENT-FIGHT-006**: The system shall offer a character only the actions that character can legally take.
-- [x] **PRESENT-FIGHT-007**: When an action needs a target, the system shall offer only the targets the reach rules permit.
+- [ ] **PRESENT-FIGHT-007**: When an action needs a target, the system shall offer every combatant the simulation reports as a legal target for it.
 - [x] **PRESENT-FIGHT-008**: When the last conscious party member has chosen, the system shall resolve the round and begin asking again.
 - [x] **PRESENT-FIGHT-009**: When the player backs out of a choice, the system shall return to the previous character's choice rather than only cancelling the current one.
 - [x] **PRESENT-FIGHT-010**: The system shall build the combat log from the events a resolved round reports, and shall report nothing the simulation did not do.

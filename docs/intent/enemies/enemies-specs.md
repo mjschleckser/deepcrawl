@@ -8,11 +8,14 @@ are fed into.
 
 ## The roster
 
-- [x] **ENEMY-ROSTER-001**: The system shall define each enemy with an id, a name, a role, a preferred row, hit points, Dexterity, accuracy, defence, armour, damage, and a pot value.
+- [ ] **ENEMY-ROSTER-001**: The system shall define each enemy with an id, a name, a role, the six attributes, skill ranks, maximum hit points, an attack, a pot value, and whether it forbids escape.
 - [ ] **ENEMY-ROSTER-002**: The system shall give every enemy exactly one role from: melee, ranged, or caster.
-- [x] **ENEMY-ROSTER-003**: The system shall keep an enemy's role and its row as separate properties, so that an enemy may stand in a row its role does not prefer.
-- [ ] **ENEMY-ROSTER-004**: The system shall hold the goblin, the goblin archer, and the goblin mage in the first floor's roster, as a melee front-row enemy, a ranged back-row enemy, and a caster back-row enemy respectively.
-- [ ] **ENEMY-ROSTER-005**: The system shall read every enemy from content data, and shall hold no behaviour particular to any named enemy.
+- [ ] **ENEMY-ROSTER-003**: The system shall give an enemy every field a character has except a class, and shall read the same fields from both wherever a combatant is used.
+- [ ] **ENEMY-ROSTER-009**: The system shall give an enemy no class, and shall take its maximum hit points as authored rather than deriving them from a class.
+- [ ] **ENEMY-ROSTER-011**: When an enemy's hit points reach zero, the system shall set its condition to `DEAD` rather than to `UNCONSCIOUS`.
+- [ ] **ENEMY-ROSTER-010**: The system shall report an enemy's total level as the sum of its skill ranks, by the same summation it uses for a character.
+- [ ] **ENEMY-ROSTER-004**: The system shall hold the goblin, the goblin archer, and the goblin mage in the first floor's roster, as a melee enemy, a ranged enemy, and a caster respectively.
+- [ ] **ENEMY-ROSTER-005**: The system shall read every enemy from its own authored file, and shall hold no behaviour particular to any named enemy.
 - [ ] **ENEMY-ROSTER-007**: The system shall give every enemy a defence and an armour as separate values, defence deciding whether a blow lands and armour what it is worth.
 - [ ] **ENEMY-ROSTER-008**: The system shall set an ordinary enemy's pot value at about twelve for each floor tier of its depth, and a dangerous one's at up to twice that.
 
@@ -21,8 +24,8 @@ are fed into.
 - [x] **ENEMY-BAND-001**: The system shall define a band as a named template naming each enemy it contains and a range of how many.
 - [x] **ENEMY-BAND-002**: When a band is assembled, the system shall draw each member count from within its range using the seed it was given.
 - [x] **ENEMY-BAND-003**: The system shall assemble an identical band from an identical seed and template.
-- [x] **ENEMY-BAND-004**: When assembling a band, the system shall place each member in its preferred row until that row is full, and in the other row thereafter.
-- [x] **ENEMY-BAND-005**: The system shall not place more than the combat segment's row limit in either row of a band.
+- [ ] **ENEMY-BAND-008**: The system shall assemble a band as a flat group, giving its members no position among themselves.
+- [ ] **ENEMY-BAND-005**: The system shall not assemble a band larger than the combat segment's limit on an enemy group.
 - [x] **ENEMY-BAND-006**: The system shall hold a goblin warband of two to four goblins in the first floor's bands.
 
 ## Awareness
@@ -57,9 +60,9 @@ are fed into.
 
 ## Behaviour in a fight
 
-- [x] **ENEMY-FIGHT-001**: When a melee enemy selects a target, the system shall choose from the party's front row while a conscious character stands in it.
-- [x] **ENEMY-FIGHT-002**: When a ranged or caster enemy selects a target, the system shall weight its choice toward the party's front row while leaving the back row reachable.
-- [x] **ENEMY-FIGHT-003**: The system shall never let an enemy select a target the reach rules forbid.
+- [ ] **ENEMY-FIGHT-005**: When an enemy selects a target, the system shall draw it at random from every character able to act.
+- [ ] **ENEMY-FIGHT-006**: The system shall draw an enemy's target from the encounter's own seeded generator, so that an encounter replayed from the same seed picks the same targets.
+- [ ] **ENEMY-FIGHT-007**: The system shall never let an enemy select a target that is unable to act.
 
 ## Re-stocking
 
