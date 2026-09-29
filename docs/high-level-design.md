@@ -219,8 +219,9 @@ occupies it.
 and equipment.
 
 **Content definitions.** The authored guidelines generation runs inside — floor
-archetypes, enemy rosters, encounter budgets, loot tables, ability definitions.
-Data, not code.
+archetypes, encounter budgets, loot tables, ability definitions — and the combatants
+themselves, each in a file of its own under `src/game-data`. Data, not code, and
+separate from the code that reads it: a goblin is edited without opening a module.
 
 **Persistence.** One save file in browser storage, holding the full campaign
 state. The schema is versioned; an app update must not orphan an existing save.
@@ -250,6 +251,8 @@ work first reaches it rather than all at once.
 | Single persistent save, campaign-shaped | Roguelike runs with permadeath; multiple save slots | Consequences have to persist for decisions to weigh anything. One slot rather than many keeps the player from save-scumming around the consequence. |
 | No positioning: any combatant may act on any other | Front row / back row, where row sets reach and exposure; a free tactical grid (XCOM/FFT) | Rows constrain who may be targeted without asking the player anything: a character's options follow from where they were put long before the fight, so most turns have one legal answer and the back rank often has none. Removing them puts every combatant in reach of every other, which makes each turn a choice of *whom to spend it on* rather than a check of who is allowed to act. Reach, exposure and the protective role a front rank played return as properties of equipment and abilities, which are chosen in the fight's own terms. A grid would cost a phone screen and pathfinding for the same question. |
 | Party of five | Six; four | Five is small enough that every member is a deliberate pick and large enough to carry a spread of classes. An odd size keeps a party from resolving into two matched halves. |
+| Characters and enemies are one shape | Enemies carrying their own reduced set of combat stats | A monster that is a different kind of thing from a character needs every rule written twice, and the two copies drift. One shape means combat, the display and the save read a combatant without asking which side it is on, and a goblin can be given anything a character can have. Enemies carry no class, being authored whole rather than grown. |
+| Combatants authored as one file each, in a data folder | A table per kind inside the module that reads it | A file per combatant is editable by hand, diffs cleanly, and can be added without touching code. Bundling them into the module that consumes them is what makes content look like a code change and keeps non-code edits inside a programming language. |
 | Death recoverable, at a cost | Permadeath; death impossible | Follows the *setbacks, not erasure* tenet. A death the player can undo for free is not a consequence; one they cannot undo at all contradicts the single-save structure. |
 | Procedural generation constrained by authored data | Fully hand-authored floors; unconstrained generation | Hand-authoring every floor is unsustainable solo; unconstrained generation produces incoherent dungeons. Authored archetypes and tables bound the generator's output space. |
 | First-person 2D view plus a corner automap | Top-down view of the whole floor; first-person with no automap; 3D or raycast rendering | The first-person view makes the dungeon a place to be lost in, which is the genre's appeal; the automap keeps being lost from becoming tedious. A top-down view gives orientation for free and loses the tension. 3D is disproportionate for a 2D sprite game and costs mobile performance. |

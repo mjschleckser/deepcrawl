@@ -124,7 +124,9 @@ The skill list itself is content data. Adding a skill is authoring, not designin
 ### Total level
 
 **Total level is the sum of a character's skill ranks.** It is derived, never stored and
-never awarded: it moves when a rank moves and at no other time.
+never awarded: it moves when a rank moves and at no other time. It is computed the same
+way for anything with ranks, so an enemy's level and a character's mean the same thing
+and can be compared.
 
 It is how much of a character there is, in one number. A character is otherwise a table
 of ranks, which answers *what are they good at* and refuses to answer *how far along are
@@ -279,6 +281,17 @@ redundant:
 
 The party's own Cleric is the cheapest and the only one available at depth without
 luck. The rest are what stop a bad run becoming an unrecoverable spiral.
+
+### Where a character is written down
+
+The combatants a campaign starts with are **one JSON file each**, under
+`src/game-data/players`, beside the enemies in `src/game-data/enemies`. A file holds
+what a character is — name, class, attributes, ranks, hit points, attack, standing
+orders — and nothing about where they came from.
+
+This segment defines the shape; the files are content and belong to nobody's code. A
+party member and a goblin are authored the same way and read by the same loader, which
+is what keeps them the same kind of thing.
 
 ### Starting ranks
 

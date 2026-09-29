@@ -220,14 +220,14 @@ top of it.
 ┌───────────────────────────────────────────────────────────────────┐
 │                  ╔═════════════════════╗                          │ ← the corridor,
 │  ┌──┐▸▸▸▸▸▸▸▸▹▹▹▹▹▹▹▹      ┌──┐▸▸▸▸▸▸▸▸▸▸▸▸▸▸▸▸▸▸▸▸▸▸▸▸           │   still there
-│  │()│ Goblin      Lv 6     │()│ Bram         Lv 41  poisoned      │
+│  │()│ Goblin      Lv 6     │()│ Bram         Lv 41                │
 │  └──┘ 9/9                  └──┘ 14/20                             │
 │  ┌──┐▸▸▸▸▹▹▹▹▹▹▹▹▹▹▹▹      ┌──┐▸▸▸▸▸▸▸▸▸▸▸▸▹▹▹▹▹▹▹▹▹▹▹▹           │
 │  │()│ Goblin      Lv 6     │()│ Rook         Lv 38                │
 │  └──┘ 4/9                  └──┘ 20/20                             │
 │  ┌──┐░░░░░░░░░░░░░░░░      ┌──┐▸▸▸▸▸▸▸▸▸▸▸▸▸▸▸▸▸▸▸▸▹▹▹▹           │
 │  │()│ Goblin     dead      │()│ Isolde       Lv 33                │
-│  └──┘ 0/9                  └──┘ 20/20  3 slots                    │
+│  └──┘ 0/9                  └──┘ 20/20                             │
 │         ↑ enemies, left            ↑ the party, right             │
 ├───────────────────────────────────────────────────────────────────┤
 │ Bram is ready to act!                                             │
@@ -251,7 +251,7 @@ one above another, each answering one question:
 | Bar | Holds | Answers |
 |---|---|---|
 | Top | Readiness, filled left to right with arrowheads | *when do they act* |
-| Middle | Name, total level, and any statuses | *who is this* |
+| Middle | Name, total level, and condition when it is not `OK` | *who is this* |
 | Bottom | Hit points, and any other resource the fight spends | *how are they doing* |
 
 The order is not arbitrary. The top bar is the one that changes every frame and the one
@@ -280,13 +280,18 @@ is why they are the widest thing on a combatant and the topmost.
 
 **The bottom bar is hit points**, filled to the share of their maximum a combatant has
 left and coloured by how much that is: healthy above half, wounded above a quarter,
-critical at or below it. The numbers stay on it, and anything else the fight spends —
-spell slots, and whatever later joins them — sits alongside them, because a resource
-that decides what a character can do belongs where their capacity to act is read.
+critical at or below it. The numbers stay on it. A resource that decides what a
+combatant can do belongs here beside them, so slots will join them when something
+spends slots.
 
-**The middle bar is who they are**: name, total level, and the statuses they are
-labouring under. It is the bar that changes least, which is why it is neither the one
-the eye lands on first nor the one it checks under pressure.
+**The middle bar is who they are**: name, total level, and — when it is anything but
+`OK` — their condition, which is the whole of what a status is until status effects
+exist. It is the bar that changes least, which is why it is neither the one the eye
+lands on first nor the one it checks under pressure. Both sides carry both numbers,
+because both sides are the same kind of thing.
+
+**The bottom bar is hit points alone** for now. Spell slots and whatever later joins
+them belong on it, and are not drawn while nothing spends them.
 
 **Bars fill in front of the player.** Every combatant opens on the share the fight
 rolled for them, and it rises over real time, a beat of the fight's time per fixed
@@ -572,7 +577,7 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 17. ✅ **The build's version is drawn in the bottom-left corner**, its patch number the commit count, fixed at build time.
 18. ✅ **A combatant is a portrait and three stacked bars** — readiness, identity, condition — and the one acting is highlighted.
 19. ✅ **Actions play out a beat at a time**, and the ticker runs only while a fight is playing rather than waiting.
-24. ✅ **The bottom bar is hit points**, coloured by the share left, with the fight's other resources beside them.
+24. ✅ **The bottom bar is hit points**, coloured by the share left; other resources join them when they exist.
 26. ✅ **Readiness is filled with arrowheads**, so a bar points at the moment it fills.
 27. ✅ **A portrait is an image file**, one per class and per enemy kind.
 25. ✅ **Bars fill over real time from empty**, drawn partway between beats.

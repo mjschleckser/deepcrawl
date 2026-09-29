@@ -13,6 +13,11 @@ handing the party what it learned.
 
 Four principles shape the design.
 
+**Both sides are made of the same stuff.** A combatant is a combatant: the same
+attributes, ranks, condition, hit points and attack, whether the party brought it or
+the floor did. Every rule here is written once and asks nothing about which side
+swung.
+
 **Everyone is in reach of everyone.** There is no battlefield: no rows, no distance,
 no shielding one combatant with another. Any combatant may act on any other, on either
 side, at any time. What varies is not who may be reached but who is worth reaching, and
@@ -222,7 +227,7 @@ made.
 
 | Action | Costs | Notes |
 |---|---|---|
-| Attack | a full bar | melee or ranged, per the weapon |
+| Attack | a full bar | the attack carried by the combatant, until weapons carry it instead |
 | Cast | a full bar, and a spell slot of that rank | |
 | Use ability | a full bar | unlocked by a skill rank |
 | Relight | a full bar | a doused light source, per exploration |

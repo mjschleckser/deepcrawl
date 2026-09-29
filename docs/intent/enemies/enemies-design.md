@@ -32,7 +32,7 @@ monster; it only blinded the party.
 
 | | Owned by enemies | Owned elsewhere |
 |---|---|---|
-| Roster | stats, role, what an enemy is worth | — |
+| Roster | which combatants exist, their role, and what each is worth | the shape of a combatant, which the party segment defines |
 | Bands | which enemies gather, and how many | generation decides where a band goes |
 | Roaming | where a roamer stands, and how it moves on a floor | exploration owns the tick that moves it |
 | Awareness | whether a roamer knows where the party is | exploration hands the result to combat as surprise |
@@ -40,19 +40,47 @@ monster; it only blinded the party.
 
 ## The Roster
 
-An enemy definition carries what combat needs and nothing more.
+**An enemy is a character.** It carries the same fields a party member does — the six
+attributes, skill ranks, a condition, hit points, an attack — and its **total level is
+the sum of its skill ranks**, computed exactly as a character's is. A goblin and a
+fighter are the same kind of thing, differing in what is written in their fields.
+
+That symmetry is the point. Every rule that reads a combatant is written once: combat
+resolves an attack without asking which side swung, the display draws a column without
+asking what it holds, and anything a character can be given — a skill, an attribute, a
+status — can be given to a monster without new machinery.
 
 | Field | Meaning |
 |---|---|
 | `id`, `name` | identity |
 | `role` | `MELEE`, `RANGED`, or `CASTER` |
-| `hitPoints`, `dexterity`, `accuracy`, `defence`, `armour`, `damage` | what combat resolves against |
+| `attributes` | the same six a character has |
+| `ranks` | skill ranks, which are also what its total level is summed from |
+| `maxHitPoints` | authored rather than derived from a class |
+| `attack` | base damage, accuracy and armour, until weapons exist to carry them |
 | `potValue` | what defeating it is worth in skill experience |
 | `forbidsEscape` | whether a party can flee from it |
+
+**An enemy has no class.** Class is the shape of a career — what may be learned, how
+fast, and what a body grows into — and an enemy has no career: it is authored whole,
+fights once, and never trains. So its hit points are stated outright rather than
+derived from a class base, and its ranks are stated rather than grown. Everything class
+exists to govern is already settled by the time a goblin is written down.
 
 Role says what an enemy fights with, and nothing about where it stands — there is
 nowhere to stand. It is what a later behaviour, an ability set, or a portrait reads to
 tell a swordsman from a caster.
+
+### Where a roster lives
+
+Every enemy is **one file of its own**, authored as JSON under `src/game-data/enemies`,
+beside the party's own combatants in `src/game-data/players`. Adding a monster is
+adding a file; changing one is changing a file; neither is a code change, and neither
+requires opening the module that loads them.
+
+JSON rather than a module: content that cannot contain logic cannot quietly become
+logic. The cost is that a data file names its enums as plain strings, which the loader
+checks when it reads them — a check worth having on hand-edited content anyway.
 
 ### The goblins
 
@@ -211,6 +239,10 @@ abilities are all later, and all want a reason more interesting than list order.
 | Decision | Chosen | Alternatives Considered | Rationale |
 |---|---|---|---|
 | Roster | Content data with no behaviour attached | Enemy subclasses with their own logic | Adding a monster should be authoring rather than programming. Behaviour that varies per enemy arrives later as data the machinery reads, not as code it dispatches to. |
+| What an enemy is | A character: the same attributes, ranks, condition, hit points and attack | A reduced stat block of only what combat resolves against | A separate shape needs every rule about a combatant written twice, and the copies drift the first time one gains a field. One shape also means a monster can be given anything a character can have — a skill, a status, an ability — without inventing a parallel mechanism for it. |
+| Enemy classes | None: an enemy has no class | Reusing the party's four; authoring monster classes of their own | Class governs what may be learned and how fast, and an enemy never learns anything. Reusing the party's four would put a goblin in a career it cannot have; authoring monster classes would make class content and cascade into the party segment for no gain an enemy can use. |
+| Total level | Summed from ranks, exactly as a character's is | An authored level field per enemy | Two ways of arriving at the same number is one of them eventually disagreeing with the ranks it claims to summarise. Summing also means an authored enemy cannot be given a level its skills do not support. |
+| Where a roster lives | One JSON file per enemy under `src/game-data/enemies` | A table inside the module that reads it; one file holding every enemy | A file per enemy is hand-editable, diffs cleanly, and is added without touching code. One big table makes every content edit a change to a module, and puts authoring inside a programming language. |
 | What role is for | What an enemy fights with, and nothing positional | A field deciding where an enemy stands | There is nowhere to stand: combat has no positions. Role survives because a swordsman and a caster still differ in what they do, what they can be given, and how they are drawn. |
 | Choosing a target | Drawn from every standing character | The first legal target; the weakest character | With everyone reachable, striking the first every time concentrates a whole band on one character by accident of list order, which kills them before the fight is a fight. Aiming at the weakest is a real behaviour worth having, but it belongs with the rest of enemy intelligence rather than arriving as a side effect of removing rows. |
 | Group composition | Named bands with count ranges | Filling an encounter budget from a table | A band is legible: a goblin warband is two to four goblins, and an author can picture it. Budgets are worth having later for variety, but they make it hard to say what any particular fight will be. |
@@ -228,6 +260,8 @@ abilities are all later, and all want a reason more interesting than list order.
 
 1. ✅ **The roster is content data**; the machinery knows nothing about any particular enemy.
 2. ✅ **Role says what an enemy fights with**, never where it stands.
+8. ✅ **An enemy is a character in every field but class**, and its total level is summed from its ranks.
+9. ✅ **Every enemy is one JSON file** under `src/game-data/enemies`.
 3. ✅ **A band is a named template** with count ranges, drawn from the seed.
 4. ✅ **Awareness is proximity alone**, and light never affects it.
 5. ✅ **Every roamer pays its own tick cost to cross a tile**, so a faster party can outrun a slower pursuer.
