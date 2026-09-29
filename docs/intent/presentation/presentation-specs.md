@@ -89,7 +89,8 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 ## A fight's readiness
 
 - [x] **PRESENT-READY-001**: The system shall draw each combatant's readiness as the topmost of their three bars, filled from its left edge to the proportion the simulation reports.
-- [x] **PRESENT-READY-027**: The system shall fill a readiness bar with arrowheads pointing toward the direction of filling, at one size on every bar.
+- [x] **PRESENT-READY-027**: The system shall draw a readiness bar as one continuous fill from its left edge, with a brighter edge leading the fill, and shall draw no discrete marks along it.
+- [x] **PRESENT-READY-031**: While a combatant's readiness is full, the system shall draw their readiness bar as filled and marked as ready to act.
 - [x] **PRESENT-READY-028**: The system shall draw each combatant as a portrait with three bars stacked beside it: readiness above, identity in the middle, and condition below.
 - [x] **PRESENT-READY-029**: The system shall draw on the identity bar the combatant's name, their total level, and their condition when it is not `OK`.
 - [x] **PRESENT-READY-030**: The system shall draw the same portrait, bars, and values for an enemy as for a character.
@@ -134,6 +135,15 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-FIGHT-019**: The system shall decide every combatant's position, and the position of their portrait and each of their bars, in the plan rather than while drawing.
 - [x] **PRESENT-FIGHT-023**: The system shall draw a combatant's portrait from an image authored for their class or their enemy kind, at one size for every combatant.
 - [x] **PRESENT-FIGHT-024**: If a combatant's portrait image is missing or fails to load, then the system shall draw the combatant without it rather than failing to draw the fight.
+- [x] **PRESENT-FIGHT-025**: The system shall divide the fight panel into a fixed region for the combatants, a fixed region for the log, a fixed line for the prompt, and a fixed region for the controls.
+- [x] **PRESENT-FIGHT-026**: The system shall keep the fight panel's bounds and each of its regions in the same place and at the same size for the whole of an encounter, whatever it holds.
+- [x] **PRESENT-FIGHT-027**: The system shall reserve the prompt's line whether or not there is a prompt to draw in it.
+- [x] **PRESENT-FIGHT-028**: The system shall reserve in the controls region the room a full row of targets needs, so that offering targets moves no control already drawn.
+- [x] **PRESENT-FIGHT-029**: The system shall draw the log in a box of fixed height holding the most recent lines that fit.
+- [x] **PRESENT-FIGHT-030**: While the log holds more lines than its box shows, the system shall draw a scrollbar whose thumb is sized to the share shown and placed by how far back the view is.
+- [x] **PRESENT-FIGHT-031**: When the player scrolls the log, the system shall move the view by the lines scrolled and hold it there as new lines arrive.
+- [x] **PRESENT-FIGHT-032**: While the log's view is at its newest line, the system shall keep it there as new lines arrive.
+- [x] **PRESENT-FIGHT-033**: When the player presses the scrollbar track above or below the thumb, the system shall move the view back or forward by the lines the box shows.
 - [x] **PRESENT-FIGHT-020**: The system shall lay a fight out within a column centred on the viewport, no wider than the readable maximum the scale allows.
 - [x] **PRESENT-FIGHT-021**: The system shall keep every fight control within that column, so that a control never spans a wide window.
 - [x] **PRESENT-FIGHT-022**: The system shall scale a combatant's portrait, bars, and text with the viewport, by the same scale the controls use.

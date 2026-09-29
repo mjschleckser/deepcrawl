@@ -368,24 +368,30 @@ function drawFight(container, plan) {
       container.addChild(sprite);
     }
 
-    // Readiness, filled from the left with arrowheads, so the bar points at the moment
-    // it fills rather than merely growing.
+    // Readiness: one length sliding to the right, with a brighter edge leading it, so
+    // two bars are compared at a glance and the movement between frames is smooth.
     // @spec PRESENT-READY-001
     // @spec PRESENT-READY-027
+    // @spec PRESENT-READY-031
     const ready = bars.readiness;
-    graphics.rect(ready.x, at + (ready.y - card.y), ready.width, ready.height)
-      .fill({ color: colours.ground, alpha: 0.9 });
     const readyY = at + (ready.y - card.y);
+    const radius = ready.height / 2;
+    graphics.roundRect(ready.x, readyY, ready.width, ready.height, radius)
+      .fill({ color: 0x000000, alpha: 0.42 });
+
     const filled = ready.width * (card.down ? 0 : card.readiness);
-    const step = Math.max(4, ready.height * 0.8);
-    for (let head = 0; head + step <= filled; head += step) {
-      const left = ready.x + head;
-      const mid = readyY + ready.height / 2;
-      graphics.poly([
-        left, readyY + 1,
-        left + step * 0.7, mid,
-        left, readyY + ready.height - 1,
-      ]).fill(card.readiness >= 1 ? FIGHT_COLOURS.banner : colours.ready);
+    if (filled > 0) {
+      const full = card.readiness >= 1;
+      graphics.roundRect(ready.x, readyY, Math.max(filled, ready.height), ready.height, radius)
+        .fill(full ? FIGHT_COLOURS.banner : colours.ready);
+      // A lighter band along the top of the fill, which is what keeps a flat bar from
+      // reading as a flat bar.
+      graphics.roundRect(ready.x, readyY, Math.max(filled, ready.height), ready.height * 0.45, radius)
+        .fill({ color: 0xffffff, alpha: full ? 0.22 : 0.12 });
+      // The leading edge, brightest where the filling is happening.
+      const edge = Math.min(3 * scale, filled);
+      graphics.rect(ready.x + filled - edge, readyY, edge, ready.height)
+        .fill({ color: full ? 0xfff0c0 : FIGHT_COLOURS.banner, alpha: full ? 0.9 : 0.75 });
     }
 
     // Who they are: name, total level, and a condition worth naming.
@@ -449,23 +455,42 @@ function drawFight(container, plan) {
     });
   }
 
-  let cursor = plan.cardsBottom + pad;
-
-  // @spec PRESENT-READY-013
-  // @spec PRESENT-READY-014
-  if (plan.prompt) {
-    const prompt = label(plan.prompt, Math.round(14 * scale), FIGHT_COLOURS.text);
-    prompt.x = x + pad;
-    prompt.y = cursor;
-    container.addChild(prompt);
-    cursor += 26 * scale;
-  }
+  // The log is a box of its own and keeps its place, whatever is in it.
+  // @spec PRESENT-FIGHT-025
+  // @spec PRESENT-FIGHT-029
+  const box = plan.logBox;
+  graphics.roundRect(box.x, box.y, box.width, box.height, 3 * scale)
+    .fill({ color: 0x000000, alpha: 0.35 });
+  graphics.roundRect(box.x, box.y, box.width, box.height, 3 * scale)
+    .stroke({ width: 1, color: FIGHT_COLOURS.frame, alpha: 0.5 });
 
   for (const [i, line] of plan.log.entries()) {
     const entry = label(line, Math.round(12 * scale), FIGHT_COLOURS.dim);
-    entry.x = x + pad;
-    entry.y = cursor + i * 15 * scale;
+    entry.x = box.x + pad / 2;
+    entry.y = box.y + pad / 2 + i * 15 * scale;
     container.addChild(entry);
+  }
+
+  // How much there is, and where in it the player is looking.
+  // @spec PRESENT-FIGHT-030
+  if (plan.scrollbar) {
+    const { track, thumb } = plan.scrollbar;
+    graphics.roundRect(track.x, track.y, track.width, track.height, track.width / 2)
+      .fill({ color: 0x000000, alpha: 0.4 });
+    graphics.roundRect(thumb.x, thumb.y, thumb.width, thumb.height, thumb.width / 2)
+      .fill({ color: FIGHT_COLOURS.frame, alpha: 0.9 });
+  }
+
+  // The line that names who is up keeps its room whether or not anybody is.
+  // @spec PRESENT-READY-013
+  // @spec PRESENT-READY-014
+  // @spec PRESENT-FIGHT-027
+  if (plan.prompt) {
+    const line = plan.regions.promptLine;
+    const prompt = label(plan.prompt, Math.round(14 * scale), FIGHT_COLOURS.text);
+    prompt.x = line.x;
+    prompt.y = line.y + (line.height - prompt.height) / 2;
+    container.addChild(prompt);
   }
 
   // @spec PRESENT-FIGHT-014

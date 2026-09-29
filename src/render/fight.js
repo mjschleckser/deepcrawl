@@ -77,7 +77,14 @@ export const FightAction = {
 };
 
 const PANEL_FRACTION = 0.62;
+/** Lines of the fight the log's window shows at once; the rest is scrolled back to. */
 const LOG_LINES = 5;
+const LOG_LINE_HEIGHT = 15;
+/** The line that names who is up, reserved whether or not anybody is. */
+const PROMPT_HEIGHT = 26;
+/** Controls a character is ever offered at once: the proposal, attack, defend, flee. */
+const MOST_OPTIONS = 4;
+const SCROLLBAR_WIDTH = 6;
 
 /** One combatant, at the scale the phone layout was designed against. */
 const ROW_HEIGHT = 34;
@@ -163,7 +170,7 @@ export function buildFightPlan(
   {
     phase, outcome = null, pending = null, log = [], actor = null,
     countdown = 0, autoConfirm = false, notice = null, shakingId = null, shake = 0,
-    partway = 0,
+    partway = 0, logScroll = 0,
   } = {},
 ) {
   const scale = uiScale(viewport);
@@ -221,16 +228,28 @@ export function buildFightPlan(
   const partyCards = roster(encounter.party).map((c) => drawCombatant(c, c.condition !== Condition.OK));
   const deepest = Math.max(enemyCards.length, partyCards.length);
 
-  // The panel is sized to what is in it rather than to a fixed share of the screen: a
-  // fixed share leaves a wide window mostly empty between the log and the controls.
-  const metrics = controlMetrics({ column, pending, scale });
-  const shownLog = log.slice(-LOG_LINES);
+  // Every region is sized from what the encounter fixed when it began — how many
+  // combatants, how wide the screen — and from nothing that changes while it is
+  // fought. A panel that resized itself would move what the player is reading at the
+  // moment they are reading it.
+  // @spec PRESENT-FIGHT-025
+  // @spec PRESENT-FIGHT-026
+  const metrics = controlMetrics({
+    column, scale,
+    // The most controls this encounter will ever put on offer: an option for each
+    // thing a character may do, or a target for each enemy there is. Both are settled
+    // when the fight begins, so the room they need never changes while it is fought.
+    most: Math.max(MOST_OPTIONS, encounter.enemies.members.length),
+  });
+  const lineHeight = LOG_LINE_HEIGHT * scale;
+  const logHeight = LOG_LINES * lineHeight + pad;
+  const promptHeight = PROMPT_HEIGHT * scale;
   const contentHeight =
     pad
     + deepest * (ROW_HEIGHT + ROW_GAP) * scale
-    + (pending ? 26 * scale : 0)
-    + shownLog.length * 15 * scale
-    + (metrics.height > 0 ? metrics.gap + metrics.height : 0)
+    + promptHeight
+    + logHeight
+    + metrics.gap + metrics.height
     + pad;
   // Never more than most of the screen, however crowded the fight.
   const height = Math.min(viewport.height * PANEL_FRACTION, contentHeight);
@@ -255,24 +274,88 @@ export function buildFightPlan(
       }
     : null;
 
+  // Bottom up, because the controls are anchored to the foot of the panel and the
+  // combatants take whatever is left: controls, prompt line, log, formation.
+  const controlsBox = {
+    x: bounds.x,
+    y: bounds.y + bounds.height - pad - metrics.height,
+    width: bounds.width,
+    height: metrics.height,
+  };
+  const promptLine = {
+    x: bounds.x + pad,
+    y: controlsBox.y - metrics.gap - promptHeight,
+    width: bounds.width - pad * 2,
+    height: promptHeight,
+  };
+  const logBox = {
+    x: bounds.x + pad,
+    y: promptLine.y - logHeight,
+    width: bounds.width - pad * 2,
+    height: logHeight,
+  };
+  const formation = {
+    x: bounds.x,
+    y: bounds.y + pad,
+    width: bounds.width,
+    height: Math.max(0, logBox.y - bounds.y - pad),
+  };
+
   // Enemies down the left, the party down the right, facing one another. A column is
   // the shape of a side with no positions in it, and holds two or twelve alike.
   // @spec PRESENT-FIGHT-002
-  const top = bounds.y + pad;
   const sideWidth = (column.width - pad * 3) / 2;
   const left = { x: column.x + pad, width: sideWidth };
   const right = { x: column.x + pad * 2 + sideWidth, width: sideWidth };
-  // A crowded side squeezes rather than overflowing the panel.
+  // A crowded side squeezes into the room the formation has rather than overflowing it.
   const natural = ROW_HEIGHT * scale;
-  const room = bounds.height - pad * 2 - (pending ? 26 * scale : 0)
-    - shownLog.length * 15 * scale - (metrics.height > 0 ? metrics.gap + metrics.height : 0);
   const rowHeight = deepest > 0
-    ? Math.min(natural, Math.max(MIN_TAP_PX * 0.5, room / deepest - ROW_GAP * scale))
+    ? Math.min(natural, Math.max(MIN_TAP_PX * 0.5, formation.height / deepest - ROW_GAP * scale))
     : natural;
 
-  const laidEnemies = layOutColumn(enemyCards, left, top, scale, { height: rowHeight });
-  const laidParty = layOutColumn(partyCards, right, top, scale, { height: rowHeight });
-  const bottom = top + deepest * (rowHeight + ROW_GAP * scale);
+  const laidEnemies = layOutColumn(enemyCards, left, formation.y, scale, { height: rowHeight });
+  const laidParty = layOutColumn(partyCards, right, formation.y, scale, { height: rowHeight });
+  const bottom = formation.y + deepest * (rowHeight + ROW_GAP * scale);
+
+  // The log is a window on the fight, held where the player left it.
+  // @spec PRESENT-FIGHT-029
+  // @spec PRESENT-FIGHT-031
+  const shown = Math.max(1, Math.floor((logBox.height - pad) / lineHeight));
+  const scrolledBack = Math.min(Math.max(0, Math.round(logScroll)), Math.max(0, log.length - shown));
+  const end = log.length - scrolledBack;
+  const shownLog = log.slice(Math.max(0, end - shown), end);
+
+  // A bar along its right edge, sized to the share it is showing and placed by how far
+  // back the view is. Absent while everything fits, there being nothing to scroll.
+  // @spec PRESENT-FIGHT-030
+  const track = {
+    x: logBox.x + logBox.width - SCROLLBAR_WIDTH * scale,
+    y: logBox.y + pad / 2,
+    width: SCROLLBAR_WIDTH * scale,
+    height: logBox.height - pad,
+  };
+  const hidden = Math.max(0, log.length - shown);
+  const thumbHeight = Math.min(
+    track.height,
+    Math.max(MIN_TAP_PX * 0.4, track.height * Math.min(1, shown / Math.max(1, log.length))),
+  );
+  const scrollbar = hidden > 0
+    ? {
+      track,
+      // The thumb travels the room the track has left over, and sits at the foot of
+      // it while the view is on the newest line.
+      thumb: {
+        x: track.x,
+        y: track.y + (track.height - thumbHeight) * (1 - scrolledBack / hidden),
+        width: track.width,
+        height: thumbHeight,
+      },
+      // What a press on the track moves by, and how far back the view is now.
+      page: shown,
+      scrolledBack,
+      hidden,
+    }
+    : null;
 
   // The ring sits on the acting character's own card, beside the bar it is counting
   // against, so what is about to happen is shown where it is about to happen.
@@ -299,7 +382,12 @@ export function buildFightPlan(
     // @spec PRESENT-CTRL-013
     scale,
     cardsBottom: bottom,
-    controlsTop: bounds.y + bounds.height - pad - metrics.height + metrics.gap,
+    controlsTop: controlsBox.y,
+    // Every region, so that drawing paints into them rather than working them out.
+    // @spec PRESENT-FIGHT-025
+    regions: { formation, logBox, promptLine, controlsBox },
+    logBox,
+    scrollbar,
     enemies: laidEnemies,
     party: laidParty,
     pending,
@@ -329,10 +417,7 @@ export function buildFightPlan(
     banner,
     // Drawn and tapped are one thing: a fight nobody can touch is a fight a phone
     // player can watch and not play.
-    controls: fightControls({
-      bounds, pending, banner, metrics,
-      top: bounds.y + bounds.height - pad - metrics.height + metrics.gap,
-    }),
+    controls: fightControls({ bounds, pending, banner, metrics, top: controlsBox.y }),
   };
 }
 
@@ -340,23 +425,22 @@ export function buildFightPlan(
  * How much room the controls need, and how they divide the column. Worked out before
  * the panel is sized, because the panel is sized to fit them.
  */
-function controlMetrics({ column, pending, scale }) {
+function controlMetrics({ column, scale, most = MOST_OPTIONS }) {
   const gap = 8 * scale;
   const buttonHeight = Math.max(MIN_TAP_PX, 52 * scale);
-  if (!pending) return { gap, buttonHeight, columns: 0, rows: 0, width: 0, height: 0 };
 
-  const count = pending.targets ? pending.targets.length : pending.options.length;
-
-  // Wrap onto as many rows as the width needs, so a narrow phone never squeezes a
+  // Wrap onto as many columns as the width allows, so a narrow phone never squeezes a
   // control below a thumb.
-  const perRow = Math.max(1, Math.floor((column.width - gap) / (MIN_TAP_PX * 1.8 * scale + gap)));
-  const columns = Math.min(perRow, Math.max(1, count));
-  const rows = Math.ceil(count / columns);
+  const columns = Math.max(1, Math.floor((column.width - gap) / (MIN_TAP_PX * 1.8 * scale + gap)));
+  // Room for the most this encounter will ever offer, and the way back beneath it.
+  // Reserved whatever is on offer now, so that being asked which goblin never moves a
+  // control the player is already reaching for.
+  // @spec PRESENT-FIGHT-028
+  const rows = Math.max(1, Math.ceil(most / columns));
 
   return {
     gap, buttonHeight, columns, rows,
     width: Math.max(MIN_TAP_PX, (column.width - gap * (columns + 1)) / columns),
-    // The option rows, then the way back on a row of its own.
     height: (rows + 1) * (buttonHeight + gap),
   };
 }
@@ -533,6 +617,10 @@ export function createFightController({ encounter, viewport, onDraw }) {
     beat: 0,
     shake: 0,
     shakingId: null,
+    // How far back through the log the player has scrolled, in lines. Zero is the
+    // newest line, which is where it stays until they take it somewhere else.
+    // @spec PRESENT-FIGHT-032
+    logScroll: 0,
     fill: 0,
     partway: 0,
     autoConfirm: AUTO_CONFIRM,
@@ -739,6 +827,22 @@ export function cancelProposal(fight) {
   fight.pending = { ...fight.pending, proposal: null };
   fight.countdown = 0;
   return true;
+}
+
+/**
+ * Move the log's view back through the fight, or forward again toward the newest line.
+ *
+ * Held where the player put it as new lines arrive, because a log that snapped back to
+ * the newest line mid-read would be unreadable exactly when it was wanted.
+ *
+ * @spec PRESENT-FIGHT-031
+ * @spec PRESENT-FIGHT-032
+ */
+export function scrollLog(fight, lines) {
+  if (!fight) return false;
+  const was = fight.logScroll;
+  fight.logScroll = Math.max(0, Math.min(fight.log.length - 1, was + lines));
+  return fight.logScroll !== was;
 }
 
 /**

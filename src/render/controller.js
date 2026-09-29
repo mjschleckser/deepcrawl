@@ -23,7 +23,7 @@ import { buildViewPlan } from './viewplan.js';
 import { buildMapPlan } from './mapplan.js';
 import {
   buildFightPlan, createFightController, chooseOption, goBack, dismissOutcome,
-  advanceClock, fightIsPlaying, cancelProposal, FightPhase,
+  advanceClock, fightIsPlaying, cancelProposal, scrollLog, FightPhase,
 } from './fight.js';
 
 const CONFIRM_KEYS = ['Enter', ' '];
@@ -120,6 +120,7 @@ export function layers(controller) {
       shakingId: fight.shakingId,
       shake: fight.shake,
       partway: fight.partway,
+      logScroll: fight.logScroll,
     });
     return [
       { name: 'view', plan: buildViewPlan(corridorAhead(state), viewport) },
@@ -213,6 +214,21 @@ function applyAction(controller, action) {
  * @spec PRESENT-PROMPT-004
  * @spec PRESENT-PROMPT-005
  */
+const within = (box, px, py) =>
+  px >= box.x && px <= box.x + box.width && py >= box.y && py <= box.y + box.height;
+
+/**
+ * Turn a wheel over the fight into a walk back through its log.
+ *
+ * @spec PRESENT-FIGHT-031
+ */
+export function scrollFightLog(controller, lines) {
+  syncFight(controller);
+  if (!controller.fight || !scrollLog(controller.fight, lines)) return false;
+  redraw(controller);
+  return true;
+}
+
 /**
  * While a fight is on there is nowhere to walk, so the exploration vocabulary does not
  * apply and combat has its own.
@@ -290,6 +306,16 @@ export function pressPointer(controller, px, py) {
 
   if (controller.fight) {
     const plan = layers(controller).find((l) => l.name === 'fight').plan;
+
+    // A press on the scrollbar's track pages the log, above the thumb or below it.
+    // @spec PRESENT-FIGHT-033
+    const bar = plan.scrollbar;
+    if (bar && within(bar.track, px, py)) {
+      scrollLog(controller.fight, py < bar.thumb.y ? bar.page : -bar.page);
+      redraw(controller);
+      return true;
+    }
+
     const control = hit(plan.controls, px, py);
     if (!control) return false;
 

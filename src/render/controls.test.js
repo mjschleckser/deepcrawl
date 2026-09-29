@@ -262,6 +262,24 @@ describe('tapping a drawn control', () => {
     expect(controller.fight.pending.targets).not.toBeNull();
   });
 
+  // @spec PRESENT-FIGHT-033
+  it('pages the log when the press lands on the scrollbar track', () => {
+    const { controller } = fightController();
+    controller.fight.log = Array.from({ length: 40 }, (_, i) => `line ${i + 1}`);
+    const bar = layers(controller).find((l) => l.name === 'fight').plan.scrollbar;
+
+    // Above the thumb walks back through the fight; below it walks forward again.
+    pressPointer(controller, bar.track.x + bar.track.width / 2, bar.track.y + 1);
+    expect(controller.fight.logScroll).toBe(bar.page);
+
+    pressPointer(
+      controller,
+      bar.track.x + bar.track.width / 2,
+      bar.track.y + bar.track.height - 1,
+    );
+    expect(controller.fight.logScroll).toBe(0);
+  });
+
   // @spec PRESENT-CTRL-005
   it('ignores a press that lands on no control', () => {
     const { controller } = fightController();

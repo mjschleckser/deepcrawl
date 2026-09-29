@@ -3,12 +3,12 @@
   "name": "Goblin",
   "role": "MELEE",
   "attributes": {
-    "MIGHT": 10,
-    "CONSTITUTION": 10,
-    "DEXTERITY": 11,
-    "INTELLECT": 8,
-    "PERCEPTION": 10,
-    "RESOLVE": 8
+    "MIGHT": 4,
+    "CONSTITUTION": 2,
+    "DEXTERITY": 2,
+    "INTELLECT": 3,
+    "PERCEPTION": 4,
+    "RESOLVE": 4
   },
   "ranks": {
     "BLADE": 2,

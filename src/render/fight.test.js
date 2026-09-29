@@ -11,7 +11,7 @@ import {
 import { createRule, When, Aim } from '../sim/orders.js';
 import {
   buildFightPlan, createFightController, chooseOption, goBack, dismissOutcome,
-  playEnemyTurn, takeProposal, cancelProposal, advanceClock, fightIsPlaying,
+  playEnemyTurn, takeProposal, cancelProposal, advanceClock, fightIsPlaying, scrollLog,
   AUTO_CONFIRM, SHAKE_PIXELS, FILL_BEAT_MS, Wound,
   FightPhase, FightAction, describeEvent, BEAT_MS, COUNTDOWN_MS,
 } from './fight.js';
@@ -150,6 +150,18 @@ describe('what a fight draws', () => {
     }
   });
 
+  // @spec PRESENT-READY-031
+  it('marks a full bar as ready, and a filling one as not', () => {
+    const encounter = fightState();
+    encounter.readiness.set('bram', 100);
+    encounter.readiness.set('tam', 30);
+
+    const plan = buildFightPlan(encounter, viewport, { phase: FightPhase.ACTING });
+
+    expect(plan.party.find((c) => c.id === 'bram').readiness).toBe(1);
+    expect(plan.party.find((c) => c.id === 'tam').readiness).toBeLessThan(1);
+  });
+
   // @spec PRESENT-FIGHT-024
   it('draws a combatant whose portrait is missing, rather than not drawing', () => {
     const encounter = fightState();
@@ -210,6 +222,178 @@ describe('what a fight draws', () => {
 
     expect(plan.overlaysView).toBe(true);
     expect(plan.bounds.height).toBeLessThan(viewport.height);
+  });
+});
+
+describe('a panel that stays where it is', () => {
+  const planWith = (fight) => buildFightPlan(fight.encounter, viewport, {
+    phase: fight.phase,
+    pending: fight.pending,
+    log: fight.log,
+    actor: fight.actor,
+    logScroll: fight.logScroll,
+  });
+
+  // @spec PRESENT-FIGHT-025
+  it('divides the panel into a region for each thing it holds', () => {
+    const plan = buildFightPlan(fightState(), viewport, { phase: FightPhase.ACTING });
+    const { formation, logBox, promptLine, controlsBox } = plan.regions;
+
+    // Top to bottom, in that order, each inside the panel and none overlapping.
+    expect(formation.y).toBeGreaterThanOrEqual(plan.bounds.y);
+    expect(logBox.y).toBeGreaterThanOrEqual(formation.y + formation.height);
+    expect(promptLine.y).toBeGreaterThanOrEqual(logBox.y + logBox.height);
+    expect(controlsBox.y).toBeGreaterThanOrEqual(promptLine.y + promptLine.height);
+    expect(controlsBox.y + controlsBox.height)
+      .toBeLessThanOrEqual(plan.bounds.y + plan.bounds.height + 0.001);
+  });
+
+  // @spec PRESENT-FIGHT-026
+  // @spec PRESENT-FIGHT-027
+  it('keeps every region where it was when a prompt arrives', () => {
+    const fight = opening();
+    const quiet = planWith(fight);
+    untilAsked(fight);
+    const asked = planWith(fight);
+
+    expect(asked.bounds).toEqual(quiet.bounds);
+    expect(asked.regions).toEqual(quiet.regions);
+    // The prompt's line is there either way; only what is written in it changes.
+    expect(quiet.prompt).toBeNull();
+    expect(asked.prompt).toBeTruthy();
+    for (const [i, card] of asked.party.entries()) {
+      expect(card.y).toBe(quiet.party[i].y);
+    }
+  });
+
+  // @spec PRESENT-FIGHT-026
+  // @spec PRESENT-FIGHT-028
+  it('keeps every region where it was when targets are offered', () => {
+    const fight = controller();
+    untilAsked(fight);
+    const before = planWith(fight);
+
+    chooseOption(fight, fight.pending.options.findIndex((o) => o.action === FightAction.ATTACK));
+    const choosing = planWith(fight);
+
+    expect(choosing.pending.targets).not.toBeNull();
+    expect(choosing.regions).toEqual(before.regions);
+    for (const [i, card] of choosing.enemies.entries()) {
+      expect(card.y).toBe(before.enemies[i].y);
+    }
+  });
+
+  // @spec PRESENT-FIGHT-026
+  it('keeps the panel the same height as the fight wears on', () => {
+    const fight = controller();
+    const opened = planWith(fight).bounds;
+
+    for (let i = 0; i < 12 && fight.phase === FightPhase.ACTING; i++) {
+      untilAsked(fight);
+      if (fight.pending) defend(fight);
+      else if (fight.actor) playEnemyTurn(fight);
+    }
+
+    expect(planWith(fight).bounds).toEqual(opened);
+  });
+});
+
+describe('the log as a window', () => {
+  const withLog = (lines, over = {}) => buildFightPlan(fightState(), viewport, {
+    phase: FightPhase.ACTING,
+    log: Array.from({ length: lines }, (_, i) => `line ${i + 1}`),
+    ...over,
+  });
+
+  // @spec PRESENT-FIGHT-029
+  it('shows the most recent lines that fit, and no more', () => {
+    const plan = withLog(40);
+
+    expect(plan.log.length).toBeLessThan(40);
+    expect(plan.log.at(-1)).toBe('line 40');
+    expect(plan.logBox.height).toBe(withLog(2).logBox.height);
+  });
+
+  // @spec PRESENT-FIGHT-030
+  it('draws no scrollbar while everything fits, and one when it does not', () => {
+    expect(withLog(1).scrollbar).toBeNull();
+
+    const bar = withLog(60).scrollbar;
+    expect(bar.thumb.height).toBeLessThan(bar.track.height);
+    expect(bar.thumb.height).toBeGreaterThan(0);
+    // At the newest line, the thumb sits at the bottom of its track.
+    expect(bar.thumb.y + bar.thumb.height).toBeCloseTo(bar.track.y + bar.track.height, 1);
+  });
+
+  // @spec PRESENT-FIGHT-031
+  it('shows older lines when the view is scrolled back', () => {
+    const plan = withLog(60, { logScroll: 5 });
+
+    expect(plan.log.at(-1)).toBe('line 55');
+    expect(plan.scrollbar.thumb.y).toBeLessThan(withLog(60).scrollbar.thumb.y);
+  });
+
+  // @spec PRESENT-FIGHT-031
+  it('scrolls back no further than the first line there is', () => {
+    const plan = withLog(60, { logScroll: 9999 });
+
+    expect(plan.log[0]).toBe('line 1');
+    expect(plan.scrollbar.thumb.y).toBeCloseTo(plan.scrollbar.track.y, 1);
+  });
+});
+
+describe('walking back through the log', () => {
+  const logged = (lines) => {
+    const fight = controller();
+    fight.log = Array.from({ length: lines }, (_, i) => `line ${i + 1}`);
+    return fight;
+  };
+
+  // @spec PRESENT-FIGHT-031
+  it('moves the view back by the lines scrolled, and forward again', () => {
+    const fight = logged(30);
+
+    expect(scrollLog(fight, 4)).toBe(true);
+    expect(fight.logScroll).toBe(4);
+
+    scrollLog(fight, -2);
+    expect(fight.logScroll).toBe(2);
+  });
+
+  // @spec PRESENT-FIGHT-031
+  it('goes back no further than the fight goes, and no further forward than now', () => {
+    const fight = logged(6);
+
+    scrollLog(fight, 500);
+    expect(fight.logScroll).toBe(5);
+
+    scrollLog(fight, -500);
+    expect(fight.logScroll).toBe(0);
+  });
+
+  // @spec PRESENT-FIGHT-032
+  it('holds where the player left it as the fight goes on', () => {
+    const fight = logged(30);
+    scrollLog(fight, 6);
+
+    untilAsked(fight);
+    defend(fight);
+
+    expect(fight.logScroll).toBe(6);
+  });
+
+  // @spec PRESENT-FIGHT-032
+  it('opens at the newest line, and stays there while nobody scrolls', () => {
+    const fight = controller();
+    expect(fight.logScroll).toBe(0);
+
+    for (let i = 0; i < 6 && fight.phase === FightPhase.ACTING; i++) {
+      untilAsked(fight);
+      if (fight.pending) defend(fight);
+      else if (fight.actor) playEnemyTurn(fight);
+    }
+
+    expect(fight.logScroll).toBe(0);
   });
 });
 

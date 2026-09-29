@@ -250,7 +250,7 @@ one above another, each answering one question:
 
 | Bar | Holds | Answers |
 |---|---|---|
-| Top | Readiness, filled left to right with arrowheads | *when do they act* |
+| Top | Readiness, filling left to right | *when do they act* |
 | Middle | Name, total level, and condition when it is not `OK` | *who is this* |
 | Bottom | Hit points, and any other resource the fight spends | *how are they doing* |
 
@@ -258,10 +258,49 @@ The order is not arbitrary. The top bar is the one that changes every frame and 
 the whole fight is read off, so it is the one the eye finds first; the bottom bar
 changes only when somebody is hit, and the middle bar barely changes at all.
 
-**Readiness fills with arrowheads rather than a plain block**, so the direction of the
-fight is visible in the bar itself: a bar that is filling is pointing at the moment it
-fills. The arrowheads are drawn to the same scale on every bar, which is what makes two
-bars comparable at a glance.
+**Readiness is one continuous fill**, sliding to the right with a brighter edge leading
+it, and glowing when it reaches the end. It is drawn as one length rather than as a
+count of marks: a length is compared between two bars at a glance and moves smoothly
+between frames, where marks appearing one at a time turn a smooth thing into a
+stuttering one and invite counting nobody wants to do.
+
+### Nothing moves that the player is not moving
+
+**The panel is one fixed frame of fixed regions.** From the top: the two columns of
+combatants, then the log, then the line that names who is up, then the controls along
+the bottom. Every region keeps its place and its size for the whole encounter, and the
+panel keeps its height whatever is in it.
+
+This is the whole point of the arrangement. A prompt that appears when somebody comes
+ready would otherwise push the columns up by the height of a line of text, exactly when
+the player is looking at them to decide; a log that grew would push them again; a row of
+targets taller than a row of options would push everything a third time. A fight is read
+under time pressure, and a screen that rearranges itself as it is read is a screen that
+has to be re-read from scratch. So the regions are laid out once, from a size the
+encounter fixes when it begins, and what changes inside them changes within its own
+bounds.
+
+**The line that names who is up is always there**, empty when nobody is waiting. It
+costs one line of height and buys a formation that never jumps.
+
+**The controls reserve the room a full row of targets needs**, so choosing *Attack* and
+being asked *at whom* does not move the panel under the thumb about to press it.
+
+### The log is a window, and it keeps its place
+
+The log is a box of its own with a fixed height, below the combatants and above the
+controls, holding the last few lines of the fight and no more.
+
+**It can be scrolled back.** The fight moves quickly and a player who looks away for a
+turn should be able to find what they missed. A scrollbar along its right edge says how
+much there is and where in it they are; the wheel moves it, and pressing the track above
+or below the thumb pages back and forward.
+
+**It follows the fight until the player takes it back.** New lines keep the view at the
+bottom, so a player who is not scrolling always sees the newest line; once they scroll
+up, it stays where they put it until they return to the bottom, because a log that
+yanked itself back to the newest line mid-read would be unreadable exactly when it was
+wanted.
 
 Somebody who is down keeps their place in the column, drawn spent and dimmed. The shape
 of a side that has lost its middle is information, and a column that closed its gaps
@@ -542,7 +581,9 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 | Combat over the corridor | Drawn on top of the first-person view, which stays visible | Replacing the view with a combat screen | The party is still standing in the passage they were caught in, and seeing it is part of knowing how bad this is. A separate screen would also throw away the light and the place. |
 | How a side is arranged | Enemies in one column on the left, the party in one on the right | Two ranks a side, as the rows once were; one combined list ordered by readiness | A column is the honest shape of a side with no positions in it, and it holds two combatants or twelve without changing shape. Facing columns keep *us* and *them* answerable without reading a single name. A list ordered by readiness would reorder itself under the player's eye on every beat, which is the one thing a display being read under pressure must not do. |
 | What a combatant is drawn as | A portrait, then three stacked bars: readiness, identity, condition | A single card whose fill is readiness; a card with a bar along its foot | Three bars put the three questions a player asks — when do they act, who is this, how are they doing — in three fixed places, so each is found by position rather than by reading. A card carrying everything at once makes readiness compete with the name and the numbers for the same space. |
-| Readiness drawn with arrowheads | A bar filled left to right with arrowheads, from the simulation's own value | A plain block fill; a numbered initiative list; an order-of-play queue along one edge | Arrowheads give the bar a direction, so it reads as travelling toward the moment it fills rather than as a quantity that happens to be growing. A fill is read without counting and compares two combatants at a glance; a queue would be recomputed and redrawn on every action and still would not show how close anybody is. |
+| How readiness is drawn | One continuous fill with a brighter leading edge, glowing at full | A row of arrowheads that appear one at a time; a numbered initiative list; an order-of-play queue along one edge | A length is compared between two bars at a glance and slides smoothly as the bar fills. Marks appearing one at a time stutter, and quantise a value that is continuous underneath. A queue would be recomputed and redrawn on every action and still would not show how close anybody is. |
+| The panel's regions | Fixed: combatants, log, prompt line, controls, each keeping its place and size all encounter | Sizing each region to its content, so the panel grows and shrinks as the fight goes | A fight is read under time pressure. A prompt that pushed the formation up as it appeared, or a row of targets taller than the row of options it replaced, would move what the player is reading at the moment they are reading it. Fixed regions cost some empty space in a small fight and buy a screen that can be read at a glance every time. |
+| The log's size | A fixed window of the last few lines, scrollable back through the rest | Growing to fit what has happened; clearing between turns; a full-height transcript | A fixed window keeps the panel still, and scrolling keeps what scrolled off reachable — which matters because a fight plays on while the player looks away. A growing log would move everything below it on every action. |
 | Hit points | A bar under each combatant, coloured by the share left, with the numbers on it | The number alone | A column of fractions has to be read one at a time; a column of bars shows how hurt the whole party is in one look, and the colour carries the urgency before the length is even judged. |
 | Portraits | An image file per class and per enemy kind, drawn at one size | Shapes drawn in code, as the map's marks are; no portrait at all | A picture is recognised faster than a name is read, which is what makes a column of six scannable. Files mean real art arrives by replacing them rather than by rewriting a draw routine, and one size keeps a column aligned whatever it holds. |
 | How bars fill | Over real time from empty, a beat per fixed span, drawn partway between beats | Jumping straight to whoever is next ready | A jump shows the result of the race and never the race, so the player cannot see a quick combatant pulling ahead of a slow one, which is the thing the bars exist to show. |
@@ -576,9 +617,11 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 16. ✅ **An enemy the corridor report names is drawn standing at that depth**, with the same horned head the automap uses.
 17. ✅ **The build's version is drawn in the bottom-left corner**, its patch number the commit count, fixed at build time.
 18. ✅ **A combatant is a portrait and three stacked bars** — readiness, identity, condition — and the one acting is highlighted.
+28. ✅ **The panel's regions are fixed**, so nothing moves that the player is not moving.
+29. ✅ **The log is a fixed window with a scrollbar**, following the fight until the player scrolls back.
 19. ✅ **Actions play out a beat at a time**, and the ticker runs only while a fight is playing rather than waiting.
 24. ✅ **The bottom bar is hit points**, coloured by the share left; other resources join them when they exist.
-26. ✅ **Readiness is filled with arrowheads**, so a bar points at the moment it fills.
+26. ✅ **Readiness is one continuous fill** with a leading edge, glowing at full.
 27. ✅ **A portrait is an image file**, one per class and per enemy kind.
 25. ✅ **Bars fill over real time from empty**, drawn partway between beats.
 20. ✅ **Every action is taken by a press.** The countdown ring that would take a proposal unattended is built, tested, and switched off.

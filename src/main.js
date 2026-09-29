@@ -5,6 +5,7 @@ import { createRenderer } from './render/app.js';
 import { playableViewport } from './render/viewport.js';
 import {
   createController, pressKey, pressPointer, releasePointer, resize, layers, tick, isPlaying,
+  scrollFightLog,
 } from './render/controller.js';
 
 async function bootstrap() {
@@ -51,6 +52,14 @@ async function bootstrap() {
     tick(controller, ticker.deltaMS);
     pump();
   });
+
+  // A wheel over a fight walks back through its log and means nothing anywhere else.
+  // A notch moves a few lines rather than one, so a long fight is walked back through
+  // rather than crawled through.
+  renderer.app.canvas.addEventListener('wheel', (event) => {
+    const lines = Math.max(1, Math.min(5, Math.round(Math.abs(event.deltaY) / 40)));
+    if (scrollFightLog(controller, event.deltaY > 0 ? -lines : lines)) event.preventDefault();
+  }, { passive: false });
 
   window.addEventListener('keydown', (event) => {
     if (event.metaKey || event.ctrlKey || event.altKey) return;
