@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { makeRng } from '../sim/rng.js';
-import { Row, CharacterClass, createParty, createCharacter, addCharacter } from '../sim/party.js';
+import { CharacterClass, createParty, createCharacter, addCharacter } from '../sim/party.js';
 import { beginEncounter, createEnemy, createEnemyGroup } from '../sim/combat.js';
 import {
   tapRegionsFor, MIN_TAP_PX, controlsFor, ControlKind,
@@ -24,12 +24,12 @@ const allControls = (plan) => plan.controls ?? [];
 
 function fightOf(viewport) {
   const party = createParty();
-  addCharacter(party, createCharacter({ id: 'bram', name: 'Bram', characterClass: CharacterClass.FIGHTER, row: Row.FRONT }));
+  addCharacter(party, createCharacter({ id: 'bram', name: 'Bram', characterClass: CharacterClass.FIGHTER }));
   const encounter = beginEncounter({
     party,
     enemies: createEnemyGroup([
-      createEnemy({ id: 'g1', name: 'Goblin', row: Row.FRONT, hitPoints: 9, potValue: 10 }),
-      createEnemy({ id: 'g2', name: 'Goblin', row: Row.FRONT, hitPoints: 9, potValue: 10 }),
+      createEnemy({ id: 'g1', name: 'Goblin', hitPoints: 9, potValue: 10 }),
+      createEnemy({ id: 'g2', name: 'Goblin', hitPoints: 9, potValue: 10 }),
     ]),
     light: 'BRIGHT',
     awareness: { party: true, enemies: true },
@@ -114,7 +114,7 @@ describe('combat controls', () => {
   it('gives every target a control once an attack has been chosen', () => {
     const { encounter, fight } = fightOf(phone);
     // Pick attack, which asks for a target.
-    fight.pending = { ...fight.pending, action: 'ATTACK', targets: [{ id: 'g1', name: 'Goblin', row: Row.FRONT }] };
+    fight.pending = { ...fight.pending, action: 'ATTACK', targets: [{ id: 'g1', name: 'Goblin' }] };
 
     const plan = buildFightPlan(encounter, phone, { phase: FightPhase.SELECTING, pending: fight.pending });
 
@@ -410,13 +410,13 @@ describe('the formations in a fight', () => {
   // @spec PRESENT-FIGHT-018
   it('centres a rank of one as surely as a rank of several', () => {
     const party = createParty();
-    addCharacter(party, createCharacter({ id: 'solo', name: 'Solo', characterClass: CharacterClass.FIGHTER, row: Row.FRONT }));
+    addCharacter(party, createCharacter({ id: 'solo', name: 'Solo', characterClass: CharacterClass.FIGHTER }));
     const encounter = beginEncounter({
       party,
       enemies: createEnemyGroup([
-        createEnemy({ id: 'a', name: 'A', row: Row.FRONT, hitPoints: 9, potValue: 1 }),
-        createEnemy({ id: 'b', name: 'B', row: Row.FRONT, hitPoints: 9, potValue: 1 }),
-        createEnemy({ id: 'c', name: 'C', row: Row.FRONT, hitPoints: 9, potValue: 1 }),
+        createEnemy({ id: 'a', name: 'A', hitPoints: 9, potValue: 1 }),
+        createEnemy({ id: 'b', name: 'B', hitPoints: 9, potValue: 1 }),
+        createEnemy({ id: 'c', name: 'C', hitPoints: 9, potValue: 1 }),
       ]),
       light: 'BRIGHT', awareness: { party: true, enemies: true },
       rng: makeRng(1), origin: { floorId: 'f1', x: 1, y: 1 },
@@ -431,9 +431,9 @@ describe('the formations in a fight', () => {
   // @spec PRESENT-FIGHT-002
   it('keeps every card inside the panel, even a crowded rank on a narrow phone', () => {
     const party = createParty();
-    addCharacter(party, createCharacter({ id: 'x', name: 'X', characterClass: CharacterClass.FIGHTER, row: Row.FRONT }));
+    addCharacter(party, createCharacter({ id: 'x', name: 'X', characterClass: CharacterClass.FIGHTER }));
     const enemies = Array.from({ length: 8 }, (_, i) =>
-      createEnemy({ id: `e${i}`, name: 'Goblin', row: Row.FRONT, hitPoints: 9, potValue: 1 }));
+      createEnemy({ id: `e${i}`, name: 'Goblin', hitPoints: 9, potValue: 1 }));
     const encounter = beginEncounter({
       party, enemies: createEnemyGroup(enemies),
       light: 'BRIGHT', awareness: { party: true, enemies: true },

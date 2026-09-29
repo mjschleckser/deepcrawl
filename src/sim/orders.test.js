@@ -96,13 +96,13 @@ describe('reading an order list', () => {
   // @spec COMBAT-ORDER-004
   it('passes over a rule whose target is not a legal one for its action', () => {
     const rules = [
+      createRule({ when: When.ALWAYS, action: heal, aim: Aim.WEAKEST_ALLY }),
       createRule({ when: When.ALWAYS, action: attack, aim: Aim.WEAKEST_ENEMY }),
-      createRule({ when: When.ALWAYS, action: attack, aim: Aim.FRONT_ENEMY }),
     ];
-    // The weakest enemy stands in the back row, out of reach of a melee swing.
-    const meleeOnly = situation({ isLegal: (action, targetId) => targetId !== 'g2' });
+    // Nothing to heal, so the list settles on the swing below it.
+    const noHealing = situation({ isLegal: (action) => action !== heal });
 
-    expect(proposeFrom(rules, meleeOnly)).toMatchObject({ ruleIndex: 1, targetId: 'g1' });
+    expect(proposeFrom(rules, noHealing)).toMatchObject({ ruleIndex: 1, targetId: 'g2' });
   });
 });
 
@@ -149,14 +149,6 @@ describe('what a rule may ask about', () => {
     expect(proposeFrom(rules, situation({ slots: { 1: 0 } }))).toBeNull();
   });
 
-  // @spec COMBAT-ORDER-008
-  it('holds a FRONT_BROKEN rule only while the actor has no front rank left', () => {
-    const rules = [createRule({ when: When.FRONT_BROKEN, action: attack, aim: Aim.WEAKEST_ENEMY })];
-
-    expect(proposeFrom(rules, situation())).toBeNull();
-    expect(proposeFrom(rules, situation({ frontBroken: true }))).not.toBeNull();
-  });
-
   // @spec COMBAT-ORDER-009
   it('holds a ONCE rule until that rule has actually been taken', () => {
     const rules = [
@@ -179,11 +171,13 @@ describe('what a rule may aim at', () => {
     expect(proposeFrom(rules, situation()).targetId).toBe('g2');
   });
 
+  // @spec COMBAT-ORDER-008
   // @spec COMBAT-ORDER-010
-  it('aims FRONT_ENEMY at an enemy standing in the front row', () => {
-    const rules = [createRule({ when: When.ALWAYS, action: attack, aim: Aim.FRONT_ENEMY })];
-
-    expect(proposeFrom(rules, situation()).targetId).toBe('g1');
+  it('offers a vocabulary with nothing positional left in it', () => {
+    expect(Object.keys(When).sort())
+      .toEqual(['ALLY_BELOW', 'ALWAYS', 'NO_ALLY_BELOW', 'ONCE', 'SLOT_REMAINS']);
+    expect(Object.keys(Aim).sort())
+      .toEqual(['NAMED_ALLY', 'SELF', 'WEAKEST_ALLY', 'WEAKEST_ENEMY']);
   });
 
   // @spec COMBAT-ORDER-010

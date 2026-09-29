@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { makeRng } from '../sim/rng.js';
 import {
-  Row, CharacterClass, createParty, createCharacter, addCharacter, applyDamage, character, Condition,
+  CharacterClass, createParty, createCharacter, addCharacter, applyDamage, character, Condition,
 } from '../sim/party.js';
 import { beginEncounter, createEnemy, createEnemyGroup, Action, Outcome, Band } from '../sim/combat.js';
 import { createRule, When, Aim } from '../sim/orders.js';
@@ -49,9 +49,9 @@ function fightState({ enemies, light = 'BRIGHT', partyAware = true, enemiesAware
   return beginEncounter({
     party,
     enemies: createEnemyGroup(enemies ?? [
-      createEnemy({ id: 'g1', name: 'Goblin', row: Row.FRONT, hitPoints: 9, potValue: 14 }),
-      createEnemy({ id: 'g2', name: 'Goblin', row: Row.FRONT, hitPoints: 9, potValue: 14 }),
-      createEnemy({ id: 'a1', name: 'Goblin Archer', row: Row.BACK, hitPoints: 7, potValue: 18 }),
+      createEnemy({ id: 'g1', name: 'Goblin', hitPoints: 9, potValue: 14 }),
+      createEnemy({ id: 'g2', name: 'Goblin', hitPoints: 9, potValue: 14 }),
+      createEnemy({ id: 'a1', name: 'Goblin Archer', hitPoints: 7, potValue: 18 }),
     ]),
     light,
     awareness: { party: partyAware, enemies: enemiesAware },
@@ -398,7 +398,7 @@ describe('ending', () => {
   // @spec PRESENT-FIGHT-014
   it('draws a banner naming the outcome and what a victory was worth', () => {
     const fight = controller({
-      enemies: [createEnemy({ id: 'g1', name: 'Goblin', row: Row.FRONT, hitPoints: 1, potValue: 14 })],
+      enemies: [createEnemy({ id: 'g1', name: 'Goblin', hitPoints: 1, potValue: 14 })],
     });
 
     // One character can finish this, so the round ends it.
@@ -416,7 +416,7 @@ describe('ending', () => {
   // @spec PRESENT-FIGHT-015
   it('hands control back when the banner is dismissed', () => {
     const fight = controller({
-      enemies: [createEnemy({ id: 'g1', name: 'Goblin', row: Row.FRONT, hitPoints: 1, potValue: 14 })],
+      enemies: [createEnemy({ id: 'g1', name: 'Goblin', hitPoints: 1, potValue: 14 })],
     });
     for (let i = 0; i < 3 && fight.phase !== FightPhase.ENDED; i++) {
       chooseOption(fight, 0);
@@ -463,7 +463,7 @@ describe('what a won fight teaches', () => {
   // @spec PRESENT-FIGHT-008
   it('records the skill each attack used, so a victory advances something', () => {
     const fight = controller({
-      enemies: [createEnemy({ id: 'g1', name: 'Goblin', row: Row.FRONT, hitPoints: 1, potValue: 14 })],
+      enemies: [createEnemy({ id: 'g1', name: 'Goblin', hitPoints: 1, potValue: 14 })],
     });
 
     for (let i = 0; i < 6 && fight.phase !== FightPhase.ENDED; i++) {
@@ -544,7 +544,7 @@ describe('the panel is sized to what is in it', () => {
         createEnemy({ id: `g${i}`, name: 'Goblin', row: i < 3 ? Row.FRONT : Row.BACK, hitPoints: 9, potValue: 14 })),
     });
     const skirmish = withPending({
-      enemies: [createEnemy({ id: 'g1', name: 'Goblin', row: Row.FRONT, hitPoints: 9, potValue: 14 })],
+      enemies: [createEnemy({ id: 'g1', name: 'Goblin', hitPoints: 9, potValue: 14 })],
     });
 
     expect(skirmish.bounds.height).toBeLessThan(crowd.bounds.height);
@@ -718,7 +718,7 @@ describe('a fight that plays itself out', () => {
 
   // @spec PRESENT-READY-015
   it('does not bring the card back when an ambusher comes ready a second time', () => {
-    const quick = (id) => createEnemy({ id, name: 'Goblin', row: Row.FRONT, hitPoints: 30, dexterity: 30 });
+    const quick = (id) => createEnemy({ id, name: 'Goblin', hitPoints: 30, dexterity: 30 });
     const fight = opening({ partyAware: false, enemies: [quick('g1'), quick('g2')] });
 
     playEnemyTurn(fight);

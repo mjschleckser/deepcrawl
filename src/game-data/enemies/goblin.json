@@ -1,0 +1,27 @@
+{
+  "id": "GOBLIN",
+  "name": "Goblin",
+  "role": "MELEE",
+  "attributes": {
+    "MIGHT": 10,
+    "CONSTITUTION": 10,
+    "DEXTERITY": 11,
+    "INTELLECT": 8,
+    "PERCEPTION": 10,
+    "RESOLVE": 8
+  },
+  "ranks": {
+    "BLADE": 2,
+    "LIGHT_ARMOUR": 1,
+    "DETECTION": 1
+  },
+  "maxHitPoints": 9,
+  "attack": {
+    "skill": "BLADE",
+    "baseDamage": 5,
+    "accuracy": 24
+  },
+  "armour": 2,
+  "potValue": 14,
+  "forbidsEscape": false
+}

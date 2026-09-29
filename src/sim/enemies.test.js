@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { makeRng } from './rng.js';
 import { createFloor, setEdge, EdgeKind, Direction } from './floor.js';
-import { Row } from './party.js';
-import { MAX_ENEMY_ROW } from './combat.js';
+import { totalLevel } from './party.js';
+import { MAX_ENEMY_GROUP } from './combat.js';
 import {
   ROSTER, BANDS, EnemyRole,
   assembleBand, createRoamer, crossingCost, noticeRange,
@@ -26,33 +26,40 @@ function corridorFloor() {
 describe('the roster', () => {
   // @spec ENEMY-ROSTER-001
   // @spec ENEMY-ROSTER-002
-  it('gives every enemy the fields combat resolves against, and exactly one role', () => {
+  // @spec ENEMY-ROSTER-003
+  it("gives every enemy a character's fields and exactly one role", () => {
     for (const enemy of Object.values(ROSTER)) {
       expect(enemy.id).toBeTruthy();
       expect(enemy.name).toBeTruthy();
       expect(Object.values(EnemyRole)).toContain(enemy.role);
-      expect([Row.FRONT, Row.BACK]).toContain(enemy.row);
-      for (const field of ['hitPoints', 'dexterity', 'accuracy', 'armour', 'potValue']) {
+      expect(enemy.row).toBeUndefined();
+      expect(Object.keys(enemy.attributes)).toHaveLength(6);
+      expect(Object.keys(enemy.ranks).length).toBeGreaterThan(0);
+      expect(enemy.attack).toMatchObject({ baseDamage: expect.any(Number) });
+      for (const field of ['maxHitPoints', 'hitPoints', 'armour', 'potValue']) {
         expect(typeof enemy[field]).toBe('number');
       }
     }
   });
 
-  // @spec ENEMY-ROSTER-004
-  it('holds the three goblins of the first floor', () => {
-    expect(ROSTER.GOBLIN).toMatchObject({ role: EnemyRole.MELEE, row: Row.FRONT });
-    expect(ROSTER.GOBLIN_ARCHER).toMatchObject({ role: EnemyRole.RANGED, row: Row.BACK });
-    expect(ROSTER.GOBLIN_MAGE).toMatchObject({ role: EnemyRole.CASTER, row: Row.BACK });
+  // @spec ENEMY-ROSTER-009
+  it('gives an enemy no class at all', () => {
+    for (const enemy of Object.values(ROSTER)) expect(enemy.characterClass).toBeUndefined();
   });
 
-  // @spec ENEMY-ROSTER-003
-  it('keeps role and row separate, so an enemy can stand where its role would not', () => {
-    // A warband bigger than one row pushes melee goblins into the back.
-    const band = assembleBand(BANDS.GOBLIN_WARBAND, makeRng(3), { rowLimit: 2 });
-    const displaced = band.members.filter((m) => m.role === EnemyRole.MELEE && m.row === Row.BACK);
+  // @spec ENEMY-ROSTER-010
+  it("sums an enemy's level from its ranks, as a character's is summed", () => {
+    const summed = Object.values(ROSTER.GOBLIN.ranks).reduce((a, b) => a + b, 0);
 
-    expect(band.members.length).toBeGreaterThan(2);
-    expect(displaced.length).toBeGreaterThan(0);
+    expect(totalLevel(ROSTER.GOBLIN)).toBe(summed);
+    expect(totalLevel(ROSTER.GOBLIN_MAGE)).toBeGreaterThan(totalLevel(ROSTER.GOBLIN));
+  });
+
+  // @spec ENEMY-ROSTER-004
+  it('holds the three goblins of the first floor', () => {
+    expect(ROSTER.GOBLIN).toMatchObject({ role: EnemyRole.MELEE });
+    expect(ROSTER.GOBLIN_ARCHER).toMatchObject({ role: EnemyRole.RANGED });
+    expect(ROSTER.GOBLIN_MAGE).toMatchObject({ role: EnemyRole.CASTER });
   });
 
   // @spec ENEMY-ROSTER-005
@@ -94,26 +101,25 @@ describe('bands', () => {
     expect(a.members.map((m) => [m.id, m.row])).toEqual(b.members.map((m) => [m.id, m.row]));
   });
 
-  // @spec ENEMY-BAND-004
-  it('puts each member in its preferred row while there is space', () => {
+  // @spec ENEMY-BAND-008
+  it('assembles a flat band, its members arranged not at all', () => {
     const band = assembleBand(
       { name: 'mixed', members: [{ enemy: 'GOBLIN', min: 2, max: 2 }, { enemy: 'GOBLIN_ARCHER', min: 2, max: 2 }] },
       makeRng(5),
     );
 
-    expect(band.members.filter((m) => m.id === 'GOBLIN').every((m) => m.row === Row.FRONT)).toBe(true);
-    expect(band.members.filter((m) => m.id === 'GOBLIN_ARCHER').every((m) => m.row === Row.BACK)).toBe(true);
+    expect(band.members).toHaveLength(4);
+    for (const member of band.members) expect(member.row).toBeUndefined();
   });
 
   // @spec ENEMY-BAND-005
-  it('never exceeds the combat row limit', () => {
+  it('never exceeds the limit on an enemy group', () => {
     const swarm = assembleBand(
       { name: 'horde', members: [{ enemy: 'GOBLIN', min: 30, max: 30 }] },
       makeRng(1),
     );
 
-    expect(swarm.members.filter((m) => m.row === Row.FRONT).length).toBeLessThanOrEqual(MAX_ENEMY_ROW);
-    expect(swarm.members.filter((m) => m.row === Row.BACK).length).toBeLessThanOrEqual(MAX_ENEMY_ROW);
+    expect(swarm.members.length).toBe(MAX_ENEMY_GROUP);
   });
 });
 
@@ -350,35 +356,29 @@ describe('contact', () => {
 });
 
 describe('choosing a target', () => {
-  const front = [{ id: 'a', row: Row.FRONT }, { id: 'b', row: Row.FRONT }];
-  const back = [{ id: 'c', row: Row.BACK }];
+  const standing = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];
 
-  // @spec ENEMY-FIGHT-001
-  // @spec ENEMY-FIGHT-003
-  it('keeps a melee enemy on the front row while one stands', () => {
-    for (let seed = 1; seed < 25; seed++) {
-      const target = selectEnemyTarget(EnemyRole.MELEE, [...front, ...back], makeRng(seed));
-      expect(target.row).toBe(Row.FRONT);
-    }
-  });
-
-  // @spec ENEMY-FIGHT-002
-  it('lets a ranged enemy reach the back row, while favouring the front', () => {
-    const picks = [];
-    for (let seed = 1; seed < 200; seed++) {
-      picks.push(selectEnemyTarget(EnemyRole.RANGED, [...front, ...back], makeRng(seed)).row);
+  // @spec ENEMY-FIGHT-005
+  it('spreads its choice across everyone still able to act', () => {
+    const picked = new Set();
+    for (let seed = 1; seed < 40; seed++) {
+      picked.add(selectEnemyTarget(EnemyRole.MELEE, standing, makeRng(seed)).id);
     }
 
-    const backPicks = picks.filter((r) => r === Row.BACK).length;
-    expect(backPicks).toBeGreaterThan(0);
-    expect(backPicks).toBeLessThan(picks.length / 2);
+    expect(picked).toEqual(new Set(['a', 'b', 'c']));
   });
 
-  // @spec ENEMY-FIGHT-001
-  it('reaches the back row with melee once no front row stands', () => {
-    const target = selectEnemyTarget(EnemyRole.MELEE, back, makeRng(1));
+  // @spec ENEMY-FIGHT-006
+  it('picks the same target from the same seed', () => {
+    const once = selectEnemyTarget(EnemyRole.RANGED, standing, makeRng(17));
+    const again = selectEnemyTarget(EnemyRole.RANGED, standing, makeRng(17));
 
-    expect(target.row).toBe(Row.BACK);
+    expect(again.id).toBe(once.id);
+  });
+
+  // @spec ENEMY-FIGHT-007
+  it('picks nobody at all when nobody is left to pick', () => {
+    expect(selectEnemyTarget(EnemyRole.MELEE, [], makeRng(1))).toBeNull();
   });
 });
 

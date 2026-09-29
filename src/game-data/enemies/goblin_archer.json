@@ -1,0 +1,27 @@
+{
+  "id": "GOBLIN_ARCHER",
+  "name": "Goblin Archer",
+  "role": "RANGED",
+  "attributes": {
+    "MIGHT": 8,
+    "CONSTITUTION": 9,
+    "DEXTERITY": 13,
+    "INTELLECT": 9,
+    "PERCEPTION": 13,
+    "RESOLVE": 8
+  },
+  "ranks": {
+    "BOW": 3,
+    "LIGHT_ARMOUR": 1,
+    "DETECTION": 2
+  },
+  "maxHitPoints": 7,
+  "attack": {
+    "skill": "BOW",
+    "baseDamage": 6,
+    "accuracy": 30
+  },
+  "armour": 1,
+  "potValue": 18,
+  "forbidsEscape": false
+}

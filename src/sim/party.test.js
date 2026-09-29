@@ -6,8 +6,6 @@ import {
   applyDamage,
   applyHealing,
   attemptRevival,
-  assignRow,
-  swapPlaces,
   awardEncounter,
   trainSkill,
   changeClass,
@@ -15,8 +13,8 @@ import {
   character,
   roster,
   living,
+  totalLevel,
   Condition,
-  Row,
   Attribute,
   Skill,
   CharacterClass,
@@ -30,9 +28,9 @@ import {
 } from './party.js';
 
 const fighter = (over = {}) =>
-  createCharacter({ id: 'f1', name: 'Bram', characterClass: CharacterClass.FIGHTER, row: Row.FRONT, ...over });
+  createCharacter({ id: 'f1', name: 'Bram', characterClass: CharacterClass.FIGHTER, ...over });
 const cleric = (over = {}) =>
-  createCharacter({ id: 'c1', name: 'Wren', characterClass: CharacterClass.CLERIC, row: Row.BACK, ...over });
+  createCharacter({ id: 'c1', name: 'Wren', characterClass: CharacterClass.CLERIC, ...over });
 
 function partyOf(...characters) {
   const party = createParty();
@@ -46,7 +44,7 @@ describe("a character's standing orders", () => {
   it('carries an order list that belongs to the character, not to an encounter', () => {
     const rules = [{ when: 'ALWAYS', action: { kind: 'ATTACK' }, aim: 'WEAKEST_ENEMY' }];
     const c = createCharacter({
-      id: 'wren', name: 'Wren', characterClass: CharacterClass.CLERIC, row: Row.BACK, orders: rules,
+      id: 'wren', name: 'Wren', characterClass: CharacterClass.CLERIC, orders: rules,
     });
 
     expect(c.orders).toEqual(rules);
@@ -57,7 +55,7 @@ describe("a character's standing orders", () => {
   // @spec PARTY-CHAR-008
   it('gives a character with no orders an empty list rather than nothing', () => {
     const c = createCharacter({
-      id: 'bram', name: 'Bram', characterClass: CharacterClass.FIGHTER, row: Row.FRONT,
+      id: 'bram', name: 'Bram', characterClass: CharacterClass.FIGHTER,
     });
 
     expect(c.orders).toEqual([]);
@@ -69,61 +67,71 @@ describe('the roster', () => {
   it('holds at most five characters', () => {
     const party = createParty();
     for (let i = 0; i < 5; i++) {
-      const row = i < 3 ? Row.FRONT : Row.BACK;
-      expect(addCharacter(party, fighter({ id: `f${i}`, row }))).toBe(true);
+      expect(addCharacter(party, fighter({ id: `f${i}` }))).toBe(true);
     }
 
-    expect(addCharacter(party, fighter({ id: 'sixth', row: Row.BACK }))).toBe(false);
+    expect(addCharacter(party, fighter({ id: 'sixth' }))).toBe(false);
     expect(roster(party)).toHaveLength(5);
   });
 
-  // @spec PARTY-ROSTER-002
-  it('holds at most three in either row', () => {
-    const party = createParty();
-    for (let i = 0; i < 3; i++) addCharacter(party, fighter({ id: `f${i}`, row: Row.FRONT }));
+  // @spec PARTY-ROSTER-006
+  it('gives a character no position among the others', () => {
+    const party = partyOf(fighter({ id: 'a' }), cleric({ id: 'b' }));
 
-    expect(addCharacter(party, fighter({ id: 'f4', row: Row.FRONT }))).toBe(false);
-    expect(addCharacter(party, fighter({ id: 'f4', row: Row.BACK }))).toBe(true);
-  });
-
-  // @spec PARTY-ROSTER-002
-  it('cannot field three and three, so a full party is always three and two', () => {
-    const party = createParty();
-    for (let i = 0; i < 3; i++) addCharacter(party, fighter({ id: `a${i}`, row: Row.FRONT }));
-    for (let i = 0; i < 2; i++) addCharacter(party, fighter({ id: `b${i}`, row: Row.BACK }));
-
-    expect(addCharacter(party, fighter({ id: 'c', row: Row.BACK }))).toBe(false);
-    expect(roster(party)).toHaveLength(5);
+    for (const c of roster(party)) {
+      expect(c.row).toBeUndefined();
+      expect(c.position).toBeUndefined();
+    }
   });
 
   // @spec PARTY-ROSTER-003
   it('leaves the party untouched when an operation would break a limit', () => {
     const party = createParty();
-    for (let i = 0; i < 3; i++) addCharacter(party, fighter({ id: `f${i}`, row: Row.FRONT }));
+    for (let i = 0; i < 5; i++) addCharacter(party, fighter({ id: `f${i}` }));
     const before = roster(party).map((c) => c.id);
 
-    addCharacter(party, fighter({ id: 'overflow', row: Row.FRONT }));
+    addCharacter(party, fighter({ id: 'overflow' }));
 
     expect(roster(party).map((c) => c.id)).toEqual(before);
   });
+});
 
-  // @spec PARTY-ROSTER-004
-  it('records a row on the character, so nobody is in two rows or none', () => {
-    const party = partyOf(fighter(), cleric());
+describe('total level', () => {
+  // @spec PARTY-CHAR-009
+  it("is the sum of a character's skill ranks", () => {
+    const c = fighter();
+    const summed = Object.values(c.ranks).reduce((a, b) => a + b, 0);
 
-    expect(character(party, 'f1').row).toBe(Row.FRONT);
-    assignRow(party, 'f1', Row.BACK);
-    expect(character(party, 'f1').row).toBe(Row.BACK);
+    expect(totalLevel(c)).toBe(summed);
+    expect(totalLevel(c)).toBeGreaterThan(0);
   });
 
-  // @spec PARTY-ROSTER-003
-  it('refuses a row change that would overfill a row', () => {
-    const party = createParty();
-    for (let i = 0; i < 3; i++) addCharacter(party, fighter({ id: `b${i}`, row: Row.BACK }));
-    addCharacter(party, fighter({ id: 'front', row: Row.FRONT }));
+  // @spec PARTY-CHAR-010
+  it('moves when a rank moves, having never been stored', () => {
+    const party = partyOf(fighter());
+    const before = totalLevel(character(party, 'f1'));
 
-    expect(assignRow(party, 'front', Row.BACK)).toBe(false);
-    expect(character(party, 'front').row).toBe(Row.FRONT);
+    // Train until the rank actually turns over; the level follows the rank, not the hours.
+    const startingRank = skillRank(character(party, 'f1'), Skill.BLADE);
+    while (skillRank(character(party, 'f1'), Skill.BLADE) === startingRank) {
+      trainSkill(party, 'f1', Skill.BLADE);
+    }
+
+    const after = totalLevel(character(party, 'f1'));
+    expect(after).toBe(before + 1);
+    expect(character(party, 'f1').totalLevel).toBeUndefined();
+  });
+
+  // @spec PARTY-CHAR-011
+  it('sums anything holding ranks, whichever side it belongs to', () => {
+    const goblin = { id: 'g', name: 'Goblin', ranks: { BLADE: 2, LIGHT_ARMOUR: 1 } };
+
+    expect(totalLevel(goblin)).toBe(3);
+  });
+
+  // @spec PARTY-CHAR-011
+  it('counts nothing for something with no ranks at all', () => {
+    expect(totalLevel({ id: 'rock', name: 'Rock' })).toBe(0);
   });
 });
 
@@ -149,7 +157,7 @@ describe('characters', () => {
   // @spec PARTY-SKILL-002
   it('starts every class with the shared base skills at rank one', () => {
     for (const cls of Object.values(CharacterClass)) {
-      const c = createCharacter({ id: 'x', name: 'X', characterClass: cls, row: Row.FRONT });
+      const c = createCharacter({ id: 'x', name: 'X', characterClass: cls });
       for (const skill of BASE_SKILLS) {
         expect(skillRank(c, skill)).toBeGreaterThanOrEqual(1);
       }
@@ -159,7 +167,7 @@ describe('characters', () => {
   // @spec PARTY-SKILL-002
   it('starts a class with its own skills, so nobody is useless on the first descent', () => {
     // A fresh thief can already look for traps; a fresh cleric can already try a revival.
-    expect(skillRank(createCharacter({ id: 't', name: 'T', characterClass: CharacterClass.THIEF, row: Row.FRONT }), Skill.DETECTION)).toBeGreaterThanOrEqual(1);
+    expect(skillRank(createCharacter({ id: 't', name: 'T', characterClass: CharacterClass.THIEF }), Skill.DETECTION)).toBeGreaterThanOrEqual(1);
     expect(skillRank(cleric(), Skill.RESTORATION)).toBeGreaterThanOrEqual(1);
     expect(skillRank(fighter(), Skill.BLADE)).toBeGreaterThanOrEqual(1);
   });
@@ -251,12 +259,11 @@ describe('the condition chain', () => {
   });
 
   // @spec PARTY-COND-009
-  it('leaves an unconscious character in their row, acting and defending not at all', () => {
+  it('leaves an unconscious character in the party, acting and defending not at all', () => {
     const party = partyOf(fighter(), cleric());
     applyDamage(party, 'f1', 9999);
 
-    const down = character(party, 'f1');
-    expect(down.row).toBe(Row.FRONT);
+    expect(roster(party).map((c) => c.id)).toContain('f1');
     expect(living(party).map((c) => c.id)).toEqual(['c1']);
   });
 
@@ -275,17 +282,6 @@ describe('the condition chain', () => {
     expect(addCharacter(party, cleric())).toBe(true);
   });
 
-  // @spec PARTY-OP-002
-  it('charges the swapping character their action to pull an ally out of the front rank', () => {
-    const party = partyOf(fighter(), cleric());
-    applyDamage(party, 'f1', 9999);
-
-    const result = swapPlaces(party, 'c1', 'f1');
-
-    expect(result.actionSpent).toBe(true);
-    expect(character(party, 'c1').row).toBe(Row.FRONT);
-    expect(character(party, 'f1').row).toBe(Row.BACK);
-  });
 });
 
 describe('advancement', () => {
@@ -417,7 +413,7 @@ describe('class', () => {
   // @spec PARTY-CLASS-001
   it('defines for every class what it may train', () => {
     for (const cls of Object.values(CharacterClass)) {
-      const c = createCharacter({ id: 'x', name: 'X', characterClass: cls, row: Row.FRONT });
+      const c = createCharacter({ id: 'x', name: 'X', characterClass: cls });
       const trainable = Object.values(Skill).filter((s) => c.trainable.includes(s));
       expect(trainable.length).toBeGreaterThan(0);
       expect(trainable.length).toBeLessThan(Object.values(Skill).length);
@@ -451,7 +447,7 @@ describe('class', () => {
 describe('persistence', () => {
   // @spec PARTY-SAVE-001
   // @spec PARTY-SAVE-002
-  it('round-trips the roster with condition, row, ranks, and experience intact', () => {
+  it('round-trips the roster with condition, ranks, and experience intact', () => {
     const party = partyOf(fighter(), cleric());
     awardEncounter(party, 'f1', { pot: 400, skillsUsed: [Skill.BLADE] });
     applyDamage(party, 'c1', 9999);
@@ -460,7 +456,6 @@ describe('persistence', () => {
 
     expect(roster(restored)).toHaveLength(2);
     expect(character(restored, 'c1').condition).toBe(Condition.UNCONSCIOUS);
-    expect(character(restored, 'c1').row).toBe(Row.BACK);
     expect(character(restored, 'f1').skillExperience[Skill.BLADE])
       .toBe(character(party, 'f1').skillExperience[Skill.BLADE]);
     expect(skillRank(character(restored, 'f1'), Skill.BLADE))
@@ -527,11 +522,11 @@ describe('how fast a party moves', () => {
   it('averages across the party, so one slow member slows everyone', () => {
     const nimble = partyOf(
       fighter({ id: 'a', attributes: { DEXTERITY: 18 } }),
-      fighter({ id: 'b', attributes: { DEXTERITY: 18 }, row: Row.BACK }),
+      fighter({ id: 'b', attributes: { DEXTERITY: 18 } }),
     );
     const burdened = partyOf(
       fighter({ id: 'a', attributes: { DEXTERITY: 18 } }),
-      fighter({ id: 'b', attributes: { DEXTERITY: 4 }, row: Row.BACK }),
+      fighter({ id: 'b', attributes: { DEXTERITY: 4 } }),
     );
 
     expect(partyStepCost(burdened)).toBeGreaterThan(partyStepCost(nimble));
@@ -541,7 +536,7 @@ describe('how fast a party moves', () => {
   it('ignores the unconscious, who are being carried rather than walking', () => {
     const party = partyOf(
       fighter({ id: 'a', attributes: { DEXTERITY: 18 } }),
-      fighter({ id: 'b', attributes: { DEXTERITY: 2 }, row: Row.BACK }),
+      fighter({ id: 'b', attributes: { DEXTERITY: 2 } }),
     );
     const laden = partyStepCost(party);
 

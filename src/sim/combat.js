@@ -6,7 +6,9 @@
  * two, so an unfavourable matchup costs damage rather than a turn.
  */
 
-import { Attribute, Condition, Row, applyDamage, character, roster } from './party.js';
+import {
+  Attribute, Condition, DEFAULT_ATTRIBUTES, applyDamage, character, roster,
+} from './party.js';
 
 export const Band = { MISS: 'MISS', GRAZE: 'GRAZE', HIT: 'HIT', CRIT: 'CRIT' };
 
@@ -32,7 +34,16 @@ export const GRAZE_MULTIPLIER = 0.5;
 export const CRIT_MULTIPLIER = 1.5;
 
 /** A swarm is a shape the game can express, not an unbounded number. */
-export const MAX_ENEMY_ROW = 10;
+export const MAX_ENEMY_GROUP = 20;
+
+/**
+ * How much of a bar catching somebody unready is worth. An addition rather than a
+ * filled bar: surprise is decisive without being a guaranteed first blow, and it
+ * composes with the opening each combatant drew rather than overriding it.
+ *
+ * @spec COMBAT-SURPRISE-005
+ */
+export const OPENING_HEAD_START = 55;
 
 /** Fleeing fails against something more than a quarter faster than the hindmost. */
 export const FLEE_SPEED_RATIO = 1.25;
@@ -100,25 +111,45 @@ export function damageFor(band, baseDamage, armour) {
   return Math.max(floor, Math.round(reduced));
 }
 
-export function createEnemy({ id, name, row = Row.FRONT, hitPoints = 10, dexterity = 10, potValue = 10, accuracy = 0, armour = 0, forbidsEscape = false }) {
-  return { id, name, row, hitPoints, maxHitPoints: hitPoints, dexterity, potValue, accuracy, armour, forbidsEscape, condition: Condition.OK };
+/**
+ * An enemy is a character in every field but a class: the same attributes, the same
+ * ranks, the same condition, the same attack. Class is the shape of a career, and a
+ * goblin has none — so its hit points are authored rather than derived from one.
+ *
+ * @spec ENEMY-ROSTER-001
+ * @spec ENEMY-ROSTER-003
+ * @spec ENEMY-ROSTER-009
+ */
+export function createEnemy({
+  id, name, role = EnemyRole.MELEE, attributes = {}, ranks = {},
+  maxHitPoints = 10, attack = null, armour = 0, potValue = 10, forbidsEscape = false,
+}) {
+  return {
+    id,
+    name,
+    role,
+    attributes: { ...DEFAULT_ATTRIBUTES, ...attributes },
+    ranks: { ...ranks },
+    maxHitPoints,
+    hitPoints: maxHitPoints,
+    attack: attack ? { ...attack } : null,
+    armour,
+    potValue,
+    forbidsEscape,
+    condition: Condition.OK,
+  };
 }
 
+/** What an enemy fights with. It says nothing about where it stands; nobody stands. */
+export const EnemyRole = { MELEE: 'MELEE', RANGED: 'RANGED', CASTER: 'CASTER' };
+
 /**
- * @spec COMBAT-ENEMY-001
  * @spec COMBAT-ENEMY-002
- * @spec COMBAT-ENEMY-003
+ * @spec COMBAT-ENEMY-007
  */
 export function createEnemyGroup(enemies) {
-  const members = [];
-  const counts = { [Row.FRONT]: 0, [Row.BACK]: 0 };
-  for (const enemy of enemies) {
-    // Uncapped in total, but a row holds only so many bodies.
-    if (counts[enemy.row] >= MAX_ENEMY_ROW) continue;
-    counts[enemy.row] += 1;
-    members.push(enemy);
-  }
-  return { members };
+  // Uncapped by the party's five, but a swarm is a shape rather than a number.
+  return { members: enemies.slice(0, MAX_ENEMY_GROUP) };
 }
 
 const enemyStanding = (e) => e.condition === Condition.OK && e.hitPoints > 0;
@@ -163,35 +194,47 @@ export function beginEncounter({ party, enemies, light, awareness, rng, origin }
     potBanked: 0,
   };
 
-  // Catching somebody unready is a head start on the bar rather than a free round, so
-  // a quick ambusher gets more out of an ambush than a sluggish one does.
-  // @spec COMBAT-SURPRISE-001
-  // @spec COMBAT-SURPRISE-002
+  // Every fight opens somewhere different. A bar drawn at random means the same
+  // warband met twice is not the same fight twice, and nobody is owed the first turn
+  // by the order they happen to be listed in. Never a full bar: a fight opens with
+  // everybody still filling, whatever else is true.
+  // @spec COMBAT-SURPRISE-003
+  // @spec COMBAT-SURPRISE-004
+  // @spec COMBAT-SURPRISE-007
   for (const combatant of combatants(state)) {
-    const ready = surprisedSide !== null && combatant.side !== surprisedSide;
-    state.readiness.set(combatant.id, ready ? FULL_BAR : 0);
+    const drawn = rng.int(0, FULL_BAR - 1);
+    // Catching somebody unready is a head start rather than a free blow, so a quick
+    // ambusher still gets more out of an ambush than a sluggish one does.
+    // @spec COMBAT-SURPRISE-005
+    // @spec COMBAT-SURPRISE-006
+    const ambushing = surprisedSide !== null && combatant.side !== surprisedSide;
+    const opening = ambushing ? Math.min(FULL_BAR, drawn + OPENING_HEAD_START) : drawn;
+    state.readiness.set(combatant.id, opening);
   }
 
   return state;
 }
 
+/**
+ * Everyone still able to act, read the same way from both sides.
+ *
+ * @spec COMBAT-ENEMY-006
+ */
 function combatants(state) {
+  const speed = (c) => c.attributes[Attribute.DEXTERITY];
   const party = roster(state.party)
     .filter((c) => c.condition === Condition.OK)
-    .map((c, index) => ({
-      id: c.id, side: 'PARTY', row: c.row, order: index,
-      dexterity: c.attributes[Attribute.DEXTERITY],
-    }));
+    .map((c, index) => ({ id: c.id, side: 'PARTY', order: index, dexterity: speed(c) }));
   const foes = state.enemies.members
     .filter(enemyStanding)
-    .map((e, index) => ({ id: e.id, side: 'ENEMIES', row: e.row, order: index, dexterity: e.dexterity }));
+    .map((e, index) => ({ id: e.id, side: 'ENEMIES', order: index, dexterity: speed(e) }));
   return [...party, ...foes];
 }
 
 /**
  * Who goes first among combatants ready together: descending Dexterity, ties to the
- * party, ties within the party by position. Equal candidates for a target are settled
- * by this same order, so a seeded fight picks the same one every time.
+ * party, ties within a side by the order it is listed in. Equal candidates for a target
+ * are settled by this same order, so a seeded fight picks the same one every time.
  *
  * @spec COMBAT-TIME-008
  */
@@ -289,15 +332,6 @@ export function nextActor(state) {
   return readyNow(state)[0];
 }
 
-/** @spec COMBAT-REACH-003 */
-export function frontRowHolds(party) {
-  return roster(party).some((c) => c.row === Row.FRONT && c.condition === Condition.OK);
-}
-
-function enemyFrontHolds(state) {
-  return state.enemies.members.some((e) => e.row === Row.FRONT && enemyStanding(e));
-}
-
 function sideOf(state, actorId) {
   return character(state.party, actorId) ? 'PARTY' : 'ENEMIES';
 }
@@ -308,36 +342,33 @@ function opposingTargets(state, actorId) {
     : roster(state.party).filter((c) => c.condition === Condition.OK);
 }
 
-function frontHoldsFor(state, side) {
-  return side === 'PARTY' ? frontRowHolds(state.party) : enemyFrontHolds(state);
+/**
+ * Everyone on the other side who is still able to act. There is no position in a
+ * fight, so nothing stands between an attacker and anybody they want.
+ *
+ * @spec COMBAT-TARGET-001
+ * @spec COMBAT-TARGET-003
+ * @spec COMBAT-TARGET-004
+ */
+export function attackTargets(state, actorId) {
+  return opposingTargets(state, actorId);
 }
 
 /**
- * Melee reaches the front row only, while a conscious character stands in it. A body
- * shields nobody, so the line falls the moment its last upright member does.
+ * Everyone on the actor's own side, the actor included: a cleric alone still has
+ * somebody to heal.
  *
- * @spec COMBAT-REACH-001
- * @spec COMBAT-REACH-002
- * @spec COMBAT-REACH-004
- * @spec COMBAT-ENEMY-004
+ * @spec COMBAT-TARGET-002
  */
-export function meleeTargets(state, actorId, { reaching = false } = {}) {
-  const side = sideOf(state, actorId);
-  const actor = side === 'PARTY' ? character(state.party, actorId) : state.enemies.members.find((e) => e.id === actorId);
-  if (!actor) return [];
-
-  // A back-row attacker needs a weapon that reaches to swing at all.
-  if (actor.row === Row.BACK && !reaching) return [];
-
-  const defenders = opposingTargets(state, actorId);
-  const defendingSide = side === 'PARTY' ? 'ENEMIES' : 'PARTY';
-  if (!frontHoldsFor(state, defendingSide)) return defenders;
-  return defenders.filter((t) => t.row === Row.FRONT);
+export function allyTargets(state, actorId) {
+  return sideOf(state, actorId) === 'PARTY'
+    ? roster(state.party).filter((c) => c.condition === Condition.OK)
+    : state.enemies.members.filter(enemyStanding);
 }
 
-/** @spec COMBAT-REACH-005 */
-export function rangedTargets(state, actorId) {
-  return opposingTargets(state, actorId);
+/** Whoever holds this id, on either side, whatever state they are in. */
+function recordOf(state, id) {
+  return character(state.party, id) ?? state.enemies.members.find((e) => e.id === id) ?? null;
 }
 
 function findTarget(state, targetId) {
@@ -381,10 +412,17 @@ export function takeAction(state, actorId, action) {
   // Nothing to swing at is nothing taken: the bar is spent, and the turn is over.
   if (!target) return { actorId, action: action.kind, targetId: null };
 
+  // What a blow is worth belongs to whoever swung it, on either side alike, and what
+  // blunts it to whoever is struck.
+  // @spec COMBAT-ACTION-008
+  const swing = recordOf(state, actorId)?.attack ?? {};
+  const accuracy = action.accuracy ?? swing.accuracy ?? 0;
+  const baseDamage = action.baseDamage ?? swing.baseDamage ?? 0;
+
   const roll = state.rng.int(1, 100);
   const penalty = actor.side === 'PARTY' ? state.accuracyPenalty : 0;
-  const band = attackBand(roll, (action.accuracy ?? 0) - (target.armour ?? 0) - penalty);
-  const damage = damageFor(band, action.baseDamage ?? 0, target.armour ?? 0);
+  const band = attackBand(roll, accuracy - (target.armour ?? 0) - penalty);
+  const damage = damageFor(band, baseDamage, target.armour ?? 0);
 
   let felled = false;
   if (character(state.party, target.id)) {
@@ -393,6 +431,9 @@ export function takeAction(state, actorId, action) {
     if (damage > 0) applyDamage(state.party, target.id, damage);
     felled = wasUp && character(state.party, target.id).condition !== Condition.OK;
   } else {
+    // A fallen enemy is dead where a fallen character is unconscious: nobody is
+    // coming back for a goblin.
+    // @spec ENEMY-ROSTER-011
     target.hitPoints = Math.max(0, target.hitPoints - damage);
     if (target.hitPoints === 0 && target.condition === Condition.OK) {
       target.condition = Condition.DEAD;
@@ -428,7 +469,9 @@ export function attemptFlee(state, actorId = null) {
   const standing = roster(state.party).filter((c) => c.condition === Condition.OK);
   // A party flees no faster than whoever is hindmost.
   const hindmost = Math.min(...standing.map((c) => c.attributes[Attribute.DEXTERITY]));
-  const fastest = Math.max(...state.enemies.members.filter(enemyStanding).map((e) => e.dexterity));
+  const fastest = Math.max(
+    ...state.enemies.members.filter(enemyStanding).map((e) => e.attributes[Attribute.DEXTERITY]),
+  );
 
   if (fastest > hindmost * FLEE_SPEED_RATIO) return { escaped: false };
 

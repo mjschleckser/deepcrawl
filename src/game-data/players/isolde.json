@@ -1,0 +1,25 @@
+{
+  "id": "isolde",
+  "name": "Isolde",
+  "order": 3,
+  "characterClass": "MAGE",
+  "attributes": {
+    "DEXTERITY": 12
+  },
+  "maxHitPoints": 20,
+  "attack": {
+    "skill": "BLADE",
+    "baseDamage": 5,
+    "accuracy": 24
+  },
+  "armour": 0,
+  "orders": [
+    {
+      "when": "ALWAYS",
+      "action": {
+        "kind": "ATTACK"
+      },
+      "aim": "WEAKEST_ENEMY"
+    }
+  ]
+}

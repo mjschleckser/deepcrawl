@@ -1,0 +1,27 @@
+{
+  "id": "GOBLIN_MAGE",
+  "name": "Goblin Mage",
+  "role": "CASTER",
+  "attributes": {
+    "MIGHT": 7,
+    "CONSTITUTION": 8,
+    "DEXTERITY": 10,
+    "INTELLECT": 14,
+    "PERCEPTION": 11,
+    "RESOLVE": 12
+  },
+  "ranks": {
+    "EVOCATION": 4,
+    "ALTERATION": 2,
+    "DETECTION": 1
+  },
+  "maxHitPoints": 6,
+  "attack": {
+    "skill": "EVOCATION",
+    "baseDamage": 8,
+    "accuracy": 34
+  },
+  "armour": 0,
+  "potValue": 24,
+  "forbidsEscape": false
+}

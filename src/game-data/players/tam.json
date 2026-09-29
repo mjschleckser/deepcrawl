@@ -1,0 +1,25 @@
+{
+  "id": "tam",
+  "name": "Tam",
+  "order": 2,
+  "characterClass": "THIEF",
+  "attributes": {
+    "DEXTERITY": 16
+  },
+  "maxHitPoints": 20,
+  "attack": {
+    "skill": "BLADE",
+    "baseDamage": 7,
+    "accuracy": 32
+  },
+  "armour": 0,
+  "orders": [
+    {
+      "when": "ALWAYS",
+      "action": {
+        "kind": "ATTACK"
+      },
+      "aim": "WEAKEST_ENEMY"
+    }
+  ]
+}

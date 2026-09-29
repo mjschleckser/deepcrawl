@@ -7,7 +7,6 @@
  * condition chain, and the roster limits enforced in exactly one place.
  */
 
-export const Row = { FRONT: 'FRONT', BACK: 'BACK' };
 
 export const Condition = {
   OK: 'OK',
@@ -64,7 +63,6 @@ export function partyStepCost(party) {
 }
 
 export const MAX_PARTY = 5;
-export const MAX_PER_ROW = 3;
 
 /**
  * Past this many distinct skills the pot stops growing, so a party cannot inflate it
@@ -111,7 +109,7 @@ const CLASS_TABLE = {
   },
 };
 
-const DEFAULT_ATTRIBUTES = {
+export const DEFAULT_ATTRIBUTES = {
   [Attribute.MIGHT]: 10, [Attribute.CONSTITUTION]: 10, [Attribute.DEXTERITY]: 10,
   [Attribute.INTELLECT]: 10, [Attribute.PERCEPTION]: 10, [Attribute.RESOLVE]: 10,
 };
@@ -123,7 +121,8 @@ const DEFAULT_ATTRIBUTES = {
  * @spec PARTY-CLASS-001
  */
 export function createCharacter({
-  id, name, characterClass, row, attributes = {}, maxHitPoints = 20, orders = [],
+  id, name, characterClass, attributes = {}, ranks: authored = {},
+  maxHitPoints = 20, attack = null, armour = 0, orders = [],
 }) {
   const table = CLASS_TABLE[characterClass];
   const ranks = {};
@@ -132,14 +131,20 @@ export function createCharacter({
   for (const [skill, rank] of Object.entries(table.start)) {
     ranks[skill] = Math.max(ranks[skill] ?? 0, rank);
   }
+  // An authored character may say what it is better at than its class alone makes it.
+  for (const [skill, rank] of Object.entries(authored)) ranks[skill] = rank;
 
   return {
     id,
     name,
     characterClass,
-    row,
     attributes: { ...DEFAULT_ATTRIBUTES, ...attributes },
     maxHitPoints,
+    // What this one swings, until weapons carry it instead. Both sides of a fight
+    // carry it in the same field, so nothing resolving an attack asks which side.
+    // @spec COMBAT-ACTION-008
+    attack: attack ? { ...attack } : null,
+    armour,
     hitPoints: maxHitPoints,
     condition: Condition.OK,
     ranks,
@@ -167,7 +172,7 @@ export function character(party, id) {
 }
 
 /**
- * Characters who can actually do something this round. The rest keep their row and
+ * Characters who can actually do something this round. The rest keep their place and
  * their place in the party; they simply do nothing in it.
  *
  * @spec PARTY-COND-009
@@ -181,10 +186,6 @@ function counts(c) {
   return c.condition !== Condition.LOST;
 }
 
-function rowCount(party, row) {
-  return party.members.filter((c) => counts(c) && c.row === row).length;
-}
-
 /**
  * @spec PARTY-ROSTER-001
  * @spec PARTY-ROSTER-002
@@ -193,38 +194,23 @@ function rowCount(party, row) {
  */
 export function addCharacter(party, newcomer) {
   if (party.members.filter(counts).length >= MAX_PARTY) return false;
-  if (rowCount(party, newcomer.row) >= MAX_PER_ROW) return false;
   party.members.push(newcomer);
   return true;
 }
 
 /**
- * @spec PARTY-ROSTER-003
- * @spec PARTY-ROSTER-004
- */
-export function assignRow(party, id, row) {
-  const c = character(party, id);
-  if (!c || c.row === row) return false;
-  if (rowCount(party, row) >= MAX_PER_ROW) return false;
-  c.row = row;
-  return true;
-}
-
-/**
- * Pulling someone out of the front rank is work, not bookkeeping, so it costs the
- * character doing it their action.
+ * How much of a combatant there is, in one number: the sum of the ranks they hold.
  *
- * @spec PARTY-OP-002
+ * Derived on every reading rather than stored, so it cannot drift from the ranks it
+ * claims to summarise, and read the same way for anything holding ranks — a character,
+ * a goblin — because both are the same kind of thing.
+ *
+ * @spec PARTY-CHAR-009
+ * @spec PARTY-CHAR-010
+ * @spec PARTY-CHAR-011
  */
-export function swapPlaces(party, actorId, allyId) {
-  const actor = character(party, actorId);
-  const ally = character(party, allyId);
-  if (!actor || !ally) return { swapped: false, actionSpent: false };
-
-  const actorRow = actor.row;
-  actor.row = ally.row;
-  ally.row = actorRow;
-  return { swapped: true, actionSpent: true };
+export function totalLevel(combatant) {
+  return Object.values(combatant?.ranks ?? {}).reduce((sum, rank) => sum + rank, 0);
 }
 
 /**

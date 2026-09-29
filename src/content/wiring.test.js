@@ -6,7 +6,7 @@ import {
   recordTrapDetected, Verb,
 } from '../sim/exploration.js';
 import {
-  Attribute, Condition, Row, CharacterClass, Skill, character, roster, skillRank, applyDamage,
+  Attribute, Condition, CharacterClass, Skill, character, roster, skillRank, applyDamage,
 } from '../sim/party.js';
 import { Outcome, Action, encounterOutcome, nextActor, takeAction } from '../sim/combat.js';
 import { isAware } from '../sim/enemies.js';
@@ -53,12 +53,13 @@ function stepIntoContact(campaign, limit = 20) {
 }
 
 describe('a campaign has a party', () => {
-  it('fields five characters across the two rows', () => {
+  // @spec PARTY-DATA-002
+  it('fields the five characters its data files describe', () => {
     const { party } = booted();
 
     expect(roster(party)).toHaveLength(5);
-    expect(roster(party).filter((c) => c.row === Row.FRONT)).toHaveLength(3);
-    expect(roster(party).filter((c) => c.row === Row.BACK)).toHaveLength(2);
+    expect(roster(party).map((c) => c.id)).toEqual(['bram', 'rook', 'tam', 'isolde', 'wren']);
+    for (const c of roster(party)) expect(c.row).toBeUndefined();
   });
 
   it('gives every character their own speed, so no two bars fill together', () => {

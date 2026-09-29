@@ -254,11 +254,11 @@ describe('input while a fight is on', () => {
   function inFight() {
     const { state } = harness();
     const party = createParty();
-    addCharacter(party, createCharacter({ id: 'bram', name: 'Bram', characterClass: CharacterClass.FIGHTER, row: Row.FRONT }));
+    addCharacter(party, createCharacter({ id: 'bram', name: 'Bram', characterClass: CharacterClass.FIGHTER }));
 
     const encounter = beginEncounter({
       party,
-      enemies: createEnemyGroup([createEnemy({ id: 'g1', name: 'Goblin', row: Row.FRONT, hitPoints: 40, potValue: 10 })]),
+      enemies: createEnemyGroup([createEnemy({ id: 'g1', name: 'Goblin', hitPoints: 40, potValue: 10 })]),
       light: 'BRIGHT',
       awareness: { party: true, enemies: true },
       rng: makeRng(2),
@@ -311,10 +311,10 @@ describe('when a fight ends', () => {
   it('leaves nothing of the fight behind', () => {
     const { state } = harness();
     const party = createParty();
-    addCharacter(party, createCharacter({ id: 'bram', name: 'Bram', characterClass: CharacterClass.FIGHTER, row: Row.FRONT }));
+    addCharacter(party, createCharacter({ id: 'bram', name: 'Bram', characterClass: CharacterClass.FIGHTER }));
     const encounter = beginEncounter({
       party,
-      enemies: createEnemyGroup([createEnemy({ id: 'g1', name: 'Goblin', row: Row.FRONT, hitPoints: 40, potValue: 10 })]),
+      enemies: createEnemyGroup([createEnemy({ id: 'g1', name: 'Goblin', hitPoints: 40, potValue: 10 })]),
       light: 'BRIGHT',
       awareness: { party: true, enemies: true },
       rng: makeRng(2),
@@ -341,10 +341,10 @@ describe('when a fight ends', () => {
     const { controller, campaign } = (() => {
       const { state } = harness();
       const party = createParty();
-      addCharacter(party, createCharacter({ id: 'bram', name: 'Bram', characterClass: CharacterClass.FIGHTER, row: Row.FRONT }));
+      addCharacter(party, createCharacter({ id: 'bram', name: 'Bram', characterClass: CharacterClass.FIGHTER }));
       const encounter = beginEncounter({
         party,
-        enemies: createEnemyGroup([createEnemy({ id: 'g1', name: 'Goblin', row: Row.FRONT, hitPoints: 40, potValue: 10 })]),
+        enemies: createEnemyGroup([createEnemy({ id: 'g1', name: 'Goblin', hitPoints: 40, potValue: 10 })]),
         light: 'BRIGHT', awareness: { party: true, enemies: true },
         rng: makeRng(3), origin: { floorId: 'f1', x: 1, y: 1 },
       });

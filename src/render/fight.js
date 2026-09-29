@@ -9,7 +9,7 @@
  * it is the fight as the player perceives it, built from what each turn reported.
  */
 
-import { Condition, Row, Skill, character, roster } from '../sim/party.js';
+import { Condition, Skill, character, roster } from '../sim/party.js';
 import { MIN_TAP_PX, ControlKind, uiScale, contentColumn } from './geometry.js';
 import {
   Action, Band, Outcome, meleeTargets, rangedTargets, frontRowHolds,

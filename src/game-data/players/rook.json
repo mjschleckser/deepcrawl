@@ -1,0 +1,25 @@
+{
+  "id": "rook",
+  "name": "Rook",
+  "order": 1,
+  "characterClass": "FIGHTER",
+  "attributes": {
+    "DEXTERITY": 11
+  },
+  "maxHitPoints": 20,
+  "attack": {
+    "skill": "BLADE",
+    "baseDamage": 9,
+    "accuracy": 30
+  },
+  "armour": 0,
+  "orders": [
+    {
+      "when": "ALWAYS",
+      "action": {
+        "kind": "ATTACK"
+      },
+      "aim": "WEAKEST_ENEMY"
+    }
+  ]
+}

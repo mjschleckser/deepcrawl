@@ -13,13 +13,11 @@ export const When = {
   NO_ALLY_BELOW: 'NO_ALLY_BELOW',
   ONCE: 'ONCE',
   SLOT_REMAINS: 'SLOT_REMAINS',
-  FRONT_BROKEN: 'FRONT_BROKEN',
 };
 
 /** What a rule may aim at. */
 export const Aim = {
   WEAKEST_ENEMY: 'WEAKEST_ENEMY',
-  FRONT_ENEMY: 'FRONT_ENEMY',
   WEAKEST_ALLY: 'WEAKEST_ALLY',
   NAMED_ALLY: 'NAMED_ALLY',
   SELF: 'SELF',
@@ -57,8 +55,6 @@ function holds(rule, index, situation) {
       return !situation.taken.has(index);
     case When.SLOT_REMAINS:
       return (situation.slots?.[rule.action.rank] ?? 0) > 0;
-    case When.FRONT_BROKEN:
-      return situation.frontBroken;
     default:
       return false;
   }
@@ -82,8 +78,6 @@ function aimOf(rule, situation) {
   switch (rule.aim) {
     case Aim.WEAKEST_ENEMY:
       return fewest(situation.enemies.filter((e) => e.targetable))?.id ?? null;
-    case Aim.FRONT_ENEMY:
-      return situation.enemies.find((e) => e.targetable && e.row === 'FRONT')?.id ?? null;
     case Aim.WEAKEST_ALLY:
       return fewest(conscious(situation))?.id ?? null;
     case Aim.NAMED_ALLY:

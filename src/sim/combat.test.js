@@ -2,20 +2,20 @@ import { describe, it, expect } from 'vitest';
 import { makeRng } from './rng.js';
 import {
   createParty, createCharacter, addCharacter, applyDamage, character,
-  Condition, Row, CharacterClass, Skill, roster,
+  Condition, CharacterClass, Skill, roster,
 } from './party.js';
 import {
   beginEncounter, takeAction, nextActor, advanceBeats, attackBand, damageFor,
-  actingOrder, readinessOf, meleeTargets, rangedTargets, frontRowHolds, attemptFlee,
-  createEnemy, createEnemyGroup, encounterOutcome,
-  Band, Action, Outcome, MAX_ENEMY_ROW, MIN_DAMAGE_FRACTION, FULL_BAR,
+  actingOrder, readinessOf, attackTargets, allyTargets, attemptFlee,
+  createEnemy, createEnemyGroup, encounterOutcome, OPENING_HEAD_START,
+  Band, Action, Outcome, MAX_ENEMY_GROUP, MIN_DAMAGE_FRACTION, FULL_BAR,
 } from './combat.js';
 
 /** Bring one combatant to a full bar without waiting out the beats. */
 const readyUp = (state, id) => state.readiness.set(id, FULL_BAR);
 
 const hero = (id, over = {}) =>
-  createCharacter({ id, name: id, characterClass: CharacterClass.FIGHTER, row: Row.FRONT, ...over });
+  createCharacter({ id, name: id, characterClass: CharacterClass.FIGHTER, ...over });
 
 function party(...members) {
   const p = createParty();
@@ -23,7 +23,8 @@ function party(...members) {
   return p;
 }
 
-const orc = (id, over = {}) => createEnemy({ id, name: 'Orc', row: Row.FRONT, hitPoints: 12, potValue: 20, ...over });
+const orc = (id, over = {}) =>
+  createEnemy({ id, name: 'Orc', maxHitPoints: 12, potValue: 20, ...over });
 
 function encounter({ members, enemies, light = 'BRIGHT', partyAware = true, enemiesAware = true, seed = 7 } = {}) {
   return beginEncounter({
@@ -124,8 +125,8 @@ describe('the order of acting', () => {
   // @spec COMBAT-TIME-008
   it('acts in descending Dexterity', () => {
     const quick = hero('quick', { attributes: { DEXTERITY: 18 } });
-    const slow = hero('slow', { attributes: { DEXTERITY: 6 }, row: Row.BACK });
-    const state = encounter({ members: [quick, slow], enemies: [orc('o1', { dexterity: 12 })] });
+    const slow = hero('slow', { attributes: { DEXTERITY: 6 } });
+    const state = encounter({ members: [quick, slow], enemies: [orc('o1', { attributes: { DEXTERITY: 12 } })] });
 
     expect(actingOrder(state).map((c) => c.id)).toEqual(['quick', 'o1', 'slow']);
   });
@@ -133,7 +134,7 @@ describe('the order of acting', () => {
   // @spec COMBAT-TIME-008
   it('gives a tie to the party', () => {
     const c = hero('hero', { attributes: { DEXTERITY: 12 } });
-    const state = encounter({ members: [c], enemies: [orc('o1', { dexterity: 12 })] });
+    const state = encounter({ members: [c], enemies: [orc('o1', { attributes: { DEXTERITY: 12 } })] });
 
     expect(actingOrder(state).map((c) => c.id)).toEqual(['hero', 'o1']);
   });
@@ -142,7 +143,7 @@ describe('the order of acting', () => {
   it('settles a tie within the party by a fixed order of position', () => {
     const a = hero('a', { attributes: { DEXTERITY: 10 } });
     const b = hero('b', { attributes: { DEXTERITY: 10 } });
-    const state = encounter({ members: [a, b], enemies: [orc('o1', { dexterity: 1 })] });
+    const state = encounter({ members: [a, b], enemies: [orc('o1', { attributes: { DEXTERITY: 1 } })] });
 
     expect(actingOrder(state).map((c) => c.id).slice(0, 2)).toEqual(['a', 'b']);
     // And it is stable across repeated reads.
@@ -152,7 +153,7 @@ describe('the order of acting', () => {
   // @spec COMBAT-TIME-008
   it('places every combatant able to act exactly once', () => {
     const state = encounter({
-      members: [hero('a'), hero('b', { row: Row.BACK })],
+      members: [hero('a'), hero('b', {})],
       enemies: [orc('o1'), orc('o2')],
     });
 
@@ -162,90 +163,82 @@ describe('the order of acting', () => {
   });
 });
 
-describe('reach', () => {
-  // @spec COMBAT-REACH-001
-  it('lets melee reach only the front row while someone conscious stands there', () => {
+describe('targeting', () => {
+  // @spec COMBAT-TARGET-001
+  // @spec COMBAT-TARGET-003
+  it('lets anybody attack anybody on the other side', () => {
     const state = encounter({
-      members: [hero('front'), hero('back', { row: Row.BACK })],
+      members: [hero('bram'), hero('tam'), hero('isolde')],
+      enemies: [orc('o1'), orc('o2')],
+    });
+
+    expect(attackTargets(state, 'isolde').map((t) => t.id).sort()).toEqual(['o1', 'o2']);
+    expect(attackTargets(state, 'o2').map((t) => t.id).sort()).toEqual(['bram', 'isolde', 'tam']);
+  });
+
+  // @spec COMBAT-TARGET-004
+  it('offers nobody who cannot act', () => {
+    const state = encounter({
+      members: [hero('bram'), hero('tam')],
+      enemies: [orc('o1'), orc('o2')],
+    });
+    applyDamage(state.party, 'bram', 9999);
+    state.enemies.members[0].hitPoints = 0;
+    state.enemies.members[0].condition = Condition.DEAD;
+
+    expect(character(state.party, 'bram').condition).toBe(Condition.UNCONSCIOUS);
+    expect(attackTargets(state, 'o2').map((t) => t.id)).toEqual(['tam']);
+    expect(attackTargets(state, 'tam').map((t) => t.id)).toEqual(['o2']);
+  });
+
+  // @spec COMBAT-TARGET-002
+  it('aims a benefit at anybody on its own side, the actor included', () => {
+    const state = encounter({
+      members: [hero('bram'), hero('wren')],
       enemies: [orc('o1')],
     });
 
-    expect(meleeTargets(state, 'o1').map((t) => t.id)).toEqual(['front']);
+    expect(allyTargets(state, 'wren').map((t) => t.id).sort()).toEqual(['bram', 'wren']);
+    expect(allyTargets(state, 'o1').map((t) => t.id)).toEqual(['o1']);
   });
 
-  // @spec COMBAT-REACH-002
-  // @spec COMBAT-REACH-003
-  it('opens the back row to melee once the last conscious front-rower falls', () => {
+  // @spec COMBAT-TARGET-005
+  it('bounds what a combatant may do by what they carry, never by where they are', () => {
     const state = encounter({
-      members: [hero('front'), hero('back', { row: Row.BACK })],
-      enemies: [orc('o1')],
-    });
-    expect(frontRowHolds(state.party)).toBe(true);
-
-    applyDamage(state.party, 'front', 9999);
-
-    expect(character(state.party, 'front').condition).toBe(Condition.UNCONSCIOUS);
-    // A body shields nobody.
-    expect(frontRowHolds(state.party)).toBe(false);
-    expect(meleeTargets(state, 'o1').map((t) => t.id)).toEqual(['back']);
-  });
-
-  // @spec COMBAT-REACH-004
-  it('lets a back-row character melee only with a reaching weapon', () => {
-    const state = encounter({
-      members: [hero('front'), hero('spear', { row: Row.BACK })],
+      members: [hero('armed', { attack: { baseDamage: 9, accuracy: 30 } }), hero('bare')],
       enemies: [orc('o1')],
     });
 
-    expect(meleeTargets(state, 'spear', { reaching: false })).toEqual([]);
-    expect(meleeTargets(state, 'spear', { reaching: true }).map((t) => t.id)).toEqual(['o1']);
-  });
-
-  // @spec COMBAT-REACH-005
-  it('lets ranged attacks and spells reach either row', () => {
-    const state = encounter({
-      members: [hero('front')],
-      enemies: [orc('o1'), orc('o2', { row: Row.BACK })],
-    });
-
-    expect(rangedTargets(state, 'front').map((t) => t.id).sort()).toEqual(['o1', 'o2']);
-  });
-
-  // @spec COMBAT-ENEMY-004
-  it('makes an enemy pick a melee target from the party front row', () => {
-    const state = encounter({
-      members: [hero('front'), hero('back', { row: Row.BACK })],
-      enemies: [orc('o1')],
-    });
-
-    for (let i = 0; i < 20; i++) {
-      expect(meleeTargets(state, 'o1').every((t) => t.row === Row.FRONT)).toBe(true);
-    }
+    // Both reach every enemy; what differs is what they have to swing.
+    expect(attackTargets(state, 'bare').map((t) => t.id)).toEqual(['o1']);
+    expect(character(state.party, 'bare').attack).toBeNull();
+    expect(character(state.party, 'armed').attack).toMatchObject({ baseDamage: 9 });
   });
 });
 
 describe('enemy groups', () => {
-  // @spec COMBAT-ENEMY-001
-  it('gives an enemy group both rows', () => {
-    const group = createEnemyGroup([orc('a'), orc('b', { row: Row.BACK })]);
+  // @spec COMBAT-ENEMY-006
+  it('makes an enemy of the same stuff a character is', () => {
+    const goblin = orc('g');
 
-    expect(group.members.filter((e) => e.row === Row.FRONT)).toHaveLength(1);
-    expect(group.members.filter((e) => e.row === Row.BACK)).toHaveLength(1);
+    expect(Object.keys(goblin.attributes)).toHaveLength(6);
+    expect(goblin.characterClass).toBeUndefined();
+    expect(goblin.condition).toBe(Condition.OK);
+    expect(goblin.hitPoints).toBe(goblin.maxHitPoints);
   });
 
   // @spec COMBAT-ENEMY-002
   it('is not capped at five', () => {
-    const swarm = createEnemyGroup(Array.from({ length: 9 }, (_, i) => orc(`o${i}`, { row: i < 5 ? Row.FRONT : Row.BACK })));
+    const swarm = createEnemyGroup(Array.from({ length: 9 }, (_, i) => orc(`o${i}`)));
 
     expect(swarm.members).toHaveLength(9);
   });
 
-  // @spec COMBAT-ENEMY-003
-  it('holds at most ten in either row', () => {
-    const tooMany = Array.from({ length: 12 }, (_, i) => orc(`o${i}`));
-    const group = createEnemyGroup(tooMany);
+  // @spec COMBAT-ENEMY-007
+  it('holds at most twenty in a group', () => {
+    const tooMany = Array.from({ length: 25 }, (_, i) => orc(`o${i}`));
 
-    expect(group.members.filter((e) => e.row === Row.FRONT)).toHaveLength(MAX_ENEMY_ROW);
+    expect(createEnemyGroup(tooMany).members).toHaveLength(MAX_ENEMY_GROUP);
   });
 });
 
@@ -254,7 +247,7 @@ describe('aiming at what is there', () => {
   it('resolves nothing against a target that has already fallen, and finds no other', () => {
     const state = encounter({
       members: [hero('a')],
-      enemies: [orc('o1', { hitPoints: 1 }), orc('o2', { hitPoints: 40 })],
+      enemies: [orc('o1', { maxHitPoints: 1 }), orc('o2', { maxHitPoints: 40 })],
     });
     readyUp(state, 'a');
     takeAction(state, 'a', { kind: Action.ATTACK, targetId: 'o1', baseDamage: 50, accuracy: 100 });
@@ -269,7 +262,7 @@ describe('aiming at what is there', () => {
 
   // @spec COMBAT-TIME-010
   it('aims at the fight as it stands when the blow is struck', () => {
-    const state = encounter({ members: [hero('a')], enemies: [orc('o1', { hitPoints: 40 })] });
+    const state = encounter({ members: [hero('a')], enemies: [orc('o1', { maxHitPoints: 40 })] });
     readyUp(state, 'a');
 
     const event = takeAction(state, 'a', { kind: Action.ATTACK, targetId: 'o1', baseDamage: 12, accuracy: 100 });
@@ -283,8 +276,8 @@ describe('fleeing', () => {
   // @spec COMBAT-FLEE-004
   it('fails when the fastest enemy far outpaces the party slowest', () => {
     const state = encounter({
-      members: [hero('a', { attributes: { DEXTERITY: 10 } }), hero('slow', { attributes: { DEXTERITY: 8 }, row: Row.BACK })],
-      enemies: [orc('o1', { dexterity: 11 })], // 11 > 8 * 1.25
+      members: [hero('a', { attributes: { DEXTERITY: 10 } }), hero('slow', { attributes: { DEXTERITY: 8 } })],
+      enemies: [orc('o1', { attributes: { DEXTERITY: 11 } })], // 11 > 8 * 1.25
     });
 
     expect(attemptFlee(state).escaped).toBe(false);
@@ -294,7 +287,7 @@ describe('fleeing', () => {
   it('can succeed when the party is not badly outpaced', () => {
     const state = encounter({
       members: [hero('a', { attributes: { DEXTERITY: 12 } })],
-      enemies: [orc('o1', { dexterity: 12 })],
+      enemies: [orc('o1', { attributes: { DEXTERITY: 12 } })],
     });
 
     expect(attemptFlee(state).escaped).toBe(true);
@@ -304,7 +297,7 @@ describe('fleeing', () => {
   it('fails against an enemy that forbids escape, however slow it is', () => {
     const state = encounter({
       members: [hero('a', { attributes: { DEXTERITY: 18 } })],
-      enemies: [orc('o1', { dexterity: 1, forbidsEscape: true })],
+      enemies: [orc('o1', { attributes: { DEXTERITY: 1 }, forbidsEscape: true })],
     });
 
     expect(attemptFlee(state).escaped).toBe(false);
@@ -314,7 +307,7 @@ describe('fleeing', () => {
   it('costs only the round when it fails, and may be tried again', () => {
     const state = encounter({
       members: [hero('a', { attributes: { DEXTERITY: 8 } })],
-      enemies: [orc('o1', { dexterity: 20 })],
+      enemies: [orc('o1', { attributes: { DEXTERITY: 20 } })],
     });
 
     const first = attemptFlee(state);
@@ -330,7 +323,7 @@ describe('fleeing', () => {
   it('returns the party where it came from and awards nothing', () => {
     const state = encounter({
       members: [hero('a', { attributes: { DEXTERITY: 12 } })],
-      enemies: [orc('o1', { dexterity: 4 })],
+      enemies: [orc('o1', { attributes: { DEXTERITY: 4 } })],
     });
 
     const result = attemptFlee(state);
@@ -343,8 +336,8 @@ describe('fleeing', () => {
 
   // @spec COMBAT-FLEE-006
   it('can be attempted in the dark on the same terms', () => {
-    const lit = encounter({ members: [hero('a', { attributes: { DEXTERITY: 12 } })], enemies: [orc('o1', { dexterity: 4 })] });
-    const dark = encounter({ members: [hero('a', { attributes: { DEXTERITY: 12 } })], enemies: [orc('o1', { dexterity: 4 })], light: 'DARK' });
+    const lit = encounter({ members: [hero('a', { attributes: { DEXTERITY: 12 } })], enemies: [orc('o1', { attributes: { DEXTERITY: 4 } })] });
+    const dark = encounter({ members: [hero('a', { attributes: { DEXTERITY: 12 } })], enemies: [orc('o1', { attributes: { DEXTERITY: 4 } })], light: 'DARK' });
 
     expect(attemptFlee(dark).escaped).toBe(attemptFlee(lit).escaped);
   });
@@ -424,7 +417,7 @@ describe('ending', () => {
 
   // @spec COMBAT-TIME-011
   it('restores nothing merely because the fight ran on', () => {
-    const state = encounter({ members: [hero('a')], enemies: [orc('o1', { hitPoints: 80 })] });
+    const state = encounter({ members: [hero('a')], enemies: [orc('o1', { maxHitPoints: 80 })] });
     applyDamage(state.party, 'a', 5);
     const wounded = character(state.party, 'a').hitPoints;
 
@@ -473,7 +466,7 @@ describe('taking a turn', () => {
   it('changes a character through the party operations, so the condition chain applies', () => {
     const state = encounter({
       members: [hero('victim', { attributes: { DEXTERITY: 1 } })],
-      enemies: [orc('o1', { dexterity: 20 })],
+      enemies: [orc('o1', { attributes: { DEXTERITY: 20 } })],
     });
     // Stand in for an enemy landing a killing blow.
     applyDamage(state.party, 'victim', 9999);
@@ -491,9 +484,9 @@ describe('taking a turn', () => {
     const state = encounter({
       members: [
         hero('swift', { attributes: { DEXTERITY: 18 } }),
-        hero('lame', { attributes: { DEXTERITY: 4 }, row: Row.BACK }),
+        hero('lame', { attributes: { DEXTERITY: 4 } }),
       ],
-      enemies: [orc('o1', { dexterity: 10 })],
+      enemies: [orc('o1', { attributes: { DEXTERITY: 10 } })],
     });
 
     // The swift one could outrun this easily; the party cannot, and nobody is left.
@@ -509,7 +502,10 @@ describe('what a turn reports', () => {
   it('credits the felling blow to the blow that felled, not to every blow that landed', () => {
     const a = hero('a', { attributes: { DEXTERITY: 18 } });
     const b = hero('b', { attributes: { DEXTERITY: 12 } });
-    const state = encounter({ members: [a, b], enemies: [orc('o1', { hitPoints: 20, dexterity: 1 })] });
+    const state = encounter({
+      members: [a, b],
+      enemies: [orc('o1', { maxHitPoints: 20, attributes: { DEXTERITY: 1 } })],
+    });
 
     // Both swing at the same orc; the first wounds it, the second finishes it.
     readyUp(state, 'a');
@@ -535,9 +531,9 @@ describe('what a turn reports', () => {
     const state = encounter({
       members: [
         hero('swift', { attributes: { DEXTERITY: 18 } }),
-        hero('lame', { attributes: { DEXTERITY: 4 }, row: Row.BACK }),
+        hero('lame', { attributes: { DEXTERITY: 4 } }),
       ],
-      enemies: [orc('o1', { dexterity: 10 })],
+      enemies: [orc('o1', { attributes: { DEXTERITY: 10 } })],
     });
     readyUp(state, 'swift');
     readyUp(state, 'lame');

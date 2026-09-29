@@ -14,54 +14,27 @@ import {
   resolveTileLight, isTileDiscovered, setCombatActive,
 } from '../sim/exploration.js';
 import {
-  Attribute,
-  createParty, createCharacter, addCharacter, awardEncounter, partyStepCost,
-  Row, CharacterClass,
+  Attribute, createParty, addCharacter, awardEncounter, partyStepCost,
 } from '../sim/party.js';
 import {
   createRoamer, giveTicks, giveGround, forgetParty, isAware, occupantsFor,
 } from '../sim/enemies.js';
 import {
-  beginEncounter, createEnemy, createEnemyGroup, encounterOutcome, attemptFlee, Action, Outcome,
+  beginEncounter, createEnemy, createEnemyGroup, encounterOutcome, attemptFlee, Outcome,
 } from '../sim/combat.js';
-import { createRule, When, Aim } from '../sim/orders.js';
-
-/**
- * What the front rank does when nobody tells them otherwise: swing at whatever is
- * closest to falling. Authored here because an order list is content, and because a
- * party that has to be told every swing is a party nobody wants to play.
- *
- * The back row is given nothing: with no bow and no spell there is nothing legal for a
- * rule to propose, and an order that proposes nothing is worse than none at all.
- */
-const CUT_DOWN_THE_WEAKEST = [
-  createRule({
-    when: When.ALWAYS,
-    action: { kind: Action.ATTACK },
-    aim: Aim.WEAKEST_ENEMY,
-  }),
-];
-
-/**
- * Dexterity is speed, so five scores are five rates of filling, and a goblin's 11
- * falls in among them rather than ahead of them all. The floor is held at ten because
- * a party flees no faster than its hindmost, and a slower one could never outrun the
- * first thing it meets.
- */
-const STARTING_PARTY = [
-  { id: 'bram', name: 'Bram', characterClass: CharacterClass.FIGHTER, row: Row.FRONT, attributes: { [Attribute.DEXTERITY]: 13 }, orders: CUT_DOWN_THE_WEAKEST },
-  { id: 'rook', name: 'Rook', characterClass: CharacterClass.FIGHTER, row: Row.FRONT, attributes: { [Attribute.DEXTERITY]: 11 }, orders: CUT_DOWN_THE_WEAKEST },
-  { id: 'tam', name: 'Tam', characterClass: CharacterClass.THIEF, row: Row.FRONT, attributes: { [Attribute.DEXTERITY]: 16 }, orders: CUT_DOWN_THE_WEAKEST },
-  { id: 'isolde', name: 'Isolde', characterClass: CharacterClass.MAGE, row: Row.BACK, attributes: { [Attribute.DEXTERITY]: 12 } },
-  { id: 'wren', name: 'Wren', characterClass: CharacterClass.CLERIC, row: Row.BACK, attributes: { [Attribute.DEXTERITY]: 10 } },
-];
+import { startingCharacters } from './combatants.js';
 
 /** Bands standing on a freshly built floor, before anyone has disturbed it. */
 const BANDS_PER_FLOOR = 3;
 
+/**
+ * The party a campaign opens with, read from its own authored files.
+ *
+ * @spec PARTY-DATA-002
+ */
 function createStartingParty() {
   const party = createParty();
-  for (const template of STARTING_PARTY) addCharacter(party, createCharacter(template));
+  for (const c of startingCharacters()) addCharacter(party, c);
   return party;
 }
 
@@ -69,17 +42,8 @@ function createStartingParty() {
 function toEnemyGroup(band) {
   return createEnemyGroup(
     band.members.map((m) =>
-      createEnemy({
-        id: m.instanceId,
-        name: m.name,
-        row: m.row,
-        hitPoints: m.hitPoints,
-        dexterity: m.dexterity,
-        accuracy: m.accuracy,
-        armour: m.armour,
-        potValue: m.potValue,
-        forbidsEscape: m.forbidsEscape,
-      }),
+      // An enemy is a character: everything its file said, carried through whole.
+      createEnemy({ ...m, id: m.instanceId }),
     ),
   );
 }
@@ -102,7 +66,7 @@ export function createCampaign({ seed = Date.now() >>> 0 } = {}) {
     return occupantsFor({ floorId: floor.id, rooms: floor.rooms ?? [], rng, count, avoid }).map((occupant) =>
       createRoamer({
         ...occupant,
-        dexterity: occupant.band.members[0].dexterity,
+        dexterity: occupant.band.members[0].attributes[Attribute.DEXTERITY],
         rng: makeRng(rng.int(1, 1e9)),
       }),
     );

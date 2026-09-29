@@ -6,31 +6,23 @@
  * dungeon grow without the machinery moving.
  */
 
-import { Row } from './party.js';
-import { MAX_ENEMY_ROW } from './combat.js';
+import { Attribute } from './party.js';
+import { MAX_ENEMY_GROUP, EnemyRole } from './combat.js';
+import { enemyDefinitions } from '../content/combatants.js';
 import { hasLineOfSight } from './sight.js';
 import { STEP_DELTA, Direction, EdgeKind, contains, getEdge, isEdgeOpen } from './floor.js';
 import { makeRng } from './rng.js';
 
-export const EnemyRole = { MELEE: 'MELEE', RANGED: 'RANGED', CASTER: 'CASTER' };
+export { EnemyRole };
 
 /**
- * The first floor's inhabitants. Plain data: an author adds a monster by adding a row.
+ * The first floor's inhabitants, read from their own authored files rather than
+ * written here: adding a monster is adding a file.
+ *
+ * @spec ENEMY-ROSTER-004
+ * @spec ENEMY-ROSTER-005
  */
-export const ROSTER = {
-  GOBLIN: {
-    id: 'GOBLIN', name: 'Goblin', role: EnemyRole.MELEE, row: Row.FRONT,
-    hitPoints: 9, dexterity: 11, accuracy: 24, armour: 2, potValue: 14, forbidsEscape: false,
-  },
-  GOBLIN_ARCHER: {
-    id: 'GOBLIN_ARCHER', name: 'Goblin Archer', role: EnemyRole.RANGED, row: Row.BACK,
-    hitPoints: 7, dexterity: 13, accuracy: 30, armour: 1, potValue: 18, forbidsEscape: false,
-  },
-  GOBLIN_MAGE: {
-    id: 'GOBLIN_MAGE', name: 'Goblin Mage', role: EnemyRole.CASTER, row: Row.BACK,
-    hitPoints: 6, dexterity: 10, accuracy: 34, armour: 0, potValue: 24, forbidsEscape: false,
-  },
-};
+export const ROSTER = enemyDefinitions();
 
 export const BANDS = {
   GOBLIN_WARBAND: {
@@ -51,9 +43,6 @@ export const MAX_CROSSING = 10;
 
 /** Tries at finding a tile for a band before its placement is given up on. */
 export const PLACEMENT_ATTEMPTS = 8;
-
-/** Share of a ranged enemy's choices that fall on the back row. */
-export const BACK_ROW_WEIGHT = 0.25;
 
 /**
  * Ticks to cross one tile, from Dexterity. Quicker is cheaper, bounded at both ends so
@@ -83,22 +72,16 @@ export function noticeRange() {
  * @spec ENEMY-BAND-006
  * @spec ENEMY-ROSTER-003
  */
-export function assembleBand(template, rng, { rowLimit = MAX_ENEMY_ROW } = {}) {
+export function assembleBand(template, rng, { limit = MAX_ENEMY_GROUP } = {}) {
   const members = [];
-  const filled = { [Row.FRONT]: 0, [Row.BACK]: 0 };
 
   for (const entry of template.members) {
     const count = rng.int(entry.min, entry.max);
-    for (let i = 0; i < count; i++) {
+    for (let i = 0; i < count && members.length < limit; i++) {
+      // A flat band: its members have no arrangement among themselves, only an order
+      // in a list, because a fight has nowhere to stand.
       const definition = ROSTER[entry.enemy];
-      const other = definition.row === Row.FRONT ? Row.BACK : Row.FRONT;
-      // Preferred row first; the other when it is full. Role does not follow it there.
-      const row = filled[definition.row] < rowLimit ? definition.row
-        : filled[other] < rowLimit ? other : null;
-      if (row === null) continue;
-
-      filled[row] += 1;
-      members.push({ ...definition, row, instanceId: `${definition.id}-${members.length}` });
+      members.push({ ...definition, instanceId: `${definition.id}-${members.length}` });
     }
   }
   return { name: template.name, members };
@@ -279,26 +262,20 @@ export function giveTicks(roamer, ticks, { floor, party }) {
 }
 
 /**
- * Choose something legal to attack, preferring the front rank.
+ * Choose somebody to attack, drawn from everyone still able to act.
  *
- * @spec ENEMY-FIGHT-001
- * @spec ENEMY-FIGHT-002
- * @spec ENEMY-FIGHT-003
+ * Spread rather than fixed: with nobody shielded by anybody, a band that always struck
+ * whoever was listed first would delete one character before the second had acted,
+ * which is arithmetic rather than difficulty. Aiming at the weakest is a real
+ * behaviour and belongs with the rest of enemy intelligence, not here.
+ *
+ * @spec ENEMY-FIGHT-005
+ * @spec ENEMY-FIGHT-006
+ * @spec ENEMY-FIGHT-007
  */
 export function selectEnemyTarget(role, candidates, rng) {
-  const front = candidates.filter((c) => c.row === Row.FRONT);
-  const back = candidates.filter((c) => c.row === Row.BACK);
-
-  // Melee cannot reach past a standing front rank at all.
-  if (role === EnemyRole.MELEE) {
-    const reachable = front.length > 0 ? front : back;
-    return rng.pick(reachable);
-  }
-
-  // Reach past it, but usually do not bother.
-  if (front.length === 0) return rng.pick(back);
-  if (back.length > 0 && rng.chance(BACK_ROW_WEIGHT)) return rng.pick(back);
-  return rng.pick(front);
+  if (candidates.length === 0) return null;
+  return rng.pick(candidates);
 }
 
 /**

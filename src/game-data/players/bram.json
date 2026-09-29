@@ -1,0 +1,25 @@
+{
+  "id": "bram",
+  "name": "Bram",
+  "order": 0,
+  "characterClass": "FIGHTER",
+  "attributes": {
+    "DEXTERITY": 13
+  },
+  "maxHitPoints": 20,
+  "attack": {
+    "skill": "BLADE",
+    "baseDamage": 9,
+    "accuracy": 30
+  },
+  "armour": 0,
+  "orders": [
+    {
+      "when": "ALWAYS",
+      "action": {
+        "kind": "ATTACK"
+      },
+      "aim": "WEAKEST_ENEMY"
+    }
+  ]
+}

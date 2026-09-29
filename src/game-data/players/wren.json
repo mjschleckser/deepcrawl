@@ -1,0 +1,25 @@
+{
+  "id": "wren",
+  "name": "Wren",
+  "order": 4,
+  "characterClass": "CLERIC",
+  "attributes": {
+    "DEXTERITY": 10
+  },
+  "maxHitPoints": 20,
+  "attack": {
+    "skill": "BLUNT",
+    "baseDamage": 7,
+    "accuracy": 26
+  },
+  "armour": 0,
+  "orders": [
+    {
+      "when": "ALWAYS",
+      "action": {
+        "kind": "ATTACK"
+      },
+      "aim": "WEAKEST_ENEMY"
+    }
+  ]
+}
