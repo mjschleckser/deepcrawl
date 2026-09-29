@@ -23,5 +23,6 @@
   },
   "armour": 2,
   "potValue": 14,
-  "forbidsEscape": false
+  "forbidsEscape": false,
+  "portrait": "goblin.png"
 }

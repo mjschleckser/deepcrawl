@@ -21,5 +21,6 @@
       },
       "aim": "WEAKEST_ENEMY"
     }
-  ]
+  ],
+  "portrait": "thief.png"
 }

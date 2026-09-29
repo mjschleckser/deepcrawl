@@ -23,5 +23,6 @@
   },
   "armour": 1,
   "potValue": 18,
-  "forbidsEscape": false
+  "forbidsEscape": false,
+  "portrait": "goblin_archer.png"
 }

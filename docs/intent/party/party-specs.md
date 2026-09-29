@@ -9,8 +9,8 @@ are fed into, never the numbers.
 ## The roster
 
 - [x] **PARTY-ROSTER-001**: The system shall hold at most five characters in a party.
-- [ ] **PARTY-ROSTER-003**: If an operation would exceed the roster limit, then the system shall reject it and leave the party unchanged.
-- [ ] **PARTY-ROSTER-006**: The system shall give a character no position within the party, and shall treat every member as equally present.
+- [x] **PARTY-ROSTER-003**: If an operation would exceed the roster limit, then the system shall reject it and leave the party unchanged.
+- [x] **PARTY-ROSTER-006**: The system shall give a character no position within the party, and shall treat every member as equally present.
 - [x] **PARTY-ROSTER-005**: The system shall keep a character whose condition is `LOST` in the save as a record, and shall not count them against the roster limit.
 
 ## Character state
@@ -22,9 +22,9 @@ are fed into, never the numbers.
 - [ ] **PARTY-CHAR-006**: The system shall set a character's maximum hit points from their class's base multiplied by one twentieth of their Constitution above ten, and shall not change it as they advance.
 - [x] **PARTY-CHAR-008**: The system shall hold a standing-order list on each character, carried with them between encounters and between parties.
 - [ ] **PARTY-CHAR-007**: The system shall draw a weapon's governing attribute for damage from the weapon, and shall always draw accuracy from Perception whatever the weapon.
-- [ ] **PARTY-CHAR-009**: The system shall report a character's total level as the sum of their skill ranks.
-- [ ] **PARTY-CHAR-010**: The system shall derive total level whenever it is asked for rather than storing it, so that it changes exactly when a rank changes.
-- [ ] **PARTY-CHAR-011**: The system shall report the total level of anything holding skill ranks by the same summation, whether it belongs to the party or to an enemy group.
+- [x] **PARTY-CHAR-009**: The system shall report a character's total level as the sum of their skill ranks.
+- [x] **PARTY-CHAR-010**: The system shall derive total level whenever it is asked for rather than storing it, so that it changes exactly when a rank changes.
+- [x] **PARTY-CHAR-011**: The system shall report the total level of anything holding skill ranks by the same summation, whether it belongs to the party or to an enemy group.
 - [ ] **PARTY-CHAR-012**: The system shall let no roll, reward, or eligibility be decided by total level.
 
 ## Condition
@@ -37,7 +37,7 @@ are fed into, never the numbers.
 - [x] **PARTY-COND-006**: When a revival attempt on an `ASHES` character succeeds, the system shall set their condition to `OK`; when it fails, the system shall set it to `LOST`.
 - [x] **PARTY-COND-007**: The system shall accept no revival attempt on a character whose condition is `LOST`.
 - [x] **PARTY-COND-008**: The system shall never raise a character's hit points above their maximum.
-- [ ] **PARTY-COND-009**: While a character's condition is not `OK`, the system shall let them take no action and contribute no defence, while remaining a member of the party.
+- [x] **PARTY-COND-009**: While a character's condition is not `OK`, the system shall let them take no action and contribute no defence, while remaining a member of the party.
 - [x] **PARTY-COND-010**: The system shall resolve a condition change at the moment the damage or healing is applied, rather than deferring it to the end of a round.
 - [x] **PARTY-COND-011**: The system shall accept a revival attempt from a party member using Restoration, a town temple, a hired cleric, or a consumed one-use item alike.
 
@@ -77,17 +77,17 @@ are fed into, never the numbers.
 
 ## Persistence
 
-- [ ] **PARTY-SAVE-001**: The system shall save every character's attributes, class, skill ranks, accumulated skill experience, condition, hit points, and equipment.
-- [ ] **PARTY-SAVE-002**: The system shall restore a party from a save with every character in the condition they were saved in.
+- [x] **PARTY-SAVE-001**: The system shall save every character's attributes, class, skill ranks, accumulated skill experience, condition, hit points, and equipment.
+- [x] **PARTY-SAVE-002**: The system shall restore a party from a save with every character in the condition they were saved in.
 
 ## Authored combatants
 
-- [ ] **PARTY-DATA-001**: The system shall read each authored combatant from a file of its own, holding that combatant and nothing else.
-- [ ] **PARTY-DATA-002**: The system shall read the party's authored combatants from `src/game-data/players` and the enemies' from `src/game-data/enemies`.
-- [ ] **PARTY-DATA-003**: The system shall build an authored combatant through the same creation the rest of the system uses, so that an authored combatant and a created one are the same shape.
-- [ ] **PARTY-DATA-004**: When an authored combatant names a class, attribute, skill, condition, or role that does not exist, the system shall reject that file by name and report which value was not recognised.
-- [ ] **PARTY-DATA-005**: The system shall require of every authored combatant an identifier, a name, and maximum hit points, and shall reject a file lacking any of them.
-- [ ] **PARTY-DATA-006**: The system shall treat an authored combatant's omitted attributes as the default score and its omitted skill ranks as the ranks its class grants.
+- [x] **PARTY-DATA-001**: The system shall read each authored combatant from a file of its own, holding that combatant and nothing else.
+- [x] **PARTY-DATA-002**: The system shall read the party's authored combatants from `src/game-data/players` and the enemies' from `src/game-data/enemies`.
+- [x] **PARTY-DATA-003**: The system shall build an authored combatant through the same creation the rest of the system uses, so that an authored combatant and a created one are the same shape.
+- [x] **PARTY-DATA-004**: When an authored combatant names a class, attribute, skill, condition, or role that does not exist, the system shall reject that file by name and report which value was not recognised.
+- [x] **PARTY-DATA-005**: The system shall require of every authored combatant an identifier, a name, and maximum hit points, and shall reject a file lacking any of them.
+- [x] **PARTY-DATA-006**: The system shall treat an authored combatant's omitted attributes as the default score and its omitted skill ranks as the ranks its class grants.
 
 ## Deferred
 

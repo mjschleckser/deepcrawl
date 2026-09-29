@@ -24,12 +24,15 @@ const allControls = (plan) => plan.controls ?? [];
 
 function fightOf(viewport) {
   const party = createParty();
-  addCharacter(party, createCharacter({ id: 'bram', name: 'Bram', characterClass: CharacterClass.FIGHTER }));
+  addCharacter(party, createCharacter({
+    id: 'bram', name: 'Bram', characterClass: CharacterClass.FIGHTER,
+    attack: { baseDamage: 9, accuracy: 30 },
+  }));
   const encounter = beginEncounter({
     party,
     enemies: createEnemyGroup([
-      createEnemy({ id: 'g1', name: 'Goblin', hitPoints: 9, potValue: 10 }),
-      createEnemy({ id: 'g2', name: 'Goblin', hitPoints: 9, potValue: 10 }),
+      createEnemy({ id: 'g1', name: 'Goblin', maxHitPoints: 9, potValue: 10, attack: { baseDamage: 5, accuracy: 24 } }),
+      createEnemy({ id: 'g2', name: 'Goblin', maxHitPoints: 9, potValue: 10, attack: { baseDamage: 5, accuracy: 24 } }),
     ]),
     light: 'BRIGHT',
     awareness: { party: true, enemies: true },
@@ -237,6 +240,11 @@ describe('tapping a drawn control', () => {
     const { encounter } = fightOf(phone);
     const campaign = { encounter, state, concludeEncounter: () => { campaign.encounter = null; }, fleeEncounter: () => {} };
     const controller = createController({ state, campaign, viewport: phone, onDraw: vi.fn() });
+    // A fight opens with its bars still filling; these tests are about the controls
+    // that appear once somebody is ready to be asked.
+    for (let i = 0; i < 40 && !controller.fight.pending; i++) {
+      advanceClock(controller.fight, FILL_BEAT_MS);
+    }
     return { controller };
   }
 
@@ -397,35 +405,13 @@ describe('the formations in a fight', () => {
   });
 
   // @spec PRESENT-FIGHT-018
-  it('centres each rank across the panel', () => {
+  it('gives each side one column, the enemies left and the party right', () => {
     const { encounter } = fightOf(phone);
-    const plan = buildFightPlan(encounter, phone, { phase: FightPhase.SELECTING });
+    const plan = buildFightPlan(encounter, phone, { phase: FightPhase.ACTING });
     const middle = plan.bounds.x + plan.bounds.width / 2;
 
-    // Two enemies in front, one party member in front: different counts, same centre.
-    expect(centreOf(rowOf(plan.enemies, Row.FRONT))).toBeCloseTo(middle, 1);
-    expect(centreOf(rowOf(plan.party, Row.FRONT))).toBeCloseTo(middle, 1);
-  });
-
-  // @spec PRESENT-FIGHT-018
-  it('centres a rank of one as surely as a rank of several', () => {
-    const party = createParty();
-    addCharacter(party, createCharacter({ id: 'solo', name: 'Solo', characterClass: CharacterClass.FIGHTER }));
-    const encounter = beginEncounter({
-      party,
-      enemies: createEnemyGroup([
-        createEnemy({ id: 'a', name: 'A', hitPoints: 9, potValue: 1 }),
-        createEnemy({ id: 'b', name: 'B', hitPoints: 9, potValue: 1 }),
-        createEnemy({ id: 'c', name: 'C', hitPoints: 9, potValue: 1 }),
-      ]),
-      light: 'BRIGHT', awareness: { party: true, enemies: true },
-      rng: makeRng(1), origin: { floorId: 'f1', x: 1, y: 1 },
-    });
-    const plan = buildFightPlan(encounter, phone, { phase: FightPhase.SELECTING });
-    const middle = plan.bounds.x + plan.bounds.width / 2;
-
-    expect(centreOf(rowOf(plan.party, Row.FRONT))).toBeCloseTo(middle, 1);
-    expect(centreOf(rowOf(plan.enemies, Row.FRONT))).toBeCloseTo(middle, 1);
+    for (const enemy of plan.enemies) expect(enemy.x + enemy.width).toBeLessThanOrEqual(middle + 1);
+    for (const member of plan.party) expect(member.x).toBeGreaterThanOrEqual(middle - 1);
   });
 
   // @spec PRESENT-FIGHT-002

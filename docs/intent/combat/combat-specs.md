@@ -28,11 +28,11 @@ specs fix the structure those numbers are fed into.
 
 ## Where the bars start
 
-- [ ] **COMBAT-SURPRISE-003**: When an encounter begins, the system shall set every combatant's readiness to an independently drawn random share of a full bar, below a full bar.
-- [ ] **COMBAT-SURPRISE-004**: The system shall draw every combatant's opening readiness from the encounter's own seeded generator, so that an encounter replayed from the same seed opens identically.
-- [ ] **COMBAT-SURPRISE-005**: When one side begins an encounter unaware of the other, the system shall add a fixed head start to each aware combatant's opening readiness, capped at a full bar, and shall leave the unaware side's opening readiness as drawn.
-- [ ] **COMBAT-SURPRISE-006**: When both sides are aware or both unaware, the system shall add no head start to either side's opening readiness.
-- [ ] **COMBAT-SURPRISE-007**: The system shall apply the opening readiness and any head start once, at the start of an encounter, and shall raise readiness by Dexterity alone thereafter.
+- [x] **COMBAT-SURPRISE-003**: When an encounter begins, the system shall set every combatant's readiness to an independently drawn random share of a full bar, below a full bar.
+- [x] **COMBAT-SURPRISE-004**: The system shall draw every combatant's opening readiness from the encounter's own seeded generator, so that an encounter replayed from the same seed opens identically.
+- [x] **COMBAT-SURPRISE-005**: When one side begins an encounter unaware of the other, the system shall add a fixed head start to each aware combatant's opening readiness, capped at a full bar, and shall leave the unaware side's opening readiness as drawn.
+- [x] **COMBAT-SURPRISE-006**: When both sides are aware or both unaware, the system shall add no head start to either side's opening readiness.
+- [x] **COMBAT-SURPRISE-007**: The system shall apply the opening readiness and any head start once, at the start of an encounter, and shall raise readiness by Dexterity alone thereafter.
 
 ## Resolving an attack
 
@@ -51,11 +51,11 @@ specs fix the structure those numbers are fed into.
 
 ## Targeting
 
-- [ ] **COMBAT-TARGET-001**: The system shall allow any combatant able to act to attack any combatant on the opposing side that is able to act.
-- [ ] **COMBAT-TARGET-002**: The system shall allow any combatant able to act to aim a heal or a benefit at any combatant on its own side, itself included.
-- [ ] **COMBAT-TARGET-003**: The system shall not let a combatant's position, ordering, or listing affect whether it may be targeted, there being no position in an encounter.
-- [ ] **COMBAT-TARGET-004**: The system shall offer as targets only combatants able to act, and shall exclude the unconscious, the dead, and the otherwise incapacitated.
-- [ ] **COMBAT-TARGET-005**: The system shall bound what a combatant may do by the weapons, spell slots, and abilities it holds, and by nothing else.
+- [x] **COMBAT-TARGET-001**: The system shall allow any combatant able to act to attack any combatant on the opposing side that is able to act.
+- [x] **COMBAT-TARGET-002**: The system shall allow any combatant able to act to aim a heal or a benefit at any combatant on its own side, itself included.
+- [x] **COMBAT-TARGET-003**: The system shall not let a combatant's position, ordering, or listing affect whether it may be targeted, there being no position in an encounter.
+- [x] **COMBAT-TARGET-004**: The system shall offer as targets only combatants able to act, and shall exclude the unconscious, the dead, and the otherwise incapacitated.
+- [x] **COMBAT-TARGET-005**: The system shall bound what a combatant may do by the weapons, spell slots, and abilities it holds, and by nothing else.
 
 ## Actions
 
@@ -64,7 +64,7 @@ specs fix the structure those numbers are fed into.
 - [ ] **COMBAT-ACTION-003**: When a character defends, the system shall raise their defence until that character next acts.
 - [ ] **COMBAT-ACTION-005**: When a character relights a doused light source, the system shall spend a full bar of that character's readiness.
 - [x] **COMBAT-ACTION-006**: The system shall apply every change to a character's hit points or condition through the party segment's operations.
-- [ ] **COMBAT-ACTION-008**: The system shall take an attack's base damage and accuracy from the combatant that is acting, and the armour reducing it from the combatant struck, on either side alike.
+- [x] **COMBAT-ACTION-008**: The system shall take an attack's base damage and accuracy from the combatant that is acting, and the armour reducing it from the combatant struck, on either side alike.
 
 ## Standing orders
 
@@ -78,9 +78,9 @@ specs fix the structure those numbers are fed into.
 - [x] **COMBAT-ORDER-018**: When the player takes any action other than the one proposed, the system shall drop the proposal for that turn.
 - [x] **COMBAT-ORDER-019**: The system shall wait for the player at every character's turn, without limit, whether or not anything is proposed.
 - [x] **COMBAT-ORDER-007**: The system shall allow the player to take any legal action in place of the one proposed.
-- [ ] **COMBAT-ORDER-008**: The system shall offer these conditions and no others: always; an ally below a share of their hit points; no ally below a share of their hit points; a rule not yet taken this encounter; a spell slot of the required rank remaining.
+- [x] **COMBAT-ORDER-008**: The system shall offer these conditions and no others: always; an ally below a share of their hit points; no ally below a share of their hit points; a rule not yet taken this encounter; a spell slot of the required rank remaining.
 - [x] **COMBAT-ORDER-009**: The system shall count a rule guarded by "not yet taken this encounter" as taken only when its action is actually taken, and shall forget that it was taken when the encounter ends.
-- [ ] **COMBAT-ORDER-010**: The system shall offer these targets and no others: the enemy able to act with the fewest hit points; the conscious ally with the fewest hit points; a named ally; the actor.
+- [x] **COMBAT-ORDER-010**: The system shall offer these targets and no others: the enemy able to act with the fewest hit points; the conscious ally with the fewest hit points; a named ally; the actor.
 - [x] **COMBAT-ORDER-011**: The system shall resolve an order's target from the state of the fight at the moment the action is taken.
 - [ ] **COMBAT-ORDER-012**: While an encounter is in darkness, the system shall keep an order's action and replace its target with the random legal target the darkness rules impose.
 - [x] **COMBAT-ORDER-013**: The system shall give no enemy an order list, and shall take an enemy's action without awaiting the player.
@@ -105,9 +105,9 @@ specs fix the structure those numbers are fed into.
 
 ## Enemy groups
 
-- [ ] **COMBAT-ENEMY-006**: The system shall resolve an enemy's action by the same rules it resolves a character's, reading the same fields from both.
+- [x] **COMBAT-ENEMY-006**: The system shall resolve an enemy's action by the same rules it resolves a character's, reading the same fields from both.
 - [x] **COMBAT-ENEMY-002**: The system shall not limit an enemy group to five members.
-- [ ] **COMBAT-ENEMY-007**: The system shall hold at most twenty enemies in an enemy group.
+- [x] **COMBAT-ENEMY-007**: The system shall hold at most twenty enemies in an enemy group.
 
 ## Ending an encounter
 

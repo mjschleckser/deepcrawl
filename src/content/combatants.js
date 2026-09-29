@@ -18,6 +18,22 @@ import { When, Aim, createRule } from '../sim/orders.js';
 
 const PLAYER_FILES = import.meta.glob('../game-data/players/*.json', { eager: true, import: 'default' });
 const ENEMY_FILES = import.meta.glob('../game-data/enemies/*.json', { eager: true, import: 'default' });
+const PORTRAITS = import.meta.glob('../game-data/portraits/*.png', {
+  eager: true, query: '?url', import: 'default',
+});
+
+/**
+ * The image a combatant is drawn with, by the file name their own file names. A
+ * portrait nobody authored is simply absent; the fight draws without one.
+ *
+ * @spec PRESENT-FIGHT-023
+ * @spec PRESENT-FIGHT-024
+ */
+function portraitUrl(name) {
+  if (!name) return null;
+  const found = Object.entries(PORTRAITS).find(([path]) => path.endsWith(`/${name}`));
+  return found ? found[1] : null;
+}
 
 /**
  * A value that must be one of a known set, or the file is wrong and says which value.
@@ -59,6 +75,7 @@ function commonFields(file, data) {
     maxHitPoints: data.maxHitPoints,
     attack: data.attack ? { ...data.attack, skill: oneOf(file, 'skill', data.attack.skill, Skill) } : null,
     armour: data.armour ?? 0,
+    portrait: portraitUrl(data.portrait),
   };
 }
 

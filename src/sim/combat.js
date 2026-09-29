@@ -122,7 +122,8 @@ export function damageFor(band, baseDamage, armour) {
  */
 export function createEnemy({
   id, name, role = EnemyRole.MELEE, attributes = {}, ranks = {},
-  maxHitPoints = 10, attack = null, armour = 0, potValue = 10, forbidsEscape = false,
+  maxHitPoints = 10, attack = null, armour = 0, portrait = null,
+  potValue = 10, forbidsEscape = false,
 }) {
   return {
     id,
@@ -134,6 +135,7 @@ export function createEnemy({
     hitPoints: maxHitPoints,
     attack: attack ? { ...attack } : null,
     armour,
+    portrait,
     potValue,
     forbidsEscape,
     condition: Condition.OK,
@@ -155,8 +157,8 @@ export function createEnemyGroup(enemies) {
 const enemyStanding = (e) => e.condition === Condition.OK && e.hitPoints > 0;
 
 /**
- * @spec COMBAT-SURPRISE-001
- * @spec COMBAT-SURPRISE-002
+ * @spec COMBAT-SURPRISE-003
+ * @spec COMBAT-SURPRISE-005
  * @spec COMBAT-DARK-001
  * @spec COMBAT-DARK-002
  * @spec COMBAT-DARK-003

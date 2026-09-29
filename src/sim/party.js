@@ -122,7 +122,7 @@ export const DEFAULT_ATTRIBUTES = {
  */
 export function createCharacter({
   id, name, characterClass, attributes = {}, ranks: authored = {},
-  maxHitPoints = 20, attack = null, armour = 0, orders = [],
+  maxHitPoints = 20, attack = null, armour = 0, portrait = null, orders = [],
 }) {
   const table = CLASS_TABLE[characterClass];
   const ranks = {};
@@ -145,6 +145,10 @@ export function createCharacter({
     // @spec COMBAT-ACTION-008
     attack: attack ? { ...attack } : null,
     armour,
+    // The image this one is drawn with, or nothing, in which case they are drawn
+    // without one.
+    // @spec PRESENT-FIGHT-023
+    portrait,
     hitPoints: maxHitPoints,
     condition: Condition.OK,
     ranks,
@@ -188,7 +192,7 @@ function counts(c) {
 
 /**
  * @spec PARTY-ROSTER-001
- * @spec PARTY-ROSTER-002
+ * @spec PARTY-ROSTER-006
  * @spec PARTY-ROSTER-003
  * @spec PARTY-ROSTER-005
  */

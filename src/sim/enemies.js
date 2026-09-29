@@ -67,7 +67,7 @@ export function noticeRange() {
  * @spec ENEMY-BAND-001
  * @spec ENEMY-BAND-002
  * @spec ENEMY-BAND-003
- * @spec ENEMY-BAND-004
+ * @spec ENEMY-BAND-008
  * @spec ENEMY-BAND-005
  * @spec ENEMY-BAND-006
  * @spec ENEMY-ROSTER-003

@@ -9,14 +9,15 @@
  * it is the fight as the player perceives it, built from what each turn reported.
  */
 
-import { Condition, Skill, character, roster } from '../sim/party.js';
+import { Condition, Skill, character, roster, totalLevel } from '../sim/party.js';
 import { MIN_TAP_PX, ControlKind, uiScale, contentColumn } from './geometry.js';
 import {
-  Action, Band, Outcome, meleeTargets, rangedTargets, frontRowHolds,
+  Action, Band, Outcome, attackTargets,
   encounterOutcome, readyActor, advanceBeats, takeAction, attemptFlee, readinessOf,
   readinessPartway, FULL_BAR,
 } from '../sim/combat.js';
 import { proposeFrom } from '../sim/orders.js';
+import { selectEnemyTarget } from '../sim/enemies.js';
 
 export const FightPhase = { ACTING: 'ACTING', ENDED: 'ENDED' };
 
@@ -78,56 +79,71 @@ export const FightAction = {
 const PANEL_FRACTION = 0.62;
 const LOG_LINES = 5;
 
-/** A card at the scale the phone layout was designed against. */
-const CARD_WIDTH = 108;
-const CARD_HEIGHT = 44;
+/** One combatant, at the scale the phone layout was designed against. */
+const ROW_HEIGHT = 34;
+const ROW_GAP = 5;
 const CARD_GAP = 8;
+/** The portrait is square and as tall as the row, so a column stays aligned. */
+const PORTRAIT_GAP = 4;
+/** Three bars, stacked, with a hairline between them. */
+const BAR_GAP = 1;
 
-/**
- * Lay a rank out centred across the column, so the two sides read as facing one another
- * down a corridor rather than as two lists sharing a left margin.
- *
- * @spec PRESENT-FIGHT-018
- * @spec PRESENT-FIGHT-019
- * @spec PRESENT-FIGHT-022
- */
 const nameOf = (encounter, id) =>
   roster(encounter.party).find((c) => c.id === id)?.name
   ?? encounter.enemies.members.find((e) => e.id === id)?.name
   ?? id;
 
-function layOutRank(cards, column, top, scale) {
-  if (cards.length === 0) return [];
+/**
+ * Lay a side out as one column: a portrait, and three bars stacked beside it.
+ *
+ * Everything a combatant is drawn from is positioned here — the portrait's square and
+ * each bar's rectangle — so that drawing is only painting.
+ *
+ * @spec PRESENT-FIGHT-018
+ * @spec PRESENT-FIGHT-019
+ * @spec PRESENT-FIGHT-022
+ * @spec PRESENT-READY-028
+ */
+function layOutColumn(cards, column, top, scale, { height = ROW_HEIGHT * scale } = {}) {
+  const gap = ROW_GAP * scale;
+  const portrait = height;
+  const portraitGap = PORTRAIT_GAP * scale;
+  const barGap = BAR_GAP * scale;
+  const barHeight = (height - barGap * 2) / 3;
+  const barsX = column.x + portrait + portraitGap;
+  const barsWidth = Math.max(1, column.width - portrait - portraitGap);
 
-  const gap = CARD_GAP * scale;
-  const natural = CARD_WIDTH * scale;
-  const height = CARD_HEIGHT * scale;
-
-  // Squeeze rather than overflow: a crowded rank still has to fit the column.
-  const available = column.width - gap * 2;
-  const total = cards.length * natural + (cards.length - 1) * gap;
-  const width = total <= available
-    ? natural
-    : (available - (cards.length - 1) * gap) / cards.length;
-
-  const rankWidth = cards.length * width + (cards.length - 1) * gap;
-  const startX = column.x + (column.width - rankWidth) / 2;
-
-  return cards.map((card, i) => ({
-    ...card,
-    x: startX + i * (width + gap),
-    y: top,
-    width,
-    height,
-  }));
+  return cards.map((card, i) => {
+    const y = top + i * (height + gap);
+    const bar = (index) => ({
+      x: barsX,
+      y: y + index * (barHeight + barGap),
+      width: barsWidth,
+      height: barHeight,
+    });
+    return {
+      ...card,
+      x: column.x,
+      y,
+      width: column.width,
+      height,
+      portraitBox: { x: column.x, y, size: portrait },
+      // Readiness on top, because it is what the fight is read off; identity in the
+      // middle, which changes least; hit points beneath, checked under pressure.
+      bars: { readiness: bar(0), identity: bar(1), health: bar(2) },
+    };
+  });
 }
 
 /**
- * What an attack trains, and what it hits for. Placeholders until weapons exist: the
- * skill an attack uses, the damage it deals and the accuracy behind it are all
- * properties of the weapon being swung, and there are no weapons yet.
+ * What an attack trains. The damage and the accuracy belong to the combatant swinging
+ * until a weapon carries them; the skill comes with them.
+ *
+ * @spec COMBAT-ACTION-008
  */
-const PLACEHOLDER_ATTACK = { skill: Skill.BLADE, baseDamage: 9, accuracy: 30 };
+const attackOf = (encounter, id) => ({
+  skill: character(encounter.party, id)?.attack?.skill ?? Skill.BLADE,
+});
 
 const standing = (e) => e.condition === Condition.OK && e.hitPoints > 0;
 
@@ -180,37 +196,30 @@ export function buildFightPlan(
     return Math.round(Math.cos(shake / 28) * SHAKE_PIXELS * left * scale);
   };
 
-  const drawEnemy = (e) => ({
-    id: e.id, name: e.name, row: e.row,
-    hitPoints: e.hitPoints, maxHitPoints: e.maxHitPoints,
-    // Kept in place: the shape of a line that has lost its middle is information.
-    down: !standing(e),
-    ...healthOf(e),
-    readiness: filled(e.id),
-    acting: actor?.id === e.id,
-    offsetY: offsetOf(e.id),
+  // Both sides are the same kind of thing, so both are drawn from the same fields.
+  // @spec PRESENT-READY-029
+  // @spec PRESENT-READY-030
+  const drawCombatant = (who, down) => ({
+    id: who.id,
+    name: who.name,
+    level: totalLevel(who),
+    // Until status effects exist, a combatant's only status is their condition, and
+    // only worth saying when it is not the ordinary one.
+    status: who.condition && who.condition !== Condition.OK ? who.condition : null,
+    hitPoints: who.hitPoints,
+    maxHitPoints: who.maxHitPoints,
+    portrait: who.portrait ?? null,
+    // Kept in place: the shape of a side that has lost its middle is information.
+    down,
+    ...healthOf(who),
+    readiness: filled(who.id),
+    acting: actor?.id === who.id,
+    offsetY: offsetOf(who.id),
   });
 
-  const drawMember = (c) => ({
-    id: c.id, name: c.name, row: c.row,
-    hitPoints: c.hitPoints, maxHitPoints: c.maxHitPoints,
-    condition: c.condition,
-    down: c.condition !== Condition.OK,
-    ...healthOf(c),
-    readiness: filled(c.id),
-    acting: actor?.id === c.id,
-    offsetY: offsetOf(c.id),
-  });
-
-  const byRow = (cards, row) => cards.filter((c) => c.row === row);
-  const enemyCards = encounter.enemies.members.map(drawEnemy);
-  const partyCards = roster(encounter.party).map(drawMember);
-
-  const rankOrder = [
-    [enemyCards, Row.BACK], [enemyCards, Row.FRONT],
-    [partyCards, Row.FRONT], [partyCards, Row.BACK],
-  ];
-  const occupied = rankOrder.filter(([cards, row]) => byRow(cards, row).length > 0).length;
+  const enemyCards = encounter.enemies.members.map((e) => drawCombatant(e, !standing(e)));
+  const partyCards = roster(encounter.party).map((c) => drawCombatant(c, c.condition !== Condition.OK));
+  const deepest = Math.max(enemyCards.length, partyCards.length);
 
   // The panel is sized to what is in it rather than to a fixed share of the screen: a
   // fixed share leaves a wide window mostly empty between the log and the controls.
@@ -218,7 +227,7 @@ export function buildFightPlan(
   const shownLog = log.slice(-LOG_LINES);
   const contentHeight =
     pad
-    + occupied * (CARD_HEIGHT + CARD_GAP) * scale
+    + deepest * (ROW_HEIGHT + ROW_GAP) * scale
     + (pending ? 26 * scale : 0)
     + shownLog.length * 15 * scale
     + (metrics.height > 0 ? metrics.gap + metrics.height : 0)
@@ -246,19 +255,24 @@ export function buildFightPlan(
       }
     : null;
 
-  // Enemy back, enemy front, then the party's two ranks facing them.
-  let top = bounds.y + pad;
-  const ranks = [];
-  for (const [cards, row] of rankOrder) {
-    const rank = byRow(cards, row);
-    ranks.push({
-      owner: cards === enemyCards ? 'enemies' : 'party',
-      laid: layOutRank(rank, column, top, scale),
-    });
-    if (rank.length > 0) top += (CARD_HEIGHT + CARD_GAP) * scale;
-  }
-  const laidEnemies = ranks.filter((r) => r.owner === 'enemies').flatMap((r) => r.laid);
-  const laidParty = ranks.filter((r) => r.owner === 'party').flatMap((r) => r.laid);
+  // Enemies down the left, the party down the right, facing one another. A column is
+  // the shape of a side with no positions in it, and holds two or twelve alike.
+  // @spec PRESENT-FIGHT-002
+  const top = bounds.y + pad;
+  const sideWidth = (column.width - pad * 3) / 2;
+  const left = { x: column.x + pad, width: sideWidth };
+  const right = { x: column.x + pad * 2 + sideWidth, width: sideWidth };
+  // A crowded side squeezes rather than overflowing the panel.
+  const natural = ROW_HEIGHT * scale;
+  const room = bounds.height - pad * 2 - (pending ? 26 * scale : 0)
+    - shownLog.length * 15 * scale - (metrics.height > 0 ? metrics.gap + metrics.height : 0);
+  const rowHeight = deepest > 0
+    ? Math.min(natural, Math.max(MIN_TAP_PX * 0.5, room / deepest - ROW_GAP * scale))
+    : natural;
+
+  const laidEnemies = layOutColumn(enemyCards, left, top, scale, { height: rowHeight });
+  const laidParty = layOutColumn(partyCards, right, top, scale, { height: rowHeight });
+  const bottom = top + deepest * (rowHeight + ROW_GAP * scale);
 
   // The ring sits on the acting character's own card, beside the bar it is counting
   // against, so what is about to happen is shown where it is about to happen.
@@ -268,8 +282,8 @@ export function buildFightPlan(
   const ringRadius = 7 * scale;
   const ring = autoConfirm && pending?.proposal && actingCard
     ? {
-        x: actingCard.x + actingCard.width - ringRadius - 4 * scale,
-        y: actingCard.y + actingCard.height - ringRadius - 3 * scale,
+        x: actingCard.x + actingCard.width - ringRadius - 2 * scale,
+        y: actingCard.y + actingCard.height - ringRadius - 2 * scale,
         radius: ringRadius,
         progress: Math.min(1, countdown / COUNTDOWN_MS),
         label: 'A',
@@ -284,7 +298,7 @@ export function buildFightPlan(
     // Carried, never recomputed while drawing: layout lives in one place.
     // @spec PRESENT-CTRL-013
     scale,
-    cardsBottom: top,
+    cardsBottom: bottom,
     controlsTop: bounds.y + bounds.height - pad - metrics.height + metrics.gap,
     enemies: laidEnemies,
     party: laidParty,
@@ -441,10 +455,12 @@ function optionsFor(encounter, characterId, proposal = null) {
       label: `${verb} ${nameOf(encounter, proposal.targetId)}`,
     });
   }
-  // The reaching property lives on a weapon, which does not exist yet; until it does,
-  // a back-row character has nothing to swing.
-  const reachable = meleeTargets(encounter, characterId, { reaching: false });
-  if (reachable.length > 0) options.push({ action: FightAction.ATTACK, label: 'Attack' });
+  // Everyone can reach everyone; what a character needs is something to swing.
+  // @spec COMBAT-TARGET-005
+  const armed = Boolean(character(encounter.party, characterId)?.attack);
+  if (armed && attackTargets(encounter, characterId).length > 0) {
+    options.push({ action: FightAction.ATTACK, label: 'Attack' });
+  }
 
   options.push({ action: FightAction.DEFEND, label: 'Defend' });
 
@@ -454,12 +470,10 @@ function optionsFor(encounter, characterId, proposal = null) {
   return options;
 }
 
+/** @spec PRESENT-FIGHT-007 */
 function targetsFor(encounter, characterId, action) {
   if (action !== FightAction.ATTACK) return null;
-  const melee = meleeTargets(encounter, characterId, { reaching: false });
-  return (melee.length > 0 ? melee : rangedTargets(encounter, characterId))
-    .filter(standing)
-    .map((t) => ({ id: t.id, name: t.name, row: t.row }));
+  return attackTargets(encounter, characterId).map((t) => ({ id: t.id, name: t.name }));
 }
 
 /**
@@ -487,10 +501,8 @@ function situationFor(fight, characterId) {
     enemies: encounter.enemies.members.filter(standing).map((e) => ({
       id: e.id,
       hitPoints: e.hitPoints,
-      row: e.row,
       targetable: reachable.some((t) => t.id === e.id),
     })),
-    frontBroken: !frontRowHolds(encounter.party),
     slots: character(encounter.party, characterId)?.slots ?? {},
     taken: fight.ordersTaken.get(characterId) ?? new Set(),
     isLegal: (action, targetId) => {
@@ -524,13 +536,11 @@ export function createFightController({ encounter, viewport, onDraw }) {
     fill: 0,
     partway: 0,
     autoConfirm: AUTO_CONFIRM,
-    // Whoever began with a full bar. The ambush lasts until the last of them has spent
-    // it, and the card announcing it lasts exactly as long.
+    // Whoever the ambush favoured. It lasts until the last of them has acted, and the
+    // card announcing it lasts exactly as long.
     // @spec PRESENT-READY-015
     // @spec PRESENT-READY-017
-    ambushers: encounter.surprisedSide
-      ? [...encounter.readiness.keys()].filter((id) => readinessOf(encounter, id) >= FULL_BAR)
-      : [],
+    ambushers: ambushersOf(encounter),
     notice: null,
   };
 
@@ -573,15 +583,37 @@ function nextTurn(fight) {
 }
 
 /**
- * Keep the ambush card up while any ambusher still holds the full bar they began with.
- * Acting spends it and falling drops it, so either ends that one's part in the ambush
- * for good: a quick ambusher who fills again is simply fast, not ambushing twice.
+ * Everyone the ambush handed a head start to, which is everyone on the aware side.
+ *
+ * @spec PRESENT-READY-015
+ * @spec PRESENT-READY-017
+ */
+function ambushersOf(encounter) {
+  if (!encounter.surprisedSide) return [];
+  const surprised = encounter.surprisedSide === 'PARTY'
+    ? roster(encounter.party).map((c) => c.id)
+    : encounter.enemies.members.map((e) => e.id);
+  return [...roster(encounter.party), ...encounter.enemies.members]
+    .map((c) => c.id)
+    .filter((id) => !surprised.includes(id));
+}
+
+/** Whether somebody can still take the turn the ambush handed them. */
+function ableToAct(encounter, id) {
+  const one = character(encounter.party, id) ?? encounter.enemies.members.find((e) => e.id === id);
+  return Boolean(one) && one.condition === Condition.OK && (one.hitPoints ?? 1) > 0;
+}
+
+/**
+ * Keep the ambush card up while any ambusher is still to take the turn the ambush gave
+ * them. Acting ends that one's part in it for good, and so does falling first: a quick
+ * ambusher who comes ready again is simply fast, not ambushing twice.
  *
  * @spec PRESENT-READY-015
  * @spec PRESENT-READY-026
  */
 function announce(fight) {
-  fight.ambushers = fight.ambushers.filter((id) => readinessOf(fight.encounter, id) >= FULL_BAR);
+  fight.ambushers = fight.ambushers.filter((id) => ableToAct(fight.encounter, id));
   fight.notice = fight.ambushers.length > 0 ? { text: 'Ambush!' } : null;
 }
 
@@ -631,6 +663,9 @@ function names(fight) {
  * @spec PRESENT-FIGHT-010
  */
 function resolveOne(fight, actorId, action) {
+  // Their part in the ambush is over the moment they have swung.
+  // @spec PRESENT-READY-015
+  fight.ambushers = fight.ambushers.filter((id) => id !== actorId);
   const event = takeAction(fight.encounter, actorId, action);
   if (event && event.action === Action.ATTACK) {
     fight.log.push(describeEvent(event, names(fight), event.targetId, event.felled === true));
@@ -656,15 +691,15 @@ export function playEnemyTurn(fight) {
   if (fight.phase !== FightPhase.ACTING || fight.pending || !fight.actor) return false;
 
   const foe = fight.actor;
-  const legal = meleeTargets(fight.encounter, foe.id);
-  resolveOne(fight, foe.id, legal.length === 0
+  const legal = attackTargets(fight.encounter, foe.id);
+  const record = fight.encounter.enemies.members.find((e) => e.id === foe.id);
+  // Whom it swings at is the enemies' own business, drawn from everyone standing; what
+  // the swing is worth is carried on the enemy itself.
+  // @spec ENEMY-FIGHT-005
+  const target = selectEnemyTarget(record?.role, legal, fight.encounter.rng);
+  resolveOne(fight, foe.id, !target
     ? { kind: Action.DEFEND }
-    : {
-      kind: Action.ATTACK,
-      targetId: legal[0].id,
-      baseDamage: 5,
-      accuracy: fight.encounter.enemies.members.find((e) => e.id === foe.id)?.accuracy ?? 0,
-    });
+    : { kind: Action.ATTACK, targetId: target.id, skill: record?.attack?.skill });
   return true;
 }
 
@@ -687,7 +722,7 @@ export function takeProposal(fight) {
   resolveOne(fight, characterId, {
     ...proposal.action,
     targetId: proposal.targetId,
-    ...(proposal.action.kind === Action.ATTACK ? PLACEHOLDER_ATTACK : {}),
+    ...(proposal.action.kind === Action.ATTACK ? attackOf(fight.encounter, characterId) : {}),
   });
   return true;
 }
@@ -748,7 +783,10 @@ export function advanceClock(fight, ms) {
     while (fight.fill >= FILL_BEAT_MS) {
       fight.fill -= FILL_BEAT_MS;
       advanceBeats(fight.encounter, 1);
-      if (readyActor(fight.encounter)) {
+      // Somebody is up, or the fight is over between one beat and the next: either
+      // way the turn passes rather than the bars going on filling.
+      if (readyActor(fight.encounter)
+        || encounterOutcome(fight.encounter).outcome !== Outcome.ONGOING) {
         nextTurn(fight);
         return true;
       }
@@ -796,7 +834,7 @@ export function chooseOption(fight, index) {
     const target = fight.pending.targets[index];
     if (!target) return false;
     resolveOne(fight, characterId, {
-      kind: Action.ATTACK, targetId: target.id, ...PLACEHOLDER_ATTACK,
+      kind: Action.ATTACK, targetId: target.id, ...attackOf(fight.encounter, characterId),
     });
     return true;
   }

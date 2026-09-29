@@ -497,6 +497,49 @@ describe('taking a turn', () => {
   });
 });
 
+describe('what a blow is worth', () => {
+  // @spec COMBAT-ACTION-008
+  it('takes damage and accuracy from whoever swung, on either side alike', () => {
+    const heavy = hero('heavy', { attack: { baseDamage: 20, accuracy: 100 } });
+    const state = encounter({
+      members: [heavy],
+      enemies: [orc('o1', { maxHitPoints: 40, attack: { baseDamage: 3, accuracy: 100 } })],
+    });
+    readyUp(state, 'heavy');
+    readyUp(state, 'o1');
+
+    // Neither action carries a number; both are read off the combatant acting.
+    const swing = takeAction(state, 'heavy', { kind: Action.ATTACK, targetId: 'o1' });
+    const jab = takeAction(state, 'o1', { kind: Action.ATTACK, targetId: 'heavy' });
+
+    expect(swing.damage).toBeGreaterThan(jab.damage);
+    expect(jab.damage).toBeGreaterThan(0);
+  });
+
+  // @spec ENEMY-ROSTER-011
+  it('kills an enemy outright where a character would be left unconscious', () => {
+    const state = encounter({
+      members: [hero('bram', { attack: { baseDamage: 40, accuracy: 100 } })],
+      enemies: [orc('o1', { maxHitPoints: 6, attack: { baseDamage: 40, accuracy: 100 } })],
+    });
+    readyUp(state, 'o1');
+    takeAction(state, 'o1', { kind: Action.ATTACK, targetId: 'bram' });
+
+    // A character brought to zero is unconscious, and may yet be brought round.
+    expect(character(state.party, 'bram').condition).toBe(Condition.UNCONSCIOUS);
+
+    const other = encounter({
+      members: [hero('rook', { attack: { baseDamage: 40, accuracy: 100 } })],
+      enemies: [orc('o2', { maxHitPoints: 6 })],
+    });
+    readyUp(other, 'rook');
+    takeAction(other, 'rook', { kind: Action.ATTACK, targetId: 'o2' });
+
+    // An enemy brought to zero is dead: nobody is coming back for a goblin.
+    expect(other.enemies.members[0].condition).toBe(Condition.DEAD);
+  });
+});
+
 describe('what a turn reports', () => {
   // @spec COMBAT-TIME-009
   it('credits the felling blow to the blow that felled, not to every blow that landed', () => {

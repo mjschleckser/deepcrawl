@@ -7,7 +7,7 @@
  * renderer, so it is kept small enough to verify by reading.
  */
 
-import { Application, Container, Graphics, Text } from 'pixi.js';
+import { Application, Container, Graphics, Sprite, Texture, Text } from 'pixi.js';
 import { Direction, EdgeKind, TileFeature } from '../sim/floor.js';
 import { PIXI_APP_OPTIONS, PALETTE } from './appconfig.js';
 
@@ -285,6 +285,26 @@ const FIGHT_COLOURS = {
   banner: 0xd8b46a,
 };
 
+/**
+ * Portraits, loaded once and kept. A portrait that will not load is simply absent: a
+ * missing picture must not cost the player the fight.
+ *
+ * @spec PRESENT-FIGHT-024
+ */
+const PORTRAIT_CACHE = new Map();
+
+function portraitTexture(url) {
+  if (!url) return null;
+  if (!PORTRAIT_CACHE.has(url)) {
+    try {
+      PORTRAIT_CACHE.set(url, Texture.from(url));
+    } catch {
+      PORTRAIT_CACHE.set(url, null);
+    }
+  }
+  return PORTRAIT_CACHE.get(url);
+}
+
 const label = (text, size, colour) =>
   new Text({ text, style: { fill: colour, fontSize: size, fontFamily: 'monospace' } });
 
@@ -307,64 +327,107 @@ function drawFight(container, plan) {
   graphics.moveTo(x, y).lineTo(x + width, y).stroke({ width: 2, color: FIGHT_COLOURS.frame });
   container.addChild(graphics);
 
-  // Every card was placed by the plan; this only paints it, at whatever offset the
-  // plan gave it.
-  const drawCard = (card, downColour, upColour, readyColour) => {
-    const member = { ...card, y: card.y + (card.offsetY ?? 0) };
-    graphics.rect(member.x, member.y, member.width, member.height)
-      .fill(member.down ? downColour : upColour);
+  // Everything below was placed by the plan; this only paints it, at whatever offset
+  // the plan gave it.
+  const drawCombatant = (card, colours) => {
+    const at = card.y + (card.offsetY ?? 0);
+    const bars = card.bars;
+    const tone = card.down ? FIGHT_COLOURS.dim : FIGHT_COLOURS.text;
 
-    // The card is the readiness bar: a brighter shade swept in from the left edge.
-    // @spec PRESENT-READY-001
-    if (!member.down && member.readiness > 0) {
-      graphics.rect(member.x, member.y, member.width * member.readiness, member.height)
-        .fill(readyColour);
+    // The portrait: a picture is recognised faster than a name is read.
+    // @spec PRESENT-FIGHT-023
+    const box = card.portraitBox;
+    graphics.rect(box.x, at, box.size, box.size).fill(colours.ground);
+    const texture = portraitTexture(card.portrait);
+    if (texture) {
+      const sprite = new Sprite(texture);
+      sprite.x = box.x;
+      sprite.y = at;
+      sprite.width = box.size;
+      sprite.height = box.size;
+      sprite.alpha = card.down ? 0.35 : 1;
+      container.addChild(sprite);
     }
 
-    // Something has to say "this one, now", or a fight resolved one at a time reads as
-    // a log that writes itself.
-    // @spec PRESENT-READY-003
-    graphics.rect(member.x, member.y, member.width, member.height)
-      .stroke({
-        width: member.acting ? 2.5 : 1,
-        color: member.acting ? FIGHT_COLOURS.banner : FIGHT_COLOURS.frame,
-      });
+    // Readiness, filled from the left with arrowheads, so the bar points at the moment
+    // it fills rather than merely growing.
+    // @spec PRESENT-READY-001
+    // @spec PRESENT-READY-027
+    const ready = bars.readiness;
+    graphics.rect(ready.x, at + (ready.y - card.y), ready.width, ready.height)
+      .fill({ color: colours.ground, alpha: 0.9 });
+    const readyY = at + (ready.y - card.y);
+    const filled = ready.width * (card.down ? 0 : card.readiness);
+    const step = Math.max(4, ready.height * 0.8);
+    for (let head = 0; head + step <= filled; head += step) {
+      const left = ready.x + head;
+      const mid = readyY + ready.height / 2;
+      graphics.poly([
+        left, readyY + 1,
+        left + step * 0.7, mid,
+        left, readyY + ready.height - 1,
+      ]).fill(card.readiness >= 1 ? FIGHT_COLOURS.banner : colours.ready);
+    }
 
-    // Hit points along the foot of the card, coloured by how bad it is.
+    // Who they are: name, total level, and a condition worth naming.
+    // @spec PRESENT-READY-029
+    const identity = bars.identity;
+    const identityY = at + (identity.y - card.y);
+    graphics.rect(identity.x, identityY, identity.width, identity.height)
+      .fill({ color: colours.ground, alpha: 0.65 });
+    const size = Math.max(8, Math.round(identity.height * 0.74));
+    const name = label(card.name.slice(0, 14), size, tone);
+    name.x = identity.x + 3 * scale;
+    name.y = identityY + (identity.height - name.height) / 2;
+    container.addChild(name);
+
+    const trailing = card.status ? `${card.status.toLowerCase()}` : `Lv ${card.level}`;
+    const right = label(trailing, size, card.status ? FIGHT_COLOURS.critical : FIGHT_COLOURS.dim);
+    right.x = identity.x + identity.width - right.width - 3 * scale;
+    right.y = identityY + (identity.height - right.height) / 2;
+    container.addChild(right);
+
+    // How they are doing: hit points, coloured by how much is left.
     // @spec PRESENT-READY-022
     // @spec PRESENT-READY-023
-    if (!member.down && member.health !== undefined) {
-      const barHeight = Math.max(3, 4 * scale);
-      const inset = 3 * scale;
-      const width = member.width - inset * 2;
-      const y = member.y + member.height - barHeight - inset * 0.6;
+    const health = bars.health;
+    const healthY = at + (health.y - card.y);
+    graphics.rect(health.x, healthY, health.width, health.height)
+      .fill({ color: 0x000000, alpha: 0.5 });
+    if (!card.down) {
       const colour = {
         HEALTHY: FIGHT_COLOURS.healthy,
         WOUNDED: FIGHT_COLOURS.wounded,
         CRITICAL: FIGHT_COLOURS.critical,
-      }[member.wound];
-      graphics.rect(member.x + inset, y, width, barHeight)
-        .fill({ color: 0x000000, alpha: 0.45 });
-      graphics.rect(member.x + inset, y, width * member.health, barHeight).fill(colour);
+      }[card.wound];
+      graphics.rect(health.x, healthY, health.width * card.health, health.height).fill(colour);
     }
-
-    const tone = member.down ? FIGHT_COLOURS.dim : FIGHT_COLOURS.text;
-    const name = label(member.name.slice(0, 12), Math.round(11 * scale), tone);
-    name.x = member.x + 5 * scale;
-    name.y = member.y + 5 * scale;
-    container.addChild(name);
-
-    const hp = label(member.down ? 'down' : `${member.hitPoints}/${member.maxHitPoints}`, Math.round(11 * scale), tone);
-    hp.x = member.x + 5 * scale;
-    hp.y = member.y + member.height - hp.height - 9 * scale;
+    const hp = label(card.down ? 'down' : `${card.hitPoints}/${card.maxHitPoints}`, size, tone);
+    hp.x = health.x + 3 * scale;
+    hp.y = healthY + (health.height - hp.height) / 2;
     container.addChild(hp);
+
+    // Something has to say "this one, now", or a fight resolved one at a time reads as
+    // a log that writes itself.
+    // @spec PRESENT-READY-003
+    graphics.rect(card.x, at, card.width, card.height)
+      .stroke({
+        width: card.acting ? 2.5 : 1,
+        color: card.acting ? FIGHT_COLOURS.banner : FIGHT_COLOURS.frame,
+      });
   };
 
   for (const member of plan.enemies) {
-    drawCard(member, FIGHT_COLOURS.enemyDown, FIGHT_COLOURS.enemy, FIGHT_COLOURS.enemyReady);
+    drawCombatant(member, {
+      ground: member.down ? FIGHT_COLOURS.enemyDown : FIGHT_COLOURS.enemy,
+      ready: FIGHT_COLOURS.enemyReady,
+    });
   }
   for (const member of plan.party) {
-    drawCard(member, FIGHT_COLOURS.allyDown, FIGHT_COLOURS.ally, FIGHT_COLOURS.allyReady);
+    drawCombatant(member, {
+      ground: member.down ? FIGHT_COLOURS.allyDown : FIGHT_COLOURS.ally,
+      ready: FIGHT_COLOURS.allyReady,
+    });
   }
 
   let cursor = plan.cardsBottom + pad;
