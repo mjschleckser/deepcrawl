@@ -230,7 +230,7 @@ describe('winning a fight', () => {
       if (!actor) break;
 
       if (actor.side !== 'PARTY') {
-        takeAction(encounter, actor.id, { kind: Action.DEFEND });
+        takeAction(encounter, actor.id, { kind: Action.PASS });
         continue;
       }
       const target = encounter.enemies.members.find((e) => e.condition === Condition.OK && e.hitPoints > 0);

@@ -13,14 +13,5 @@
     "accuracy": 24
   },
   "armour": 0,
-  "orders": [
-    {
-      "when": "ALWAYS",
-      "action": {
-        "kind": "ATTACK"
-      },
-      "aim": "WEAKEST_ENEMY"
-    }
-  ],
   "portrait": "mage.png"
 }

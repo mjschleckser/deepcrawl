@@ -148,32 +148,54 @@ function drawMap(container, plan) {
  */
 function drawControl(container, control, { alpha = 0.55, scale = 1 } = {}) {
   const ghost = control.kind === 'ZONE';
+  // An option that cannot be taken is drawn in its own place, dimmed rather than
+  // omitted, so the row keeps its shape and its numbering.
+  // @spec PRESENT-FIGHT-034
+  const dim = control.available === false;
   const graphics = new Graphics();
   // Over the dungeon a control is its label alone, and shows its edges only under a
   // finger. On a panel of its own there is nothing behind it to hide, so it keeps them.
   if (!ghost) {
     graphics.roundRect(control.x, control.y, control.width, control.height, 6)
-      .fill({ color: 0x0b0906, alpha });
+      .fill({ color: 0x0b0906, alpha: dim ? alpha * 0.55 : alpha });
   }
   if (!ghost || control.pressed) {
     graphics.roundRect(control.x, control.y, control.width, control.height, 6)
-      .stroke({ width: 1.5, color: PALETTE.map.wall, alpha: ghost ? 0.85 : 0.9 });
+      .stroke({
+        width: 1.5,
+        color: PALETTE.map.wall,
+        alpha: dim ? 0.35 : (ghost ? 0.85 : 0.9),
+      });
   }
   container.addChild(graphics);
 
+  // The reason takes the slot the key hint occupies, a greyed control's key doing
+  // nothing anyway.
+  // @spec PRESENT-FIGHT-041
+  const footnote = dim ? control.reason : control.hint;
+
   const name = new Text({
     text: control.label,
-    style: { fill: 0xe8d9a8, fontSize: Math.round(14 * scale), fontFamily: 'monospace' },
+    style: {
+      fill: dim ? 0x6b6252 : 0xe8d9a8,
+      fontSize: Math.round(14 * scale),
+      fontFamily: 'monospace',
+    },
   });
   name.x = control.x + control.width / 2 - name.width / 2;
-  name.y = control.y + control.height / 2 - name.height / 2 - (control.hint ? 6 * scale : 0);
+  name.y = control.y + control.height / 2 - name.height / 2 - (footnote ? 6 * scale : 0);
   container.addChild(name);
 
   // The key is a hint, never the label: a phone has no Enter to press.
-  if (control.hint) {
+  // @spec PRESENT-FIGHT-040
+  if (footnote) {
     const hint = new Text({
-      text: control.hint,
-      style: { fill: PALETTE.map.wall, fontSize: Math.round(10 * scale), fontFamily: 'monospace' },
+      text: footnote,
+      style: {
+        fill: dim ? 0x6b6252 : PALETTE.map.wall,
+        fontSize: Math.round(10 * scale),
+        fontFamily: 'monospace',
+      },
     });
     hint.x = control.x + control.width / 2 - hint.width / 2;
     hint.y = control.y + control.height - hint.height - 4 * scale;
@@ -328,8 +350,8 @@ const label = (text, size, colour) =>
   new Text({ text, style: { fill: colour, fontSize: size, fontFamily: 'monospace' } });
 
 /**
- * Draw a fight over the corridor. Both formations in their rows, the fallen still in
- * place, the options on offer, and the log — which is how a round that lands in one
+ * Draw a fight over the corridor. Both sides in their columns, the fallen still in
+ * place, the options on offer, and the log — which is how an action that lands in one
  * frame is perceived at all.
  *
  * @spec PRESENT-FIGHT-001
@@ -494,28 +516,6 @@ function drawFight(container, plan) {
   }
 
   // @spec PRESENT-FIGHT-014
-  // The ring on a proposal: filling as the seconds run, an A at its centre for the
-  // action about to take itself.
-  // @spec PRESENT-READY-007
-  if (plan.countdown) {
-    const { x, y, radius, progress } = plan.countdown;
-    const ring = new Graphics();
-    ring.circle(x, y, radius).fill({ color: FIGHT_COLOURS.panel, alpha: 0.85 });
-    ring.circle(x, y, radius).stroke({ width: 1, color: FIGHT_COLOURS.frame, alpha: 0.7 });
-    // An arc from the top, clockwise, as much of the circle as has run. Started from
-    // its own first point, or the path drags a line in from wherever it last was.
-    const start = -Math.PI / 2;
-    ring.moveTo(x, y - radius)
-      .arc(x, y, radius, start, start + Math.PI * 2 * progress)
-      .stroke({ width: Math.max(1.5, radius * 0.3), color: FIGHT_COLOURS.banner });
-    container.addChild(ring);
-
-    const mark = label(plan.countdown.label ?? 'A', Math.round(8 * scale), FIGHT_COLOURS.text);
-    mark.x = x - mark.width / 2;
-    mark.y = y - mark.height / 2;
-    container.addChild(mark);
-  }
-
   // Bars that start full are otherwise unexplained, and the reasonable conclusion is
   // that the fight is broken.
   // @spec PRESENT-READY-015
@@ -554,6 +554,15 @@ function drawFight(container, plan) {
     }
   }
 
+  // The four first, then anything laid over them, so a Pass turn control covers the
+  // greyed options it is explaining rather than being buried under them.
   // @spec PRESENT-FIGHT-017
-  for (const control of plan.controls ?? []) drawControl(container, control, { alpha: 0.7, scale });
+  // @spec PRESENT-FIGHT-042
+  const controls = plan.controls ?? [];
+  for (const control of controls.filter((c) => !c.overlay)) {
+    drawControl(container, control, { alpha: 0.7, scale });
+  }
+  for (const control of controls.filter((c) => c.overlay)) {
+    drawControl(container, control, { alpha: 0.95, scale });
+  }
 }

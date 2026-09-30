@@ -235,7 +235,7 @@ top of it.
 │ Tam crits Goblin for 14. Goblin falls.                            │
 ├───────────────────────────────────────────────────────────────────┤
 │ Bram is ready to act!                                             │ ← who is up
-│  [1] Attack Goblin   [2] Attack   [3] Defend   [4] Flee           │ ← the controls
+│  [1] Attack   [2] Magic   [3] Inventory   [4] Flee                │ ← the controls
 └───────────────────────────────────────────────────────────────────┘
 ```
 
@@ -243,6 +243,21 @@ top of it.
 combatants however many there are. There are no ranks to draw, because there are none
 in the fight: a column is the honest shape of a side whose members are all equally
 reachable, and it reads the same whether a side holds two or twelve.
+
+**Each column is centred vertically in the region, on its own count.** Two goblins
+facing five characters sit level with the middle of the party rather than stacked
+against the ceiling with a drop of empty panel beneath them. The two sides are facing
+one another, and a formation pinned to the top edge reads as a list that ran out rather
+than as a side that is outnumbered.
+
+The centring is settled when the encounter begins and never moves again: a side keeps
+its count all fight, because the fallen keep their places. So a column cannot creep
+upward as the fight thins it, which is the same promise every other region makes.
+
+**A side too big for the region starts at its top edge rather than above it.** Centring
+a column taller than the room it has would push its first combatants off the top of the
+panel, so the centring gives way and the column is squeezed to fit, exactly as a crowded
+side is handled now.
 
 **A combatant is an icon and three stacked bars.** The icon is a portrait, at the left
 of their own side's column and the same size for everybody. The bars sit to its right,
@@ -335,6 +350,15 @@ span, so that who is catching up on whom is something watched rather than someth
 that has already happened by the time the screen is drawn. Between beats the fill is
 drawn partway, as the simulation reports it, so it glides rather than steps.
 
+**How long a beat takes on screen is one number, and it is set slow enough to read.**
+It is the only thing deciding how fast a fight appears to move, and it applies to every
+bar alike — a quick combatant and a slow one are drawn at the same pace and differ only
+in how far each beat carries them. It is set well below the rate at which the arithmetic
+could be shown, because the bars are what the fight is read off, and a race that resolves
+before the player has found the two bars in it is a race they were told the result of
+rather than shown. It changes nothing about what the fight resolves: the beats are the
+simulation's and come out the same at any pace.
+
 **The combatant acting is highlighted while they act**, on both sides alike. Something
 has to say *this one, now*, or a fight resolved one combatant at a time reads as a log
 that writes itself.
@@ -357,9 +381,8 @@ changing on its own is precisely the case it was never meant to cover.
 Two clocks are in play and they are not the same one. The **fight's time** is the
 simulation's, counts beats, and never moves while a decision is pending or while
 anybody stands ready. The player's clock, measured in seconds, sets only the pace: how
-long a beat of filling takes on screen, the **beat between actions**, and the
-**countdown on a proposal**. None of it changes what the simulation resolves; a fight
-played at any pace comes out the same.
+long a beat of filling takes on screen, and the **beat between actions**. Neither
+changes what the simulation resolves; a fight played at any pace comes out the same.
 
 ### Being told whose turn it is
 
@@ -371,11 +394,6 @@ actually needs to know is which of five combatants the next press belongs to.
 **While nothing is waiting on the player, that line is not there at all.** Bars filling
 and enemies swinging are not a prompt, and a prompt left standing over them would be
 inviting a press that nothing is listening for.
-
-**A proposal is a control of its own**, first in the row and named for what it would
-actually do — *Attack Goblin*, not *Attack*. Taking it is the whole turn in one press,
-which is what an order was for; every other control is still there, and taking one of
-them drops the proposal.
 
 ### Announcing an ambush
 
@@ -393,17 +411,6 @@ ambush favoured has acted, or has fallen before they could. The fight plays bene
 as it would without it, so the card is what explains the ambush while it is happening
 rather than a pause before it — and it goes when the last of that head start is spent,
 which is the moment the fight becomes an ordinary one.
-
-### The countdown on a proposal, built and switched off
-
-A proposal can be shown with a **countdown ring** — a small circle beside that
-character's readiness bar, its outer ring filling as the seconds run, an `A` at its
-centre — which takes the action when it completes.
-
-**It is switched off.** Every action is taken by a press, so the ring would be counting
-down to nothing. The machinery stays, under test and behind one constant, because
-whether a fight should be able to play itself for a player who has set their orders is
-a question worth being able to answer twice without rebuilding anything.
 
 ### The log carries the fight
 
@@ -423,15 +430,84 @@ to compose. The fight stops at whoever came ready, that character acts, the log 
 line, and the fight resumes. Nobody is asked in advance and nothing is held pending, so
 the panel is only ever offering one combatant's options.
 
-Only the actions that character can legally take are offered — no attack with nothing
-standing, no cast with the slot already spent, no flee against something that forbids
-it. An action needing a target asks for one from the legal targets only, so an illegal
-choice cannot be expressed rather than being refused after the fact.
+**Every character is offered the same four things, in the same order, every turn:**
 
-**Backing out drops the proposal and returns to the open choice**, which is as far back
-as there is to go. A turn resolves the instant it is taken, so there is no earlier
-decision left standing to reconsider: what `Escape` undoes is a target half-chosen, or
-a proposal set aside in order to compose something else.
+| Option | What it does | Unavailable when |
+|---|---|---|
+| **Attack** | swing what this combatant carries | they carry no attack, or nothing is standing to swing at |
+| **Magic** | cast from what this character knows | they know no spell they can still pay for |
+| **Inventory** | use something from the party's pack | the pack holds nothing usable in a fight |
+| **Flee** | take the whole party out of the encounter | escape is certain to fail — something present forbids it, or the party cannot outrun what is chasing it |
+
+**An option that cannot be taken is drawn anyway, greyed and inert.** It keeps its
+place, keeps its number, and does nothing at all when pressed — no message, no line in
+the log, no sound.
+
+**A greyed option says why, on the button, in small text under its name.** *No spells*
+under a greyed Magic; *Too slow to escape* under a greyed Flee. Grey alone says only
+*not now*, which leaves the player to guess whether they have misunderstood the rule,
+missed a step, or found a bug — and a fight is the worst place to be guessing. The
+reason is the shortest sentence that ends the question.
+
+It goes on the button rather than on the prompt line because the button is where the
+player is already looking, and because a line that appeared only when something was
+unavailable would be one more thing moving on a panel whose whole discipline is that
+nothing moves. On the button the text is simply there, the same size and in the same
+place every turn, changing only its words.
+
+The reason takes the slot the key hint occupies on an available control. A greyed
+control's key does nothing, so the number is worth less there than the sentence is.
+
+**Magic and Inventory are greyed in every fight today**, there being no spell a
+character knows and no pack to take an item from. They are drawn regardless, because
+the row's shape is not a function of which systems happen to exist yet, and they will
+light up when those systems arrive without the row being redesigned around them.
+
+This is the whole reason for a fixed four. The alternative — offering only what is
+legal — gives a menu that is a different shape on every turn: *Flee* moves under the
+thumb when a goblin that forbids escape falls, and the key that attacked last turn casts
+this one. A player in a fight is reaching for a position they have learned, and a menu
+that rearranges itself is a menu that has to be re-read every time it is used. Four
+fixed slots cost some grey and buy a row that can be pressed without being read.
+
+It also makes the menu say what the game contains. A greyed *Magic* tells a player that
+casting is a thing characters do and that this one cannot do it now, which is a rule
+learned by looking; an absent *Magic* tells them nothing at all, and an absent option
+that reappears later reads as a bug.
+
+**The rule is uniform across all four.** Attack greys for an unarmed character exactly
+as Magic greys for a mage out of slots. A menu that is fixed except sometimes is not
+fixed, and the exception is what the player would have to learn instead.
+
+**A character with nothing at all to do is given one thing: Pass turn.** When all four
+options are unavailable, a single control is drawn across the row, over the four greyed
+buttons rather than in place of them, and it is the only thing that can be pressed.
+Taking it spends the turn and resolves nothing.
+
+The four stay visible underneath because they are the explanation: the player can read
+that Attack, Magic, Inventory and Flee were each considered and each refused, and why.
+A row replaced by one button would say only that something had gone wrong. The overlay
+says *here is everything you could have done, and here is the only thing left*.
+
+It is a press like every other turn, which is the point of drawing it at all. The fight
+could pass this character automatically and save the player a tap, but that tap is the
+one moment the rule *no turn is taken unattended* would have an exception, and the
+exception would land on the rarest and most confusing turn in the game — the one where
+the player is already wondering what happened.
+
+**Numbers are fixed to slots, not to what is available.** Attack is always `1` and Flee
+is always `4`, whether or not the two between them can be pressed, so a number key means
+the same thing in every fight.
+
+**An action needing a target asks for one from the legal targets only**, so an illegal
+choice cannot be expressed rather than being refused after the fact. Targets replace the
+four while the question stands, and the room for them is already reserved.
+
+**Backing out returns to the open choice**, which is as far back as there is to go. A
+turn resolves the instant it is taken, so there is no earlier decision left standing to
+reconsider: what `Escape` undoes is a target half-chosen. On the open choice itself it
+does nothing, and the control stays drawn rather than vanishing — the row reserves its
+place either way, and a control that came and went would move the four above it.
 
 ### Input in a fight
 
@@ -586,14 +662,19 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 | Hit points | A bar under each combatant, coloured by the share left, with the numbers on it | The number alone | A column of fractions has to be read one at a time; a column of bars shows how hurt the whole party is in one look, and the colour carries the urgency before the length is even judged. |
 | Portraits | An image file per class and per enemy kind, drawn at one size | Shapes drawn in code, as the map's marks are; no portrait at all | A picture is recognised faster than a name is read, which is what makes a column of six scannable. Files mean real art arrives by replacing them rather than by rewriting a draw routine, and one size keeps a column aligned whatever it holds. |
 | How bars fill | Over real time from empty, a beat per fixed span, drawn partway between beats | Jumping straight to whoever is next ready | A jump shows the result of the race and never the race, so the player cannot see a quick combatant pulling ahead of a slow one, which is the thing the bars exist to show. |
-| The beat between actions | A short pause, with the acting combatant highlighted | Resolving everything down to the next decision at once; animating each action properly | Without a pause a fight on standing orders lands between two frames and is read afterwards as text, which is the thing the log exists to rescue rather than the thing to build on. Real animation is a larger project and would need the ticker running throughout rather than between actions. |
+| The beat between actions | A short pause, with the acting combatant highlighted | Resolving everything down to the next decision at once; animating each action properly | Without a pause the enemies' turns land between two frames and are read afterwards as text, which is the thing the log exists to rescue rather than the thing to build on. Real animation is a larger project and would need the ticker running throughout rather than between actions. |
 | The ticker | Stopped, except while a fight is playing rather than waiting on the player | Stopped always, with actions resolved instantly; a conventional render loop | The rule was never about the ticker; it was about not redrawing an unchanged screen sixty times a second. A screen that is changing on its own is the one case it was not written for, and the exception is bounded to a fight that is not waiting on anybody. |
 | Announcing an ambush | A card above the fight saying Ambush!, up until every ambusher has acted, with the fight playing beneath it | Colouring the bars that start full; a line in the log; a card held for a fixed span before the fight begins | Bars that start full are the one thing on the screen with no cause visible anywhere, and a player who cannot read them concludes the fight is broken. A card held before the fight explains an ambush nobody has seen yet and is gone by the time the ambushers swing; one that lasts as long as the ambush explains it while it happens. The log is read after the fact, and a colour is a code nobody has been taught. |
 | The prompt | Naming who is ready, and absent while nothing waits | Asking what the character will do; a prompt that stays up throughout | The buttons already say what may be done; what the player needs is which of five cards the next press belongs to. A prompt standing over a fight that is playing invites a press nothing is listening for. |
 | Showing an attack | A vertical judder on the attacker, decaying over the beat | Moving the attacker toward its target; flashing the one that was hit; a larger animation | Nothing else in the fight moves, so the smallest honest motion is enough, and putting it on the attacker answers *whose blow was that* rather than only *that something happened*. Moving toward a target is a real animation and wants a real animation system. |
 | Showing an action | A text log built from the action's own event log | Animating each action; showing only the resulting state | Nothing animates, so an action lands in one frame. Without a record the player sees the aftermath and never learns what happened. The log is the fight as perceived. |
-| Illegal options | Not offered at all | Offered and refused when chosen | An option that cannot be taken should not be presented. Refusing after the fact teaches the rules by failure, which in a fight is expensive. |
-| Backing out | Drops the proposal and returns to the open choice | Stepping back to the previous character, as a composed round would allow | A turn resolves the moment it is taken, so there is no previous character still holding an undecided action. Offering to step back to one would be offering to undo something the simulation has already resolved. |
+| Unavailable options | Drawn in place, greyed and inert, from a fixed four, each carrying its reason | Offered only when legal, so the row changes shape each turn; offered and refused when chosen; greyed with no reason given | A row that is a different shape every turn cannot be pressed from memory: Flee moves under the thumb when the goblin forbidding escape falls, and the key that attacked last turn casts this one. Fixed slots cost some grey and buy a row a player can reach for without reading. Grey alone says only *not now*, leaving the player to guess between a rule they misunderstood and a bug; the reason under the name ends that question in four words, and sits on the button because a line that appeared only sometimes would move the panel. Offering an option and then refusing it teaches the rule by failure, which in a fight is expensive. |
+| A turn with no legal action | A Pass turn control drawn over the four greyed options, which must be pressed | Passing the character automatically; replacing the row with one button; leaving the turn pending | Passing automatically would be the only turn in the game taken unattended, and it would land on the rarest and most confusing turn there is. Keeping the four visible underneath makes the overlay an explanation rather than an error: the player reads that each was considered and refused, and why. Replacing the row would say only that something had gone wrong. |
+| When Flee greys | Whenever escape is certain to fail, by the rule that resolves an attempt | Only when an enemy forbids escape, leaving a hopeless run to cost a turn; never greying, so every attempt is paid for | A menu that warns about one impossibility and charges a turn to discover the other teaches that greying cannot be trusted. Reading the same rule that resolves the attempt keeps one source of truth, so the button and the outcome can never disagree. The cost is that the party learns something about enemy speed from the button; the reason text says so plainly rather than leaving it to be inferred. |
+| Backing out | Returns to the open choice | Stepping back to the previous character's turn | A turn resolves the instant it is taken, so there is no earlier decision still standing to return to. What `Escape` undoes is a target half-chosen. |
+| What a turn offers | A fixed four: Attack, Magic, Inventory, Flee | A row built from whatever is legal this turn; a nested menu under one Act button | Four slots in a fixed order can be learned once and pressed thereafter without reading, and they fix the number keys too — Attack is always 1. A menu assembled per turn makes every press a fresh reading. Nesting would cost a press on every turn to save room the panel already reserves. |
+| Where a column sits vertically | Centred in the formation region, each side on its own count | Pinned to the top edge; both sides aligned on a shared top | Two goblins facing five characters read as a side that is outnumbered when they sit level with the middle of the party, and as a list that ran out when they hang from the top edge with empty panel beneath. Centring is fixed at the start of the encounter and cannot creep, because the fallen keep their places and a side's count never changes. |
+| How fast bars fill on screen | One span per beat, set slow enough that a race can be watched | As fast as the arithmetic allows; a speed the player sets | The bars are what a fight is read off, so a race resolved before the player has found the two bars in it is a result they were told rather than shown. One number, applied to every bar alike, keeps the relative speeds the simulation's and changes nothing it resolves. A player-set speed is a preference screen for a game with no preferences yet. |
 | The fallen | Drawn in place, spent and dimmed | Removing them from the column | The shape of a side that has lost its middle is information, and a column that closed its gaps would move everything below the gap while the player was looking at it. |
 | The build stamp | Drawn in the corner of the running game, with the commit count as its patch | A version on an about screen; no version at all; a build date | "It does not work" and "you are looking at a cached build" are the same report without it, and a service worker makes the second common. Taking the patch from the commit count means nobody has to remember to raise a number, and it orders correctly by construction. |
 | Starter floor | Hand-authored data, deleted when generation lands | Waiting for dungeon generation; generating a floor here | The segment cannot be seen to work without a floor to walk, and building a generator inside the presentation segment would put it in the wrong place permanently. |
@@ -615,23 +696,24 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 11. ✅ **Stepping back is a zone of its own**, beneath the forward zone.
 12. ✅ **Turning about has a key but no control**, being two taps of one the player already uses.
 13. ✅ **Labels name the action**, with any keyboard hint as secondary text.
-14. ✅ **Enemies are a column on the left and the party a column on the right**, every position decided in the plan.
+14. ✅ **Enemies are a column on the left and the party a column on the right**, each centred vertically on its own count, every position decided in the plan.
 15. ✅ **A combatant is a portrait and three stacked bars** — readiness, identity, hit points — and the one acting is highlighted.
 16. ✅ **Readiness is one continuous fill** with a leading edge, glowing at full.
-17. ✅ **Bars fill over real time from empty**, drawn partway between beats.
+17. ✅ **Bars fill over real time from empty**, drawn partway between beats, at one screen pace for every bar alike.
 18. ✅ **The bottom bar is hit points**, coloured by the share left; other resources join them when they exist.
 19. ✅ **A portrait is an image file**, one per class and per enemy kind.
 20. ✅ **The panel's regions are fixed**, so nothing moves that the player is not moving.
 21. ✅ **The log is a fixed window with a scrollbar**, following the fight until the player scrolls back.
 22. ✅ **Actions play out a beat at a time**, and the ticker runs only while a fight is playing rather than waiting.
 23. ✅ **An attack shakes its attacker's card**, which is the only motion in a fight.
-24. ✅ **One character is asked at a time**, when their bar fills; backing out drops the proposal rather than stepping back to anybody.
-25. ✅ **Every action is taken by a press.** The countdown ring that would take a proposal unattended is built, tested, and switched off.
-26. ✅ **The prompt names who is ready to act**, and is absent while nothing waits on the player.
-27. ✅ **An ambush is announced by a card** that stays up until every ambusher has acted, with the fight playing beneath it.
-28. ✅ **Prompts are drawn from the simulation's pending confirmation**, never from the renderer's own flag.
-29. ✅ **The build's version is drawn in the bottom-left corner**, its patch number the commit count, fixed at build time.
-30. ✅ **A hand-authored starter floor** stands in until dungeon generation exists.
+24. ✅ **One character is asked at a time**, when their bar fills; backing out returns to the open choice rather than stepping back to anybody.
+25. ✅ **Every action is taken by a press**, and nothing in a fight is ever taken unattended.
+26. ✅ **A turn offers a fixed four — Attack, Magic, Inventory, Flee — with whatever cannot be taken drawn greyed and inert** in its own place, keeping its number.
+27. ✅ **The prompt names who is ready to act**, and is absent while nothing waits on the player.
+28. ✅ **An ambush is announced by a card** that stays up until every ambusher has acted, with the fight playing beneath it.
+29. ✅ **Prompts are drawn from the simulation's pending confirmation**, never from the renderer's own flag.
+30. ✅ **The build's version is drawn in the bottom-left corner**, its patch number the commit count, fixed at build time.
+31. ✅ **A hand-authored starter floor** stands in until dungeon generation exists.
 
 ### Deferred
 
@@ -642,7 +724,7 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 5. **Expanded-map interaction.** Panning and zooming an expanded map, and whether tapping a tile does anything, are unspecified. Auto-travel is already deferred in exploration.
 6. **Wide-screen framing.** On a very wide desktop window the corridor frames may want letterboxing rather than stretching; untested.
 7. **Accessibility.** Keyboard focus, screen-reader description of the map, and colour-blind-safe stroke distinctions are unaddressed.
-8. **Pacing controls.** The beat and the countdown are fixed lengths. Whether a player may speed them up, slow them down, or hold every proposal indefinitely is unanswered; combat records the same question from its own side.
+8. **Pacing controls.** The beat between actions and the pace bars fill at are fixed lengths chosen for legibility. Whether a player may speed them up or slow them down is unanswered; combat records the same question from its own side.
 
 ## References
 

@@ -8,19 +8,23 @@ import {
   beginEncounter, createEnemy, createEnemyGroup, readinessOf, FULL_BAR,
   Action, Outcome, Band,
 } from '../sim/combat.js';
-import { createRule, When, Aim } from '../sim/orders.js';
 import {
   buildFightPlan, createFightController, chooseOption, goBack, dismissOutcome,
-  playEnemyTurn, takeProposal, cancelProposal, advanceClock, fightIsPlaying, scrollLog,
-  AUTO_CONFIRM, SHAKE_PIXELS, FILL_BEAT_MS, Wound,
-  FightPhase, FightAction, describeEvent, BEAT_MS, COUNTDOWN_MS,
+  playEnemyTurn, passTurn, advanceClock, fightIsPlaying, scrollLog,
+  SHAKE_PIXELS, FILL_BEAT_MS, Wound, OPTION_SLOTS,
+  FightPhase, FightAction, describeEvent, BEAT_MS,
 } from './fight.js';
 
-/** Take the Defend option, whatever number it happens to be on this character. */
+/** Burn this character's turn on the simplest thing available: swing at whoever is first. */
 function defend(fight) {
-  const index = fight.pending.options.findIndex((o) => o.action === FightAction.DEFEND);
-  return chooseOption(fight, index);
+  const index = fight.pending.options.findIndex((o) => o.action === FightAction.ATTACK);
+  if (index < 0 || !fight.pending.options[index].available) return passTurn(fight);
+  chooseOption(fight, index);
+  return fight.pending?.targets ? chooseOption(fight, 0) : true;
 }
+
+/** The option occupying one of the four fixed slots. */
+const slot = (fight, action) => fight.pending.options.find((o) => o.action === action);
 
 /** Let the fight move on a little, whatever it is waiting for. */
 function nudge(fight, spans = 4) {
@@ -298,6 +302,71 @@ describe('a panel that stays where it is', () => {
   });
 });
 
+describe('each side centred on its own count', () => {
+  /** Where a laid-out column begins and ends, including the row heights. */
+  const span = (cards) => ({
+    top: cards[0].y,
+    bottom: cards[cards.length - 1].y + cards[cards.length - 1].height,
+  });
+
+  const planFor = (encounter) => buildFightPlan(encounter, viewport, { phase: FightPhase.ACTING });
+
+  // @spec PRESENT-FIGHT-038
+  it('centres a short column against the region rather than hanging it from the top', () => {
+    const encounter = fightState({
+      enemies: [createEnemy({ id: 'g1', name: 'Goblin', maxHitPoints: 9, potValue: 14 })],
+    });
+    const plan = planFor(encounter);
+    const region = plan.regions.formation;
+    const { top, bottom } = span(plan.enemies);
+
+    // The gap above the column matches the gap below it.
+    expect(top - region.y).toBeCloseTo(region.y + region.height - bottom, 0);
+    expect(top).toBeGreaterThan(region.y);
+  });
+
+  // @spec PRESENT-FIGHT-038
+  it('centres each side on its own count, not on the deeper of the two', () => {
+    const encounter = fightState({
+      enemies: [createEnemy({ id: 'g1', name: 'Goblin', maxHitPoints: 9, potValue: 14 })],
+    });
+    const plan = planFor(encounter);
+
+    // One goblin against three characters: the goblin sits level with the party's middle.
+    const enemy = span(plan.enemies);
+    const party = span(plan.party);
+    const midOf = (s) => (s.top + s.bottom) / 2;
+
+    expect(midOf(enemy)).toBeCloseTo(midOf(party), 0);
+    expect(enemy.top).toBeGreaterThan(party.top);
+  });
+
+  // @spec PRESENT-FIGHT-038
+  // @spec PRESENT-FIGHT-026
+  it('does not move a column as the fight kills its members', () => {
+    const encounter = fightState();
+    const before = span(planFor(encounter).enemies);
+
+    const foe = encounter.enemies.members.find((e) => e.id === 'g1');
+    foe.hitPoints = 0;
+    foe.condition = Condition.DEAD;
+
+    // The fallen keep their places, so the centring cannot creep.
+    expect(span(planFor(encounter).enemies)).toEqual(before);
+  });
+
+  // @spec PRESENT-FIGHT-039
+  it('starts a column too tall for the region at its top edge', () => {
+    const many = Array.from({ length: 20 }, (_, i) => createEnemy({
+      id: `g${i}`, name: 'Goblin', maxHitPoints: 9, potValue: 14,
+    }));
+    const plan = planFor(fightState({ enemies: many }));
+    const region = plan.regions.formation;
+
+    expect(plan.enemies[0].y).toBeGreaterThanOrEqual(region.y);
+  });
+});
+
 describe('the log as a window', () => {
   const withLog = (lines, over = {}) => buildFightPlan(fightState(), viewport, {
     phase: FightPhase.ACTING,
@@ -443,9 +512,9 @@ describe('choosing what to do', () => {
       untilAsked(fight);
     }
 
-    const options = fight.pending.options.map((o) => o.action);
-    expect(options).not.toContain(FightAction.ATTACK);
-    expect(options).toContain(FightAction.DEFEND);
+    // Attack keeps its slot, greyed; it is not removed from the row.
+    expect(slot(fight, FightAction.ATTACK).available).toBe(false);
+    expect(fight.pending.options.map((o) => o.action)).toContain(FightAction.ATTACK);
   });
 
   // @spec PRESENT-FIGHT-007
@@ -511,150 +580,298 @@ describe('choosing what to do', () => {
   });
 });
 
-describe('standing orders in a fight', () => {
-  const order = (over) => createRule({ when: When.ALWAYS, action: { kind: Action.ATTACK }, aim: Aim.WEAKEST_ENEMY, ...over });
-
-  function ordered(rules, id = 'bram') {
-    const encounter = fightState();
-    character(encounter.party, id).orders = rules;
-    return untilReady(createFightController({ encounter, viewport, onDraw: vi.fn() }));
-  }
-
-  // @spec COMBAT-ORDER-003
-  // @spec COMBAT-ORDER-014
-  it("fills in the action and the target a character's orders name", () => {
-    const fight = ordered([order()]);
-
-    expect(fight.pending.characterId).toBe('bram');
-    // The archer is the weakest thing on the field, but out of a melee swing's reach,
-    // so the proposal names the weakest of what can actually be reached.
-    expect(fight.pending.proposal.action.kind).toBe(Action.ATTACK);
-    expect(['g1', 'g2', 'a1']).toContain(fight.pending.proposal.targetId);
-  });
-
-  // @spec COMBAT-ORDER-005
-  // @spec COMBAT-ORDER-019
-  it('proposes nothing for a character with no orders, and waits', () => {
+describe('the four a turn offers', () => {
+  // @spec PRESENT-FIGHT-006
+  it('offers the same four, in the same order, on every turn', () => {
     const fight = controller();
 
-    expect(fight.pending.proposal).toBeNull();
-    expect(fight.phase).toBe(FightPhase.ACTING);
-    expect(fight.pending.options.length).toBeGreaterThan(0);
-  });
-
-  // @spec COMBAT-ORDER-006
-  // @spec COMBAT-ORDER-017
-  it('takes the proposal, as the countdown running out would', () => {
-    const fight = ordered([order()]);
-    const targetId = fight.pending.proposal.targetId;
-    const before = fight.encounter.enemies.members.find((e) => e.id === targetId).hitPoints;
-
-    expect(takeProposal(fight)).toBe(true);
-
-    expect(fight.encounter.enemies.members.find((e) => e.id === targetId).hitPoints)
-      .toBeLessThan(before);
-    expect(fight.turnsTaken).toBe(1);
-  });
-
-  // @spec COMBAT-ORDER-018
-  it('drops the proposal the moment the player reaches for the screen', () => {
-    const fight = ordered([order()]);
-
-    expect(cancelProposal(fight)).toBe(true);
-
-    expect(fight.pending.proposal).toBeNull();
-    // And nothing brings it back for this turn.
-    expect(takeProposal(fight)).toBe(false);
-  });
-
-  // @spec COMBAT-ORDER-007
-  // @spec COMBAT-ORDER-018
-  it('lets the player take another action instead, which drops the proposal', () => {
-    const fight = ordered([order()]);
-
-    defend(fight); // rather than the attack proposed
-
-    expect(fight.turnsTaken).toBe(1);
-    // Every enemy is untouched: the proposal was not taken on the way past.
-    for (const foe of fight.encounter.enemies.members) {
-      expect(foe.hitPoints).toBe(foe.maxHitPoints ?? foe.hitPoints);
-    }
-  });
-
-  // @spec PRESENT-READY-020
-  it('offers the proposal as the first control, named for what it would do', () => {
-    const fight = ordered([order()]);
-
-    const [first] = fight.pending.options;
-    expect(first.action).toBe(FightAction.CONFIRM);
-    // Attack Goblin, not Attack: the target is the half an order actually saves.
-    expect(first.label).toMatch(/^Attack /);
-    expect(first.label.length).toBeGreaterThan('Attack '.length);
-  });
-
-  // @spec PRESENT-READY-021
-  it('takes the proposal when that control is pressed, in one press', () => {
-    const fight = ordered([order()]);
-    const targetId = fight.pending.proposal.targetId;
-    const before = fight.encounter.enemies.members.find((e) => e.id === targetId).hitPoints;
-
-    chooseOption(fight, 0);
-
-    expect(fight.turnsTaken).toBe(1);
-    expect(fight.encounter.enemies.members.find((e) => e.id === targetId).hitPoints)
-      .toBeLessThan(before);
-  });
-
-  // @spec PRESENT-READY-020
-  it('offers no such control to a character whose orders propose nothing', () => {
-    const fight = controller();
-
-    expect(fight.pending.options.some((o) => o.action === FightAction.CONFIRM)).toBe(false);
-  });
-
-  // @spec COMBAT-ORDER-009
-  it('takes a once-this-encounter rule once, then reads past it', () => {
-    const fight = ordered([
-      createRule({ when: When.ONCE, action: { kind: Action.DEFEND }, aim: Aim.SELF }),
-      order(),
-    ]);
-    expect(fight.pending.proposal.ruleIndex).toBe(0);
-
-    takeProposal(fight);
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 5 && fight.phase === FightPhase.ACTING; i++) {
       untilAsked(fight);
-      if (fight.pending.characterId === 'bram') break;
+      if (!fight.pending) break;
+      expect(fight.pending.options.map((o) => o.action)).toEqual([
+        FightAction.ATTACK, FightAction.MAGIC, FightAction.INVENTORY, FightAction.FLEE,
+      ]);
       defend(fight);
     }
-
-    // The shield is spent; the same list now settles into the attack below it.
-    expect(fight.pending.proposal.ruleIndex).toBe(1);
   });
 
-  // @spec COMBAT-ORDER-013
-  it("takes an enemy's turn without asking anybody", () => {
+  // @spec PRESENT-FIGHT-006
+  it('names them for what they do', () => {
     const fight = controller();
-    // Walk the party's turns off and let whatever is ready on the other side move.
-    for (let i = 0; i < 20 && !(fight.actor && fight.actor.side === 'ENEMIES'); i++) {
-      if (fight.pending) defend(fight);
-      else advanceClock(fight, FILL_BEAT_MS);
+    untilAsked(fight);
+
+    expect(fight.pending.options.map((o) => o.label))
+      .toEqual(['Attack', 'Magic', 'Inventory', 'Flee']);
+  });
+
+  // @spec PRESENT-FIGHT-034
+  // @spec PRESENT-FIGHT-036
+  it('keeps an option it cannot offer in its own place, marked unavailable', () => {
+    const encounter = fightState();
+    character(encounter.party, 'isolde').attack = null;
+    const fight = untilReady(createFightController({ encounter, viewport, onDraw: vi.fn() }));
+
+    while (fight.pending && fight.pending.characterId !== 'isolde') {
+      defend(fight);
+      untilAsked(fight);
     }
 
-    expect(fight.pending).toBeNull();
-    expect(playEnemyTurn(fight)).toBe(true);
-    expect(fight.turnsTaken).toBeGreaterThan(0);
+    // Still four, still in order - Attack is simply dark.
+    expect(fight.pending.options).toHaveLength(OPTION_SLOTS.length);
+    expect(fight.pending.options[0].action).toBe(FightAction.ATTACK);
+    expect(slot(fight, FightAction.ATTACK).available).toBe(false);
   });
 
-  // @spec COMBAT-TIME-004
-  it("stops the fight's own time while somebody is being asked", () => {
+  // @spec PRESENT-FIGHT-036
+  it('greys Magic and Inventory, there being no spell and no pack yet', () => {
     const fight = controller();
-    const beats = fight.encounter.beats;
+    untilAsked(fight);
 
-    // Reading the screen, thinking about it, reading it again: the fight does not move.
-    buildFightPlan(fight.encounter, viewport, { phase: fight.phase, pending: fight.pending });
-    buildFightPlan(fight.encounter, viewport, { phase: fight.phase, pending: fight.pending });
+    expect(slot(fight, FightAction.MAGIC).available).toBe(false);
+    expect(slot(fight, FightAction.INVENTORY).available).toBe(false);
+  });
 
-    expect(fight.encounter.beats).toBe(beats);
+  // @spec PRESENT-FIGHT-036
+  it('offers Attack while anything is standing to swing at', () => {
+    const fight = controller();
+    untilAsked(fight);
+
+    expect(slot(fight, FightAction.ATTACK).available).toBe(true);
+  });
+
+  // @spec PRESENT-FIGHT-036
+  // @spec COMBAT-TURN-005
+  it('greys Flee when escape is forbidden', () => {
+    const encounter = fightState({
+      enemies: [createEnemy({
+        id: 'j1', name: 'Jailer', maxHitPoints: 9, potValue: 14,
+        attack: { baseDamage: 5, accuracy: 24 }, forbidsEscape: true,
+      })],
+    });
+    const fight = untilReady(createFightController({ encounter, viewport, onDraw: vi.fn() }));
+    untilAsked(fight);
+
+    expect(slot(fight, FightAction.FLEE).available).toBe(false);
+  });
+
+  // @spec PRESENT-FIGHT-036
+  // @spec COMBAT-TURN-005
+  it('greys Flee when the party cannot outrun what is chasing it', () => {
+    const encounter = fightState({
+      enemies: [createEnemy({
+        id: 'w1', name: 'Wolf', maxHitPoints: 9, potValue: 14,
+        attributes: { DEXTERITY: 20 }, attack: { baseDamage: 5, accuracy: 24 },
+      })],
+    });
+    const fight = untilReady(createFightController({ encounter, viewport, onDraw: vi.fn() }));
+    untilAsked(fight);
+
+    // A hopeless run is not offered and then charged for; it is not offered.
+    expect(slot(fight, FightAction.FLEE).available).toBe(false);
+  });
+
+  // @spec PRESENT-FIGHT-040
+  it('says on every greyed option why it cannot be taken', () => {
+    const fight = controller();
+    untilAsked(fight);
+
+    for (const option of fight.pending.options) {
+      if (option.available) continue;
+      expect(option.reason).toBeTruthy();
+      expect(option.reason.length).toBeGreaterThan(0);
+    }
+  });
+
+  // @spec PRESENT-FIGHT-040
+  it('gives a greyed option a reason naming its own cause', () => {
+    const encounter = fightState({
+      enemies: [createEnemy({
+        id: 'w1', name: 'Wolf', maxHitPoints: 9, potValue: 14,
+        attributes: { DEXTERITY: 20 }, attack: { baseDamage: 5, accuracy: 24 },
+      })],
+    });
+    const fight = untilReady(createFightController({ encounter, viewport, onDraw: vi.fn() }));
+    untilAsked(fight);
+
+    // Two different causes, two different sentences.
+    expect(slot(fight, FightAction.FLEE).reason).not.toBe(slot(fight, FightAction.MAGIC).reason);
+  });
+
+  // @spec PRESENT-FIGHT-041
+  it('gives a greyed option its reason in place of a key hint', () => {
+    const fight = controller();
+    untilAsked(fight);
+    const plan = buildFightPlan(fight.encounter, viewport, {
+      phase: fight.phase, pending: fight.pending, actor: fight.actor,
+    });
+
+    for (const control of plan.controls.filter((c) => c.role === 'OPTION')) {
+      if (control.available) {
+        expect(control.hint).toBeTruthy();
+        expect(control.reason).toBeNull();
+      } else {
+        // A key that does nothing is worth less than the sentence explaining why.
+        expect(control.hint).toBeNull();
+        expect(control.reason).toBeTruthy();
+      }
+    }
+  });
+
+  // @spec COMBAT-TURN-003
+  it('accepts no action the character cannot legally take', () => {
+    const encounter = fightState();
+    character(encounter.party, 'isolde').attack = null;
+    const fight = untilReady(createFightController({ encounter, viewport, onDraw: vi.fn() }));
+    while (fight.pending && fight.pending.characterId !== 'isolde') {
+      defend(fight);
+      untilAsked(fight);
+    }
+    const turns = fight.turnsTaken;
+
+    expect(chooseOption(fight, 0)).toBe(false);
+    expect(fight.turnsTaken).toBe(turns);
+  });
+
+  // @spec PRESENT-FIGHT-040
+  it('gives an available option no reason to explain', () => {
+    const fight = controller();
+    untilAsked(fight);
+
+    expect(slot(fight, FightAction.ATTACK).reason).toBeNull();
+  });
+
+  // @spec PRESENT-FIGHT-035
+  it('does nothing at all when a greyed option is pressed', () => {
+    const fight = controller();
+    untilAsked(fight);
+    const whose = fight.pending.characterId;
+    const turns = fight.turnsTaken;
+    const lines = fight.log.length;
+
+    const magic = fight.pending.options.indexOf(slot(fight, FightAction.MAGIC));
+    expect(chooseOption(fight, magic)).toBe(false);
+
+    // The same character is still being asked, and nothing was written down.
+    expect(fight.pending.characterId).toBe(whose);
+    expect(fight.turnsTaken).toBe(turns);
+    expect(fight.log).toHaveLength(lines);
+  });
+
+  // @spec PRESENT-FIGHT-037
+  it('binds each option to the same number whether or not it can be taken', () => {
+    const encounter = fightState();
+    character(encounter.party, 'isolde').attack = null;
+    const fight = untilReady(createFightController({ encounter, viewport, onDraw: vi.fn() }));
+    untilAsked(fight);
+
+    const armed = fight.pending.options.map((o) => o.action);
+    while (fight.pending && fight.pending.characterId !== 'isolde') {
+      defend(fight);
+      untilAsked(fight);
+    }
+
+    // Isolde cannot attack, but Attack is still 1 and Flee is still 4.
+    expect(fight.pending.options.map((o) => o.action)).toEqual(armed);
+  });
+});
+
+describe('a turn with nothing in it', () => {
+  /** A character who can do nothing at all: nothing to swing, and nowhere to run. */
+  function cornered() {
+    const encounter = fightState({
+      enemies: [createEnemy({
+        id: 'j1', name: 'Jailer', maxHitPoints: 9, potValue: 14,
+        attack: { baseDamage: 5, accuracy: 24 }, forbidsEscape: true,
+      })],
+    });
+    for (const c of roster(encounter.party)) c.attack = null;
+    const fight = untilReady(createFightController({ encounter, viewport, onDraw: vi.fn() }));
+    untilAsked(fight);
+    return fight;
+  }
+
+  // @spec PRESENT-FIGHT-042
+  it('offers Pass turn when every option is unavailable', () => {
+    const fight = cornered();
+
+    expect(fight.pending.options.every((o) => !o.available)).toBe(true);
+    expect(fight.pending.mustPass).toBe(true);
+  });
+
+  // @spec PRESENT-FIGHT-042
+  it('keeps the four drawn beneath the Pass turn control', () => {
+    const fight = cornered();
+    const plan = buildFightPlan(fight.encounter, viewport, {
+      phase: fight.phase, pending: fight.pending, actor: fight.actor,
+    });
+
+    const pass = plan.controls.find((c) => c.role === 'PASS');
+    const options = plan.controls.filter((c) => c.role === 'OPTION');
+
+    expect(pass).toBeTruthy();
+    expect(pass.label).toBe('Pass turn');
+    // The four are still there, explaining what was refused.
+    expect(options).toHaveLength(OPTION_SLOTS.length);
+    for (const option of options) expect(option.available).toBe(false);
+  });
+
+  // @spec PRESENT-FIGHT-044
+  it('draws no Pass turn control while anything can be done', () => {
+    const fight = controller();
+    untilAsked(fight);
+    const plan = buildFightPlan(fight.encounter, viewport, {
+      phase: fight.phase, pending: fight.pending, actor: fight.actor,
+    });
+
+    expect(fight.pending.mustPass).toBe(false);
+    expect(plan.controls.find((c) => c.role === 'PASS')).toBeUndefined();
+  });
+
+  // @spec PRESENT-FIGHT-043
+  // @spec COMBAT-ACTION-009
+  it('spends the turn when Pass turn is taken', () => {
+    const fight = cornered();
+    const whose = fight.pending.characterId;
+    const banked = readinessOf(fight.encounter, whose);
+
+    expect(passTurn(fight)).toBe(true);
+
+    expect(fight.turnsTaken).toBe(1);
+    expect(readinessOf(fight.encounter, whose)).toBeLessThan(banked);
+  });
+
+  // @spec COMBAT-TURN-001
+  // @spec COMBAT-TURN-002
+  it('waits for the press rather than passing on its own', () => {
+    const fight = cornered();
+    const whose = fight.pending.characterId;
+
+    // However long the clock runs, a turn nobody pressed for is not taken.
+    for (let i = 0; i < 40; i++) advanceClock(fight, FILL_BEAT_MS);
+
+    expect(fight.turnsTaken).toBe(0);
+    expect(fight.pending.characterId).toBe(whose);
+  });
+
+  // @spec COMBAT-TURN-004
+  it('offers passing and nothing else when nothing else is legal', () => {
+    const fight = cornered();
+    const plan = buildFightPlan(fight.encounter, viewport, {
+      phase: fight.phase, pending: fight.pending, actor: fight.actor,
+    });
+
+    const pressable = plan.controls.filter((c) => c.role === 'OPTION' && c.available);
+    expect(pressable).toHaveLength(0);
+    expect(plan.controls.find((c) => c.role === 'PASS')).toBeTruthy();
+  });
+
+  // @spec PRESENT-FIGHT-044
+  it('refuses a pass from a character who has something to do', () => {
+    const fight = controller();
+    untilAsked(fight);
+
+    expect(passTurn(fight)).toBe(false);
+    expect(fight.turnsTaken).toBe(0);
   });
 });
 
@@ -676,12 +893,6 @@ describe('the log', () => {
       { actorId: 'tam', band: Band.MISS, damage: 0, fizzled: false },
       { tam: 'Tam', g1: 'Goblin' }, 'g1', false,
     )).toBe('Tam misses Goblin.');
-  });
-
-  // @spec PRESENT-FIGHT-010
-  it('reports a fizzle as what it was, rather than inventing a result', () => {
-    expect(describeEvent({ actorId: 'tam', fizzled: true }, { tam: 'Tam' }, 'g1', false))
-      .toBe('Tam swings at nothing.');
   });
 
   // @spec PRESENT-FIGHT-010
@@ -874,24 +1085,33 @@ describe('the panel is sized to what is in it', () => {
   });
 });
 
-describe('a fight that plays itself out', () => {
-  const alwaysAttack = () => [createRule({
-    when: When.ALWAYS, action: { kind: Action.ATTACK }, aim: Aim.WEAKEST_ENEMY,
-  })];
-
-  function ordered(rules, id = 'bram') {
+describe('the pace the bars are drawn at', () => {
+  // @spec PRESENT-READY-032
+  it('gives every bar the same span of real time per beat', () => {
     const encounter = fightState();
-    character(encounter.party, id).orders = rules;
-    return untilReady(createFightController({ encounter, viewport, onDraw: vi.fn() }));
-  }
+    const fight = createFightController({ encounter, viewport, onDraw: vi.fn() });
+    const beats = fight.encounter.beats;
 
+    // One span of real time buys exactly one beat, for everybody at once.
+    advanceClock(fight, FILL_BEAT_MS);
+
+    expect(fight.encounter.beats).toBe(beats + 1);
+  });
+
+  // @spec PRESENT-READY-024
+  it('is slow enough that a bar takes several seconds to fill', () => {
+    // A Dexterity-10 combatant needs ten beats for a bar; the pace makes that readable
+    // rather than instant.
+    expect(FILL_BEAT_MS * 10).toBeGreaterThanOrEqual(3000);
+  });
+});
+
+describe('a fight that plays itself out', () => {
   const planOf = (fight) => buildFightPlan(fight.encounter, viewport, {
     phase: fight.phase,
     pending: fight.pending,
     log: fight.log,
     actor: fight.actor,
-    countdown: fight.countdown,
-    autoConfirm: fight.autoConfirm,
     notice: fight.notice,
     shakingId: fight.shakingId,
     shake: fight.shake,
@@ -922,54 +1142,14 @@ describe('a fight that plays itself out', () => {
   });
 
   // @spec PRESENT-READY-008
-  // @spec COMBAT-ORDER-006
+  // @spec COMBAT-TURN-001
   it('takes nothing the player has not pressed for, however long it is left', () => {
-    const fight = ordered(alwaysAttack());
+    const fight = controller();
 
-    advanceClock(fight, COUNTDOWN_MS * 10);
+    advanceClock(fight, BEAT_MS * 100);
 
-    expect(AUTO_CONFIRM).toBe(false);
     expect(fight.turnsTaken).toBe(0);
-    expect(fight.pending.proposal).not.toBeNull();
-  });
-
-  // @spec PRESENT-READY-008
-  it('draws no ring while nothing is going to take itself', () => {
-    const fight = ordered(alwaysAttack());
-
-    expect(planOf(fight).countdown).toBeNull();
-  });
-
-  // @spec PRESENT-READY-012
-  // @spec PRESENT-READY-007
-  // @spec PRESENT-READY-011
-  it('would take the proposal on its countdown, were that switched on', () => {
-    const fight = ordered(alwaysAttack());
-    // The machinery is kept alive rather than kept in a branch nobody runs.
-    fight.autoConfirm = true;
-
-    advanceClock(fight, COUNTDOWN_MS - 1);
-    expect(fight.turnsTaken).toBe(0);
-
-    const ring = planOf(fight).countdown;
-    expect(ring.progress).toBeCloseTo(1, 1);
-    expect(ring.label).toBe('A');
-    const card = planOf(fight).party.find((c) => c.id === 'bram');
-    expect(ring.x).toBeGreaterThan(card.x);
-    expect(ring.x).toBeLessThan(card.x + card.width);
-
-    advanceClock(fight, 2);
-    expect(fight.turnsTaken).toBe(1);
-  });
-
-  // @spec PRESENT-READY-009
-  it('drops the proposal once the player has taken the turn back', () => {
-    const fight = ordered(alwaysAttack());
-
-    cancelProposal(fight);
-
-    expect(fight.pending.proposal).toBeNull();
-    expect(planOf(fight).countdown).toBeNull();
+    expect(fight.pending).not.toBeNull();
   });
 
   // @spec PRESENT-READY-010
@@ -978,7 +1158,6 @@ describe('a fight that plays itself out', () => {
     const fight = controller();
 
     expect(fightIsPlaying(fight)).toBe(false);
-    expect(planOf(fight).countdown).toBeNull();
     expect(advanceClock(fight, 10000)).toBe(false);
   });
 
@@ -1001,7 +1180,16 @@ describe('a fight that plays itself out', () => {
   // @spec PRESENT-READY-015
   // @spec PRESENT-READY-026
   it('keeps the ambush card up while the ambushers act, and plays the fight beneath it', () => {
-    const fight = opening({ partyAware: false });
+    // Tough enough to survive being hit back, so the card's lifetime is what is under
+    // test rather than how fast the party kills.
+    const sturdy = (id) => createEnemy({
+      id, name: 'Goblin', maxHitPoints: 400, potValue: 14,
+      attack: { baseDamage: 1, accuracy: 24 },
+    });
+    const fight = opening({
+      partyAware: false,
+      enemies: [sturdy('g1'), sturdy('g2'), sturdy('a1')],
+    });
 
     expect(planOf(fight).notice).toMatchObject({ text: 'Ambush!' });
 
@@ -1183,8 +1371,12 @@ describe('a fight that plays itself out', () => {
   // @spec PRESENT-READY-018
   // @spec PRESENT-READY-019
   it('shakes the card of whoever just swung, decaying to nothing over the beat', () => {
-    const fight = ordered(alwaysAttack());
-    takeProposal(fight);
+    const fight = controller();
+    while (fight.pending && fight.pending.characterId !== 'bram') {
+      defend(fight);
+      untilAsked(fight);
+    }
+    defend(fight);
 
     const struck = planOf(fight).party.find((c) => c.id === 'bram');
     expect(Math.abs(struck.offsetY)).toBeGreaterThan(0);
@@ -1222,10 +1414,10 @@ describe('a fight that plays itself out', () => {
 
   // @spec PRESENT-READY-006
   it("leaves the fight's own time alone, however many seconds pass", () => {
-    const fight = ordered(alwaysAttack());
+    const fight = controller();
     const beats = fight.encounter.beats;
 
-    advanceClock(fight, COUNTDOWN_MS - 1);
+    advanceClock(fight, BEAT_MS * 20);
 
     // Seconds are the player's; beats are the fight's, and only an action spends them.
     expect(fight.encounter.beats).toBe(beats);

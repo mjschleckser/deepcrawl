@@ -6,7 +6,7 @@ import {
 } from './party.js';
 import {
   beginEncounter, takeAction, nextActor, advanceBeats, attackBand, damageFor,
-  actingOrder, readinessOf, attackTargets, allyTargets, attemptFlee,
+  actingOrder, readinessOf, attackTargets, allyTargets, attemptFlee, fleeCertainToFail,
   createEnemy, createEnemyGroup, encounterOutcome, OPENING_HEAD_START,
   Band, Action, Outcome, MAX_ENEMY_GROUP, MIN_DAMAGE_FRACTION, FULL_BAR,
 } from './combat.js';
@@ -303,6 +303,54 @@ describe('fleeing', () => {
     expect(attemptFlee(state).escaped).toBe(false);
   });
 
+  // @spec COMBAT-TURN-005
+  it('reports a hopeless escape without taking the attempt', () => {
+    const state = encounter({
+      members: [hero('a', { attributes: { DEXTERITY: 8 } })],
+      enemies: [orc('o1', { attributes: { DEXTERITY: 20 } })],
+    });
+    readyUp(state, 'a');
+    const banked = readinessOf(state, 'a');
+
+    expect(fleeCertainToFail(state)).toBe(true);
+    // Asking is free: it costs no readiness and takes no attempt.
+    expect(readinessOf(state, 'a')).toBe(banked);
+  });
+
+  // @spec COMBAT-TURN-005
+  // @spec COMBAT-FLEE-005
+  it('reports an escape forbidden as hopeless, however slow the thing forbidding it', () => {
+    const state = encounter({
+      members: [hero('a', { attributes: { DEXTERITY: 18 } })],
+      enemies: [orc('o1', { attributes: { DEXTERITY: 1 }, forbidsEscape: true })],
+    });
+
+    expect(fleeCertainToFail(state)).toBe(true);
+  });
+
+  // @spec COMBAT-TURN-005
+  it('reports a winnable escape as worth attempting', () => {
+    const state = encounter({
+      members: [hero('a', { attributes: { DEXTERITY: 12 } })],
+      enemies: [orc('o1', { attributes: { DEXTERITY: 12 } })],
+    });
+
+    expect(fleeCertainToFail(state)).toBe(false);
+  });
+
+  // @spec COMBAT-TURN-005
+  it('agrees with what an attempt actually does, in every case', () => {
+    for (const [partyDex, enemyDex, forbids] of [[8, 20, false], [12, 12, false], [18, 1, true], [10, 11, false]]) {
+      const state = encounter({
+        members: [hero('a', { attributes: { DEXTERITY: partyDex } })],
+        enemies: [orc('o1', { attributes: { DEXTERITY: enemyDex }, forbidsEscape: forbids })],
+      });
+      const predicted = fleeCertainToFail(state);
+
+      expect(attemptFlee(state).escaped).toBe(!predicted);
+    }
+  });
+
   // @spec COMBAT-FLEE-003
   it('costs only the round when it fails, and may be tried again', () => {
     const state = encounter({
@@ -423,11 +471,40 @@ describe('ending', () => {
 
     for (let i = 0; i < 5; i++) {
       readyUp(state, 'a');
-      takeAction(state, 'a', { kind: Action.DEFEND });
+      takeAction(state, 'a', { kind: Action.PASS });
       advanceBeats(state, 10);
     }
 
     expect(character(state.party, 'a').hitPoints).toBe(wounded);
+  });
+});
+
+describe('passing a turn', () => {
+  // @spec COMBAT-ACTION-009
+  it('spends a full bar and resolves nothing', () => {
+    const state = encounter({ members: [hero('a')], enemies: [orc('o1')] });
+    readyUp(state, 'a');
+    const foe = state.enemies.members.find((e) => e.id === 'o1').hitPoints;
+
+    const event = takeAction(state, 'a', { kind: Action.PASS });
+
+    expect(readinessOf(state, 'a')).toBeLessThan(FULL_BAR);
+    expect(event.action).toBe(Action.PASS);
+    // Nothing was struck, healed or otherwise touched.
+    expect(state.enemies.members.find((e) => e.id === 'o1').hitPoints).toBe(foe);
+    expect(character(state.party, 'a').hitPoints).toBe(character(state.party, 'a').maxHitPoints);
+  });
+
+  // @spec COMBAT-ACTION-009
+  it('costs exactly what acting costs', () => {
+    const acting = encounter({ members: [hero('a')], enemies: [orc('o1')] });
+    const passing = encounter({ members: [hero('a')], enemies: [orc('o1')] });
+    readyUp(acting, 'a'); readyUp(passing, 'a');
+
+    takeAction(acting, 'a', { kind: Action.ATTACK, targetId: 'o1' });
+    takeAction(passing, 'a', { kind: Action.PASS });
+
+    expect(readinessOf(passing, 'a')).toBe(readinessOf(acting, 'a'));
   });
 });
 

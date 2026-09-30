@@ -14,7 +14,6 @@ import {
   Attribute, CharacterClass, Condition, Skill, createCharacter,
 } from '../sim/party.js';
 import { Action, EnemyRole, createEnemy } from '../sim/combat.js';
-import { When, Aim, createRule } from '../sim/orders.js';
 
 const PLAYER_FILES = import.meta.glob('../game-data/players/*.json', { eager: true, import: 'default' });
 const ENEMY_FILES = import.meta.glob('../game-data/enemies/*.json', { eager: true, import: 'default' });
@@ -79,17 +78,6 @@ function commonFields(file, data) {
   };
 }
 
-/** A standing order, named in strings and checked into the vocabulary. */
-function ruleFrom(file, rule) {
-  return createRule({
-    when: oneOf(file, 'condition', rule.when, When),
-    aim: oneOf(file, 'aim', rule.aim, Aim),
-    action: { ...rule.action, kind: oneOf(file, 'action', rule.action?.kind, Action) },
-    share: rule.share ?? 0.5,
-    allyId: rule.allyId ?? null,
-  });
-}
-
 /**
  * An authored character, built through the same creation as any other.
  *
@@ -100,7 +88,6 @@ export function buildPlayer(file, data) {
   return createCharacter({
     ...common,
     characterClass: oneOf(file, 'class', data.characterClass, CharacterClass),
-    orders: (data.orders ?? []).map((rule) => ruleFrom(file, rule)),
   });
 }
 

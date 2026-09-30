@@ -285,8 +285,8 @@ luck. The rest are what stop a bad run becoming an unrecoverable spiral.
 
 The combatants a campaign starts with are **one JSON file each**, under
 `src/game-data/players`, beside the enemies in `src/game-data/enemies`. A file holds
-what a character is — name, class, attributes, ranks, hit points, attack, standing
-orders — and nothing about where they came from.
+what a character is — name, class, attributes, ranks, hit points, attack — and nothing
+about where they came from.
 
 This segment defines the shape; the files are content and belong to nobody's code. A
 party member and a goblin are authored the same way and read by the same loader, which
@@ -306,15 +306,6 @@ The whole roster is saved: every character's attributes, skills and ranks, condi
 equipment slots, class, and accumulated skill experience. A lost character is
 kept in the save as a record rather than deleted, because a campaign should be able to
 show what it cost.
-
-## Standing Orders
-
-A character carries the order list combat reads when their turn comes. It is a field on
-the character for the same reason their skills are: it belongs to the person, survives
-every encounter, and goes with them whatever party they are in.
-
-What a rule may say, and how the list is read, is combat's. This segment holds it and
-hands it over.
 
 ## Decisions & Alternatives
 

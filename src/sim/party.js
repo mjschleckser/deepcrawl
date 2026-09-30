@@ -122,7 +122,7 @@ export const DEFAULT_ATTRIBUTES = {
  */
 export function createCharacter({
   id, name, characterClass, attributes = {}, ranks: authored = {},
-  maxHitPoints = 20, attack = null, armour = 0, portrait = null, orders = [],
+  maxHitPoints = 20, attack = null, armour = 0, portrait = null,
 }) {
   const table = CLASS_TABLE[characterClass];
   const ranks = {};
@@ -154,11 +154,6 @@ export function createCharacter({
     ranks,
     skillExperience: {},
     equipment: {},
-    // What this character usually does in a fight, read from the top when their turn
-    // comes. Combat proposes from it; the list itself is the character's and survives
-    // from one encounter to the next.
-    // @spec COMBAT-ORDER-002
-    orders: [...orders],
     trainable: Object.keys(table.rates),
   };
 }

@@ -1,9 +1,10 @@
 /**
- * Combat: party against party, in rows, outside the clock.
+ * Combat: party against party, with nowhere to stand, outside the clock.
  *
- * Reach is the hard rule everything else follows from — melee cannot touch a back row
- * while a conscious front rank stands. Attacks resolve into four bands rather than
- * two, so an unfavourable matchup costs damage rather than a turn.
+ * Every standing combatant is in reach of every other, so what bounds a turn is what
+ * the combatant carries rather than where they are. Readiness orders the fight and an
+ * action spends a full bar of it; the fight's time never moves while anybody is being
+ * asked what to do.
  */
 
 import {
@@ -14,7 +15,7 @@ export const Band = { MISS: 'MISS', GRAZE: 'GRAZE', HIT: 'HIT', CRIT: 'CRIT' };
 
 export const Action = {
   ATTACK: 'ATTACK', CAST: 'CAST', ABILITY: 'ABILITY',
-  SWAP: 'SWAP', RELIGHT: 'RELIGHT', DEFEND: 'DEFEND',
+  SWAP: 'SWAP', RELIGHT: 'RELIGHT', PASS: 'PASS',
 };
 
 export const Outcome = {
@@ -410,8 +411,12 @@ export function takeAction(state, actorId, action) {
     return { actorId, action: action.kind };
   }
 
+  // A turn is chosen and struck in the same instant, so nothing a player or an enemy
+  // aims at can fall before the blow lands. This guard is for a caller holding an id
+  // from earlier: the target is resolved now, and a swing at somebody already gone
+  // spends the bar and touches nobody else.
+  // @spec COMBAT-TIME-010
   const target = findTarget(state, action.targetId);
-  // Nothing to swing at is nothing taken: the bar is spent, and the turn is over.
   if (!target) return { actorId, action: action.kind, targetId: null };
 
   // What a blow is worth belongs to whoever swung it, on either side alike, and what
@@ -458,24 +463,37 @@ export function takeAction(state, actorId, action) {
  * @spec COMBAT-FLEE-005
  * @spec COMBAT-FLEE-006
  */
+/**
+ * Whether an escape is already lost, by the same rules that resolve one.
+ *
+ * Asked before a turn is spent, so the option can be greyed rather than offered and
+ * charged for. It reads the fight and changes nothing.
+ *
+ * @spec COMBAT-TURN-005
+ */
+export function fleeCertainToFail(state) {
+  const foes = state.enemies.members.filter(enemyStanding);
+  if (foes.length === 0) return false;
+  if (foes.some((e) => e.forbidsEscape)) return true;
+
+  const standing = roster(state.party).filter((c) => c.condition === Condition.OK);
+  if (standing.length === 0) return false;
+
+  // A party flees no faster than whoever is hindmost.
+  const hindmost = Math.min(...standing.map((c) => c.attributes[Attribute.DEXTERITY]));
+  const fastest = Math.max(...foes.map((e) => e.attributes[Attribute.DEXTERITY]));
+  return fastest > hindmost * FLEE_SPEED_RATIO;
+}
+
 export function attemptFlee(state, actorId = null) {
   // A failed attempt costs the bar of whoever called the retreat and nothing else. A
   // party that keeps trying is a party spending its actions on the door rather than on
   // the fight, which is cost enough without a rule to enforce it.
   if (actorId) state.readiness.set(actorId, readinessOf(state, actorId) - FULL_BAR);
 
-  if (state.enemies.members.filter(enemyStanding).some((e) => e.forbidsEscape)) {
-    return { escaped: false };
-  }
-
-  const standing = roster(state.party).filter((c) => c.condition === Condition.OK);
-  // A party flees no faster than whoever is hindmost.
-  const hindmost = Math.min(...standing.map((c) => c.attributes[Attribute.DEXTERITY]));
-  const fastest = Math.max(
-    ...state.enemies.members.filter(enemyStanding).map((e) => e.attributes[Attribute.DEXTERITY]),
-  );
-
-  if (fastest > hindmost * FLEE_SPEED_RATIO) return { escaped: false };
+  // One rule, asked here and asked again by whatever drew the button, so the two can
+  // never disagree about whether the way out is shut.
+  if (fleeCertainToFail(state)) return { escaped: false };
 
   state.escaped = true;
   return { escaped: true, returnTo: state.origin };

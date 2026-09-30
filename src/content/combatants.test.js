@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Attribute, CharacterClass, Condition, Skill, totalLevel, roster, createParty, addCharacter } from '../sim/party.js';
 import { EnemyRole } from '../sim/combat.js';
-import { When, Aim } from '../sim/orders.js';
 import {
   buildPlayer, buildEnemy, startingCharacters, enemyDefinitions,
 } from './combatants.js';
@@ -21,7 +20,6 @@ const playerFile = {
   attributes: { DEXTERITY: 13 },
   maxHitPoints: 20,
   attack: { skill: 'BLADE', baseDamage: 9, accuracy: 30 },
-  orders: [{ when: 'ALWAYS', action: { kind: 'ATTACK' }, aim: 'WEAKEST_ENEMY' }],
 };
 
 describe('reading an authored combatant', () => {
@@ -34,7 +32,6 @@ describe('reading an authored combatant', () => {
     });
     expect(bram.attributes[Attribute.DEXTERITY]).toBe(13);
     expect(bram.attack).toMatchObject({ baseDamage: 9, accuracy: 30 });
-    expect(bram.orders[0]).toMatchObject({ when: When.ALWAYS, aim: Aim.WEAKEST_ENEMY });
   });
 
   // @spec PARTY-DATA-003
@@ -76,9 +73,6 @@ describe('reading an authored combatant', () => {
       .toThrow(/ranks\.json: skill "BLDAE"/);
     expect(() => buildEnemy('role.json', { ...goblinFile, role: 'SNEAKY' }))
       .toThrow(/role\.json: role "SNEAKY"/);
-    expect(() => buildPlayer('order.json', {
-      ...playerFile, orders: [{ when: 'SOMETIMES', action: { kind: 'ATTACK' }, aim: 'WEAKEST_ENEMY' }],
-    })).toThrow(/order\.json: condition "SOMETIMES"/);
   });
 });
 

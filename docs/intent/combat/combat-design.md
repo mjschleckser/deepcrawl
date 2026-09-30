@@ -231,7 +231,6 @@ made.
 | Cast | a full bar, and a spell slot of that rank | |
 | Use ability | a full bar | unlocked by a skill rank |
 | Relight | a full bar | a doused light source, per exploration |
-| Defend | a full bar | raises defence until that character next acts |
 | Flee | a full bar, of the character who attempts it | resolved for the whole party; see below |
 
 A combatant acts when their bar is full and not otherwise, so how often anyone acts is
@@ -250,118 +249,38 @@ caster faces on the fourth floor is not which spell is optimal but whether this 
 fight worth spending the last heal on. Slots deliberately do not recover between
 fights, or per round, because either would make descending deeper cost nothing.
 
-## Standing Orders
+## Taking a Turn
 
-A fight in which every character must be told what to do every time they come ready is
-a fight the player transcribes rather than plays. **Standing orders are how a party says
-once what it usually does**, so the repetitive nine tenths of an encounter can be
-confirmed instead of composed.
+A combatant whose bar is full acts once, alone, and spends it. What happens at that
+moment depends only on which side they are on.
 
-**A proposal is never taken without a press.** It fills the choice in and offers itself
-as one control — *Attack Goblin* rather than *Attack*, and then *which goblin* — so a
-turn a character's orders already answer is one press instead of three, and never zero.
-An order removes the composing and leaves the deciding exactly where it was.
+**A character's turn is taken by a press, and by nothing else.** The fight stops dead
+when a character comes ready and waits there — indefinitely, without penalty, and
+without anything happening on its own. That pause is the point at which the player
+looks at the screen and decides, and a fight that moved past it unattended would be a
+fight they watched rather than fought. Nothing in this segment may take a character's
+turn for them.
 
-The fight therefore waits, indefinitely and without penalty, at every character. That
-is the point at which a player looks at the screen, and a fight that moved past it on
-its own would be a fight they watched rather than fought.
+**An enemy's turn is taken without awaiting anybody.** A monster is not a decision the
+player makes, so its turn resolves as soon as it comes round. Which character it swings
+at is the enemies segment's business; combat supplies the legality and the resolution
+and asks nothing about how the choice was made.
 
-A character with no matching rule is asked with nothing filled in, which is the same
-wait with more to think about.
+**Choosing and striking are one instant.** A target is picked and the blow resolved
+without the fight's time passing in between, so nothing is ever aimed at a combatant who
+has already fallen and no turn is ever spent on nothing. This is what removes the whole
+class of actions that fizzle: there is no gap for the fight to change in.
 
-### What an order is
+**Passing is an action like any other.** A character with nothing legal to do passes,
+which spends the full bar and resolves nothing. It is still taken by a press, so the
+rule above holds without an exception: the player is asked, and what they are offered
+is the one thing left.
 
-An order list belongs to a character, is authored outside a fight, and survives from one
-encounter to the next. It is an **ordered list of rules**:
-
-```
-when <condition>   do <action>   on <target>
-```
-
-When that character comes ready, the rules are read from the top, and the first one
-whose condition holds — and whose action they can actually take — becomes the
-**proposal**: the action pre-chosen, the target pre-aimed. The player may take it at
-once, wait and let it take itself, or ignore it and choose something else entirely.
-Where no rule matches, nothing is proposed and the player is asked exactly as they would
-have been.
-
-### Three parties' worth of orders
-
-A fighter who always swings at whatever is closest to falling:
-
-```
-1. always                      attack        the enemy with the fewest hit points
-```
-
-A mage who opens with a shield and then commits to the offensive:
-
-```
-1. once this encounter         cast shield   a named ally
-2. while a slot remains        cast missile  the enemy with the fewest hit points
-```
-
-A cleric who heals when healing is wanted and fights when it is not:
-
-```
-1. while an ally is below half  cast heal    the ally with the fewest hit points
-2. always                       attack       the enemy with the fewest hit points
-```
-
-Read from the top and first match wins, so the cleric's second rule is what happens
-whenever the first does not — which is the whole of "or attack if everyone is healthy",
-written without a word for "otherwise".
-
-### What a rule may ask about
-
-**A character is one of their own allies.** Every condition and every target that says
-*ally* counts the character whose order it is among them, so a cleric on three hit
-points is the ally with the fewest and heals themselves. The alternative — allies
-meaning everyone else — gives a lone survivor an order list that proposes nothing at
-exactly the moment they need one.
-
-| Condition | Holds when |
-|---|---|
-| always | always |
-| an ally is below a share of their health | any conscious ally's hit points fall below that share |
-| no ally is below a share | no conscious ally's hit points fall below it |
-| once this encounter | this rule has not yet been taken in this encounter |
-| a slot remains | the actor holds an unspent slot of the rank the action needs |
-
-**"Once this encounter" is what says *open with the buff, then settle in*** while status
-effects remain unbuilt. When they exist, *while the fighter lacks that blessing* will say
-it better and will be a rule of exactly the same shape.
-
-### What a rule may aim at
-
-| Target | Resolves to |
-|---|---|
-| the enemy with the fewest hit points | the standing enemy with the fewest hit points remaining |
-| the ally with the fewest hit points | the conscious ally with the fewest hit points remaining |
-| a named ally | that character, while they are a legal target |
-| the actor | the character whose order it is |
-
-**A target is resolved when the action is taken, never before.** The enemy with the
-fewest hit points is whoever that is at the moment of the swing, so there is nothing to
-aim at a corpse and nothing to fizzle.
-
-**Equal candidates are settled, not rolled.** Two enemies on the same hit points are
-separated by the same fixed order combatants act in, so the same fight from the same
-seed picks the same one every time.
-
-### Where an order stops short
-
-**An illegal proposal falls through.** A rule whose action cannot be taken — a spell
-with no slot left, a heal with nobody hurt, an attack with nothing standing — is skipped
-and the next rule is read. An order never proposes something the player would only be
-refused.
-
-**Darkness overrides the aim, not the act.** Deliberate targeting is impossible in the
-dark, so an order's target selector gives way to the random legal target the darkness
-rules impose. What a character does in the dark is still theirs; who it lands on is not.
-
-**Enemies have no orders.** What an enemy does is its roster's business, and giving the
-player's vocabulary to a monster would be a way of authoring behaviour in the wrong
-segment.
+Passing costs exactly what acting costs, so being left with no option is a turn lost
+rather than a turn skipped — there is nothing to gain by arranging it. Every combatant
+carries an attack today, so a character with no legal action is unreachable; it becomes
+reachable the moment anything can disarm one, and a turn that could never resolve would
+stop a fight that has no other way to advance.
 
 ## Enemies
 
@@ -456,18 +375,15 @@ whether or not it can see.
 | The cost of an action | One full bar for every action, carried on the action rather than assumed | A constant in the resolver; per-action weights from the start | Putting the cost on the action means weapon weight can arrive later as content rather than as a restructuring. Making them all equal now means there is nothing to balance before there are weapons to balance it against. |
 | Where the bars start | Each combatant on an independent random share of a bar | Every bar empty; every bar set by Dexterity | Empty bars make the opening of every fight the same fight, decided before anybody has done anything: the quickest combatant always moves first and the roster order settles every tie. A random opening makes the first few turns of an encounter genuinely uncertain while leaving everything after them to the arithmetic, so the same warband met twice is not the same fight twice. |
 | Surprise | A large fixed addition to the aware side's opening share, capped at a full bar | The aware side starting full and the surprised side empty; a free round for the aware side | Filling the aware side's bars outright would discard the random opening in exactly the fights where tension is highest, and it hands a sluggish ambusher the same head start as a quick one. An addition keeps surprise decisive without making it a guaranteed opening blow, and it composes with speed rather than overriding it. |
-| Standing orders | Propose an action and a target, and wait for a press | Taking the proposal when a countdown runs out; orders that act instantly and unattended; no orders at all | An order's work is the composing — which action, against which of six goblins — and that is what a proposal removes. Taking the turn on a timer removes the press as well, and with it the moment the player looks at the screen: a fight that advances on its own is one they watch. One press a turn is the price of it still being their fight. |
-| The countdown mechanism | Built, and switched off | Removed entirely; left running | Whether a fight should play itself is a question worth being able to answer twice. The machinery is a constant and a branch, it stays under test, and turning it on is a one-line change rather than a rebuild. |
-| Reading an order | First matching rule, top to bottom | Weights and scores; a scripting language | A list read from the top is something a player can predict by looking at it and fix by dragging a line. A scoring system produces behaviour nobody can account for, which in a system meant to reduce fuss is a new kind of fuss. |
-| What "an ally" means | The character whose order it is counts among their own allies | Allies meaning every other member of the party; the actor counted only when nobody else qualifies | A cleric forbidden to heal themselves has an order list that proposes nothing the moment they are the one bleeding, and a lone survivor's orders stop working exactly when they are all that is left. The cost — a cleric lower than the fighter treating themselves first — is precisely what "the ally with the fewest hit points" says it will do. |
 | A failed escape | Costs the bar of whoever attempted it, and nothing else | Every conscious character's bar, as a round once cost; no further attempt until all have acted | A party that cannot escape is already in enough trouble, and charging the whole party for one character's failed attempt punishes the situation rather than the decision. A party that keeps trying is a party spending every action on the door instead of on the fight, which is cost enough without a rule to enforce it. |
-| Defending | Lasts until that character next acts | A fixed span of the fight's time; whichever of the two lasts longer | Every action costs one bar and buys one turn's worth of effect, and Defend is not an exception to a rule the whole economy rests on. A quick character's guard covers less of the fight's time and they come round again sooner, which is the trade Dexterity makes everywhere else in the game. |
-| Orders for enemies | None; the roster decides what a monster does | The same order vocabulary on both sides | Enemy behaviour is authored content belonging to the enemies segment. Sharing the player's vocabulary would put monster design in the combat segment and invite the player to read their opponent's script. |
 | Reach | None: every standing combatant may act on every other | Front and back rows, where melee reaches the front only; a reach penalty rather than a restriction | Rows decide a character's options before the fight starts, so most turns have one legal answer and a back-rank character with a sword has none at all — a player watching their own turn be skipped. With no reach rule at all, every turn is a choice of whom to spend it on, and the interesting version of protecting a caster becomes something equipment and abilities do rather than something a seating plan does. |
 | What bounds an action | What the combatant holds and knows | Where the combatant stands | A limit the player chose — this weapon, these slots, that ability — is one they can plan around and change. A limit imposed by a position assigned outside the fight is one they can only discover. |
 | Magic cost | Slots per rank, restored only by camping | A regenerating mana pool; per-round cooldowns | Slots make magic attrition, so the question is whether this is the fight worth the last heal. A pool or a cooldown would make descending deeper cost nothing, which is the whole pressure of a dungeon crawl. |
 | Enemy group size | Uncapped by the party's five, ceiling of twenty | Mirroring the party's five; genuinely unbounded | Being outnumbered is a real threat and a party of five should meet eight. A ceiling keeps a swarm a shape the game can express and the screen can hold, rather than an arbitrary number. |
 | Fleeing | One attempt for the whole party, costing the bar of whoever made it | Per-character escape | A party does not leave one member behind, and per-character escape would turn a losing fight into a triage puzzle about who is abandoned. |
+| A combatant with no legal action | Passes, by a press, spending the full bar | Passing automatically, without a press; leaving the turn pending; skipping them without cost | A turn that never resolves stops a fight that has no other way to advance, since the fight's time does not move while anybody stands ready. Passing automatically would be the one turn in the game taken unattended, which is the rule the whole segment is built on. Making the pass a press keeps that rule exact and costs only a control that is almost never drawn. Passing free would make being stripped of options better than acting badly; spending the bar keeps the economy's one rule — a turn costs a bar — with no exception to explain. |
+| Defend as an action | None: there is no Defend | Defend raising defence until that character next acts; a Defend that also drew attacks toward the defender | With no rows and no reach, a defender shields nobody but themselves, so Defend buys one combatant a turn of safety at the cost of a turn of damage while the rest of the fight carries on unchanged. That is a turn spent to make the fight longer, which the *nothing accrues for staying longer* principle already argues against. The interesting version — a guard that covers somebody else — needs a reason one combatant can stand in front of another, which is exactly what this segment does not have. |
+| Standing orders | None: every turn is composed by hand | An ordered rule list proposing an action and a target for the player to confirm; the same list taking its turn on a countdown; weights and scores | Orders were built to spare the player the repetitive nine tenths of an encounter, but the vocabulary they need to be worth having — conditions about status effects, enemy kinds and remaining resources — all wait on systems that do not exist. A rule list that can only say *attack the weakest* saves one press and costs a whole authoring screen, a persisted per-character field, and a second path into every action. Composing each turn by hand is correct while a turn is this small a decision, and orders can return once there is enough in a fight for a rule to be about. |
 | Darkness | Heavy accuracy penalty and no deliberate targeting | Forbidding combat in the dark; no effect | Fighting blind should be possible and awful. Forbidding it would make a failed torch a softlock; ignoring it would make light pointless in the place it matters most. |
 
 ## Open Questions & Future Decisions
@@ -487,31 +403,27 @@ whether or not it can see.
 11. ✅ **Every bar opens on a random share of full**, and surprise adds a large head start to the aware side's.
 12. ✅ **A combatant who falls loses the readiness they had banked.**
 13. ✅ **Nothing recharges as the fight's time passes**, so no stretch of a fight is worth taking for its own sake.
-14. ✅ **Defending lasts until that character next acts**, like every other action's one turn of effect.
-15. ✅ **Every action is taken by a press**, proposed or not; the fight waits at every character without penalty.
-16. ✅ **Standing orders propose an action and a target**, which is taken only when the player presses for it.
-17. ✅ **Orders are an ordered list, read top to bottom, first match winning**, with an illegal proposal falling through to the next rule.
-18. ✅ **A target is resolved at the moment the action is taken**, so no action is ever aimed at something already gone.
-19. ✅ **An order's target gives way to the random target darkness imposes.**
-20. ✅ **A character counts among their own allies** for every condition and target that names one.
-21. ✅ **Equal candidates for a target are settled by the acting order**, never by a roll.
-22. ✅ **Darkness penalises accuracy and removes deliberate targeting**, and never helps the enemy.
-23. ✅ **Enemy groups are not capped at five** and hold at most twenty, so a swarm is a shape rather than an unbounded number.
-24. ✅ **Fleeing is one attempt for the whole party**, costing only the bar of the character who attempted it, allowed in the dark, and impossible against something far faster or something that forbids escape.
-25. ✅ **A defeated party stays where it fell**, to be abandoned or recovered by a fresh party.
+14. ✅ **Every character's turn is taken by a press**, and the fight waits at that character without limit or penalty.
+15. ✅ **An enemy's turn is taken without awaiting the player.**
+16. ✅ **A character with no legal action passes by a press**, spending the full bar, so that no turn is ever taken unattended and none can hang.
+17. ✅ **There is no Defend**, a defender having nobody to stand in front of.
+18. ✅ **There are no standing orders**: every turn is composed by hand.
+19. ✅ **Choosing a target and striking it are one instant**, so no action is ever aimed at something already gone.
+20. ✅ **Darkness penalises accuracy and removes deliberate targeting**, and never helps the enemy.
+21. ✅ **Enemy groups are not capped at five** and hold at most twenty, so a swarm is a shape rather than an unbounded number.
+22. ✅ **Fleeing is one attempt for the whole party**, costing only the bar of the character who attempted it, allowed in the dark, and impossible against something far faster or something that forbids escape.
+23. ✅ **A defeated party stays where it fell**, to be abandoned or recovered by a fresh party.
 
 ### Deferred
 
 1. **Per-action costs.** Every action costs one full bar. The cost lives on the action so that a heavy weapon can cost more later, but no action differs from another yet and no weapon exists to make one.
-2. **Conditions and targets beyond the listed set.** The vocabulary is deliberately small. Conditions about status effects, about enemy kinds, and about the party's remaining resources all want to exist and none of them can until the systems they read do.
-3. **Where orders are authored.** That a character carries an order list and that it persists between encounters is settled; the screen on which a player writes one belongs to the party segment and is unbuilt.
-4. **Taking a proposal on a timer.** The countdown that would take a proposal unattended is built and switched off. Whether a fight should be able to play itself — for a player who has set their orders and wants to watch — is a real question, and the answer is one constant away.
-5. **Ability definitions.** Skill ranks unlock abilities, but what each one does is unauthored content.
-6. **Enemy rosters and their pot values.** What any enemy is, and what it is worth, belongs with the enemies segment.
-7. **Enemy behaviour beyond choosing a legal target.** Focus fire, retreat, protecting casters — all later.
-8. **Status effects.** Poison, fear, paralysis and the rest have no model here.
-9. **Recovering a fallen party.** That a wiped party stays where it fell and can be recovered by a fresh one is settled; a stranded roster, bodies on a floor, and hiring at a tavern all need segments that do not exist.
-10. **The numbers.** Band thresholds, graze and crit multipliers, and how accuracy and defence are assembled from skill, attribute and equipment are all content data with no content yet.
+2. **Automating a repetitive turn.** Every turn is composed by hand. Some way for a party to say once what it usually does is worth having again, but it wants a vocabulary that can talk about status effects, enemy kinds and remaining resources — none of which exist — and it must not become a fight that plays itself.
+3. **Ability definitions.** Skill ranks unlock abilities, but what each one does is unauthored content.
+4. **Enemy rosters and their pot values.** What any enemy is, and what it is worth, belongs with the enemies segment.
+5. **Enemy behaviour beyond choosing a legal target.** Focus fire, retreat, protecting casters — all later.
+6. **Status effects.** Poison, fear, paralysis and the rest have no model here.
+7. **Recovering a fallen party.** That a wiped party stays where it fell and can be recovered by a fresh one is settled; a stranded roster, bodies on a floor, and hiring at a tavern all need segments that do not exist.
+8. **The numbers.** Band thresholds, graze and crit multipliers, and how accuracy and defence are assembled from skill, attribute and equipment are all content data with no content yet.
 
 ## References
 

@@ -14,33 +14,37 @@ import { MIN_TAP_PX, ControlKind, uiScale, contentColumn } from './geometry.js';
 import {
   Action, Band, Outcome, attackTargets,
   encounterOutcome, readyActor, advanceBeats, takeAction, attemptFlee,
-  readinessPartway, FULL_BAR,
+  fleeCertainToFail, readinessPartway, FULL_BAR,
 } from '../sim/combat.js';
-import { proposeFrom } from '../sim/orders.js';
 import { selectEnemyTarget } from '../sim/enemies.js';
 
 export const FightPhase = { ACTING: 'ACTING', ENDED: 'ENDED' };
 
 /**
- * The player's clocks, in real milliseconds. Neither has anything to do with the
- * fight's own time, which advances in beats and stops while anybody is being asked.
+ * The pause between one resolved action and the next, in real milliseconds. It has
+ * nothing to do with the fight's own time, which advances in beats and stops while
+ * anybody is being asked.
  *
- * The beat is what stops a fight run on standing orders landing between two frames;
- * the countdown is how long a proposal waits before taking itself.
+ * It is what stops the enemies' turns landing between two frames and arriving as a
+ * wall of text nobody watched happen.
  *
  * @spec PRESENT-READY-005
  * @spec PRESENT-READY-006
  */
 export const BEAT_MS = 630;
-export const COUNTDOWN_MS = 1500;
 
 /**
- * How long one beat of the fight's time takes on screen while the bars are filling. It
- * sets only the pace: at Dexterity 10 a bar fills in ten beats, whatever this is.
+ * How long one beat of the fight's time takes on screen while the bars are filling.
+ *
+ * It sets only the pace, and the same span applies to every bar alike, so the relative
+ * speeds stay the simulation's: at Dexterity 10 a bar fills in ten beats, whatever this
+ * is. Slow enough that a race between two bars can be watched rather than merely
+ * reported — ten beats is a little under four seconds here.
  *
  * @spec PRESENT-READY-024
+ * @spec PRESENT-READY-032
  */
-export const FILL_BEAT_MS = 250;
+export const FILL_BEAT_MS = 375;
 
 /** How badly hurt a combatant is, by the share of their hit points left. */
 export const Wound = { HEALTHY: 'HEALTHY', WOUNDED: 'WOUNDED', CRITICAL: 'CRITICAL' };
@@ -52,29 +56,31 @@ export function woundOf(share) {
   return Wound.CRITICAL;
 }
 
-/**
- * Whether a proposal takes itself when its countdown runs out.
- *
- * Off: every action is taken by a press. The countdown machinery is kept whole and
- * under test behind this one constant, because whether a fight should be able to play
- * itself for a player who has set their orders is a question worth being able to
- * answer twice.
- *
- * @spec COMBAT-ORDER-006
- * @spec PRESENT-READY-008
- */
-export const AUTO_CONFIRM = false;
-
 /** How far an attacker's card jumps, before the judder decays over the beat. */
 export const SHAKE_PIXELS = 5;
 
 export const FightAction = {
-  // Taking what this character's standing orders already worked out.
-  CONFIRM: 'CONFIRM',
   ATTACK: 'ATTACK',
-  DEFEND: 'DEFEND',
+  MAGIC: 'MAGIC',
+  INVENTORY: 'INVENTORY',
   FLEE: 'FLEE',
+  PASS: 'PASS',
 };
+
+/**
+ * The four a turn offers, in the order they are always drawn in. The row is this list
+ * and nothing else: what a character cannot do is greyed in its own slot rather than
+ * left out, so the shape never changes and a number always means the same thing.
+ *
+ * @spec PRESENT-FIGHT-006
+ * @spec PRESENT-FIGHT-037
+ */
+export const OPTION_SLOTS = [
+  { action: FightAction.ATTACK, label: 'Attack' },
+  { action: FightAction.MAGIC, label: 'Magic' },
+  { action: FightAction.INVENTORY, label: 'Inventory' },
+  { action: FightAction.FLEE, label: 'Flee' },
+];
 
 const PANEL_FRACTION = 0.62;
 /** Lines of the fight the log's window shows at once; the rest is scrolled back to. */
@@ -82,8 +88,8 @@ const LOG_LINES = 5;
 const LOG_LINE_HEIGHT = 15;
 /** The line that names who is up, reserved whether or not anybody is. */
 const PROMPT_HEIGHT = 26;
-/** Controls a character is ever offered at once: the proposal, attack, defend, flee. */
-const MOST_OPTIONS = 4;
+/** Controls a character is ever offered at once: the four slots. */
+const MOST_OPTIONS = OPTION_SLOTS.length;
 const SCROLLBAR_WIDTH = 6;
 
 /** One combatant, at the scale the phone layout was designed against. */
@@ -169,7 +175,7 @@ export function buildFightPlan(
   viewport,
   {
     phase, outcome = null, pending = null, log = [], actor = null,
-    countdown = 0, autoConfirm = false, notice = null, shakingId = null, shake = 0,
+    notice = null, shakingId = null, shake = 0,
     partway = 0, logScroll = 0,
   } = {},
 ) {
@@ -313,9 +319,25 @@ export function buildFightPlan(
     ? Math.min(natural, Math.max(MIN_TAP_PX * 0.5, formation.height / deepest - ROW_GAP * scale))
     : natural;
 
-  const laidEnemies = layOutColumn(enemyCards, left, formation.y, scale, { height: rowHeight });
-  const laidParty = layOutColumn(partyCards, right, formation.y, scale, { height: rowHeight });
-  const bottom = formation.y + deepest * (rowHeight + ROW_GAP * scale);
+  // Each side sits in the middle of the region on its own count, so two goblins facing
+  // five characters read as outnumbered rather than as a list that ran out. A side's
+  // count never changes — the fallen keep their places — so this is settled when the
+  // encounter begins and cannot creep as the fight thins a column.
+  // A column with more members than the region has room for starts at the top edge
+  // instead, rather than being centred up off the panel.
+  // @spec PRESENT-FIGHT-038
+  // @spec PRESENT-FIGHT-039
+  const topFor = (count) => {
+    const tall = count * (rowHeight + ROW_GAP * scale) - ROW_GAP * scale;
+    return formation.y + Math.max(0, (formation.height - tall) / 2);
+  };
+
+  const laidEnemies = layOutColumn(enemyCards, left, topFor(enemyCards.length), scale, { height: rowHeight });
+  const laidParty = layOutColumn(partyCards, right, topFor(partyCards.length), scale, { height: rowHeight });
+  const bottom = Math.max(
+    ...[...laidEnemies, ...laidParty].map((c) => c.y + c.height),
+    formation.y,
+  );
 
   // The log is a window on the fight, held where the player left it.
   // @spec PRESENT-FIGHT-029
@@ -357,22 +379,6 @@ export function buildFightPlan(
     }
     : null;
 
-  // The ring sits on the acting character's own card, beside the bar it is counting
-  // against, so what is about to happen is shown where it is about to happen.
-  // @spec PRESENT-READY-007
-  // @spec PRESENT-READY-011
-  const actingCard = [...laidParty, ...laidEnemies].find((c) => c.acting);
-  const ringRadius = 7 * scale;
-  const ring = autoConfirm && pending?.proposal && actingCard
-    ? {
-        x: actingCard.x + actingCard.width - ringRadius - 2 * scale,
-        y: actingCard.y + actingCard.height - ringRadius - 2 * scale,
-        radius: ringRadius,
-        progress: Math.min(1, countdown / COUNTDOWN_MS),
-        label: 'A',
-      }
-    : null;
-
   return {
     // Over the corridor, never instead of it: the party is still standing where they
     // were caught.
@@ -391,7 +397,6 @@ export function buildFightPlan(
     enemies: laidEnemies,
     party: laidParty,
     pending,
-    countdown: ring,
     // Who the next press belongs to, or nothing at all while nothing waits: a prompt
     // over a fight that is playing invites a press nothing is listening for.
     // @spec PRESENT-READY-013
@@ -448,12 +453,21 @@ function controlMetrics({ column, scale, most = MOST_OPTIONS }) {
 /**
  * A control per option on offer, plus the way back and the way out.
  *
+ * Every option is drawn whether or not it can be taken: an unavailable one keeps its
+ * slot, loses its key hint to the reason it cannot be pressed, and does nothing. When
+ * none of the four can be taken, a Pass turn control is laid over them — over, not
+ * instead of, because the four underneath are the explanation for why it is there.
+ *
  * @spec PRESENT-CTRL-001
  * @spec PRESENT-CTRL-002
  * @spec PRESENT-CTRL-003
  * @spec PRESENT-CTRL-004
  * @spec PRESENT-FIGHT-017
  * @spec PRESENT-FIGHT-021
+ * @spec PRESENT-FIGHT-034
+ * @spec PRESENT-FIGHT-041
+ * @spec PRESENT-FIGHT-042
+ * @spec PRESENT-FIGHT-044
  */
 function fightControls({ bounds, pending, banner, metrics, top }) {
   const { gap, buttonHeight, columns, width } = metrics;
@@ -470,19 +484,37 @@ function fightControls({ bounds, pending, banner, metrics, top }) {
   if (!pending) return [];
 
   const choices = pending.targets
-    ? pending.targets.map((t) => t.name)
-    : pending.options.map((o) => o.label);
+    ? pending.targets.map((t) => ({ label: t.name, available: true, reason: null }))
+    : pending.options;
 
-  const controls = choices.map((label, index) => ({
+  const controls = choices.map((choice, index) => ({
     kind: ControlKind.BUTTON,
     role: pending.targets ? 'TARGET' : 'OPTION',
     optionIndex: index,
-    label,
-    hint: String(index + 1),
+    label: choice.label,
+    // What cannot be pressed says so, and says why in the place the key would sit.
+    available: choice.available,
+    reason: choice.available ? null : choice.reason,
+    hint: choice.available ? String(index + 1) : null,
     x: bounds.x + gap + (index % columns) * (width + gap),
     y: top + Math.floor(index / columns) * (buttonHeight + gap),
     width, height: buttonHeight,
   }));
+
+  // Laid across the row it covers, so the four greyed options stay readable beneath it.
+  if (!pending.targets && pending.mustPass) {
+    const rowWidth = Math.min(columns, choices.length) * width
+      + (Math.min(columns, choices.length) - 1) * gap;
+    const rows = Math.ceil(choices.length / columns);
+    controls.push({
+      kind: ControlKind.BUTTON, role: 'PASS', label: 'Pass turn', hint: 'Enter',
+      overlay: true,
+      x: bounds.x + gap,
+      y: top + (rows - 1) * (buttonHeight + gap) / 2,
+      width: Math.max(MIN_TAP_PX, rowWidth),
+      height: buttonHeight,
+    });
+  }
 
   controls.push({
     kind: ControlKind.BUTTON, role: 'BACK', label: 'Back', hint: 'Esc',
@@ -504,8 +536,6 @@ function fightControls({ bounds, pending, banner, metrics, top }) {
  */
 export function describeEvent(event, names, targetId, felled) {
   const actor = names[event.actorId] ?? event.actorId;
-  if (event.fizzled) return `${actor} swings at nothing.`;
-
   const target = names[targetId] ?? targetId;
   if (event.band === Band.MISS) return `${actor} misses ${target}.`;
 
@@ -515,85 +545,53 @@ export function describeEvent(event, names, targetId, felled) {
 }
 
 /**
- * What this character may legally do, and at whom.
+ * What the row offers this character: the same four, in the same order, every turn.
  *
- * An option that cannot be taken is not offered. Refusing a choice after it is made
- * teaches the rules by failure, which in a fight is expensive.
+ * An option that cannot be taken keeps its slot and carries the reason why, because a
+ * row that changed shape could not be pressed from memory and grey alone says only
+ * "not now" — which leaves the player deciding whether they have misread the rules or
+ * found a bug.
  *
  * @spec PRESENT-FIGHT-006
- * @spec PRESENT-FIGHT-007
+ * @spec PRESENT-FIGHT-034
+ * @spec PRESENT-FIGHT-036
+ * @spec PRESENT-FIGHT-040
+ * @spec COMBAT-TURN-003
  */
-/**
- * What the row of controls offers. A proposal comes first and names its target, because
- * a turn the character's orders already answer should be one press.
- *
- * @spec PRESENT-READY-020
- */
-function optionsFor(encounter, characterId, proposal = null) {
-  const options = [];
-
-  if (proposal) {
-    const verb = proposal.action.kind === Action.ATTACK ? 'Attack' : 'Cast';
-    options.push({
-      action: FightAction.CONFIRM,
-      label: `${verb} ${nameOf(encounter, proposal.targetId)}`,
-    });
-  }
-  // Everyone can reach everyone; what a character needs is something to swing.
+function optionsFor(encounter, characterId) {
+  // Everyone is in reach of everyone; what a character needs is something to swing.
   // @spec COMBAT-TARGET-005
   const armed = Boolean(character(encounter.party, characterId)?.attack);
-  if (armed && attackTargets(encounter, characterId).length > 0) {
-    options.push({ action: FightAction.ATTACK, label: 'Attack' });
-  }
+  const standingFoes = attackTargets(encounter, characterId).length > 0;
 
-  options.push({ action: FightAction.DEFEND, label: 'Defend' });
+  const availability = {
+    [FightAction.ATTACK]: armed
+      ? (standingFoes ? null : 'Nothing standing')
+      : 'Nothing to swing',
+    // Spells and the pack wait on segments that do not exist. Both are drawn anyway:
+    // the row's shape is not a function of which systems happen to have landed.
+    [FightAction.MAGIC]: 'No spells',
+    [FightAction.INVENTORY]: 'Pack is empty',
+    // Read from the same rule that resolves an attempt, so the button and the outcome
+    // can never disagree about whether the way out is shut.
+    // @spec COMBAT-TURN-005
+    [FightAction.FLEE]: fleeCertainToFail(encounter)
+      ? (encounter.enemies.members.filter(standing).some((e) => e.forbidsEscape)
+        ? 'Escape forbidden'
+        : 'Too slow to escape')
+      : null,
+  };
 
-  const foes = encounter.enemies.members.filter(standing);
-  if (!foes.some((e) => e.forbidsEscape)) options.push({ action: FightAction.FLEE, label: 'Flee' });
-
-  return options;
+  return OPTION_SLOTS.map(({ action, label }) => {
+    const reason = availability[action] ?? null;
+    return { action, label, available: reason === null, reason };
+  });
 }
 
 /** @spec PRESENT-FIGHT-007 */
 function targetsFor(encounter, characterId, action) {
   if (action !== FightAction.ATTACK) return null;
   return attackTargets(encounter, characterId).map((t) => ({ id: t.id, name: t.name }));
-}
-
-/**
- * What the fight looks like from one character's position, for their standing orders to
- * read. Assembled here because only this layer knows both the encounter and what a
- * character may legally do in it.
- *
- * @spec COMBAT-ORDER-003
- * @spec COMBAT-ORDER-015
- */
-function situationFor(fight, characterId) {
-  const { encounter } = fight;
-  const reachable = targetsFor(encounter, characterId, FightAction.ATTACK) ?? [];
-
-  return {
-    actorId: characterId,
-    // The character is one of their own allies, so a cleric alone still has somebody
-    // to heal. Listed in the acting order, which is what settles equal candidates.
-    allies: roster(encounter.party).map((c) => ({
-      id: c.id,
-      hitPoints: c.hitPoints,
-      maxHitPoints: c.maxHitPoints,
-      conscious: c.condition === Condition.OK,
-    })),
-    enemies: encounter.enemies.members.filter(standing).map((e) => ({
-      id: e.id,
-      hitPoints: e.hitPoints,
-      targetable: reachable.some((t) => t.id === e.id),
-    })),
-    slots: character(encounter.party, characterId)?.slots ?? {},
-    taken: fight.ordersTaken.get(characterId) ?? new Set(),
-    isLegal: (action, targetId) => {
-      if (action.kind !== Action.ATTACK) return true;
-      return reachable.some((t) => t.id === targetId);
-    },
-  };
 }
 
 export function createFightController({ encounter, viewport, onDraw }) {
@@ -608,12 +606,9 @@ export function createFightController({ encounter, viewport, onDraw }) {
     turnsTaken: 0,
     outcome: null,
     dismissed: false,
-    // Which "once this encounter" rules have fired, per character.
-    ordersTaken: new Map(),
-    // The player's clocks, in milliseconds: how long this proposal has been standing,
-    // how long since the last action played, how long the shake has been running, and
-    // how far into the beat of filling now under way.
-    countdown: 0,
+    // The player's clocks, in milliseconds: how long since the last action played, how
+    // long the shake has been running, and how far into the beat of filling now under
+    // way.
     beat: 0,
     shake: 0,
     shakingId: null,
@@ -623,7 +618,6 @@ export function createFightController({ encounter, viewport, onDraw }) {
     logScroll: 0,
     fill: 0,
     partway: 0,
-    autoConfirm: AUTO_CONFIRM,
     // Whoever the ambush favoured. It lasts until the last of them has acted, and the
     // card announcing it lasts exactly as long.
     // @spec PRESENT-READY-015
@@ -713,26 +707,25 @@ function end(fight, result) {
 }
 
 /**
- * Ask a character what to do, with whatever their orders propose already filled in.
+ * Ask a character what to do. Composed now rather than when they came ready, so what is
+ * on offer accounts for everything resolved in between.
  *
- * @spec COMBAT-ORDER-003
- * @spec COMBAT-ORDER-005
- * @spec COMBAT-ORDER-014
+ * A character with nothing at all available is asked to pass, which is still a press:
+ * the four stay drawn underneath as the explanation for why that is all there is.
+ *
+ * @spec PRESENT-FIGHT-042
+ * @spec COMBAT-TURN-001
+ * @spec COMBAT-TURN-004
  */
 function ask(fight, characterId) {
-  // A fresh turn is a fresh countdown; nothing carries over from the last one.
-  fight.countdown = 0;
-  const rules = character(fight.encounter.party, characterId)?.orders ?? [];
-  // Composed now rather than when they came ready, so it accounts for everything
-  // resolved in between.
-  const proposal = proposeFrom(rules, situationFor(fight, characterId));
+  const options = optionsFor(fight.encounter, characterId);
 
   fight.pending = {
     characterId,
-    options: optionsFor(fight.encounter, characterId, proposal),
+    options,
     targets: null,
     action: null,
-    proposal,
+    mustPass: options.every((o) => !o.available),
   };
 }
 
@@ -755,7 +748,7 @@ function resolveOne(fight, actorId, action) {
   // @spec PRESENT-READY-015
   fight.ambushers = fight.ambushers.filter((id) => id !== actorId);
   const event = takeAction(fight.encounter, actorId, action);
-  if (event && event.action === Action.ATTACK) {
+  if (event && event.action === Action.ATTACK && event.targetId) {
     fight.log.push(describeEvent(event, names(fight), event.targetId, event.felled === true));
     // The card that moves is the card that swung: nothing else in a fight moves, so a
     // blow is otherwise a number changing on a panel of numbers.
@@ -772,7 +765,7 @@ function resolveOne(fight, actorId, action) {
  * Play the turn of whatever is standing ready that is not the party's. One at a time,
  * because a beat passes between them.
  *
- * @spec COMBAT-ORDER-013
+ * @spec COMBAT-TURN-002
  * @spec COMBAT-TIME-009
  */
 export function playEnemyTurn(fight) {
@@ -785,47 +778,28 @@ export function playEnemyTurn(fight) {
   // the swing is worth is carried on the enemy itself.
   // @spec ENEMY-FIGHT-005
   const target = selectEnemyTarget(record?.role, legal, fight.encounter.rng);
-  resolveOne(fight, foe.id, !target
-    ? { kind: Action.DEFEND }
-    : { kind: Action.ATTACK, targetId: target.id, skill: record?.attack?.skill });
+  // With nowhere to stand there is always somebody in reach, and a fight with nobody
+  // left standing has already ended before the turn is handed over.
+  resolveOne(fight, foe.id, target
+    ? { kind: Action.ATTACK, targetId: target.id, skill: record?.attack?.skill }
+    : { kind: Action.PASS });
   return true;
 }
 
 /**
- * Take the action a character's orders proposed. The countdown reaches here, and so
- * does a player who confirms before it runs out; nothing downstream can tell which.
+ * Pass this character's turn: spend the bar, resolve nothing, move on.
  *
- * @spec COMBAT-ORDER-006
- * @spec COMBAT-ORDER-017
- */
-export function takeProposal(fight) {
-  const proposal = fight.pending?.proposal;
-  if (fight.phase !== FightPhase.ACTING || !proposal) return false;
-
-  const characterId = fight.pending.characterId;
-  const taken = fight.ordersTaken.get(characterId) ?? new Set();
-  taken.add(proposal.ruleIndex);
-  fight.ordersTaken.set(characterId, taken);
-
-  resolveOne(fight, characterId, {
-    ...proposal.action,
-    targetId: proposal.targetId,
-    ...(proposal.action.kind === Action.ATTACK ? attackOf(fight.encounter, characterId) : {}),
-  });
-  return true;
-}
-
-/**
- * The player reached for the screen. Whatever was about to happen on its own stops,
- * and does not start again this turn.
+ * Offered only to a character with nothing else available, and still taken by a press,
+ * so that no turn in the game is ever taken unattended.
  *
- * @spec COMBAT-ORDER-018
- * @spec PRESENT-READY-009
+ * @spec PRESENT-FIGHT-043
+ * @spec PRESENT-FIGHT-044
+ * @spec COMBAT-ACTION-009
  */
-export function cancelProposal(fight) {
-  if (!fight.pending?.proposal) return false;
-  fight.pending = { ...fight.pending, proposal: null };
-  fight.countdown = 0;
+export function passTurn(fight) {
+  if (fight.phase !== FightPhase.ACTING || !fight.pending?.mustPass) return false;
+
+  resolveOne(fight, fight.pending.characterId, { kind: Action.PASS });
   return true;
 }
 
@@ -856,19 +830,20 @@ export function scrollLog(fight, lines) {
 export function fightIsPlaying(fight) {
   if (!fight || fight.phase !== FightPhase.ACTING) return false;
   if (fight.shakingId) return true;
-  if (!fight.pending) return true;
-  return fight.autoConfirm && Boolean(fight.pending.proposal);
+  // Waiting on a press costs no frames; only the bars and the beat move on their own.
+  return !fight.pending;
 }
 
 /**
- * Run the player's clock on by the milliseconds that actually passed: the bars filling,
- * the beat between actions, and the countdown on a proposal. Only the filling moves the
- * fight's own time, and only while nobody is up.
+ * Run the player's clock on by the milliseconds that actually passed: the bars filling
+ * and the beat between actions. Only the filling moves the fight's own time, and only
+ * while nobody is up.
  *
  * @spec PRESENT-READY-005
  * @spec PRESENT-READY-006
  * @spec PRESENT-READY-008
  * @spec PRESENT-READY-024
+ * @spec PRESENT-READY-032
  */
 export function advanceClock(fight, ms) {
   if (!fightIsPlaying(fight)) return false;
@@ -899,13 +874,9 @@ export function advanceClock(fight, ms) {
     return true;
   }
 
-  if (fight.pending) {
-    if (!fight.autoConfirm || !fight.pending.proposal) return true;
-    fight.countdown += ms;
-    if (fight.countdown < COUNTDOWN_MS) return true;
-    takeProposal(fight);
-    return true;
-  }
+  // Somebody is being asked, and nothing happens until they are answered.
+  // @spec COMBAT-TURN-001
+  if (fight.pending) return true;
 
   fight.beat += ms;
   if (fight.beat < BEAT_MS) return true;
@@ -922,15 +893,6 @@ export function advanceClock(fight, ms) {
 export function chooseOption(fight, index) {
   if (fight.phase !== FightPhase.ACTING || !fight.pending) return false;
 
-  // Taking the proposal is one press, and the only press that keeps it.
-  // @spec PRESENT-READY-021
-  if (!fight.pending.targets && fight.pending.options[index]?.action === FightAction.CONFIRM) {
-    return takeProposal(fight);
-  }
-
-  // Anything else is the player choosing for themselves, which drops the proposal.
-  cancelProposal(fight);
-
   const characterId = fight.pending.characterId;
 
   // Choosing a target for an action already picked.
@@ -945,6 +907,9 @@ export function chooseOption(fight, index) {
 
   const option = fight.pending.options[index];
   if (!option) return false;
+  // A greyed option is drawn but inert: pressing it does nothing and says nothing.
+  // @spec PRESENT-FIGHT-035
+  if (!option.available) return false;
 
   if (option.action === FightAction.FLEE) {
     // One character calls the retreat and pays for it; the whole party leaves or
@@ -966,8 +931,9 @@ export function chooseOption(fight, index) {
     return true;
   }
 
-  resolveOne(fight, characterId, { kind: Action.DEFEND });
-  return true;
+  // Every remaining option needs a target, so reaching here means there was none to
+  // offer — which optionsFor would have greyed.
+  return false;
 }
 
 /**
@@ -978,7 +944,6 @@ export function chooseOption(fight, index) {
  */
 export function goBack(fight) {
   if (fight.phase !== FightPhase.ACTING || !fight.pending) return false;
-  cancelProposal(fight);
 
   if (fight.pending.targets) {
     fight.pending = { ...fight.pending, action: null, targets: null };

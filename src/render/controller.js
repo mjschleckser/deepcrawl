@@ -22,8 +22,8 @@ import { buildPromptPlan } from './promptplan.js';
 import { buildViewPlan } from './viewplan.js';
 import { buildMapPlan } from './mapplan.js';
 import {
-  buildFightPlan, createFightController, chooseOption, goBack, dismissOutcome,
-  advanceClock, fightIsPlaying, cancelProposal, scrollLog, FightPhase,
+  buildFightPlan, createFightController, chooseOption, goBack, dismissOutcome, passTurn,
+  advanceClock, fightIsPlaying, scrollLog, FightPhase,
 } from './fight.js';
 
 const CONFIRM_KEYS = ['Enter', ' '];
@@ -114,8 +114,6 @@ export function layers(controller) {
       pending: fight.pending,
       log: fight.log,
       actor: fight.actor,
-      countdown: fight.countdown,
-      autoConfirm: fight.autoConfirm,
       notice: fight.notice,
       shakingId: fight.shakingId,
       shake: fight.shake,
@@ -255,6 +253,14 @@ function pressKeyInFight(controller, key) {
     return true;
   }
 
+  // A character with nothing available has one press to make, and this is it.
+  // @spec PRESENT-FIGHT-043
+  if (key === 'Enter' || key === ' ') {
+    if (!passTurn(fight)) return false;
+    redraw(controller);
+    return true;
+  }
+
   const option = Number.parseInt(key, 10);
   if (!Number.isInteger(option) || option < 1) return false;
   if (!chooseOption(fight, option - 1)) return false;
@@ -321,6 +327,9 @@ export function pressPointer(controller, px, py) {
 
     if (control.role === 'DISMISS') return pressKeyInFight(controller, 'Enter');
     if (control.role === 'BACK') return pressKeyInFight(controller, 'Escape');
+    // The one press a character with nothing to do can make.
+    // @spec PRESENT-FIGHT-043
+    if (control.role === 'PASS') return pressKeyInFight(controller, 'Enter');
     return pressKeyInFight(controller, String(control.optionIndex + 1));
   }
 

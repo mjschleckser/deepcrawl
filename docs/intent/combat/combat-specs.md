@@ -61,32 +61,18 @@ specs fix the structure those numbers are fed into.
 
 - [ ] **COMBAT-ACTION-001**: When a character casts a spell, the system shall spend one spell slot of that spell's rank, and shall refuse the cast when no slot of that rank remains.
 - [ ] **COMBAT-ACTION-002**: The system shall not restore a spell slot during an encounter.
-- [ ] **COMBAT-ACTION-003**: When a character defends, the system shall raise their defence until that character next acts.
 - [ ] **COMBAT-ACTION-005**: When a character relights a doused light source, the system shall spend a full bar of that character's readiness.
+- [x] **COMBAT-ACTION-009**: When a combatant passes their turn, the system shall spend a full bar of their readiness and shall resolve no action.
 - [x] **COMBAT-ACTION-006**: The system shall apply every change to a character's hit points or condition through the party segment's operations.
 - [x] **COMBAT-ACTION-008**: The system shall take an attack's base damage and accuracy from the combatant that is acting, and the armour reducing it from the combatant struck, on either side alike.
 
-## Standing orders
+## Taking a turn
 
-- [x] **COMBAT-ORDER-001**: The system shall hold for each character an ordered list of rules, each naming a condition, an action, and a target.
-- [x] **COMBAT-ORDER-002**: The system shall keep a character's order list from one encounter to the next.
-- [x] **COMBAT-ORDER-003**: When a character is about to act, the system shall read their rules from the first and shall propose the action and target of the first rule whose condition holds and whose action is legal for that character.
-- [x] **COMBAT-ORDER-004**: If a rule's action is not legal for that character, then the system shall pass over that rule and read the next.
-- [x] **COMBAT-ORDER-005**: If no rule holds and offers a legal action, then the system shall propose nothing and shall ask the player as it would for a character with no orders at all.
-- [x] **COMBAT-ORDER-006**: The system shall not take a proposed action until the player confirms it.
-- [x] **COMBAT-ORDER-017**: The system shall resolve a proposal the player confirmed exactly as one chosen by hand, with no difference in what happens.
-- [x] **COMBAT-ORDER-018**: When the player takes any action other than the one proposed, the system shall drop the proposal for that turn.
-- [x] **COMBAT-ORDER-019**: The system shall wait for the player at every character's turn, without limit, whether or not anything is proposed.
-- [x] **COMBAT-ORDER-007**: The system shall allow the player to take any legal action in place of the one proposed.
-- [x] **COMBAT-ORDER-008**: The system shall offer these conditions and no others: always; an ally below a share of their hit points; no ally below a share of their hit points; a rule not yet taken this encounter; a spell slot of the required rank remaining.
-- [x] **COMBAT-ORDER-009**: The system shall count a rule guarded by "not yet taken this encounter" as taken only when its action is actually taken, and shall forget that it was taken when the encounter ends.
-- [x] **COMBAT-ORDER-010**: The system shall offer these targets and no others: the enemy able to act with the fewest hit points; the conscious ally with the fewest hit points; a named ally; the actor.
-- [x] **COMBAT-ORDER-011**: The system shall resolve an order's target from the state of the fight at the moment the action is taken.
-- [ ] **COMBAT-ORDER-012**: While an encounter is in darkness, the system shall keep an order's action and replace its target with the random legal target the darkness rules impose.
-- [x] **COMBAT-ORDER-013**: The system shall give no enemy an order list, and shall take an enemy's action without awaiting the player.
-- [x] **COMBAT-ORDER-015**: The system shall count the character whose order it is among their own allies, for every condition and every target that names an ally.
-- [x] **COMBAT-ORDER-016**: When two candidates are equal for a target the order names, the system shall choose between them by the same fixed order it acts combatants in.
-- [x] **COMBAT-ORDER-014**: The system shall compose a proposal when a character is about to act rather than when they become ready, so that a proposal accounts for everything resolved before it.
+- [x] **COMBAT-TURN-001**: The system shall not take a character's turn until the player has chosen an action for it, and shall wait at that character without limit.
+- [x] **COMBAT-TURN-002**: The system shall take an enemy's turn without awaiting the player.
+- [x] **COMBAT-TURN-003**: The system shall offer a character every action that character can legally take, and shall accept no action a character cannot legally take.
+- [x] **COMBAT-TURN-004**: If a character can legally take no action at all, then the system shall offer them passing and nothing else.
+- [x] **COMBAT-TURN-005**: The system shall report whether a flee attempt is certain to fail, by the same rules that resolve one, without taking the attempt or costing any readiness.
 
 ## Darkness
 
