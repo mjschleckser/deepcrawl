@@ -1191,7 +1191,7 @@ describe('a fight that plays itself out', () => {
       enemies: [sturdy('g1'), sturdy('g2'), sturdy('a1')],
     });
 
-    expect(planOf(fight).notice).toMatchObject({ text: 'Ambush!' });
+    expect(planOf(fight).notice).toMatchObject({ text: "You've been ambushed!" });
 
     // The card lasts until every goblin the ambush favoured has taken its turn — no
     // longer, and not a turn less.
@@ -1216,6 +1216,29 @@ describe('a fight that plays itself out', () => {
     expect(fight.turnsTaken).toBeGreaterThanOrEqual(goblins.length);
   });
 
+  // @spec PRESENT-READY-033
+  it('names the party as the side caught when the party is', () => {
+    const fight = opening({ partyAware: false });
+
+    expect(planOf(fight).notice.text).toBe("You've been ambushed!");
+  });
+
+  // @spec PRESENT-READY-033
+  it('names the enemies as the side caught when they are', () => {
+    const fight = opening({ enemiesAware: false });
+
+    expect(planOf(fight).notice.text).toBe('Enemy has been ambushed!');
+  });
+
+  // @spec PRESENT-READY-033
+  it('tells the two cards apart on their first word, not their last', () => {
+    const jumped = planOf(opening({ partyAware: false })).notice.text;
+    const sprung = planOf(opening({ enemiesAware: false })).notice.text;
+
+    expect(jumped).not.toBe(sprung);
+    expect(jumped.split(' ')[0]).not.toBe(sprung.split(' ')[0]);
+  });
+
   // @spec PRESENT-READY-015
   it('does not bring the card back when an ambusher comes ready a second time', () => {
     const quick = (id) => createEnemy({
@@ -1237,10 +1260,16 @@ describe('a fight that plays itself out', () => {
     }
     expect(planOf(fight).notice).toBeNull();
 
+    // An ambusher now acts from exactly full to exactly nothing, so who is next turns
+    // on what the party drew. Put the party at the back of the queue, so that a goblin
+    // coming round a second time is what is actually under test.
+    for (const c of roster(fight.encounter.party)) fight.encounter.readiness.set(c.id, 0);
+
     // Three times the party's speed: the goblins come round again before anybody else.
     untilReady(fight);
     expect(fight.actor.side).toBe('ENEMIES');
 
+    // A quick ambusher coming round again is simply fast, not ambushing twice.
     expect(planOf(fight).notice).toBeNull();
   });
 

@@ -397,19 +397,32 @@ inviting a press that nothing is listening for.
 
 ### Announcing an ambush
 
-An encounter one side walked into unready opens with a card above the fight saying
-**Ambush!**. Every fight opens with its bars at odds — they are rolled — but an ambushed
-one opens with one side's bars visibly far along and the other's wherever they fell.
+An encounter one side walked into unready opens with a card above the fight, and the
+card says which side was caught:
 
-That head start is otherwise unexplained. A player who sees three goblins act before
+| Card | Shown when |
+|---|---|
+| **You've been ambushed!** | the party was the side caught unready |
+| **Enemy has been ambushed!** | the enemies were |
+
+Every fight opens with its bars at odds — they are rolled — but an ambushed one opens
+with one side's bars full and the other's wherever they fell.
+
+That free round is otherwise unexplained. A player who sees three goblins act before
 anybody on their side moves has been given the rule and no way to read it, and the
 reasonable conclusion — that the fight is broken — is worse than the rule itself. The
 card is the smallest thing that says *this is why*.
 
+**Which side was caught is the whole of what the card adds**, so it is the whole of what
+the card says. One card reading *Ambush!* for both cases would leave the player working
+out from the bars what the card was there to tell them, which is the inference the card
+exists to spare them. The two are written to be told apart at a glance rather than read:
+they differ in their first word, not their last.
+
 **The card stays up for exactly as long as the ambush lasts**: until every combatant the
 ambush favoured has acted, or has fallen before they could. The fight plays beneath it
 as it would without it, so the card is what explains the ambush while it is happening
-rather than a pause before it — and it goes when the last of that head start is spent,
+rather than a pause before it — and it goes when the last of that free round is spent,
 which is the moment the fight becomes an ordinary one.
 
 ### The log carries the fight
@@ -664,7 +677,7 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 | How bars fill | Over real time from empty, a beat per fixed span, drawn partway between beats | Jumping straight to whoever is next ready | A jump shows the result of the race and never the race, so the player cannot see a quick combatant pulling ahead of a slow one, which is the thing the bars exist to show. |
 | The beat between actions | A short pause, with the acting combatant highlighted | Resolving everything down to the next decision at once; animating each action properly | Without a pause the enemies' turns land between two frames and are read afterwards as text, which is the thing the log exists to rescue rather than the thing to build on. Real animation is a larger project and would need the ticker running throughout rather than between actions. |
 | The ticker | Stopped, except while a fight is playing rather than waiting on the player | Stopped always, with actions resolved instantly; a conventional render loop | The rule was never about the ticker; it was about not redrawing an unchanged screen sixty times a second. A screen that is changing on its own is the one case it was not written for, and the exception is bounded to a fight that is not waiting on anybody. |
-| Announcing an ambush | A card above the fight saying Ambush!, up until every ambusher has acted, with the fight playing beneath it | Colouring the bars that start full; a line in the log; a card held for a fixed span before the fight begins | Bars that start full are the one thing on the screen with no cause visible anywhere, and a player who cannot read them concludes the fight is broken. A card held before the fight explains an ambush nobody has seen yet and is gone by the time the ambushers swing; one that lasts as long as the ambush explains it while it happens. The log is read after the fact, and a colour is a code nobody has been taught. |
+| Announcing an ambush | Two cards, naming which side was caught, up until every ambusher has acted | One card reading Ambush! for either case; no card at all; a pause before the fight rather than a card during it | The head start is otherwise unexplained, and the reasonable conclusion from three goblins acting first is that the fight is broken. A single card would still leave the player inferring from the bars which side it favoured, which is exactly the inference the card exists to spare them. Letting the fight play beneath the card explains the ambush while it happens rather than interrupting it. |
 | The prompt | Naming who is ready, and absent while nothing waits | Asking what the character will do; a prompt that stays up throughout | The buttons already say what may be done; what the player needs is which of five cards the next press belongs to. A prompt standing over a fight that is playing invites a press nothing is listening for. |
 | Showing an attack | A vertical judder on the attacker, decaying over the beat | Moving the attacker toward its target; flashing the one that was hit; a larger animation | Nothing else in the fight moves, so the smallest honest motion is enough, and putting it on the attacker answers *whose blow was that* rather than only *that something happened*. Moving toward a target is a real animation and wants a real animation system. |
 | Showing an action | A text log built from the action's own event log | Animating each action; showing only the resulting state | Nothing animates, so an action lands in one frame. Without a record the player sees the aftermath and never learns what happened. The log is the fight as perceived. |
@@ -710,7 +723,7 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 25. ✅ **Every action is taken by a press**, and nothing in a fight is ever taken unattended.
 26. ✅ **A turn offers a fixed four — Attack, Magic, Inventory, Flee — with whatever cannot be taken drawn greyed and inert** in its own place, keeping its number.
 27. ✅ **The prompt names who is ready to act**, and is absent while nothing waits on the player.
-28. ✅ **An ambush is announced by a card** that stays up until every ambusher has acted, with the fight playing beneath it.
+28. ✅ **An ambush is announced by a card naming which side was caught**, staying up until every ambusher has acted, with the fight playing beneath it.
 29. ✅ **Prompts are drawn from the simulation's pending confirmation**, never from the renderer's own flag.
 30. ✅ **The build's version is drawn in the bottom-left corner**, its patch number the commit count, fixed at build time.
 31. ✅ **A hand-authored starter floor** stands in until dungeon generation exists.

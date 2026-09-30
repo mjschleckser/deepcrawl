@@ -37,15 +37,6 @@ export const CRIT_MULTIPLIER = 1.5;
 /** A swarm is a shape the game can express, not an unbounded number. */
 export const MAX_ENEMY_GROUP = 20;
 
-/**
- * How much of a bar catching somebody unready is worth. An addition rather than a
- * filled bar: surprise is decisive without being a guaranteed first blow, and it
- * composes with the opening each combatant drew rather than overriding it.
- *
- * @spec COMBAT-SURPRISE-005
- */
-export const OPENING_HEAD_START = 55;
-
 /** Fleeing fails against something more than a quarter faster than the hindmost. */
 export const FLEE_SPEED_RATIO = 1.25;
 
@@ -199,20 +190,25 @@ export function beginEncounter({ party, enemies, light, awareness, rng, origin }
 
   // Every fight opens somewhere different. A bar drawn at random means the same
   // warband met twice is not the same fight twice, and nobody is owed the first turn
-  // by the order they happen to be listed in. Never a full bar: a fight opens with
-  // everybody still filling, whatever else is true.
+  // by the order they happen to be listed in.
   // @spec COMBAT-SURPRISE-003
   // @spec COMBAT-SURPRISE-004
   // @spec COMBAT-SURPRISE-007
   for (const combatant of combatants(state)) {
+    // Drawn for everybody, including the side about to be handed a full bar, so that
+    // the surprised side's opening is the same as it would have been in a fight
+    // nobody was caught out in. Skipping the draw would shift the seeded stream and
+    // make an ambush change the numbers of the side it did not touch.
     const drawn = rng.int(0, FULL_BAR - 1);
-    // Catching somebody unready is a head start rather than a free blow, so a quick
-    // ambusher still gets more out of an ambush than a sluggish one does.
+    // Catching a side unready gives up a round: every aware combatant opens full and
+    // acts before the surprised side moves. Order among them is the ordinary
+    // same-beat rule, so speed still decides everything from the first action on.
     // @spec COMBAT-SURPRISE-005
     // @spec COMBAT-SURPRISE-006
+    // @spec COMBAT-SURPRISE-008
+    // @spec COMBAT-SURPRISE-009
     const ambushing = surprisedSide !== null && combatant.side !== surprisedSide;
-    const opening = ambushing ? Math.min(FULL_BAR, drawn + OPENING_HEAD_START) : drawn;
-    state.readiness.set(combatant.id, opening);
+    state.readiness.set(combatant.id, ambushing ? FULL_BAR : drawn);
   }
 
   return state;

@@ -103,10 +103,10 @@ acting the instant they open their eyes.
 
 ### Where the bars start
 
-**Every combatant opens somewhere.** A fight begins with each bar set to a random share
-of a full one, drawn independently. Fights therefore open differently every time and
-nobody is owed the first turn by the roster order, which is what keeps an encounter with
-the same warband from playing out as the same fight twice.
+**Every combatant opens somewhere.** A fight nobody was caught out in begins with each
+bar set to a random share of a full one, drawn independently. Fights therefore open
+differently every time and nobody is owed the first turn by the roster order, which is
+what keeps an encounter with the same warband from playing out as the same fight twice.
 
 The randomness is in the opening only. From the first beat onwards the bars are the
 plain arithmetic of Dexterity, so a quick combatant handed a low opening still overtakes
@@ -114,13 +114,21 @@ a slow one handed a high one, and the fight remains readable off the bars.
 
 ### Surprise
 
-Surprise is a head start rather than a free strike: the aware side's opening share is
-raised by a large fixed amount, capped at a full bar, and the unaware side keeps
-whatever it drew. An aware side will almost always act first and a quick one may act
-twice before the surprised side moves, but a wretched roll can leave a sluggish
-ambusher only barely ahead — which is a truer account of catching somebody unready than
-either a free round or a guaranteed opening blow. Awareness comes from exploration:
-light, and whether the party saw what was coming.
+**Catching a side unready fills the other side's bars.** Every combatant on the aware
+side opens on a full bar and acts before the surprised side moves; the surprised side
+keeps whatever it drew. Awareness comes from exploration: light, and whether the party
+saw what was coming.
+
+Surprise is therefore the one thing in a fight that overrides the opening draw, and it
+overrides it completely. That is what makes it worth avoiding and worth engineering: a
+side that is caught loses a full round of the fight, which is the largest swing any
+single circumstance produces, and it is legible at a glance from a column of full bars
+rather than having to be inferred from bars that merely look far along.
+
+Ordering within the ambushing side is still Dexterity's, and from the first action
+onward speed decides everything as it always does. What surprise buys is one round, not
+a permanent lead — a quick ambusher pulls ahead afterwards because they are quick, not
+because they ambushed.
 
 ## Resolving an Attack
 
@@ -374,7 +382,7 @@ whether or not it can see.
 | Speed | Dexterity itself, with a floor of one | A derived initiative statistic; a flat rate modified by equipment | A second statistic meaning the same thing is a second statistic to explain and to balance. Using the attribute undisguised also gives the widest honest spread — three actions to one across the range — which is what makes an extraordinarily quick character feel extraordinary. |
 | The cost of an action | One full bar for every action, carried on the action rather than assumed | A constant in the resolver; per-action weights from the start | Putting the cost on the action means weapon weight can arrive later as content rather than as a restructuring. Making them all equal now means there is nothing to balance before there are weapons to balance it against. |
 | Where the bars start | Each combatant on an independent random share of a bar | Every bar empty; every bar set by Dexterity | Empty bars make the opening of every fight the same fight, decided before anybody has done anything: the quickest combatant always moves first and the roster order settles every tie. A random opening makes the first few turns of an encounter genuinely uncertain while leaving everything after them to the arithmetic, so the same warband met twice is not the same fight twice. |
-| Surprise | A large fixed addition to the aware side's opening share, capped at a full bar | The aware side starting full and the surprised side empty; a free round for the aware side | Filling the aware side's bars outright would discard the random opening in exactly the fights where tension is highest, and it hands a sluggish ambusher the same head start as a quick one. An addition keeps surprise decisive without making it a guaranteed opening blow, and it composes with speed rather than overriding it. |
+| Surprise | The aware side's bars filled outright | A large fixed addition to the aware side's opening share, capped at a full bar; the surprised side emptied as well as the aware side filled; a free round handled outside the readiness rules | An addition was meant to let surprise compose with speed, but on a draw of nought to ninety-nine a head start large enough to be decisive caps most ambushers at full anyway — so it read as a full bar most of the time while being harder to explain and harder to see. Filling them says what actually happens: a side that is caught gives up a round. Emptying the surprised side as well would make surprise decide the fight rather than open it, and would leave nothing for the opening draw to do. Ordering inside the ambushing side stays Dexterity's, so speed still decides everything after the first round. |
 | A failed escape | Costs the bar of whoever attempted it, and nothing else | Every conscious character's bar, as a round once cost; no further attempt until all have acted | A party that cannot escape is already in enough trouble, and charging the whole party for one character's failed attempt punishes the situation rather than the decision. A party that keeps trying is a party spending every action on the door instead of on the fight, which is cost enough without a rule to enforce it. |
 | Reach | None: every standing combatant may act on every other | Front and back rows, where melee reaches the front only; a reach penalty rather than a restriction | Rows decide a character's options before the fight starts, so most turns have one legal answer and a back-rank character with a sword has none at all — a player watching their own turn be skipped. With no reach rule at all, every turn is a choice of whom to spend it on, and the interesting version of protecting a caster becomes something equipment and abilities do rather than something a seating plan does. |
 | What bounds an action | What the combatant holds and knows | Where the combatant stands | A limit the player chose — this weapon, these slots, that ability — is one they can plan around and change. A limit imposed by a position assigned outside the fight is one they can only discover. |
@@ -400,7 +408,7 @@ whether or not it can see.
 8. ✅ **Spell slots per rank**, restored only by camping.
 9. ✅ **Readiness fills by Dexterity**, at a floor of one point, and a full bar is what an action costs.
 10. ✅ **The fight's time never advances while anyone is being asked what to do.**
-11. ✅ **Every bar opens on a random share of full**, and surprise adds a large head start to the aware side's.
+11. ✅ **Every bar opens on a random share of full**, except that catching a side unready fills the other side's bars outright.
 12. ✅ **A combatant who falls loses the readiness they had banked.**
 13. ✅ **Nothing recharges as the fight's time passes**, so no stretch of a fight is worth taking for its own sake.
 14. ✅ **Every character's turn is taken by a press**, and the fight waits at that character without limit or penalty.

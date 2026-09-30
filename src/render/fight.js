@@ -665,7 +665,21 @@ function nextTurn(fight) {
 }
 
 /**
- * Everyone the ambush handed a head start to, which is everyone on the aware side.
+ * What the ambush card says, by which side was caught unready.
+ *
+ * Which side it was is the whole of what the card adds, so it is the whole of what the
+ * card says. They differ on their first word rather than their last, because a card
+ * read at a glance is read from its start.
+ *
+ * @spec PRESENT-READY-033
+ */
+const AMBUSH_CARD = {
+  PARTY: "You've been ambushed!",
+  ENEMIES: 'Enemy has been ambushed!',
+};
+
+/**
+ * Everyone the ambush handed a filled bar to, which is everyone on the aware side.
  *
  * @spec PRESENT-READY-015
  * @spec PRESENT-READY-017
@@ -696,7 +710,9 @@ function ableToAct(encounter, id) {
  */
 function announce(fight) {
   fight.ambushers = fight.ambushers.filter((id) => ableToAct(fight.encounter, id));
-  fight.notice = fight.ambushers.length > 0 ? { text: 'Ambush!' } : null;
+  fight.notice = fight.ambushers.length > 0
+    ? { text: AMBUSH_CARD[fight.encounter.surprisedSide] }
+    : null;
 }
 
 function end(fight, result) {

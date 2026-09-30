@@ -28,11 +28,13 @@ specs fix the structure those numbers are fed into.
 
 ## Where the bars start
 
-- [x] **COMBAT-SURPRISE-003**: When an encounter begins, the system shall set every combatant's readiness to an independently drawn random share of a full bar, below a full bar.
+- [x] **COMBAT-SURPRISE-003**: When an encounter begins, the system shall set the readiness of every combatant not on a side that caught the other unready to an independently drawn random share of a full bar, below a full bar.
 - [x] **COMBAT-SURPRISE-004**: The system shall draw every combatant's opening readiness from the encounter's own seeded generator, so that an encounter replayed from the same seed opens identically.
-- [x] **COMBAT-SURPRISE-005**: When one side begins an encounter unaware of the other, the system shall add a fixed head start to each aware combatant's opening readiness, capped at a full bar, and shall leave the unaware side's opening readiness as drawn.
-- [x] **COMBAT-SURPRISE-006**: When both sides are aware or both unaware, the system shall add no head start to either side's opening readiness.
-- [x] **COMBAT-SURPRISE-007**: The system shall apply the opening readiness and any head start once, at the start of an encounter, and shall raise readiness by Dexterity alone thereafter.
+- [x] **COMBAT-SURPRISE-005**: When one side begins an encounter unaware of the other, the system shall set every aware combatant's opening readiness to a full bar, and shall leave the unaware side's opening readiness as drawn.
+- [x] **COMBAT-SURPRISE-008**: When one side begins an encounter unaware of the other, the system shall act every aware combatant once before any unaware combatant acts.
+- [x] **COMBAT-SURPRISE-009**: The system shall order the aware side's opening actions among themselves by the same rule it orders any other combatants ready on the same beat.
+- [x] **COMBAT-SURPRISE-006**: When both sides are aware or both unaware, the system shall draw every combatant's opening readiness and shall fill no combatant's bar.
+- [x] **COMBAT-SURPRISE-007**: The system shall apply the opening readiness once, at the start of an encounter, and shall raise readiness by Dexterity alone thereafter.
 
 ## Resolving an attack
 

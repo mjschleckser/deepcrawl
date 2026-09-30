@@ -7,7 +7,7 @@ import {
 import {
   beginEncounter, takeAction, nextActor, advanceBeats, attackBand, damageFor,
   actingOrder, readinessOf, attackTargets, allyTargets, attemptFlee, fleeCertainToFail,
-  createEnemy, createEnemyGroup, encounterOutcome, OPENING_HEAD_START,
+  createEnemy, createEnemyGroup, encounterOutcome,
   Band, Action, Outcome, MAX_ENEMY_GROUP, MIN_DAMAGE_FRACTION, FULL_BAR,
 } from './combat.js';
 

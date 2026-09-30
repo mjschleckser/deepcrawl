@@ -109,6 +109,7 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-READY-013**: While a character is waiting to be told what to do, the system shall name that character as ready to act.
 - [x] **PRESENT-READY-014**: While nothing is waiting on the player, the system shall draw no prompt at all.
 - [x] **PRESENT-READY-015**: When an encounter begins with one side unready, the system shall draw a card announcing the ambush until every combatant the ambush favoured has acted or stopped being able to act.
+- [x] **PRESENT-READY-033**: While an ambush card is drawn, the system shall name on it which side was caught unready, wording the party's case and the enemies' case differently.
 - [x] **PRESENT-READY-026**: While an ambush card is drawn, the system shall play the fight as it would without the card.
 - [x] **PRESENT-READY-017**: When an encounter begins with neither side unready, the system shall draw no ambush card.
 - [x] **PRESENT-READY-018**: When an attack resolves, the system shall offset the attacker's portrait and bars together, vertically, by an amount that decays to nothing over the beat.
