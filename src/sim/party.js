@@ -70,8 +70,46 @@ export const MAX_PARTY = 5;
  */
 export const POT_SKILL_CEILING = 4;
 
-/** Experience for one rank. Content data in waiting; the curve is not designed yet. */
-const RANK_COST = 240;
+/**
+ * What leaving a rank costs, and how high a rank goes.
+ *
+ * Leaving rank r costs three hundred times r, so each rank is dearer than the one
+ * before it. A linear cost per rank decays farming gently rather than sharply: floor
+ * one stays worth something at rank 2 and is plainly not worth it at rank 9, without
+ * the last ranks becoming a grind measured in hundreds of fights.
+ *
+ * @spec PARTY-SKILL-006
+ * @spec PARTY-SKILL-007
+ */
+export const RANK_STEP = 300;
+export const RANK_CAP = 10;
+
+/**
+ * The experience a skill must hold to stand at a rank, counted from rank zero.
+ *
+ * Counting from zero means a rank a class granted free costs its holder no less to
+ * leave than one they earned: the grant moves the rank, never the ledger. A Fighter
+ * opening at Blade 2 and a Mage climbing to Blade 2 have both spent the same by the
+ * time either reaches 3.
+ *
+ * @spec PARTY-SKILL-007
+ * @spec PARTY-SKILL-011
+ */
+export function experienceForRank(rank) {
+  return (RANK_STEP * rank * (rank - 1)) / 2;
+}
+
+/**
+ * The rank a given total of experience has bought, never past the cap.
+ *
+ * @spec PARTY-SKILL-006
+ * @spec PARTY-SKILL-011
+ */
+function rankFromExperience(experience) {
+  let rank = 0;
+  while (rank < RANK_CAP && experienceForRank(rank + 1) <= experience) rank += 1;
+  return rank;
+}
 
 /** Rates are multipliers; a skill absent from a class's table cannot be trained. */
 const CLASS_TABLE = {
@@ -109,6 +147,36 @@ const CLASS_TABLE = {
   },
 };
 
+/**
+ * What a class is worth in hit points before Constitution is counted.
+ *
+ * @spec PARTY-CHAR-006
+ */
+const CLASS_BASE_HIT_POINTS = {
+  [CharacterClass.FIGHTER]: 30,
+  [CharacterClass.CLERIC]: 26,
+  [CharacterClass.THIEF]: 22,
+  [CharacterClass.MAGE]: 18,
+};
+
+/**
+ * A character's hit points: their class's base, moved a twentieth per point of
+ * Constitution away from ten.
+ *
+ * Multiplicative rather than flat so the classes stay distinct at every score — a
+ * tough fighter gains more absolute hit points than a tough mage, and the gap between
+ * them holds instead of closing as Constitution rises. Nothing in play moves this:
+ * there are no levels to grow it with, and tying it to a skill rank would mean
+ * practising a weapon made a body harder to kill.
+ *
+ * @spec PARTY-CHAR-006
+ */
+export function hitPointsFor(characterClass, constitution) {
+  const base = CLASS_BASE_HIT_POINTS[characterClass];
+  if (base === undefined) return null;
+  return Math.round(base * (1 + 0.05 * (constitution - 10)));
+}
+
 export const DEFAULT_ATTRIBUTES = {
   [Attribute.MIGHT]: 10, [Attribute.CONSTITUTION]: 10, [Attribute.DEXTERITY]: 10,
   [Attribute.INTELLECT]: 10, [Attribute.PERCEPTION]: 10, [Attribute.RESOLVE]: 10,
@@ -121,8 +189,8 @@ export const DEFAULT_ATTRIBUTES = {
  * @spec PARTY-CLASS-001
  */
 export function createCharacter({
-  id, name, characterClass, attributes = {}, ranks: authored = {},
-  maxHitPoints = 20, attack = null, armour = 0, portrait = null,
+  id, name, characterClass, attributes: given = {}, ranks: authored = {},
+  attack = null, armour = 0, portrait = null,
 }) {
   const table = CLASS_TABLE[characterClass];
   const ranks = {};
@@ -131,14 +199,23 @@ export function createCharacter({
   for (const [skill, rank] of Object.entries(table.start)) {
     ranks[skill] = Math.max(ranks[skill] ?? 0, rank);
   }
-  // An authored character may say what it is better at than its class alone makes it.
+  // An authored character may say what it is better at than its class alone makes it,
+  // but no authored number reaches past the ceiling either.
+  // @spec PARTY-SKILL-006
   for (const [skill, rank] of Object.entries(authored)) ranks[skill] = rank;
+  for (const skill of Object.keys(ranks)) ranks[skill] = Math.min(RANK_CAP, ranks[skill]);
+
+  // Derived, never handed in: hit points are what the class and the Constitution make
+  // them, so no file can quietly award a mage a fighter's body.
+  // @spec PARTY-CHAR-006
+  const attributes = { ...DEFAULT_ATTRIBUTES, ...given };
+  const maxHitPoints = hitPointsFor(characterClass, attributes[Attribute.CONSTITUTION]);
 
   return {
     id,
     name,
     characterClass,
-    attributes: { ...DEFAULT_ATTRIBUTES, ...attributes },
+    attributes,
     maxHitPoints,
     // What this one swings, until weapons carry it instead. Both sides of a fight
     // carry it in the same field, so nothing resolving an attack asks which side.
@@ -291,9 +368,12 @@ function advance(c, skill, amount) {
   // stays earned.
   if (!rate) return;
 
+  // Experience keeps accruing past the cap; it simply stops buying anything, so that
+  // nothing has to decide when to stop recording what a character did.
+  // @spec PARTY-SKILL-006
   c.skillExperience[skill] = (c.skillExperience[skill] ?? 0) + amount * rate;
-  const earned = Math.floor(c.skillExperience[skill] / RANK_COST);
-  c.ranks[skill] = Math.max(c.ranks[skill] ?? 0, earned);
+  const earned = rankFromExperience(c.skillExperience[skill]);
+  c.ranks[skill] = Math.min(RANK_CAP, Math.max(c.ranks[skill] ?? 0, earned));
 }
 
 /**
@@ -335,7 +415,7 @@ export function awardEncounter(party, id, { pot, skillsUsed }) {
  *
  * @spec PARTY-XP-007
  */
-export function trainSkill(party, id, skill, amount = RANK_COST / 8) {
+export function trainSkill(party, id, skill, amount = RANK_STEP / 10) {
   const c = character(party, id);
   if (!c) return false;
   advance(c, skill, amount);

@@ -25,6 +25,8 @@ import {
   MAX_STEP_COST,
   serializeParty,
   restoreParty,
+  experienceForRank,
+  RANK_CAP,
 } from './party.js';
 
 const fighter = (over = {}) =>
@@ -519,5 +521,177 @@ describe('how fast a party moves', () => {
     applyDamage(party, 'b', 9999);
 
     expect(partyStepCost(party)).toBeLessThan(laden);
+  });
+});
+
+describe('hit points from class and Constitution', () => {
+  const at = (characterClass, constitution) => createCharacter({
+    id: 'x', name: 'X', characterClass, attributes: { CONSTITUTION: constitution },
+  }).maxHitPoints;
+
+  // @spec PARTY-CHAR-006
+  it('gives each class its own base at an ordinary Constitution', () => {
+    expect(at(CharacterClass.FIGHTER, 10)).toBe(30);
+    expect(at(CharacterClass.CLERIC, 10)).toBe(26);
+    expect(at(CharacterClass.THIEF, 10)).toBe(22);
+    expect(at(CharacterClass.MAGE, 10)).toBe(18);
+  });
+
+  // @spec PARTY-CHAR-006
+  it('scales the class base by a twentieth per point of Constitution over ten', () => {
+    // 30 x (1 + 0.05 x 8) = 42
+    expect(at(CharacterClass.FIGHTER, 18)).toBe(42);
+    // 18 x (1 + 0.05 x 8) = 25.2
+    expect(at(CharacterClass.MAGE, 18)).toBe(Math.round(18 * 1.4));
+  });
+
+  // @spec PARTY-CHAR-006
+  it('takes hit points off a Constitution below ten', () => {
+    expect(at(CharacterClass.FIGHTER, 6)).toBe(Math.round(30 * 0.8));
+    expect(at(CharacterClass.MAGE, 6)).toBeLessThan(at(CharacterClass.MAGE, 10));
+  });
+
+  // @spec PARTY-CHAR-006
+  it('keeps the classes apart at every Constitution', () => {
+    // Multiplicative, so a tough fighter gains more absolute points than a tough mage
+    // and the gap between them holds rather than closing.
+    const low = at(CharacterClass.FIGHTER, 6) / at(CharacterClass.MAGE, 6);
+    const high = at(CharacterClass.FIGHTER, 18) / at(CharacterClass.MAGE, 18);
+    expect(Math.abs(low - high)).toBeLessThan(0.1);
+  });
+
+  // @spec PARTY-CHAR-006
+  it('derives them rather than taking whatever it was handed', () => {
+    const c = createCharacter({
+      id: 'x', name: 'X', characterClass: CharacterClass.MAGE, maxHitPoints: 999,
+    });
+
+    expect(c.maxHitPoints).toBe(18);
+    expect(c.hitPoints).toBe(18);
+  });
+
+  // @spec PARTY-CHAR-006
+  it('does not move them as the character advances', () => {
+    const party = partyOf(createCharacter({
+      id: 'x', name: 'X', characterClass: CharacterClass.FIGHTER,
+    }));
+    const before = character(party, 'x').maxHitPoints;
+
+    for (let i = 0; i < 40; i++) trainSkill(party, 'x', Skill.BLADE, 300);
+
+    expect(character(party, 'x').maxHitPoints).toBe(before);
+  });
+});
+
+describe('what a rank costs', () => {
+  const trained = (amount) => {
+    const party = partyOf(createCharacter({
+      id: 'x', name: 'X', characterClass: CharacterClass.FIGHTER,
+    }));
+    // Blade trains at the Fighter's own rate, so ask for the rate back out of it.
+    trainSkill(party, 'x', Skill.BLADE, amount);
+    return character(party, 'x');
+  };
+
+  // @spec PARTY-SKILL-007
+  // @spec PARTY-SKILL-011
+  it('raises a rank at three hundred times the rank being left', () => {
+    // Counting from rank zero: 0 to stand at 1, 300 to stand at 2, 900 to stand at 3.
+    expect(experienceForRank(1)).toBe(0);
+    expect(experienceForRank(2)).toBe(300);
+    expect(experienceForRank(3)).toBe(900);
+    expect(experienceForRank(4)).toBe(1800);
+  });
+
+  // @spec PARTY-SKILL-007
+  it('costs more to leave each rank than the one before it', () => {
+    for (let r = 1; r < 10; r++) {
+      const step = experienceForRank(r + 1) - experienceForRank(r);
+      expect(step).toBe(300 * r);
+    }
+  });
+
+  // @spec PARTY-SKILL-011
+  it('charges the same for a rank a class granted as for one that was earned', () => {
+    // A Fighter opens Blade at 2 without paying for it, but leaving 2 still costs what
+    // leaving 2 costs anybody.
+    const fighter = createCharacter({ id: 'f', name: 'F', characterClass: CharacterClass.FIGHTER });
+    expect(fighter.ranks[Skill.BLADE]).toBeGreaterThanOrEqual(2);
+    expect(fighter.skillExperience[Skill.BLADE] ?? 0).toBe(0);
+  });
+
+  // @spec PARTY-SKILL-006
+  it('caps a rank at ten however much is poured into it', () => {
+    const c = trained(1000000);
+
+    expect(c.ranks[Skill.BLADE]).toBe(10);
+  });
+
+  // @spec PARTY-SKILL-006
+  it('caps a rank a file tried to author above ten', () => {
+    const c = createCharacter({
+      id: 'x', name: 'X', characterClass: CharacterClass.FIGHTER, ranks: { [Skill.BLADE]: 40 },
+    });
+
+    expect(c.ranks[Skill.BLADE]).toBe(10);
+  });
+
+  // @spec PARTY-SKILL-006
+  it('keeps accumulating experience past the cap without awarding a rank', () => {
+    const c = trained(1000000);
+    const banked = c.skillExperience[Skill.BLADE];
+
+    expect(banked).toBeGreaterThan(experienceForRank(10));
+    expect(c.ranks[Skill.BLADE]).toBe(10);
+  });
+});
+
+describe('what total level decides', () => {
+  // @spec PARTY-CHAR-012
+  it('decides no reward: the pot is the enemies, not the party that beat them', () => {
+    const green = partyOf(createCharacter({
+      id: 'x', name: 'X', characterClass: CharacterClass.FIGHTER,
+    }));
+    const veteran = partyOf(createCharacter({
+      id: 'x', name: 'X', characterClass: CharacterClass.FIGHTER,
+      ranks: { [Skill.BLADE]: 9, [Skill.HEAVY_ARMOUR]: 9, [Skill.SHIELD]: 9 },
+    }));
+    expect(totalLevel(character(veteran, 'x'))).toBeGreaterThan(totalLevel(character(green, 'x')));
+
+    const award = { pot: 400, skillsUsed: [Skill.BLADE] };
+    awardEncounter(green, 'x', award);
+    awardEncounter(veteran, 'x', award);
+
+    // The same fight pays the same experience to both.
+    expect(character(veteran, 'x').skillExperience[Skill.BLADE])
+      .toBe(character(green, 'x').skillExperience[Skill.BLADE]);
+  });
+
+  // @spec PARTY-CHAR-012
+  it('decides no body: hit points come from class and Constitution alone', () => {
+    const green = createCharacter({ id: 'a', name: 'A', characterClass: CharacterClass.MAGE });
+    const veteran = createCharacter({
+      id: 'b', name: 'B', characterClass: CharacterClass.MAGE,
+      ranks: { [Skill.ARCANA]: 10, [Skill.BLADE]: 10 },
+    });
+
+    expect(totalLevel(veteran)).toBeGreaterThan(totalLevel(green));
+    expect(veteran.maxHitPoints).toBe(green.maxHitPoints);
+  });
+
+  // @spec PARTY-CHAR-010
+  // @spec PARTY-CHAR-012
+  it('is a summary that follows the ranks rather than a number anything is spent on', () => {
+    const party = partyOf(createCharacter({
+      id: 'x', name: 'X', characterClass: CharacterClass.FIGHTER,
+    }));
+    const before = totalLevel(character(party, 'x'));
+
+    for (let i = 0; i < 20; i++) trainSkill(party, 'x', Skill.BLADE, 300);
+
+    // It moved because a rank moved, and for no other reason.
+    const c = character(party, 'x');
+    expect(totalLevel(c)).toBe(Object.values(c.ranks).reduce((sum, r) => sum + r, 0));
+    expect(totalLevel(c)).toBeGreaterThan(before);
   });
 });

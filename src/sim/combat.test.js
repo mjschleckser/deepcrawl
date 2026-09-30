@@ -479,6 +479,25 @@ describe('ending', () => {
   });
 });
 
+describe('damage from a fight', () => {
+  // @spec PARTY-OP-001
+  it('takes a real blow through the party operation, floor and chain included', () => {
+    const state = encounter({
+      members: [hero('victim')],
+      enemies: [orc('o1', { attack: { baseDamage: 9999, accuracy: 999 } })],
+    });
+    readyUp(state, 'o1');
+
+    takeAction(state, 'o1', { kind: Action.ATTACK, targetId: 'victim' });
+
+    const victim = character(state.party, 'victim');
+    // Never below nothing, and unconscious rather than simply at zero: both are the
+    // party operation's doing, and combat writes neither itself.
+    expect(victim.hitPoints).toBe(0);
+    expect(victim.condition).toBe(Condition.UNCONSCIOUS);
+  });
+});
+
 describe('passing a turn', () => {
   // @spec COMBAT-ACTION-009
   it('spends a full bar and resolves nothing', () => {
@@ -540,6 +559,7 @@ describe('taking a turn', () => {
   });
 
   // @spec COMBAT-ACTION-006
+  // @spec PARTY-OP-001
   it('changes a character through the party operations, so the condition chain applies', () => {
     const state = encounter({
       members: [hero('victim', { attributes: { DEXTERITY: 1 } })],

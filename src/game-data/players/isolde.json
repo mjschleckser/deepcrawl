@@ -6,7 +6,6 @@
   "attributes": {
     "DEXTERITY": 12
   },
-  "maxHitPoints": 20,
   "attack": {
     "skill": "BLADE",
     "baseDamage": 5,

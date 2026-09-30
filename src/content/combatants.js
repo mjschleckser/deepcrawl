@@ -61,7 +61,10 @@ function keysOf(file, field, table, allowed) {
  * @spec PARTY-DATA-006
  */
 function commonFields(file, data) {
-  for (const required of ['id', 'name', 'maxHitPoints']) {
+  // Hit points are not among these: a classed character derives them from its class
+  // and its Constitution, and only something authored whole has to state them.
+  // @spec PARTY-DATA-005
+  for (const required of ['id', 'name']) {
     if (data?.[required] === undefined) throw new Error(`${file}: no ${required}`);
   }
   return {
@@ -98,6 +101,10 @@ export function buildPlayer(file, data) {
  * @spec ENEMY-ROSTER-009
  */
 export function buildEnemy(file, data) {
+  // An enemy holds no class to derive a body from, so its file must say.
+  // @spec PARTY-DATA-005
+  if (data?.maxHitPoints === undefined) throw new Error(`${file}: no maxHitPoints`);
+
   return createEnemy({
     ...commonFields(file, data),
     role: oneOf(file, 'role', data.role ?? EnemyRole.MELEE, EnemyRole),
