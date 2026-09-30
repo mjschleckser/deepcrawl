@@ -85,8 +85,8 @@ maximum hit points = class base × (1 + 0.05 × (Constitution − 10))
 
 **Hit points never grow through play.** There are no character levels to grow them
 with, and tying them to a skill rank would mean practising a weapon made a body harder
-to kill. Getting harder to kill instead means better armour, better healing, better
-positioning, and — rarely — buying Constitution from a trainer.
+to kill. Getting harder to kill instead means better armour, better healing, spending
+turns better, and — rarely — buying Constitution from a trainer.
 
 This has a consequence worth being deliberate about: the survivability curve across a
 campaign runs entirely through armour, defence, and healing, so enemy damage can stay
@@ -232,18 +232,17 @@ stateDiagram-v2
     LOST --> [*]: gone
 ```
 
-An unconscious character is still in the party, taking no action
-and defending nothing. Another character may swap places with them, but that costs an
-action — dragging a body out of the front rank is work, not bookkeeping. A dead one is
-carried. Each recovery costs more than the last and can fail, and each failure
-degrades the character one step further.
+An unconscious character is still in the party, taking no action, defending nothing,
+and filling no readiness — there is nothing to move them out of, and nothing another
+character can do for them but heal them. A dead one is carried. Each recovery costs
+more than the last and can fail, and each failure degrades the character one step
+further.
 
-Transitions resolve per character rather than per round. Combat resolves selected
-actions one character at a time in descending Dexterity, ties going to the party and
-ties within the party settled by a fixed order of position — so a character at zero hit
-points who is struck before their healer acts goes down, and the healing that follows
-finds them unconscious. Dexterity is this segment's; the ordering rule is combat's, and
-is recorded here only because the condition chain is meaningless without it.
+Transitions resolve one combatant at a time, as each comes ready, rather than in a
+batch. A character at zero hit points who is struck before their healer's bar fills
+goes down, and the healing that follows finds them unconscious. The readiness that
+decides who acts first is combat's, and is recorded here only because the condition
+chain is meaningless without it.
 
 This is the steepest reading of *setbacks, not erasure*, and it is deliberately steep:
 because skills are earned by use rather than bought with experience, a character who is
@@ -332,7 +331,7 @@ hands it over.
 | A missed attack | Counts as use of the skill | Only successful use counting | Trying and failing is how anyone learns. Requiring success would also make advancement fastest against the weakest enemies, which is the opposite of what the pot is for. |
 | Starting ranks | Shared base skills at rank 1, plus class skills at rank 1 or better | Everything beginning at zero | A party that cannot detect, heal or fight on its first descent has no first hour. |
 | Reviving without a Cleric | Town temples, wandering clerics, and one-use scrolls | Restoration being the only route | Losing the only Cleric would otherwise spiral into an unrecoverable campaign, which the tenet forbids at the campaign level. |
-| An unconscious character in the front rank | Can be swapped out, but it costs the swapper their action | Free reassignment; no reassignment at all | Free swapping would make going down nearly costless. Forbidding it would make a front-rank casualty a fixed liability for the whole fight. |
+| An unconscious character | Stays where they are; only healing changes anything | Swapping them out of a front rank for an action, as a positional combat would need | With no positions in a fight there is nowhere to move a body to and nothing exposure could mean. Going down costs the party that character's turns until somebody spends one reviving them, which is the whole of the cost and needs no rule of its own. |
 | Low-level farming | Allowed, and unrewarding on its own terms | Forbidding it with a level cutoff | A small pot is its own disincentive, and the option should stay open to a party rebuilding after a disaster — which is exactly when a cutoff would bite hardest. |
 | Attributes and skills | Deliberately unbound; weapons declare what they draw on | Each skill governed by a fixed attribute | Binding them flattens the difference between a dagger and a mace. A finesse weapon drawing on Dexterity while still using Blade is the kind of nuance that makes equipment interesting. |
 | Death chain | Unconscious, dead, ashes, lost, with failure degrading | Always-recoverable death; a chain with no final stage | Skills earned by use make a loss unbuyable, so the threat has real weight. The tenet holds at the campaign level: losing a character is a setback, not erasure. |
@@ -344,24 +343,26 @@ hands it over.
 ### Resolved
 
 1. ✅ **This segment is the only writer** of character state; everyone else calls an operation.
-2. ✅ **Progression is skill rank earned by use**, not experience and levels.
-3. ✅ **An enemy carries a pot** that grows with the distinct skills used against it up to a ceiling, then divides equally.
-4. ✅ **A miss counts as use.** Trying and failing still teaches.
-5. ✅ **Class sets starting ranks**: shared base skills at 1, plus its own at 1 or higher.
-6. ✅ **Swapping with an unconscious ally costs an action.**
-7. ✅ **Revival has four routes** — party Cleric, town temple, wandering cleric, one-use scroll.
-8. ✅ **Attributes are not bound to skills**; weapons declare which attribute they draw on.
-9. ✅ **The death chain degrades on failed recovery**, and a character can be lost.
-10. ✅ **Class governs availability and rate**, and changing it keeps every rank already earned.
-11. ✅ **At most five characters**, with no seating among them.
-12. ✅ **Total level is the sum of a character's skill ranks**, derived rather than stored, and confers nothing by itself.
-12. ✅ **A lost character stays in the save** as a record.
+2. ✅ **At most five characters**, with no seating among them.
+3. ✅ **Progression is skill rank earned by use**, not experience and levels.
+4. ✅ **Total level is the sum of a character's skill ranks**, derived rather than stored, and confers nothing by itself.
+5. ✅ **An enemy carries a pot** that grows with the distinct skills used against it up to a ceiling, then divides equally.
+6. ✅ **A miss counts as use.** Trying and failing still teaches.
+7. ✅ **A rank costs 300 × r to leave rank r**, and ranks cap at 10.
+8. ✅ **Class sets starting ranks**: shared base skills at 1, plus its own at 1 or higher.
+9. ✅ **Class governs availability and rate**, and changing it keeps every rank already earned.
+10. ✅ **Attributes are not bound to skills**; weapons declare which attribute they draw on.
+11. ✅ **Hit points never grow through play** — class base and Constitution, fixed for life.
+12. ✅ **The death chain degrades on failed recovery**, and a character can be lost.
+13. ✅ **An unconscious character stays where they are**; with no positions there is nothing to move them out of.
+14. ✅ **Revival has four routes** — party Cleric, town temple, wandering cleric, one-use scroll.
+15. ✅ **A lost character stays in the save** as a record.
 
 ### Deferred
 
-1. **Ability definitions.** Ranks unlock abilities, but what an ability *does* is combat's, and combat does not exist. The unlock mechanism is designed; the abilities are not.
-2. **Rank thresholds and rates.** How much experience a rank costs, and what a class rate multiplier actually is, are unauthored — content data with no content yet.
-3. **Enemy pot values.** What an enemy is worth belongs with enemies, which do not exist.
+1. **Ability definitions.** Ranks unlock abilities, and what an ability *does* is combat's to resolve — but no ability is authored. The unlock mechanism is designed; the abilities are not.
+2. **Class rate multipliers.** What a rank costs is settled at 300 × r. What each class's rate multiplier on each skill actually is remains unauthored content data.
+3. **Enemy pot values.** What an enemy is worth belongs with enemies, which authors it per roster entry. Only the first floor's roster is written.
 4. **Character creation.** How attributes are set at the start — rolled, allocated, or fixed by class — is unspecified.
 5. **The pot ceiling.** That the pot stops growing past a handful of distinct skills is settled; where the ceiling sits is content data and untuned.
 6. **Equipment slots.** Which slots exist, and what a class may wield, waits on the items segment.

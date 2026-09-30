@@ -38,7 +38,7 @@ are fed into, never the numbers.
 - [x] **PARTY-COND-007**: The system shall accept no revival attempt on a character whose condition is `LOST`.
 - [x] **PARTY-COND-008**: The system shall never raise a character's hit points above their maximum.
 - [x] **PARTY-COND-009**: While a character's condition is not `OK`, the system shall let them take no action and contribute no defence, while remaining a member of the party.
-- [x] **PARTY-COND-010**: The system shall resolve a condition change at the moment the damage or healing is applied, rather than deferring it to the end of a round.
+- [x] **PARTY-COND-010**: The system shall resolve a condition change at the moment the damage or healing is applied, rather than deferring it until other combatants have acted.
 - [x] **PARTY-COND-011**: The system shall accept a revival attempt from a party member using Restoration, a town temple, a hired cleric, or a consumed one-use item alike.
 
 ## Skills

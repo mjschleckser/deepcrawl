@@ -149,12 +149,12 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-FIGHT-022**: The system shall scale a combatant's portrait, bars, and text with the viewport, by the same scale the controls use.
 - [x] **PRESENT-FIGHT-003**: The system shall draw a combatant who is down in the place they occupied in their column, rather than removing them from it.
 - [x] **PRESENT-FIGHT-004**: The system shall draw each combatant's remaining and maximum hit points.
-- [x] **PRESENT-FIGHT-005**: The system shall ask each conscious party member for an action in turn, in a fixed order.
+- [x] **PRESENT-FIGHT-005**: The system shall ask exactly one character for an action — the one whose readiness has filled — and shall ask nobody in advance of that.
 - [x] **PRESENT-FIGHT-006**: The system shall offer a character only the actions that character can legally take.
 - [x] **PRESENT-FIGHT-007**: When an action needs a target, the system shall offer every combatant the simulation reports as a legal target for it.
-- [x] **PRESENT-FIGHT-008**: When the last conscious party member has chosen, the system shall resolve the round and begin asking again.
-- [x] **PRESENT-FIGHT-009**: When the player backs out of a choice, the system shall return to the previous character's choice rather than only cancelling the current one.
-- [x] **PRESENT-FIGHT-010**: The system shall build the combat log from the events a resolved round reports, and shall report nothing the simulation did not do.
+- [x] **PRESENT-FIGHT-008**: When a character's action is chosen, the system shall resolve it at once and pass on to whoever comes ready next.
+- [x] **PRESENT-FIGHT-009**: When the player backs out of a choice, the system shall drop the proposal and return to that character's open choice, never to an earlier character.
+- [x] **PRESENT-FIGHT-010**: The system shall build the combat log from the events a resolved action reports, and shall report nothing the simulation did not do.
 - [x] **PRESENT-FIGHT-011**: The system shall name, for each resolved attack, who acted, which band the attack fell in, the damage it dealt, and whether it felled its target.
 - [x] **PRESENT-FIGHT-012**: While an encounter is running, the system shall accept no exploration movement verb or party action.
 - [x] **PRESENT-FIGHT-013**: The system shall resolve a numbered key and a tap on the same option to the same choice, carrying no record of which was used.
@@ -167,4 +167,4 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [D] **PRESENT-VIEW-010**: The system shall animate the transition between one party position and the next.
 - [D] **PRESENT-VIEW-011**: The system shall draw walls, floors, and features with textures rather than flat fill.
 - [D] **PRESENT-INPUT-007**: When a step is blocked, the system shall give the player feedback that the way is barred.
-- [D] **PRESENT-FIGHT-016**: The system shall play a resolving round out over time rather than landing it in a single frame.
+- [D] **PRESENT-FIGHT-016**: The system shall animate a resolving action rather than landing its effect in a single frame.

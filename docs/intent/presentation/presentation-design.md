@@ -15,7 +15,7 @@ Three principles shape the design.
 
 **Presentation remembers only what it was told once.** Every drawing is a function of
 what the simulation currently says. The single exception is a record of events already
-reported: a resolved round returns what happened once and never again, and since
+reported: a resolved action returns what happened once and never again, and since
 nothing animates, a fight would otherwise be perceived only as the state that came out
 the other side. Keeping that record is not holding game state — the simulation stays
 the only authority on what is true — but it is the one place the renderer remembers
@@ -230,12 +230,12 @@ top of it.
 │  └──┘ 0/9                  └──┘ 20/20                             │
 │         ↑ enemies, left            ↑ the party, right             │
 ├───────────────────────────────────────────────────────────────────┤
-│ Bram is ready to act!                                             │
-│  [1] Attack Goblin   [2] Attack   [3] Defend   [4] Flee           │
-├───────────────────────────────────────────────────────────────────┤
 │ Rook grazes Goblin for 3.                                         │
 │ Goblin hits Bram for 6.                                           │ ← the log
 │ Tam crits Goblin for 14. Goblin falls.                            │
+├───────────────────────────────────────────────────────────────────┤
+│ Bram is ready to act!                                             │ ← who is up
+│  [1] Attack Goblin   [2] Attack   [3] Defend   [4] Flee           │ ← the controls
 └───────────────────────────────────────────────────────────────────┘
 ```
 
@@ -329,9 +329,6 @@ exist. It is the bar that changes least, which is why it is neither the one the 
 lands on first nor the one it checks under pressure. Both sides carry both numbers,
 because both sides are the same kind of thing.
 
-**The bottom bar is hit points alone** for now. Spell slots and whatever later joins
-them belong on it, and are not drawn while nothing spends them.
-
 **Bars fill in front of the player.** Every combatant opens on the share the fight
 rolled for them, and it rises over real time, a beat of the fight's time per fixed
 span, so that who is catching up on whom is something watched rather than something
@@ -416,23 +413,25 @@ side and never learn what happened in between.
 
 The log is therefore not decoration. It is the fight, as perceived: one line per
 resolved action, naming who acted, what band the attack fell in, what it cost, and
-what it killed. It is built from the event log a resolved round already returns, so the
+what it killed. It is built from the event log a resolved action already returns, so the
 renderer invents nothing and reports only what the simulation actually did.
 
 ### Choosing actions
 
-Selection walks the conscious party in a fixed order. Each character is asked in turn,
-and only the actions that character can legally take are offered — no attack option
-with nothing in reach, no flee option against something that forbids it. An action
-needing a target asks for one from the legal targets only, so an illegal choice cannot
-be expressed rather than being refused after the fact.
+**One character is asked at a time, and only when their bar fills.** There is no round
+to compose. The fight stops at whoever came ready, that character acts, the log takes a
+line, and the fight resumes. Nobody is asked in advance and nothing is held pending, so
+the panel is only ever offering one combatant's options.
 
-When the last character has chosen, the round resolves, the log grows, and the first
-character is asked again.
+Only the actions that character can legally take are offered — no attack with nothing
+standing, no cast with the slot already spent, no flee against something that forbids
+it. An action needing a target asks for one from the legal targets only, so an illegal
+choice cannot be expressed rather than being refused after the fact.
 
-Backing out of a choice steps back to the previous character, because a party committed
-before seeing any result should be able to reconsider the whole round rather than only
-its last decision.
+**Backing out drops the proposal and returns to the open choice**, which is as far back
+as there is to go. A turn resolves the instant it is taken, so there is no earlier
+decision left standing to reconsider: what `Escape` undoes is a target half-chosen, or
+a proposal set aside in order to compose something else.
 
 ### Input in a fight
 
@@ -580,7 +579,7 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 | Hit regions | Computed in the plan, beside the drawing they belong to | Registered as handlers on the drawn objects | Keeping them together means what is drawn and what is tapped cannot drift apart, and it keeps hit-testing in the pure layer where it can be tested. |
 | Combat over the corridor | Drawn on top of the first-person view, which stays visible | Replacing the view with a combat screen | The party is still standing in the passage they were caught in, and seeing it is part of knowing how bad this is. A separate screen would also throw away the light and the place. |
 | How a side is arranged | Enemies in one column on the left, the party in one on the right | Two ranks a side, as the rows once were; one combined list ordered by readiness | A column is the honest shape of a side with no positions in it, and it holds two combatants or twelve without changing shape. Facing columns keep *us* and *them* answerable without reading a single name. A list ordered by readiness would reorder itself under the player's eye on every beat, which is the one thing a display being read under pressure must not do. |
-| What a combatant is drawn as | A portrait, then three stacked bars: readiness, identity, condition | A single card whose fill is readiness; a card with a bar along its foot | Three bars put the three questions a player asks — when do they act, who is this, how are they doing — in three fixed places, so each is found by position rather than by reading. A card carrying everything at once makes readiness compete with the name and the numbers for the same space. |
+| What a combatant is drawn as | A portrait, then three stacked bars: readiness, identity, hit points | A single card whose fill is readiness; a card with a bar along its foot | Three bars put the three questions a player asks — when do they act, who is this, how are they doing — in three fixed places, so each is found by position rather than by reading. A card carrying everything at once makes readiness compete with the name and the numbers for the same space. |
 | How readiness is drawn | One continuous fill with a brighter leading edge, glowing at full | A row of arrowheads that appear one at a time; a numbered initiative list; an order-of-play queue along one edge | A length is compared between two bars at a glance and slides smoothly as the bar fills. Marks appearing one at a time stutter, and quantise a value that is continuous underneath. A queue would be recomputed and redrawn on every action and still would not show how close anybody is. |
 | The panel's regions | Fixed: combatants, log, prompt line, controls, each keeping its place and size all encounter | Sizing each region to its content, so the panel grows and shrinks as the fight goes | A fight is read under time pressure. A prompt that pushed the formation up as it appeared, or a row of targets taller than the row of options it replaced, would move what the player is reading at the moment they are reading it. Fixed regions cost some empty space in a small fight and buy a screen that can be read at a glance every time. |
 | The log's size | A fixed window of the last few lines, scrollable back through the rest | Growing to fit what has happened; clearing between turns; a full-height transcript | A fixed window keeps the panel still, and scrolling keeps what scrolled off reachable — which matters because a fight plays on while the player looks away. A growing log would move everything below it on every action. |
@@ -592,9 +591,9 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 | Announcing an ambush | A card above the fight saying Ambush!, up until every ambusher has acted, with the fight playing beneath it | Colouring the bars that start full; a line in the log; a card held for a fixed span before the fight begins | Bars that start full are the one thing on the screen with no cause visible anywhere, and a player who cannot read them concludes the fight is broken. A card held before the fight explains an ambush nobody has seen yet and is gone by the time the ambushers swing; one that lasts as long as the ambush explains it while it happens. The log is read after the fact, and a colour is a code nobody has been taught. |
 | The prompt | Naming who is ready, and absent while nothing waits | Asking what the character will do; a prompt that stays up throughout | The buttons already say what may be done; what the player needs is which of five cards the next press belongs to. A prompt standing over a fight that is playing invites a press nothing is listening for. |
 | Showing an attack | A vertical judder on the attacker, decaying over the beat | Moving the attacker toward its target; flashing the one that was hit; a larger animation | Nothing else in the fight moves, so the smallest honest motion is enough, and putting it on the attacker answers *whose blow was that* rather than only *that something happened*. Moving toward a target is a real animation and wants a real animation system. |
-| Showing a round | A text log built from the round's own event log | Animating each action; showing only the resulting state | Nothing animates, so a round lands in one frame. Without a record the player sees the aftermath and never learns what happened. The log is the fight as perceived. |
+| Showing an action | A text log built from the action's own event log | Animating each action; showing only the resulting state | Nothing animates, so an action lands in one frame. Without a record the player sees the aftermath and never learns what happened. The log is the fight as perceived. |
 | Illegal options | Not offered at all | Offered and refused when chosen | An option that cannot be taken should not be presented. Refusing after the fact teaches the rules by failure, which in a fight is expensive. |
-| Backing out | Steps back to the previous character | Cancelling only the current choice | The party commits to a whole round before any of it resolves, so reconsidering should reach the whole round rather than only its last decision. |
+| Backing out | Drops the proposal and returns to the open choice | Stepping back to the previous character, as a composed round would allow | A turn resolves the moment it is taken, so there is no previous character still holding an undecided action. Offering to step back to one would be offering to undo something the simulation has already resolved. |
 | The fallen | Drawn in place, spent and dimmed | Removing them from the column | The shape of a side that has lost its middle is information, and a column that closed its gaps would move everything below the gap while the player was looking at it. |
 | The build stamp | Drawn in the corner of the running game, with the commit count as its patch | A version on an about screen; no version at all; a build date | "It does not work" and "you are looking at a cached build" are the same report without it, and a service worker makes the second common. Taking the patch from the commit count means nobody has to remember to raise a number, and it orders correctly by construction. |
 | Starter floor | Hand-authored data, deleted when generation lands | Waiting for dungeon generation; generating a floor here | The segment cannot be seen to work without a floor to walk, and building a generator inside the presentation segment would put it in the wrong place permanently. |
@@ -604,41 +603,42 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 ### Resolved
 
 1. ✅ **Presentation holds no copy of game state**, deriving every drawing from the simulation — except a record of events already reported, which is never reported twice.
-2. ✅ **The ticker is stopped**; redraws are triggered by change, not by time.
-3. ✅ **Layers are cleared and rebuilt** rather than diffed.
+2. ✅ **The ticker is stopped outside a fight**; redraws are triggered by change, not by time.
+3. ✅ **Layers are cleared and rebuilt** rather than diffed, and every drawing names every layer.
 4. ✅ **The corridor is nested depth frames**, drawn far to near, in 2D polygons.
 5. ✅ **Light is drawn as a per-depth tint**, fading to black at the edge of sight.
-6. ✅ **Tap regions are viewport fractions**, recomputed on resize, with a pixel floor on how small one may be drawn.
+6. ✅ **A door is drawn on the frame the corridor stops at**, closed as a panel with a handle and open as its frame alone.
+7. ✅ **An enemy the corridor report names is drawn standing at that depth**, with the same horned head the automap uses.
+8. ✅ **Tap regions are viewport fractions**, recomputed on resize, with a pixel floor on how small one may be drawn.
 9. ✅ **Every tappable region is drawn**, and every drawn control carries its own hit region in the plan.
-11. ✅ **A navigation zone is its label alone**, outlined only while pressed; a button keeps its panel and frame.
-13. ✅ **Enemies are a column on the left and the party a column on the right**, every position decided in the plan.
-14. ✅ **Stepping back is a zone of its own**, beneath the forward zone.
-15. ✅ **A door is drawn on the frame the corridor stops at**, closed as a panel with a handle and open as its frame alone.
-16. ✅ **An enemy the corridor report names is drawn standing at that depth**, with the same horned head the automap uses.
-17. ✅ **The build's version is drawn in the bottom-left corner**, its patch number the commit count, fixed at build time.
-18. ✅ **A combatant is a portrait and three stacked bars** — readiness, identity, condition — and the one acting is highlighted.
-28. ✅ **The panel's regions are fixed**, so nothing moves that the player is not moving.
-29. ✅ **The log is a fixed window with a scrollbar**, following the fight until the player scrolls back.
-19. ✅ **Actions play out a beat at a time**, and the ticker runs only while a fight is playing rather than waiting.
-24. ✅ **The bottom bar is hit points**, coloured by the share left; other resources join them when they exist.
-26. ✅ **Readiness is one continuous fill** with a leading edge, glowing at full.
-27. ✅ **A portrait is an image file**, one per class and per enemy kind.
-25. ✅ **Bars fill over real time from empty**, drawn partway between beats.
-20. ✅ **Every action is taken by a press.** The countdown ring that would take a proposal unattended is built, tested, and switched off.
-21. ✅ **The prompt names who is ready to act**, and is absent while nothing waits on the player.
-22. ✅ **An ambush is announced by a card** that stays up until every ambusher has acted, with the fight playing beneath it.
-23. ✅ **An attack shakes its attacker's card**, which is the only motion in a fight.
+10. ✅ **A navigation zone is its label alone**, outlined only while pressed; a button keeps its panel and frame.
+11. ✅ **Stepping back is a zone of its own**, beneath the forward zone.
 12. ✅ **Turning about has a key but no control**, being two taps of one the player already uses.
-10. ✅ **Labels name the action**, with any keyboard hint as secondary text.
-7. ✅ **Prompts are drawn from the simulation's pending confirmation**, never from the renderer's own flag.
-8. ✅ **A hand-authored starter floor** stands in until dungeon generation exists.
+13. ✅ **Labels name the action**, with any keyboard hint as secondary text.
+14. ✅ **Enemies are a column on the left and the party a column on the right**, every position decided in the plan.
+15. ✅ **A combatant is a portrait and three stacked bars** — readiness, identity, hit points — and the one acting is highlighted.
+16. ✅ **Readiness is one continuous fill** with a leading edge, glowing at full.
+17. ✅ **Bars fill over real time from empty**, drawn partway between beats.
+18. ✅ **The bottom bar is hit points**, coloured by the share left; other resources join them when they exist.
+19. ✅ **A portrait is an image file**, one per class and per enemy kind.
+20. ✅ **The panel's regions are fixed**, so nothing moves that the player is not moving.
+21. ✅ **The log is a fixed window with a scrollbar**, following the fight until the player scrolls back.
+22. ✅ **Actions play out a beat at a time**, and the ticker runs only while a fight is playing rather than waiting.
+23. ✅ **An attack shakes its attacker's card**, which is the only motion in a fight.
+24. ✅ **One character is asked at a time**, when their bar fills; backing out drops the proposal rather than stepping back to anybody.
+25. ✅ **Every action is taken by a press.** The countdown ring that would take a proposal unattended is built, tested, and switched off.
+26. ✅ **The prompt names who is ready to act**, and is absent while nothing waits on the player.
+27. ✅ **An ambush is announced by a card** that stays up until every ambusher has acted, with the fight playing beneath it.
+28. ✅ **Prompts are drawn from the simulation's pending confirmation**, never from the renderer's own flag.
+29. ✅ **The build's version is drawn in the bottom-left corner**, its patch number the commit count, fixed at build time.
+30. ✅ **A hand-authored starter floor** stands in until dungeon generation exists.
 
 ### Deferred
 
-1. **Animation in a fight.** A round lands in one frame and is read from the log. Whether a resolving round should play out over time, and what that would do to the stopped ticker, is the same open question the step animation raises.
+1. **Animation in a fight.** An action lands in one frame, and the only motion is the attacker's judder. Real animation — a blow that travels, a spell that reads as a spell — is unbuilt, and would want the ticker running throughout a fight rather than only between actions. The beat, the shake, and the ticker's bounds are settled; everything past them is not.
 2. **Art.** Everything is flat-shaded polygons. Textures, sprites for doors and stairs, and any sense of material are unaddressed.
 3. **Animation between steps.** A step currently cuts from one position to the next. Whether it should slide, and how that squares with a stopped ticker, is open — an animation is the one thing in this segment that would need time.
-4. **The party action bar's contents.** `PARTY`, `INVENTORY`, and `SPELLS` route to segments that do not exist, so the bar can be drawn but its panels cannot.
+4. **The party action bar's contents.** The bar can be drawn, but its panels cannot: `INVENTORY` and `SPELLS` route to an items segment and an ability set that are unbuilt, and `PARTY` has a segment to read but no screen designed for it.
 5. **Expanded-map interaction.** Panning and zooming an expanded map, and whether tapping a tile does anything, are unspecified. Auto-travel is already deferred in exploration.
 6. **Wide-screen framing.** On a very wide desktop window the corridor frames may want letterboxing rather than stretching; untested.
 7. **Accessibility.** Keyboard focus, screen-reader description of the map, and colour-blind-safe stroke distinctions are unaddressed.

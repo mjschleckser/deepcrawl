@@ -68,7 +68,7 @@ anybody — and acting spends the bar so that the filling begins again.
 | | |
 |---|---|
 | Readiness rises by | the combatant's Dexterity, each beat of the fight's time |
-| Readiness starts at | nothing, except the aware side's full bar in a surprise |
+| Readiness starts at | a random share of a full bar, raised for the aware side in a surprise |
 | A combatant acts at | a full bar |
 | Acting costs | one full bar, whatever the action |
 | Anything left over | carries forward, so nothing is lost by coming ready a fraction late |
@@ -192,7 +192,7 @@ Blade, and they are not the same argument for what makes a character dangerous.
 ### What the numbers come out at
 
 The calibration anchor is a fresh party against a floor-one goblin. Everything above is
-tuned so an ordinary goblin takes two solid hits and a front-liner falls in five.
+tuned so an ordinary goblin takes two solid hits and a fresh fighter falls in five.
 
 | | Value |
 |---|---|
@@ -467,7 +467,7 @@ whether or not it can see.
 | What bounds an action | What the combatant holds and knows | Where the combatant stands | A limit the player chose — this weapon, these slots, that ability — is one they can plan around and change. A limit imposed by a position assigned outside the fight is one they can only discover. |
 | Magic cost | Slots per rank, restored only by camping | A regenerating mana pool; per-round cooldowns | Slots make magic attrition, so the question is whether this is the fight worth the last heal. A pool or a cooldown would make descending deeper cost nothing, which is the whole pressure of a dungeon crawl. |
 | Enemy group size | Uncapped by the party's five, ceiling of twenty | Mirroring the party's five; genuinely unbounded | Being outnumbered is a real threat and a party of five should meet eight. A ceiling keeps a swarm a shape the game can express and the screen can hold, rather than an arbitrary number. |
-| Fleeing | One attempt for the whole party, costing the round | Per-character escape | A party does not leave one member behind, and per-character escape would turn a losing fight into a triage puzzle about who is abandoned. |
+| Fleeing | One attempt for the whole party, costing the bar of whoever made it | Per-character escape | A party does not leave one member behind, and per-character escape would turn a losing fight into a triage puzzle about who is abandoned. |
 | Darkness | Heavy accuracy penalty and no deliberate targeting | Forbidding combat in the dark; no effect | Fighting blind should be possible and awful. Forbidding it would make a failed torch a softlock; ignoring it would make light pointless in the place it matters most. |
 
 ## Open Questions & Future Decisions
@@ -475,32 +475,30 @@ whether or not it can see.
 ### Resolved
 
 1. ✅ **One roll, four bands** — miss, graze, hit, crit — with a narrow miss and a distant crit.
-2. ✅ **Each combatant chooses and resolves in the same instant**, when their readiness fills.
-3. ✅ **There is no reach rule**: every standing combatant may be acted on by every other.
-4. ✅ **What a combatant may do is bounded by what they hold and know**, never by where they stand.
-5. ✅ **Finesse is a weapon property**, not a class feature.
-6. ✅ **Spell slots per rank**, restored only by camping.
-7. ✅ **Enemy groups are not capped at five**, and hold at most twenty.
-8. ✅ **Fleeing is one attempt for the whole party**, costing only the round it was spent on, allowed in the dark, and impossible against something far faster or something that forbids escape.
-11. ✅ **A target is resolved at the moment the action is taken**, so no action is ever aimed at something already gone.
-12. ✅ **A body shields nobody**, there being nothing for it to stand in front of.
-13. ✅ **A landed blow always deals at least a twentieth of its base damage**, never less than one.
-14. ✅ **An enemy group holds at most twenty**, so a swarm is a shape rather than an unbounded number.
-15. ✅ **A defeated party stays where it fell**, to be abandoned or recovered by a fresh party.
-9. ✅ **Darkness penalises accuracy and removes deliberate targeting**, and never helps the enemy.
-10. ✅ **Nothing recharges as the fight's time passes**, so no stretch of a fight is worth taking for its own sake.
-16. ✅ **Readiness fills by Dexterity**, at a floor of one point, and a full bar is what an action costs.
-17. ✅ **The fight's time never advances while anyone is being asked what to do.**
-18. ✅ **Every bar opens on a random share of full**, and surprise adds a large head start to the aware side's.
-19. ✅ **A combatant who falls loses the readiness they had banked.**
-20. ✅ **Standing orders propose an action and a target**, which is taken only when the player presses for it.
-21. ✅ **Orders are an ordered list, read top to bottom, first match winning**, with an illegal proposal falling through to the next rule.
-22. ✅ **Order targets resolve at the moment of acting**, and give way to the random target darkness imposes.
-23. ✅ **A character counts among their own allies** for every condition and target that names one.
-24. ✅ **Equal candidates for a target are settled by the acting order**, never by a roll.
-25. ✅ **A failed escape costs only the bar of the character who attempted it.**
-26. ✅ **Defending lasts until that character next acts**, like every other action's one turn of effect.
-27. ✅ **Every action is taken by a press**, proposed or not; the fight waits at every character without penalty.
+2. ✅ **A landed blow always deals at least a twentieth of its base damage**, never less than one.
+3. ✅ **Each combatant chooses and resolves in the same instant**, when their readiness fills.
+4. ✅ **There is no reach rule**: every standing combatant may be acted on by every other.
+5. ✅ **A body shields nobody**, there being nothing for it to stand in front of.
+6. ✅ **What a combatant may do is bounded by what they hold and know**, never by where they stand.
+7. ✅ **Finesse is a weapon property**, not a class feature.
+8. ✅ **Spell slots per rank**, restored only by camping.
+9. ✅ **Readiness fills by Dexterity**, at a floor of one point, and a full bar is what an action costs.
+10. ✅ **The fight's time never advances while anyone is being asked what to do.**
+11. ✅ **Every bar opens on a random share of full**, and surprise adds a large head start to the aware side's.
+12. ✅ **A combatant who falls loses the readiness they had banked.**
+13. ✅ **Nothing recharges as the fight's time passes**, so no stretch of a fight is worth taking for its own sake.
+14. ✅ **Defending lasts until that character next acts**, like every other action's one turn of effect.
+15. ✅ **Every action is taken by a press**, proposed or not; the fight waits at every character without penalty.
+16. ✅ **Standing orders propose an action and a target**, which is taken only when the player presses for it.
+17. ✅ **Orders are an ordered list, read top to bottom, first match winning**, with an illegal proposal falling through to the next rule.
+18. ✅ **A target is resolved at the moment the action is taken**, so no action is ever aimed at something already gone.
+19. ✅ **An order's target gives way to the random target darkness imposes.**
+20. ✅ **A character counts among their own allies** for every condition and target that names one.
+21. ✅ **Equal candidates for a target are settled by the acting order**, never by a roll.
+22. ✅ **Darkness penalises accuracy and removes deliberate targeting**, and never helps the enemy.
+23. ✅ **Enemy groups are not capped at five** and hold at most twenty, so a swarm is a shape rather than an unbounded number.
+24. ✅ **Fleeing is one attempt for the whole party**, costing only the bar of the character who attempted it, allowed in the dark, and impossible against something far faster or something that forbids escape.
+25. ✅ **A defeated party stays where it fell**, to be abandoned or recovered by a fresh party.
 
 ### Deferred
 

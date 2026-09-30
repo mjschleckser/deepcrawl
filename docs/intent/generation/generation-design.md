@@ -40,7 +40,7 @@ dungeon should not mean changing the generator.
 | Connectors | where stairs and pits sit, and what they point at | exploration decides what taking one does |
 | Traps | where they are laid, once | the trap segment owns detection, disarming, effects |
 | Lighting | the intrinsic light level of each tile | exploration resolves it against carried light |
-| Room contents | what refills a room, and when it is worth refilling | the roaming-enemy segment owns enemies once placed |
+| Room contents | what refills a room, and when it is worth refilling | the enemies segment owns the bands it answers with, and everything they do once placed |
 
 ## Determinism
 
@@ -96,9 +96,12 @@ the floor loops and alternative routes.
 
 ### 5. Doors
 
-Where a corridor meets a room's boundary, the opened edge becomes a `door`. A portion
-of doors, drawn from the archetype, become `lockedDoor`; a portion of the *loop*
-connections become `secretDoor`.
+Where a corridor meets a room's boundary, the opened edge becomes a `door` at the
+archetype's door chance, and stays an open archway otherwise. Not every threshold is a
+door: a closed door is opaque, so a floor that put one on every room boundary would be
+a floor the party can see into nowhere until they are standing in it. A portion of the
+doors that do appear become `lockedDoor`; a portion of the *loop* connections become
+`secretDoor`.
 
 Secrets are bounded by an invariant the generator enforces rather than hopes for:
 **every region keeps at least one route in that is neither secret nor locked.** Only
@@ -137,7 +140,8 @@ than values, and generation draws from those ranges.
 | `rooms` | how many rooms to aim for, as a range |
 | `roomSize` | minimum and maximum room dimensions |
 | `loops` | extra non-tree connections, as a range |
-| `doorChance`, `lockedChance`, `secretChance` | how often a junction becomes each kind |
+| `doorChance` | how often a room threshold becomes a door rather than an open archway |
+| `lockedChance`, `secretChance` | how often a door is locked, and how often a loop connection is secret |
 | `traps` | how many traps to lay, as a range |
 | `litRooms` | how many rooms are intrinsically lit |
 
@@ -189,8 +193,10 @@ Every floor holds at least one upward staircase, so `STAIRS_UP` can always be re
 ## Re-stocking
 
 Exploration decides *when* a floor is re-stocked and by how much; generation answers
-*what* refills it. Given a floor and how long the party was away, generation returns
-the room contents to place.
+*what* refills it. Given a floor and how long the party was away, generation decides
+which rooms are worth refilling, asks the enemies segment which bands go in them, and
+returns the contents with their positions. Which bands exist is not generation's
+business; where they stand is.
 
 It never touches the layout and never touches a trap. Re-stocking is derived from the
 floor's own seed combined with a re-stocking counter, so the same floor re-stocked
@@ -236,7 +242,7 @@ not converge on one arrangement.
 1. **Themed floors.** Archetypes currently bound quantities, not character — no crypts that differ from caverns in anything but numbers.
 2. **Set pieces.** A hand-authored room dropped into a generated floor — a boss chamber, a vault — has no mechanism.
 3. **Loot placement.** Generation places traps and connectors but nothing worth carrying; the loot segment does not exist.
-4. **Enemy placement.** Generation reports what should refill a room, but the roaming-enemy segment that consumes it does not exist yet, so the shape of that answer is provisional.
+4. **Re-stocking density.** Generation asks the enemies segment which bands refill a room and reports them with their positions. How many a room is worth, and how that scales with the floor's tier, is untuned.
 5. **Archetype progression.** Nothing decides which archetype a floor at a given depth should use, or how a campaign escalates.
 6. **Floor size versus drawn depth.** A long straight corridor beyond the maximum drawn depth is invisible past its limit; whether archetypes should avoid sightlines that long is untested.
 

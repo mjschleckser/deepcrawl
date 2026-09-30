@@ -159,7 +159,6 @@ flowchart TB
     end
 
     subgraph sim["Simulation core (no renderer, no DOM)"]
-        turn["Turn engine — scheduler, action resolution"]
         combat["Combat — party vs party, readiness, targeting"]
         party["Party — characters, stats, death and revival"]
         explore["Exploration — tile and facing, stepping, discovery, encounters"]
@@ -170,12 +169,12 @@ flowchart TB
     content["Content definitions — authored data: archetypes, tables, rules"]
     save["Persistence — single save file, browser-local"]
 
-    input --> turn
+    input --> explore
+    input --> combat
     explore --> view
     explore --> automap
     combat --> view
-    turn --> combat
-    turn --> explore
+    explore --> combat
     combat --> party
     explore --> dungeon
     combat --> loot
@@ -186,23 +185,24 @@ flowchart TB
     sim <--> save
 ```
 
-**Turn engine.** Owns the scheduler and action resolution. Everything in the game
-— a step down a corridor, a sword swing, a menu confirmation that costs time — is
-an action submitted to the engine, which advances state deterministically.
-
 **Combat.** Party-vs-party resolution, with no position in it: every combatant may
 act on every other, and what a combatant can do is decided by their abilities and
-equipment rather than by where they stand. Owns initiative, targeting, ability
+equipment rather than by where they stand. Owns readiness, targeting, ability
 effects, and damage.
 
+There is no scheduler above combat and exploration. Each owns its own advance of time
+— exploration the tick, combat the readiness that fills in the fight's own time — and
+input reaches whichever of the two is running.
+
 **Party.** The player's characters: stats, classes, progression, equipment loadout,
-and the alive / incapacitated / dead / revived state machine. A party holds at most
+and the conscious / unconscious / dead / ashes / lost state machine. A party holds at most
 five characters. Also owns total level — the sum of a character's skill ranks — which
 is how much of a character there is, in one number, wherever one is needed.
 
-**Exploration.** The party's tile and facing, stepping and turning, and the record
-of which tiles have been discovered. Also encounter triggering, interactables, and
-the descend/return loop. Discovery state is owned here rather than by the automap:
+**Exploration.** The party's tile and facing, stepping and turning, the tick counter
+every other segment reads, and the record of which tiles have been discovered. Also
+encounter triggering, interactables, and the descend/return loop. Discovery state is
+owned here rather than by the automap:
 the automap is a view of what the party has seen, and what the party has seen has
 to survive a save.
 
@@ -248,6 +248,7 @@ work first reaches it rather than all at once.
 | Decision | Alternatives considered | Rationale |
 |---|---|---|
 | Turn-based throughout, with combat's order of acting set by a readiness that fills in the fight's own time | A round in which everyone acts once, resolved in initiative order; real-time action on a live clock | The game is about decisions, not execution, and the simulation has to stay a deterministic state machine testable without a renderer. A readiness bar costs neither: the fight's time advances only between actions, never while a decision is pending, so an hour of thought costs exactly what a second of it costs. A round in which everyone acts once would make a quick character and a slow one differ only in who moves first, wasting the attribute that decides speed everywhere else in the game. |
+| No scheduler above combat and exploration; each advances its own time | A turn engine owning one action queue for the whole game, with both segments submitting to it | The two run on clocks that are not the same clock and never run at once: exploration counts ticks that burn light and food, combat counts a readiness that fills only between actions and stops dead for a decision. An engine over both would arbitrate nothing, and would need a unit of time that fits a corridor and a sword swing equally — which is the coupling the turn-based commitment exists to avoid. Each segment owning its own advance keeps the two clocks from ever having to be reconciled. |
 | Single persistent save, campaign-shaped | Roguelike runs with permadeath; multiple save slots | Consequences have to persist for decisions to weigh anything. One slot rather than many keeps the player from save-scumming around the consequence. |
 | No positioning: any combatant may act on any other | Front row / back row, where row sets reach and exposure; a free tactical grid (XCOM/FFT) | Rows constrain who may be targeted without asking the player anything: a character's options follow from where they were put long before the fight, so most turns have one legal answer and the back rank often has none. Removing them puts every combatant in reach of every other, which makes each turn a choice of *whom to spend it on* rather than a check of who is allowed to act. Reach, exposure and the protective role a front rank played return as properties of equipment and abilities, which are chosen in the fight's own terms. A grid would cost a phone screen and pathfinding for the same question. |
 | Party of five | Six; four | Five is small enough that every member is a deliberate pick and large enough to carry a spread of classes. An odd size keeps a party from resolving into two matched halves. |

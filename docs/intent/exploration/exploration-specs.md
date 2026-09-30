@@ -71,7 +71,7 @@ tuning the game does not rewrite its specs.
 - [x] **EXPLORE-LIGHT-007**: When the clock advances by one tick, the system shall reduce the lit source's remaining ticks by one and shall leave unlit sources unchanged.
 - [x] **EXPLORE-LIGHT-008**: When a lit source's remaining ticks reach zero, the system shall mark it spent and light the party's next unspent source if one is carried.
 - [x] **EXPLORE-LIGHT-009**: If an external effect douses the party's lit source, then the system shall not light another source automatically.
-- [x] **EXPLORE-LIGHT-010**: When the party relights a doused source during combat, the system shall consume the acting character's action for that round.
+- [x] **EXPLORE-LIGHT-010**: When the party relights a doused source during combat, the system shall consume the acting character's action.
 - [x] **EXPLORE-LIGHT-013**: When the party relights a doused source, the system shall relight that same instance with its remaining ticks intact rather than consuming another source.
 - [x] **EXPLORE-LIGHT-014**: While the party is camped, the system shall keep every carried light source unlit, so that the ticks a camp consumes do not reduce any source's remaining ticks.
 - [x] **EXPLORE-LIGHT-015**: When the party breaks camp, the system shall relight the source that was lit when camp began, if the party still carries it.

@@ -57,7 +57,9 @@ status — can be given to a monster without new machinery.
 | `attributes` | the same six a character has |
 | `ranks` | skill ranks, which are also what its total level is summed from |
 | `maxHitPoints` | authored rather than derived from a class |
-| `attack` | base damage, accuracy and armour, until weapons exist to carry them |
+| `attack` | base damage and accuracy, until weapons exist to carry them |
+| `defence` | what it takes to land a blow on it |
+| `armour` | what a landed blow is reduced by |
 | `potValue` | what defeating it is worth in skill experience |
 | `forbidsEscape` | whether a party can flee from it |
 
@@ -159,6 +161,12 @@ Breaking line of sight is therefore the thing that ends a chase, and it is a ski
 rather than a die roll: corners, doors, and the shape of the floor are what a party
 escapes with.
 
+**A party that escapes a fight leaves the roamer unaware**, its certainty spent along
+with the encounter. Fleeing already returns the party to the tile it came from; if the
+band it broke off from were still certain where they stood, it would set off after them
+at once and the escape would have bought a single step. Losing them is what the flee
+was for, and the roamer has to re-notice the party like anything else.
+
 ### Movement
 
 Every roamer, like the party, pays a number of ticks to cross a tile, drawn from its own
@@ -257,30 +265,32 @@ abilities are all later, and all want a reason more interesting than list order.
 | Awareness decay | Runs down over ticks, and never while the party is in sight | Permanent once gained; decaying on a timer regardless of sight | Permanent awareness means a single goblin band pursues forever. Decaying while visible would let a party escape by walking backwards down a lit corridor. Breaking line of sight is the skill worth rewarding. |
 | Unaware movement | Drifting | Standing still; patrolling a route | A motionless roamer is furniture, and a patrol route is authored detail a generated floor cannot provide. Drifting gives a floor that changes without anyone designing its traffic. |
 | Sight for a roamer | The same opacity rules the party uses, with no secret doors known | Monsters knowing their own dungeon's secrets | A party that ducks behind a secret door and is still seen through it would make the discovery worthless. |
-| Fight behaviour | Choose a legal target, prefer the front | Focus fire and target selection by threat | The rule that matters now is that an enemy never picks an illegal target. Cleverness added before that is solid would be cleverness built on sand. |
+| Fight behaviour | Choose a legal target, drawn from every standing character | Focus fire and target selection by threat | The rule that matters now is that an enemy never picks an illegal target. Cleverness added before that is solid would be cleverness built on sand. |
 
 ## Open Questions & Future Decisions
 
 ### Resolved
 
 1. ✅ **The roster is content data**; the machinery knows nothing about any particular enemy.
-2. ✅ **Role says what an enemy fights with**, never where it stands.
-8. ✅ **An enemy is a character in every field but class**, and its total level is summed from its ranks.
-9. ✅ **Every enemy is one JSON file** under `src/game-data/enemies`.
-3. ✅ **A band is a named template** with count ranges, drawn from the seed.
-4. ✅ **Awareness is proximity alone**, and light never affects it.
-5. ✅ **Every roamer pays its own tick cost to cross a tile**, so a faster party can outrun a slower pursuer.
-8. ✅ **Awareness decays over ticks**, but never while the party is in the roamer's line of sight.
-9. ✅ **A successful escape from combat leaves the roamer unaware**, so fleeing buys something real.
-6. ✅ **Roamers move through passages**, never through walls or closed doors.
-7. ✅ **Enemies fight under the same rules the party does**, reachable by anyone and able to reach anyone.
+2. ✅ **An enemy is a character in every field but class**, and its total level is summed from its ranks.
+3. ✅ **Role says what an enemy fights with**, never where it stands.
+4. ✅ **Every enemy is one JSON file** under `src/game-data/enemies`.
+5. ✅ **A band is a named template** with count ranges, drawn from the seed.
+6. ✅ **Enemies fight under the same rules the party does**, reachable by anyone and able to reach anyone.
+7. ✅ **An enemy's target is drawn from every standing character**, never taken by list order.
+8. ✅ **Awareness is proximity alone**, and light never affects it.
+9. ✅ **Awareness decays over ticks**, but never while the party is in the roamer's line of sight.
+10. ✅ **A successful escape from combat leaves the roamer unaware**, so fleeing buys something real.
+11. ✅ **Every roamer pays its own tick cost to cross a tile**, so a faster party can outrun a slower pursuer.
+12. ✅ **Roamers move through passages**, never through walls or closed doors.
+13. ✅ **The party and a roamer never share a tile**; the attempted entry is the encounter.
 
 ### Deferred
 
 1. **Abilities.** Nothing here casts or uses a special attack yet; the goblin mage is a caster in role only until abilities exist.
 2. **Encounter budgets.** Assembling a group to a difficulty target, rather than from a named band.
 3. **Behaviour beyond a legal target.** Focus fire, guarding casters, fleeing when hurt.
-4. **Ambient encounters.** Exploration reserves random step-triggered encounters alongside roamers; nothing here supplies them yet.
+4. **Ambient encounters.** Every fight currently begins with a roamer the party can in principle see coming. Whether a floor should also produce encounters out of nothing, on a step, is unasked in either segment — exploration has no hook for one.
 5. **Deeper rosters.** One floor's worth of goblins exists. What lives further down, and how a roster escalates with depth, is unauthored.
 6. **Notice range as a stat.** Every enemy currently notices at the same distance; whether a roster should vary it is untested.
 7. **Standing still.** A party that only turns spends no ticks, so nothing chasing it ever arrives. Exploration has this recorded as an open question; enemies are what finally make it matter.
