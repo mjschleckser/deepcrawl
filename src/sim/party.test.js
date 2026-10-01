@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { ItemKind, Slot, createItem } from './items.js';
 import {
   createParty,
   createCharacter,
@@ -27,6 +28,7 @@ import {
   restoreParty,
   experienceForRank,
   RANK_CAP,
+  equip,
 } from './party.js';
 
 const fighter = (over = {}) =>
@@ -693,5 +695,84 @@ describe('what total level decides', () => {
     const c = character(party, 'x');
     expect(totalLevel(c)).toBe(Object.values(c.ranks).reduce((sum, r) => sum + r, 0));
     expect(totalLevel(c)).toBeGreaterThan(before);
+  });
+});
+
+describe('putting something in a slot', () => {
+  const sword = createItem({
+    id: 'sword', name: 'Sword', kind: ItemKind.WEAPON, slot: Slot.MAIN_HAND,
+    skill: Skill.BLADE, damage: 10, accuracy: 20, governs: Attribute.MIGHT,
+  });
+  const plate = createItem({
+    id: 'plate', name: 'Plate', kind: ItemKind.ARMOUR, slot: Slot.BODY,
+    skill: Skill.HEAVY_ARMOUR, armour: 6, classes: [CharacterClass.FIGHTER],
+  });
+
+  const partyWith = (characterClass) => partyOf(createCharacter({
+    id: 'x', name: 'X', characterClass,
+  }));
+
+  // @spec PARTY-OP-003
+  // @spec PARTY-CHAR-003
+  it('puts an item in the slot it names', () => {
+    const party = partyWith(CharacterClass.FIGHTER);
+
+    expect(equip(party, 'x', sword)).toBe(true);
+
+    expect(character(party, 'x').equipment[Slot.MAIN_HAND]).toMatchObject({ id: 'sword' });
+  });
+
+  // @spec PARTY-OP-003
+  it('refuses a class the item does not admit, and changes nothing', () => {
+    const party = partyWith(CharacterClass.MAGE);
+
+    expect(equip(party, 'x', plate)).toBe(false);
+
+    // Told no before anything moved, rather than discovered by its consequences.
+    expect(character(party, 'x').equipment[Slot.BODY]).toBeUndefined();
+  });
+
+  // @spec PARTY-OP-003
+  it('admits the class the item does name', () => {
+    const party = partyWith(CharacterClass.FIGHTER);
+
+    expect(equip(party, 'x', plate)).toBe(true);
+    expect(character(party, 'x').equipment[Slot.BODY]).toMatchObject({ id: 'plate' });
+  });
+
+  // @spec PARTY-OP-003
+  it('replaces whatever held the slot before', () => {
+    const party = partyWith(CharacterClass.FIGHTER);
+    const axe = createItem({
+      id: 'axe', name: 'Axe', kind: ItemKind.WEAPON, slot: Slot.MAIN_HAND,
+      skill: Skill.BLUNT, damage: 12, accuracy: 16, governs: Attribute.MIGHT,
+    });
+
+    equip(party, 'x', sword);
+    equip(party, 'x', axe);
+
+    expect(character(party, 'x').equipment[Slot.MAIN_HAND].id).toBe('axe');
+  });
+
+  // @spec PARTY-CHAR-003
+  it('empties a slot when handed nothing', () => {
+    const party = partyWith(CharacterClass.FIGHTER);
+    equip(party, 'x', sword);
+
+    expect(equip(party, 'x', null, Slot.MAIN_HAND)).toBe(true);
+
+    expect(character(party, 'x').equipment[Slot.MAIN_HAND]).toBeUndefined();
+  });
+
+  // @spec PARTY-SAVE-001
+  it('carries what is held through a save and back', () => {
+    const party = partyWith(CharacterClass.FIGHTER);
+    equip(party, 'x', sword);
+    equip(party, 'x', plate);
+
+    const back = restoreParty(serializeParty(party));
+
+    expect(character(back, 'x').equipment[Slot.MAIN_HAND]).toMatchObject({ id: 'sword', damage: 10 });
+    expect(character(back, 'x').equipment[Slot.BODY]).toMatchObject({ id: 'plate', armour: 6 });
   });
 });

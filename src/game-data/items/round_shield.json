@@ -1,0 +1,11 @@
+{
+  "id": "round_shield",
+  "name": "Round Shield",
+  "kind": "SHIELD",
+  "slot": "OFF_HAND",
+  "defence": 5,
+  "classes": [
+    "FIGHTER",
+    "CLERIC"
+  ]
+}

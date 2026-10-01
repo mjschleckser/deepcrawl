@@ -1,0 +1,12 @@
+{
+  "id": "chainmail",
+  "name": "Chainmail",
+  "kind": "ARMOUR",
+  "slot": "BODY",
+  "skill": "HEAVY_ARMOUR",
+  "armour": 5,
+  "classes": [
+    "FIGHTER",
+    "CLERIC"
+  ]
+}

@@ -479,6 +479,63 @@ describe('ending', () => {
   });
 });
 
+describe('what a blow is resolved against', () => {
+  // @spec COMBAT-ATTACK-010
+  it('resolves the band against defence, and lets armour do nothing to it', () => {
+    const soft = encounter({
+      members: [hero('a')],
+      enemies: [orc('o1', { maxHitPoints: 400, armour: 0 })],
+    });
+    const plated = encounter({
+      members: [hero('a')],
+      enemies: [orc('o1', { maxHitPoints: 400, armour: 30 })],
+    });
+
+    // Same seed, same roll, same defence: armour changed the damage, never the band.
+    readyUp(soft, 'a'); readyUp(plated, 'a');
+    const swing = { kind: Action.ATTACK, targetId: 'o1', baseDamage: 60, accuracy: 40 };
+    const bare = takeAction(soft, 'a', swing);
+    const thick = takeAction(plated, 'a', swing);
+
+    expect(thick.band).toBe(bare.band);
+    expect(thick.damage).toBeLessThan(bare.damage);
+  });
+
+  // @spec COMBAT-ATTACK-010
+  it('makes a nimbler target harder to hit', () => {
+    const bands = (dexterity) => {
+      let crits = 0;
+      for (let seed = 1; seed <= 60; seed++) {
+        const state = encounter({
+          members: [hero('a')],
+          enemies: [orc('o1', { maxHitPoints: 400, attributes: { DEXTERITY: dexterity } })],
+          seed,
+        });
+        readyUp(state, 'a');
+        const event = takeAction(state, 'a', { kind: Action.ATTACK, targetId: 'o1' });
+        if (event.band === Band.CRIT || event.band === Band.HIT) crits += 1;
+      }
+      return crits;
+    };
+
+    expect(bands(20)).toBeLessThan(bands(4));
+  });
+
+  // @spec COMBAT-ATTACK-012
+  it('takes armour off after the band multiplied the blow, never before', () => {
+    // A graze halves the blow; armour comes off what is left, so a grazed blow against
+    // armour lands lower than half of what an unarmoured one would.
+    expect(damageFor(Band.HIT, 20, 5)).toBe(15);
+    expect(damageFor(Band.GRAZE, 20, 5)).toBe(5);
+    expect(damageFor(Band.CRIT, 20, 5)).toBe(25);
+  });
+
+  // @spec COMBAT-ATTACK-012
+  it('never lets armour take a landed blow below the floor', () => {
+    expect(damageFor(Band.HIT, 20, 9999)).toBe(Math.max(1, Math.ceil(20 * 0.05)));
+  });
+});
+
 describe('damage from a fight', () => {
   // @spec PARTY-OP-001
   it('takes a real blow through the party operation, floor and chain included', () => {
@@ -545,13 +602,20 @@ describe('taking a turn', () => {
 
   // @spec COMBAT-ATTACK-001
   it('resolves an attack from one roll set against accuracy and defence', () => {
-    const feeble = encounter({ members: [hero('a')], enemies: [orc('armoured', { hitPoints: 99, armour: 200 })], seed: 3 });
+    // Defence is what moves the band, and Dexterity is what moves defence.
+    const feeble = encounter({
+      members: [hero('a')],
+      enemies: [orc('nimble', { hitPoints: 99, attributes: { DEXTERITY: 40 } })], seed: 3,
+    });
     readyUp(feeble, 'a');
-    const weak = takeAction(feeble, 'a', { kind: Action.ATTACK, targetId: 'armoured', baseDamage: 40, accuracy: 0 });
+    const weak = takeAction(feeble, 'a', { kind: Action.ATTACK, targetId: 'nimble', baseDamage: 40, accuracy: 0 });
 
-    const sharp = encounter({ members: [hero('a')], enemies: [orc('soft', { hitPoints: 99, armour: 0 })], seed: 3 });
+    const sharp = encounter({
+      members: [hero('a')],
+      enemies: [orc('slow', { hitPoints: 99, attributes: { DEXTERITY: 10 } })], seed: 3,
+    });
     readyUp(sharp, 'a');
-    const strong = takeAction(sharp, 'a', { kind: Action.ATTACK, targetId: 'soft', baseDamage: 40, accuracy: 200 });
+    const strong = takeAction(sharp, 'a', { kind: Action.ATTACK, targetId: 'slow', baseDamage: 40, accuracy: 200 });
 
     // Same roll, opposite circumstances: accuracy and defence decide the band.
     expect(weak.band).toBe(Band.MISS);

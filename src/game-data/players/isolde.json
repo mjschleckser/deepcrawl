@@ -12,5 +12,9 @@
     "accuracy": 24
   },
   "armour": 0,
-  "portrait": "mage.png"
+  "portrait": "mage.png",
+  "equipment": {
+    "MAIN_HAND": "quarterstaff",
+    "BODY": "robe"
+  }
 }

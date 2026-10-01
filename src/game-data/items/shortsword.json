@@ -1,0 +1,10 @@
+{
+  "id": "shortsword",
+  "name": "Shortsword",
+  "kind": "WEAPON",
+  "slot": "MAIN_HAND",
+  "skill": "BLADE",
+  "damage": 9,
+  "accuracy": 22,
+  "governs": "MIGHT"
+}

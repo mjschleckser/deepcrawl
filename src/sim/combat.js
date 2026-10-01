@@ -10,6 +10,7 @@
 import {
   Attribute, Condition, DEFAULT_ATTRIBUTES, applyDamage, character, roster,
 } from './party.js';
+import { accuracyWith, armourOf, baseDamageWith, defenceOf } from './items.js';
 
 export const Band = { MISS: 'MISS', GRAZE: 'GRAZE', HIT: 'HIT', CRIT: 'CRIT' };
 
@@ -416,16 +417,24 @@ export function takeAction(state, actorId, action) {
   if (!target) return { actorId, action: action.kind, targetId: null };
 
   // What a blow is worth belongs to whoever swung it, on either side alike, and what
-  // blunts it to whoever is struck.
+  // blunts it to whoever is struck. Both are assembled by the items segment from the
+  // weapon in hand, the rank behind it and the attribute it draws on — or, for anybody
+  // holding nothing, from the attack they were authored with.
   // @spec COMBAT-ACTION-008
-  const swing = recordOf(state, actorId)?.attack ?? {};
-  const accuracy = action.accuracy ?? swing.accuracy ?? 0;
-  const baseDamage = action.baseDamage ?? swing.baseDamage ?? 0;
+  const swinger = recordOf(state, actorId);
+  const accuracy = action.accuracy ?? accuracyWith(swinger);
+  const baseDamage = action.baseDamage ?? baseDamageWith(swinger);
 
   const roll = state.rng.int(1, 100);
   const penalty = actor.side === 'PARTY' ? state.accuracyPenalty : 0;
-  const band = attackBand(roll, accuracy - (target.armour ?? 0) - penalty);
-  const damage = damageFor(band, baseDamage, target.armour ?? 0);
+  // The band is resolved against defence, never against armour: being hard to hit and
+  // being hard to hurt are different things, and one number doing both would make
+  // heavy armour doubly good and squeeze the bands until armour outweighed practice.
+  // @spec COMBAT-ATTACK-010
+  const band = attackBand(roll, accuracy - defenceOf(target) - penalty);
+  // Armour comes off afterwards, which is the whole of what armour does.
+  // @spec COMBAT-ATTACK-012
+  const damage = damageFor(band, baseDamage, armourOf(target));
 
   let felled = false;
   if (character(state.party, target.id)) {

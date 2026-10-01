@@ -1,0 +1,10 @@
+{
+  "id": "quarterstaff",
+  "name": "Quarterstaff",
+  "kind": "WEAPON",
+  "slot": "MAIN_HAND",
+  "skill": "POLEARM",
+  "damage": 7,
+  "accuracy": 21,
+  "governs": "MIGHT"
+}

@@ -14,6 +14,8 @@ import {
   Attribute, CharacterClass, Condition, Skill, createCharacter,
 } from '../sim/party.js';
 import { Action, EnemyRole, createEnemy } from '../sim/combat.js';
+import { Slot } from '../sim/items.js';
+import { itemById } from './items.js';
 
 const PLAYER_FILES = import.meta.glob('../game-data/players/*.json', { eager: true, import: 'default' });
 const ENEMY_FILES = import.meta.glob('../game-data/enemies/*.json', { eager: true, import: 'default' });
@@ -88,10 +90,24 @@ function commonFields(file, data) {
  */
 export function buildPlayer(file, data) {
   const common = commonFields(file, data);
-  return createCharacter({
+  const character = createCharacter({
     ...common,
     characterClass: oneOf(file, 'class', data.characterClass, CharacterClass),
   });
+
+  // What they start holding, resolved to the item itself rather than kept as a name:
+  // the simulation never looks anything up, and a name that was never authored fails
+  // here, beside the file that said it.
+  // @spec ITEM-DATA-001
+  // @spec PARTY-CHAR-004
+  for (const [slot, id] of Object.entries(data.equipment ?? {})) {
+    oneOf(file, 'slot', slot, Slot);
+    const item = itemById(id);
+    if (!item) throw new Error(`${file}: no item "${id}"`);
+    character.equipment[slot] = item;
+  }
+
+  return character;
 }
 
 /**

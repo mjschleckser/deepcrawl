@@ -1,0 +1,8 @@
+{
+  "id": "leather_jerkin",
+  "name": "Leather Jerkin",
+  "kind": "ARMOUR",
+  "slot": "BODY",
+  "skill": "LIGHT_ARMOUR",
+  "armour": 2
+}

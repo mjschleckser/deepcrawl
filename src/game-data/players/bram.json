@@ -12,5 +12,10 @@
     "accuracy": 30
   },
   "armour": 0,
-  "portrait": "fighter.png"
+  "portrait": "fighter.png",
+  "equipment": {
+    "MAIN_HAND": "shortsword",
+    "OFF_HAND": "round_shield",
+    "BODY": "chainmail"
+  }
 }

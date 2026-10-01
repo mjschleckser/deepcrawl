@@ -1,3 +1,4 @@
+import { fitsSlot, wieldableBy } from './items.js';
 /**
  * The party: characters, where they stand, what they can do, and what has happened to
  * them.
@@ -439,6 +440,33 @@ export function changeClass(party, id, characterClass, { meetsRequirements }) {
 }
 
 /** @spec PARTY-SAVE-001 */
+/**
+ * Put something in a character's slot, or empty one.
+ *
+ * The party owns what sits where; the item owns whether it may. A refused equip
+ * changes nothing at all, so the player is told no before anything moves rather than
+ * discovering a mage in plate by its consequences.
+ *
+ * @spec PARTY-OP-003
+ * @spec PARTY-CHAR-003
+ */
+export function equip(party, id, item, slot = item?.slot) {
+  const c = character(party, id);
+  if (!c || !slot) return false;
+
+  // Handed nothing: the slot is emptied, which is always allowed.
+  if (!item) {
+    delete c.equipment[slot];
+    return true;
+  }
+
+  if (!fitsSlot(item, slot)) return false;
+  if (!wieldableBy(item, c.characterClass)) return false;
+
+  c.equipment[slot] = item;
+  return true;
+}
+
 export function serializeParty(party) {
   return { members: party.members.map((c) => ({ ...c, attributes: { ...c.attributes }, ranks: { ...c.ranks }, skillExperience: { ...c.skillExperience }, equipment: { ...c.equipment }, trainable: [...c.trainable] })) };
 }

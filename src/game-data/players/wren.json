@@ -12,5 +12,10 @@
     "accuracy": 26
   },
   "armour": 0,
-  "portrait": "cleric.png"
+  "portrait": "cleric.png",
+  "equipment": {
+    "MAIN_HAND": "mace",
+    "OFF_HAND": "round_shield",
+    "BODY": "leather_jerkin"
+  }
 }

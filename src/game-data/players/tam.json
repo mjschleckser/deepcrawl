@@ -12,5 +12,9 @@
     "accuracy": 32
   },
   "armour": 0,
-  "portrait": "thief.png"
+  "portrait": "thief.png",
+  "equipment": {
+    "MAIN_HAND": "dagger",
+    "BODY": "leather_jerkin"
+  }
 }

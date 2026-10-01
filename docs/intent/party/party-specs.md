@@ -16,11 +16,9 @@ are fed into, never the numbers.
 ## Character state
 
 - [x] **PARTY-CHAR-001**: The system shall give every character the six attributes: Might, Constitution, Dexterity, Intellect, Perception, and Resolve.
-- [ ] **PARTY-CHAR-002**: The system shall not derive which attribute a weapon or ability draws on for damage from the skill it uses; that is a property of the weapon or ability.
 - [ ] **PARTY-CHAR-003**: The system shall change a character's hit points, condition, class, equipment, or skill ranks only through a party operation, whichever segment asked.
 - [x] **PARTY-CHAR-004**: The system shall give every character a class, and shall record their equipment as the item occupying each slot.
 - [x] **PARTY-CHAR-006**: The system shall set a classed character's maximum hit points from their class's base multiplied by one twentieth of their Constitution above ten, and shall not change it as they advance.
-- [ ] **PARTY-CHAR-007**: The system shall draw a weapon's governing attribute for damage from the weapon, and shall always draw accuracy from Perception whatever the weapon.
 - [x] **PARTY-CHAR-009**: The system shall report a character's total level as the sum of their skill ranks.
 - [x] **PARTY-CHAR-010**: The system shall derive total level whenever it is asked for rather than storing it, so that it changes exactly when a rank changes.
 - [x] **PARTY-CHAR-011**: The system shall report the total level of anything holding skill ranks by the same summation, whether it belongs to the party or to an enemy group.
@@ -50,9 +48,6 @@ are fed into, never the numbers.
 - [x] **PARTY-SKILL-006**: The system shall cap every skill rank at ten, and shall award no further rank however much experience is earned beyond it.
 - [x] **PARTY-SKILL-007**: The system shall require three hundred multiplied by a skill's current rank in experience to raise it by one rank.
 - [x] **PARTY-SKILL-011**: The system shall read a skill's rank from the experience accumulated in it, counting from rank zero, so that a rank a class granted free costs its holder no less to leave than one they earned.
-- [ ] **PARTY-SKILL-008**: The system shall derive a character's accuracy with a weapon from the weapon, the rank of the weapon's skill, and the character's Perception.
-- [ ] **PARTY-SKILL-009**: The system shall derive a character's defence from their Dexterity, the rank of the armour skill they are wearing, and their shield.
-- [ ] **PARTY-SKILL-010**: The system shall derive a character's base damage with a weapon from the weapon, the rank of the weapon's skill, and the attribute the weapon names.
 
 ## Advancement
 
