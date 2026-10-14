@@ -263,11 +263,13 @@ export async function createRenderer(mount) {
     view: new Container(),
     map: new Container(),
     fight: new Container(),
+    party: new Container(),
     hud: new Container(),
   };
   // Added in order, so the view sits beneath everything and the HUD above it.
   app.stage.addChild(
-    layerContainers.view, layerContainers.map, layerContainers.fight, layerContainers.hud,
+    layerContainers.view, layerContainers.map, layerContainers.fight,
+    layerContainers.party, layerContainers.hud,
   );
 
   const draw = (layers) => {
@@ -279,6 +281,7 @@ export async function createRenderer(mount) {
       if (name === 'view') drawView(container, plan);
       if (name === 'map') drawMap(container, plan);
       if (name === 'fight') drawFight(container, plan);
+      if (name === 'party') drawParty(container, plan);
       if (name === 'hud') drawHud(container, plan);
     }
     app.render();
@@ -547,4 +550,125 @@ function drawFight(container, plan) {
   for (const control of controls.filter((c) => c.overlay)) {
     drawControl(container, control, { alpha: 0.95, scale });
   }
+}
+
+/**
+ * Draw one character's page of the party screen. Every box was placed by the plan; this
+ * only paints into them.
+ *
+ * @spec PRESENT-PARTY-007
+ * @spec PRESENT-PARTY-012
+ * @spec PRESENT-PARTY-013
+ * @spec PRESENT-PARTY-014
+ * @spec PRESENT-PARTY-015
+ * @spec PRESENT-PARTY-016
+ * @spec PRESENT-PARTY-017
+ * @spec PRESENT-PARTY-018
+ */
+function drawParty(container, plan) {
+  const scale = plan.scale ?? 1;
+  const text = Math.round(13 * scale);
+  const small = Math.round(11 * scale);
+  const { bounds } = plan;
+  const graphics = new Graphics();
+  graphics.roundRect(bounds.x, bounds.y, bounds.width, bounds.height, 6 * scale)
+    .fill({ color: FIGHT_COLOURS.panel, alpha: 0.96 });
+  graphics.roundRect(bounds.x, bounds.y, bounds.width, bounds.height, 6 * scale)
+    .stroke({ width: 2, color: FIGHT_COLOURS.frame });
+  container.addChild(graphics);
+
+  const put = (content, size, colour, x, y) => {
+    const t = label(content, size, colour);
+    t.x = x;
+    t.y = y;
+    container.addChild(t);
+    return t;
+  };
+  const middle = (box, t) => box.y + (box.height - t.height) / 2;
+
+  // The name between the arrows that turn to the next one.
+  const { heading } = plan;
+  const name = label(heading.name, Math.round(17 * scale), FIGHT_COLOURS.banner);
+  name.x = heading.title.x + (heading.title.width - name.width) / 2;
+  name.y = heading.title.y + heading.title.height / 2 - name.height + 2 * scale;
+  container.addChild(name);
+  const place = label(heading.position, small, FIGHT_COLOURS.dim);
+  place.x = heading.title.x + (heading.title.width - place.width) / 2;
+  place.y = heading.title.y + heading.title.height / 2 + 2 * scale;
+  container.addChild(place);
+
+  const box = heading.portraitBox;
+  graphics.rect(box.x, box.y, box.size, box.size).fill(FIGHT_COLOURS.ally);
+  const texture = portraitTexture(heading.portrait);
+  if (texture) {
+    const sprite = new Sprite(texture);
+    sprite.x = box.x;
+    sprite.y = box.y;
+    sprite.width = box.size;
+    sprite.height = box.size;
+    container.addChild(sprite);
+  }
+  const besideX = box.x + box.size + 10 * scale;
+  put(heading.characterClass, Math.round(15 * scale), FIGHT_COLOURS.text, besideX, box.y + 6 * scale);
+  put(`Total level ${heading.totalLevel}`, text, FIGHT_COLOURS.dim, besideX, box.y + 28 * scale);
+
+  // Hit points, and the condition in words when the bar alone could not say it.
+  const { health } = plan;
+  const hpLine = put(`Hit points ${health.hitPoints} / ${health.maxHitPoints}`, text, FIGHT_COLOURS.text, health.box.x, health.box.y);
+  hpLine.y = middle(health.box, hpLine);
+  if (health.condition) {
+    const state = label(health.condition, text, FIGHT_COLOURS.critical);
+    state.x = health.box.x + health.box.width - state.width;
+    state.y = middle(health.box, state);
+    container.addChild(state);
+  }
+  const bar = health.bar;
+  graphics.rect(bar.x, bar.y, bar.width, bar.height).fill({ color: 0x000000, alpha: 0.5 });
+  const hpColour = health.share > 0.5 ? FIGHT_COLOURS.healthy
+    : health.share > 0.25 ? FIGHT_COLOURS.wounded : FIGHT_COLOURS.critical;
+  if (health.share > 0) graphics.rect(bar.x, bar.y, bar.width * health.share, bar.height).fill(hpColour);
+
+  for (const a of plan.attributes) {
+    const t = put(a.label, text, FIGHT_COLOURS.dim, a.box.x, a.box.y);
+    t.y = middle(a.box, t);
+    const score = label(String(a.score), text, FIGHT_COLOURS.text);
+    score.x = a.box.x + a.box.width - score.width - 6 * scale;
+    score.y = middle(a.box, score);
+    container.addChild(score);
+  }
+
+  // Each skill: its rank, and under it how far it is toward the next.
+  for (const group of plan.skills) {
+    const groupLabel = put(group.label, small, FIGHT_COLOURS.banner, group.box.x, group.box.y);
+    groupLabel.y = middle(group.box, groupLabel);
+    for (const s of group.skills) {
+      const tone = s.advancing ? FIGHT_COLOURS.text : FIGHT_COLOURS.dim;
+      const t = put(s.label, small, tone, s.box.x, s.box.y);
+      t.y = middle(s.box, t);
+      const note = s.atCap ? `${s.rank} max` : (s.advancing ? String(s.rank) : `${s.rank} stopped`);
+      const rank = label(note, small, s.advancing ? FIGHT_COLOURS.text : FIGHT_COLOURS.dim);
+      rank.x = s.box.x + s.box.width - rank.width - 6 * scale;
+      rank.y = middle(s.box, rank);
+      container.addChild(rank);
+
+      const b = s.bar;
+      const width = b.width - 6 * scale;
+      graphics.rect(b.x, b.y, width, b.height).fill({ color: 0x000000, alpha: 0.5 });
+      if (s.progress > 0) {
+        graphics.rect(b.x, b.y, width * s.progress, b.height)
+          .fill(s.advancing ? FIGHT_COLOURS.allyReady : FIGHT_COLOURS.frame);
+      }
+    }
+  }
+
+  for (const e of plan.equipment) {
+    const slot = put(e.label, text, FIGHT_COLOURS.dim, e.box.x, e.box.y);
+    slot.y = middle(e.box, slot);
+    const item = label(e.item ?? '—', text, e.item ? FIGHT_COLOURS.text : FIGHT_COLOURS.dim);
+    item.x = e.box.x + e.box.width * 0.4;
+    item.y = middle(e.box, item);
+    container.addChild(item);
+  }
+
+  for (const control of plan.controls) drawControl(container, control, { alpha: 0.85, scale });
 }

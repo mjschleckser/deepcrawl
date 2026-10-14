@@ -14,8 +14,11 @@ import {
   litSource,
   perform,
   resolveConfirmation,
+  setMenuOpen,
   PartyAction,
 } from '../sim/exploration.js';
+import { roster } from '../sim/party.js';
+import { buildPartyPlan, pageFor, PartyControl } from './partyplan.js';
 import { hitTest, controlsFor, uiScale, versionStamp } from './geometry.js';
 import { APP_VERSION } from '../version.js';
 import { buildPromptPlan } from './promptplan.js';
@@ -57,6 +60,9 @@ export function createController({ state, viewport, onDraw, campaign = null }) {
   const controller = {
     state, viewport, onDraw, campaign,
     expanded: false, fight: null,
+    // The party screen, when open: which character's page is showing. A view of the
+    // party like the expanded map is a view of the floor, so it lives here.
+    partyScreen: null,
     // Which control the finger is currently on, so it can be outlined while held.
     pressedRegion: null,
   };
@@ -123,6 +129,7 @@ export function layers(controller) {
       { name: 'view', plan: buildViewPlan(corridorAhead(state), viewport) },
       { name: 'map', plan: null },
       { name: 'fight', plan: fightPlan },
+      { name: 'party', plan: null },
       {
         name: 'hud',
         plan: {
@@ -136,7 +143,11 @@ export function layers(controller) {
       },
     ];
   }
-  const controls = state.pendingConfirmation
+  const sheet = partyPlan(controller);
+  // Nothing to walk toward while a prompt stands or the party screen is up, so the
+  // walking controls and the action bar go.
+  // @spec PRESENT-PARTY-006
+  const controls = state.pendingConfirmation || sheet
     ? []
     : controlsFor(viewport, { pressedRegion: controller.pressedRegion });
 
@@ -144,6 +155,7 @@ export function layers(controller) {
     { name: 'view', plan: buildViewPlan(corridorAhead(state), viewport) },
     { name: 'map', plan: buildMapPlan(automapView(state), viewport, { expanded }) },
     { name: 'fight', plan: null },
+    { name: 'party', plan: sheet },
     // The prompt is read from the simulation's pending confirmation, so one can never
     // be shown for a confirmation that is not actually pending.
     {
@@ -153,9 +165,8 @@ export function layers(controller) {
         viewport,
         // @spec PRESENT-CTRL-013
         scale: uiScale(viewport),
-        // Nothing to walk toward while a prompt stands, so the walking controls go.
         controls,
-        stamp: stampFor(viewport, controls),
+        stamp: stampFor(viewport, sheet ? [sheet.bounds] : controls),
       },
     },
   ];
@@ -177,6 +188,88 @@ function redraw(controller) {
   controller.onDraw(layers(controller));
 }
 
+/** The party the screen reads, straight from the campaign. */
+const partyOf = (controller) => controller.campaign?.party ?? null;
+
+/** The open page, or nothing while the screen is shut. */
+function partyPlan(controller) {
+  const party = partyOf(controller);
+  if (!controller.partyScreen || !party) return null;
+  return buildPartyPlan(party, controller.viewport, { page: controller.partyScreen.page });
+}
+
+/**
+ * Open the party screen on the first character. Changes nothing that is true, so the
+ * simulation is told only that a menu is up, which is what stops its clock.
+ *
+ * @spec PRESENT-PARTY-001
+ * @spec PRESENT-PARTY-003
+ * @spec PRESENT-PARTY-004
+ * @spec PRESENT-PARTY-005
+ * @spec PRESENT-PARTY-008
+ */
+function openPartyScreen(controller) {
+  const party = partyOf(controller);
+  if (controller.fight || controller.state.pendingConfirmation) return false;
+  if (!party || roster(party).length === 0) return false;
+  controller.partyScreen = { page: 0 };
+  setMenuOpen(controller.state, true);
+  redraw(controller);
+  return true;
+}
+
+/**
+ * @spec PRESENT-PARTY-002
+ * @spec PRESENT-PARTY-004
+ */
+function closePartyScreen(controller) {
+  controller.partyScreen = null;
+  setMenuOpen(controller.state, false);
+  redraw(controller);
+  return true;
+}
+
+/** Turn to a page, wrapping at either end of the party. */
+function showPage(controller, page) {
+  const count = roster(partyOf(controller)).length;
+  controller.partyScreen.page = pageFor(partyOf(controller), ((page % count) + count) % count);
+  redraw(controller);
+  return true;
+}
+
+/**
+ * While the party screen is up it owns the keyboard: paging, closing, and nothing else.
+ *
+ * @spec PRESENT-PARTY-002
+ * @spec PRESENT-PARTY-006
+ * @spec PRESENT-PARTY-009
+ * @spec PRESENT-PARTY-010
+ * @spec PRESENT-PARTY-011
+ */
+function pressKeyOnPartyScreen(controller, key) {
+  const { page } = controller.partyScreen;
+  if (key === 'Escape' || key === 'p' || key === 'P') return closePartyScreen(controller);
+  if (key === 'ArrowRight' || key === 'd' || key === 'D') return showPage(controller, page + 1);
+  if (key === 'ArrowLeft' || key === 'a' || key === 'A') return showPage(controller, page - 1);
+
+  const number = Number.parseInt(key, 10);
+  if (String(number) === key && number >= 1 && number <= roster(partyOf(controller)).length) {
+    return showPage(controller, number - 1);
+  }
+  return false;
+}
+
+/** A press on the open screen: its own controls, and nothing beneath it. */
+function pressPointerOnPartyScreen(controller, px, py) {
+  const control = hit(partyPlan(controller)?.controls, px, py);
+  if (!control) return false;
+  const { page } = controller.partyScreen;
+  if (control.role === PartyControl.CLOSE) return closePartyScreen(controller);
+  if (control.role === PartyControl.NEXT) return showPage(controller, page + 1);
+  if (control.role === PartyControl.PREVIOUS) return showPage(controller, page - 1);
+  return false;
+}
+
 /**
  * Run an action and redraw only if it moved the world.
  *
@@ -193,6 +286,8 @@ function applyAction(controller, action) {
     redraw(controller);
     return true;
   }
+  // So is the party screen: reading a character changes nothing about them.
+  if (action.partyAction === PartyAction.PARTY) return openPartyScreen(controller);
 
   const before = stateSignature(controller.state);
   perform(controller.state, action);
@@ -284,6 +379,7 @@ export function pressKey(controller, key) {
     if (DECLINE_KEYS.includes(key)) return answerPrompt(controller, false);
     return false;
   }
+  if (controller.partyScreen) return pressKeyOnPartyScreen(controller, key);
   return applyAction(controller, actionForKey(key));
 }
 
@@ -338,6 +434,9 @@ export function pressPointer(controller, px, py) {
     if (!control) return false;
     return answerPrompt(controller, control.accepted);
   }
+
+  // A tap outside the page lands on nothing: a stray thumb must not dismiss it.
+  if (controller.partyScreen) return pressPointerOnPartyScreen(controller, px, py);
 
   const region = hitTest(controller.viewport, px, py);
   if (!region) return false;

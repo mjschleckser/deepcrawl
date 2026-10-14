@@ -29,6 +29,9 @@ import {
   experienceForRank,
   RANK_CAP,
   equip,
+  skillProgress,
+  SKILL_GROUPS,
+  SkillGroup,
 } from './party.js';
 
 const fighter = (over = {}) =>
@@ -774,5 +777,53 @@ describe('putting something in a slot', () => {
 
     expect(character(back, 'x').equipment[Slot.MAIN_HAND]).toMatchObject({ id: 'sword', damage: 10 });
     expect(character(back, 'x').equipment[Slot.BODY]).toMatchObject({ id: 'plate', armour: 6 });
+  });
+});
+
+describe('how far a skill is toward its next rank', () => {
+  // @spec PARTY-SKILL-012
+  it('reports a rank granted free as no progress until earned experience reaches it', () => {
+    // A fresh Fighter opens at Blade 2 with nothing banked, which is 300 short of
+    // even standing at 2 by the ledger.
+    expect(skillProgress(fighter(), Skill.BLADE)).toBe(0);
+  });
+
+  // @spec PARTY-SKILL-012
+  it('reports the share of the next rank\'s cost the experience has covered', () => {
+    const party = partyOf(fighter());
+    // Rank 2 stands at 300 and rank 3 at 900; a Fighter trains Blade at twice the
+    // rate, so 300 handed in is 600 banked — halfway across the 600 between them.
+    trainSkill(party, 'f1', Skill.BLADE, 300);
+    const c = character(party, 'f1');
+
+    expect(skillRank(c, Skill.BLADE)).toBe(2);
+    expect(skillProgress(c, Skill.BLADE)).toBeCloseTo(0.5);
+  });
+
+  // @spec PARTY-SKILL-012
+  it('stays between nought and one, and reports one at the rank cap', () => {
+    const capped = fighter({ ranks: { [Skill.BLADE]: RANK_CAP } });
+    expect(skillProgress(capped, Skill.BLADE)).toBe(1);
+
+    const party = partyOf(fighter());
+    for (let i = 0; i < 40; i++) {
+      trainSkill(party, 'f1', Skill.BLADE, 97);
+      const share = skillProgress(character(party, 'f1'), Skill.BLADE);
+      expect(share).toBeGreaterThanOrEqual(0);
+      expect(share).toBeLessThanOrEqual(1);
+    }
+  });
+});
+
+describe('skill groups', () => {
+  // @spec PARTY-SKILL-013
+  it('places every skill in exactly one of six groups, in a fixed order', () => {
+    expect(SKILL_GROUPS.map((g) => g.group)).toEqual([
+      SkillGroup.WEAPON, SkillGroup.DEFENCE, SkillGroup.ARCANE,
+      SkillGroup.DIVINE, SkillGroup.STEALTH, SkillGroup.SURVIVAL,
+    ]);
+    const placed = SKILL_GROUPS.flatMap((g) => g.skills);
+    expect([...placed].sort()).toEqual(Object.values(Skill).sort());
+    expect(new Set(placed).size).toBe(placed.length);
   });
 });

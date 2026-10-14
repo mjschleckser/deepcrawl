@@ -40,7 +40,7 @@ describe('the scene', () => {
   it('names every layer in every drawing, in order, whether or not it has anything to show', () => {
     const { controller } = harness();
 
-    expect(layers(controller).map((l) => l.name)).toEqual(['view', 'map', 'fight', 'hud']);
+    expect(layers(controller).map((l) => l.name)).toEqual(['view', 'map', 'fight', 'party', 'hud']);
     // Nothing is fighting, so that layer is named and empty rather than left out.
     expect(layers(controller).find((l) => l.name === 'fight').plan).toBeNull();
   });
@@ -299,7 +299,7 @@ describe('input while a fight is on', () => {
     const { controller } = inFight();
     const drawn = layers(controller);
 
-    expect(drawn.map((l) => l.name)).toEqual(['view', 'map', 'fight', 'hud']);
+    expect(drawn.map((l) => l.name)).toEqual(['view', 'map', 'fight', 'party', 'hud']);
     expect(drawn.find((l) => l.name === 'fight').plan).not.toBeNull();
     expect(drawn.find((l) => l.name === 'map').plan).toBeNull();
   });
@@ -329,7 +329,7 @@ describe('when a fight ends', () => {
 
     // Every layer is still named, so the one with nothing to show is cleared rather
     // than left holding its last drawing.
-    expect(layers(controller).map((l) => l.name)).toEqual(['view', 'map', 'fight', 'hud']);
+    expect(layers(controller).map((l) => l.name)).toEqual(['view', 'map', 'fight', 'party', 'hud']);
     expect(named('fight')).toBeNull();
     expect(named('map')).not.toBeNull();
   });
@@ -421,5 +421,188 @@ describe('holding a control', () => {
 
     expect(releasePointer(controller)).toBe(false);
     expect(onDraw).not.toHaveBeenCalled();
+  });
+});
+
+describe('the party screen', () => {
+  function withParty({ withStairs = false } = {}) {
+    const floor = createFloor({ id: 'f1', width: 7, height: 7 });
+    if (withStairs) {
+      setTileFeature(floor, 3, 2, TileFeature.STAIRS_DOWN, { target: { floorId: 'f1', x: 0, y: 0 } });
+    }
+    const onPartyAction = vi.fn();
+    const state = createExploration({
+      floors: [floor], floorId: 'f1', tile: { x: 3, y: 3 }, facing: Direction.NORTH,
+      lightSources: [lamp()], hooks: { onPartyAction },
+    });
+    const party = createParty();
+    for (const [id, cls] of [
+      ['bram', CharacterClass.FIGHTER], ['tam', CharacterClass.THIEF],
+      ['isolde', CharacterClass.MAGE], ['wren', CharacterClass.CLERIC],
+    ]) addCharacter(party, createCharacter({ id, name: id, characterClass: cls }));
+    const campaign = { encounter: null, state, party };
+    const onDraw = vi.fn();
+    const controller = createController({ state, campaign, viewport, onDraw });
+    onDraw.mockClear();
+    return { controller, state, onDraw, onPartyAction };
+  }
+
+  const sheet = (controller) => layers(controller).find((l) => l.name === 'party').plan;
+  const showing = (controller) => sheet(controller)?.characterId ?? null;
+  const tapControl = (controller, role) => {
+    const c = sheet(controller).controls.find((x) => x.role === role);
+    return pressPointer(controller, c.x + c.width / 2, c.y + c.height / 2);
+  };
+
+  // @spec PRESENT-PARTY-001
+  it('opens on P, and on the Party button', () => {
+    const byKey = withParty();
+    expect(sheet(byKey.controller)).toBeNull();
+    expect(pressKey(byKey.controller, 'p')).toBe(true);
+    expect(sheet(byKey.controller)).not.toBeNull();
+
+    const byTouch = withParty();
+    const button = hud(byTouch.controller).controls.find((c) => c.region === 'PARTY_BAR');
+    pressPointer(byTouch.controller, button.x + button.width / 2, button.y + button.height / 2);
+    expect(sheet(byTouch.controller)).not.toBeNull();
+  });
+
+  // @spec PRESENT-PARTY-002
+  it('closes on P, on Escape, and on its Close control', () => {
+    for (const close of [
+      (c) => pressKey(c, 'p'),
+      (c) => pressKey(c, 'Escape'),
+      (c) => tapControl(c, 'CLOSE'),
+    ]) {
+      const { controller } = withParty();
+      pressKey(controller, 'p');
+      expect(close(controller)).toBe(true);
+      expect(sheet(controller)).toBeNull();
+    }
+  });
+
+  // @spec PRESENT-PARTY-003
+  it('asks the simulation for nothing to open or close it', () => {
+    const { controller, state, onPartyAction } = withParty();
+
+    pressKey(controller, 'p');
+    pressKey(controller, 'p');
+
+    expect(onPartyAction).not.toHaveBeenCalled();
+    expect(tickCount(state)).toBe(0);
+  });
+
+  // @spec PRESENT-PARTY-004
+  it('tells exploration a menu is open for exactly as long as it is', () => {
+    const { controller, state } = withParty();
+
+    pressKey(controller, 'p');
+    expect(state.menuOpen).toBe(true);
+    pressKey(controller, 'Escape');
+    expect(state.menuOpen).toBe(false);
+  });
+
+  // @spec PRESENT-PARTY-005
+  it('cannot be opened over a prompt or during a fight', () => {
+    const prompted = withParty({ withStairs: true });
+    pressKey(prompted.controller, 'w');
+    expect(prompted.state.pendingConfirmation).not.toBeNull();
+    pressKey(prompted.controller, 'p');
+    expect(sheet(prompted.controller)).toBeNull();
+
+    const fighting = withParty();
+    const campaign = fighting.controller.campaign;
+    campaign.encounter = beginEncounter({
+      party: campaign.party,
+      enemies: createEnemyGroup([createEnemy({ id: 'g1', name: 'Goblin', hitPoints: 40, potValue: 10 })]),
+      light: 'BRIGHT', rng: makeRng(2), origin: { floorId: 'f1', x: 3, y: 3 },
+    });
+    campaign.concludeEncounter = () => {};
+    campaign.fleeEncounter = () => {};
+    pressKey(fighting.controller, 'p');
+    expect(sheet(fighting.controller)).toBeNull();
+  });
+
+  // @spec PRESENT-PARTY-006
+  it('holds the input while open: no walking, no other party action, no walking controls', () => {
+    const { controller, state } = withParty();
+    const held = partyPosition(state);
+    pressKey(controller, 'p');
+
+    for (const key of ['w', 's', 'x', 'f', 'e', 'i', 'c', 'm']) pressKey(controller, key);
+
+    expect(partyPosition(state)).toEqual(held);
+    expect(tickCount(state)).toBe(0);
+    expect(controller.expanded).toBe(false);
+    expect(hud(controller).controls).toEqual([]);
+    expect(sheet(controller)).not.toBeNull();
+  });
+
+  it('ignores a tap that lands outside the page', () => {
+    const { controller } = withParty();
+    pressKey(controller, 'p');
+    const { bounds } = sheet(controller);
+
+    pressPointer(controller, bounds.x + bounds.width / 2, Math.max(0, bounds.y - 4));
+    expect(sheet(controller)).not.toBeNull();
+  });
+
+  // @spec PRESENT-PARTY-008
+  it('opens on the first character every time', () => {
+    const { controller } = withParty();
+    pressKey(controller, 'p');
+    expect(showing(controller)).toBe('bram');
+
+    pressKey(controller, '3');
+    pressKey(controller, 'p');
+    pressKey(controller, 'p');
+    expect(showing(controller)).toBe('bram');
+  });
+
+  // @spec PRESENT-PARTY-009
+  it('pages forward on the right arrow, D, and the next control, wrapping from last to first', () => {
+    const { controller } = withParty();
+    pressKey(controller, 'p');
+
+    pressKey(controller, 'ArrowRight');
+    expect(showing(controller)).toBe('tam');
+    pressKey(controller, 'd');
+    expect(showing(controller)).toBe('isolde');
+    tapControl(controller, 'NEXT');
+    expect(showing(controller)).toBe('wren');
+    pressKey(controller, 'ArrowRight');
+    expect(showing(controller)).toBe('bram');
+  });
+
+  // @spec PRESENT-PARTY-010
+  it('pages back on the left arrow, A, and the previous control, wrapping from first to last', () => {
+    const { controller } = withParty();
+    pressKey(controller, 'p');
+
+    pressKey(controller, 'ArrowLeft');
+    expect(showing(controller)).toBe('wren');
+    pressKey(controller, 'a');
+    expect(showing(controller)).toBe('isolde');
+    tapControl(controller, 'PREVIOUS');
+    expect(showing(controller)).toBe('tam');
+  });
+
+  // @spec PRESENT-PARTY-011
+  it('goes straight to a character by number, and ignores a number past the party', () => {
+    const { controller } = withParty();
+    pressKey(controller, 'p');
+
+    pressKey(controller, '3');
+    expect(showing(controller)).toBe('isolde');
+    expect(pressKey(controller, '5')).toBe(false);
+    expect(showing(controller)).toBe('isolde');
+  });
+
+  // @spec PRESENT-SCENE-010
+  it('names the party layer, empty, while the screen is closed', () => {
+    const { controller } = withParty();
+
+    expect(layers(controller).map((l) => l.name)).toEqual(['view', 'map', 'fight', 'party', 'hud']);
+    expect(sheet(controller)).toBeNull();
   });
 });

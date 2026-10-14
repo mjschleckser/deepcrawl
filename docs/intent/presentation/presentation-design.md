@@ -514,6 +514,102 @@ An outcome is drawn as a banner over the fight: what happened, and what it was w
 The player dismisses it, and combat gives way to the corridor again — or, on a defeat,
 to whatever the campaign does with a party that did not come back.
 
+## The Party Screen
+
+The party screen is where the player reads their characters: who they are, how hurt,
+what they are good at, how close they are to getting better, and what they are
+carrying. It is the systems player's screen — the place to find out why a fight went
+the way it did — and it is read-only: nothing on it changes a character.
+
+### Opening and closing
+
+`PARTY` opens it — the `P` key, or the Party button on the action bar. The same action
+closes it, and so do `Escape` and a drawn Close control. Opening it is not a thing that
+happens in the dungeon: like expanding the map, it changes how the game is drawn and
+nothing about what is true, so the controller holds whether it is open and the
+simulation is never asked.
+
+What the simulation is told is that a menu is open, because exploration owns the rule
+that **the clock does not run while a menu is up**. The screen raises that flag when it
+opens and lowers it when it closes. Reading a character sheet never costs a tick.
+
+It is an exploration screen. It cannot be opened during a fight, when combat owns the
+input and the fight's own cards already show the party, and it cannot be opened over a
+prompt, which owns the input until it is answered.
+
+While it is open, it owns the input. Movement verbs and every party action other than
+`PARTY` are discarded rather than queued, and the walking zones and the action bar are
+not drawn — a control nobody can use is a control that should not be on the screen.
+
+### One character a page
+
+The screen shows **one character at a time**, on a page that fills the centred column
+over the corridor. Four characters' worth of attributes, skills and equipment does not
+fit a phone held upright at a size anyone can read, and a page per character gives each
+sheet the whole screen rather than a quarter of it.
+
+```
+┌──── ◀  Bram  1 / 4  ▶ ──────── Close ┐
+│ ▣  Fighter · Total level 9           │
+│    Hit points ████████░░ 31 / 33     │
+│                                      │
+│ Might 12    Constitution 13          │
+│ Dexterity 13  Intellect 9  ...       │
+│                                      │
+│ Weapon   Blade 2 ███░  Blunt 1 █░░░  │
+│ Defence  Heavy Armour 2 ██░░  ...    │
+│ Survival Cartography 1 ░░░░  ...     │
+│                                      │
+│ Main hand  Shortsword                │
+│ Off hand   Round shield              │
+│ Body       Chainmail                 │
+└──────────────────────────────────────┘
+```
+
+**It opens on the first character**, in the party's own order, every time. Which page
+was open last is not worth remembering: the screen is a place to look something up, and
+starting in the same place is what makes it quick to use without reading.
+
+**Paging moves one character either way and wraps around**, so every character is
+always one or two presses from any other in a party of four. The page turns by drawn
+arrows either side of the name, by the left and right arrow keys, and by `A` and `D` —
+the turn keys, free while the screen holds the input, and where a keyboard player's hand
+already is. The number keys `1` to `4` go straight to that character.
+
+### What a page shows
+
+Everything on the page is read from the party segment at the moment of drawing. The
+screen holds no copy of a character.
+
+| Part | Shows |
+|---|---|
+| Heading | portrait, name, class, total level, and where this page sits among the party |
+| Hit points | current and maximum, with a bar; the condition named when it is anything but conscious |
+| Attributes | all six, named in full, with their scores |
+| Skills | every skill held at rank 1 or above, in the party segment's six groups and their order |
+| Equipment | every slot the items segment defines, with what is in it or a mark that it is empty |
+
+**A skill shows its rank and how far it is toward the next.** The rank is a number; the
+progress is a thin bar under it, filling as experience is earned toward the next rank.
+A skill at the rank cap shows a full bar and says it is at the cap. How far along a
+skill is belongs to the party segment, which owns what a rank costs; the screen draws
+the share it is given and works nothing out for itself.
+
+This is the number the systems player came for. Progression is a record of use, spread
+across skills by a pot split equally, and a rank alone hides how near the next one is —
+so a player cannot tell which skills a fight is about to pay off and which it is
+starving.
+
+**A skill the character's class cannot train is drawn, and marked as no longer
+advancing.** A character keeps every rank they earned when they change class, and
+those ranks still count; hiding them would understate the character, and drawing them
+like any other would promise progress that will never come.
+
+**The condition is named whenever it is anything but conscious** — Unconscious, Dead,
+Ashes, Lost — in words and in place of nothing, because a hit-point bar at zero cannot
+tell an unconscious character from a dead one, and that difference is the whole of what
+the player needs to know about them.
+
 ## Prompts
 
 Some actions ask before they resolve — taking a staircase, for one. When the
@@ -658,6 +754,11 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 | Where a column sits vertically | Centred in the formation region, each side on its own count | Pinned to the top edge; both sides aligned on a shared top | Two goblins facing four characters read as a side that is outnumbered when they sit level with the middle of the party, and as a list that ran out when they hang from the top edge with empty panel beneath. Centring is fixed at the start of the encounter and cannot creep, because the fallen keep their places and a side's count never changes. |
 | How fast bars fill on screen | One span per beat, set slow enough that a race can be watched | As fast as the arithmetic allows; a speed the player sets | The bars are what a fight is read off, so a race resolved before the player has found the two bars in it is a result they were told rather than shown. One number, applied to every bar alike, keeps the relative speeds the simulation's and changes nothing it resolves. A player-set speed is a preference screen for a game with no preferences yet. |
 | The fallen | Drawn in place, spent and dimmed | Removing them from the column | The shape of a side that has lost its middle is information, and a column that closed its gaps would move everything below the gap while the player was looking at it. |
+| Where the party screen's open state lives | The controller, as view state, with the simulation told only that a menu is open | A flag in exploration state; a party action that commits and costs a tick | Opening a character sheet changes nothing that is true, which is the test the expanded map already passes. Exploration still owns the clock rule, so it is told a menu is up and nothing more. Charging a tick to read a sheet would make looking cost something, which pushes the systems player to look less. |
+| Party screen layout | One character a page, paged with wrap-around, opening on the first | Four compact rows with the selected character's sheet beneath; all four sheets in one scrolling column | Four sheets do not fit a phone held upright at a readable size, and a roster-and-detail split spends a third of the screen repeating what the sheet already says. A scrolling column moves under the thumb. A page each gives every sheet the whole column, and with four characters wrap-around paging puts any one within two presses. |
+| Paging keys | The arrow keys, `A` and `D`, and `1` to `4` | Arrow keys alone; a dedicated pair of keys | `A` and `D` are the turn keys and free while the screen holds the input, so a keyboard player pages without moving their hand. The number keys match how fights already address a slot by number. |
+| Skill progress | A bar of experience toward the next rank under every rank | The rank alone | Progression is spread across skills by a pot split equally, and a bare rank hides which skills a fight is about to pay off. The share is the party segment's to compute, so the screen cannot drift from the rule it shows. |
+| Skills a class cannot train | Drawn, marked as no longer advancing | Hidden; drawn like any other | Hiding them understates a character who changed class, and drawing them plainly promises progress that will never come. |
 | The build stamp | Drawn in the corner of the running game, with the commit count as its patch | A version on an about screen; no version at all; a build date | "It does not work" and "you are looking at a cached build" are the same report without it, and a service worker makes the second common. Taking the patch from the commit count means nobody has to remember to raise a number, and it orders correctly by construction. |
 | Starter floor | Hand-authored data, deleted when generation lands | Waiting for dungeon generation; generating a floor here | The segment cannot be seen to work without a floor to walk, and building a generator inside the presentation segment would put it in the wrong place permanently. |
 
@@ -695,13 +796,15 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 28. ✅ **Prompts are drawn from the simulation's pending confirmation**, never from the renderer's own flag.
 29. ✅ **The build's version is drawn in the bottom-left corner**, its patch number the commit count, fixed at build time.
 30. ✅ **A hand-authored starter floor** stands in until dungeon generation exists.
+31. ✅ **The party screen is one character a page**, read-only, opened and closed by `PARTY`, holding the input and stopping the clock while open.
+32. ✅ **A skill on the party screen shows its rank and its progress toward the next**, the share computed by the party segment.
 
 ### Deferred
 
 1. **Animation in a fight.** An action lands in one frame, and the only motion is the attacker's judder. Real animation — a blow that travels, a spell that reads as a spell — is unbuilt, and would want the ticker running throughout a fight rather than only between actions. The beat, the shake, and the ticker's bounds are settled; everything past them is not.
 2. **Art.** Everything is flat-shaded polygons. Textures, sprites for doors and stairs, and any sense of material are unaddressed.
 3. **Animation between steps.** A step currently cuts from one position to the next. Whether it should slide, and how that squares with a stopped ticker, is open — an animation is the one thing in this segment that would need time.
-4. **The party action bar's contents.** The bar can be drawn, but its panels cannot: `INVENTORY` and `SPELLS` route to an items segment and an ability set that are unbuilt, and `PARTY` has a segment to read but no screen designed for it.
+4. **The pack and spell screens.** `INVENTORY` and `SPELLS` are drawn on the action bar but open nothing: they route to inventory and an ability set that are unbuilt. Changing anything about a character — equipping, using an item — waits on the same work, which is why the party screen is read-only.
 5. **Expanded-map interaction.** Panning and zooming an expanded map, and whether tapping a tile does anything, are unspecified. Auto-travel is already deferred in exploration.
 6. **Wide-screen framing.** On a very wide desktop window the corridor frames may want letterboxing rather than stretching; untested.
 7. **Accessibility.** Keyboard focus, screen-reader description of the map, and colour-blind-safe stroke distinctions are unaddressed.

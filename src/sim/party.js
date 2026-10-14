@@ -39,6 +39,26 @@ export const CharacterClass = {
   FIGHTER: 'FIGHTER', MAGE: 'MAGE', CLERIC: 'CLERIC', THIEF: 'THIEF',
 };
 
+/**
+ * How skills are grouped when they are shown. Presentation only: nothing that decides
+ * anything reads the grouping.
+ *
+ * @spec PARTY-SKILL-013
+ */
+export const SkillGroup = {
+  WEAPON: 'WEAPON', DEFENCE: 'DEFENCE', ARCANE: 'ARCANE',
+  DIVINE: 'DIVINE', STEALTH: 'STEALTH', SURVIVAL: 'SURVIVAL',
+};
+
+export const SKILL_GROUPS = [
+  { group: SkillGroup.WEAPON, skills: [Skill.BLADE, Skill.BLUNT, Skill.POLEARM, Skill.BOW] },
+  { group: SkillGroup.DEFENCE, skills: [Skill.HEAVY_ARMOUR, Skill.LIGHT_ARMOUR, Skill.SHIELD] },
+  { group: SkillGroup.ARCANE, skills: [Skill.EVOCATION, Skill.ALTERATION] },
+  { group: SkillGroup.DIVINE, skills: [Skill.HEALING, Skill.RESTORATION] },
+  { group: SkillGroup.STEALTH, skills: [Skill.DETECTION, Skill.DISARM, Skill.LOCKS] },
+  { group: SkillGroup.SURVIVAL, skills: [Skill.CARTOGRAPHY, Skill.COOKING, Skill.FORAGING] },
+];
+
 /** Skills every class carries, so nobody is useless at anything basic. */
 export const BASE_SKILLS = [Skill.LIGHT_ARMOUR, Skill.CARTOGRAPHY, Skill.COOKING, Skill.FORAGING];
 
@@ -355,6 +375,24 @@ export function attemptRevival(party, id, { succeeds }) {
 
 export function skillRank(c, skill) {
   return c.ranks[skill] ?? 0;
+}
+
+/**
+ * How far a skill is toward its next rank: the share of that rank's cost the banked
+ * experience has covered. Reported here, beside the cost, so nothing that shows it
+ * needs the formula. A rank granted free counts as no progress until earned experience
+ * catches up with it, because that is how far its holder really is from the next one.
+ *
+ * @spec PARTY-SKILL-012
+ */
+export function skillProgress(c, skill) {
+  const rank = skillRank(c, skill);
+  if (rank >= RANK_CAP) return 1;
+  const from = experienceForRank(rank);
+  const span = experienceForRank(rank + 1) - from;
+  if (span <= 0) return 0;
+  const banked = c.skillExperience[skill] ?? 0;
+  return Math.min(1, Math.max(0, (banked - from) / span));
 }
 
 /**

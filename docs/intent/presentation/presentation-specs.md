@@ -165,6 +165,28 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-FIGHT-017**: The system shall give every combat option on offer a drawn control with its own hit region, so that a fight can be played by touch alone.
 - [x] **PRESENT-FIGHT-015**: When the player dismisses the outcome banner, the system shall return to drawing the corridor and accept exploration input again.
 
+## The party screen
+
+- [x] **PRESENT-PARTY-001**: When the player performs `PARTY` during exploration while no prompt is pending and the party screen is closed, the system shall open the party screen.
+- [x] **PRESENT-PARTY-002**: While the party screen is open, when the player performs `PARTY`, presses `Escape`, or presses the screen's Close control, the system shall close the party screen.
+- [x] **PRESENT-PARTY-003**: The system shall hold whether the party screen is open as view state in the presentation layer, and shall perform no simulation action to open or close it.
+- [x] **PRESENT-PARTY-004**: When the party screen opens, the system shall mark exploration's menu open, and when it closes, shall mark the menu closed.
+- [x] **PRESENT-PARTY-005**: While an encounter is running or a prompt is pending, the system shall not open the party screen.
+- [x] **PRESENT-PARTY-006**: While the party screen is open, the system shall discard every movement verb and every party action other than `PARTY`, and shall draw neither the navigation zones nor the party action bar.
+- [x] **PRESENT-PARTY-007**: The system shall draw the party screen as one character's page at a time, within the centred column over the corridor.
+- [x] **PRESENT-PARTY-008**: When the party screen opens, the system shall show the page of the first character in the party's order.
+- [x] **PRESENT-PARTY-009**: While the party screen is open, when the player presses the right arrow key, `D`, or the drawn next control, the system shall show the next character's page, and from the last character shall show the first.
+- [x] **PRESENT-PARTY-010**: While the party screen is open, when the player presses the left arrow key, `A`, or the drawn previous control, the system shall show the previous character's page, and from the first character shall show the last.
+- [x] **PRESENT-PARTY-011**: While the party screen is open, when the player presses a number key from `1` to the party's size, the system shall show that character's page.
+- [x] **PRESENT-PARTY-012**: The system shall draw on a character's page their portrait, name, class, total level, and their place in the party as a position out of the party's size.
+- [x] **PRESENT-PARTY-013**: The system shall draw on a character's page their current and maximum hit points with a bar, and shall name their condition in words whenever it is anything other than conscious.
+- [x] **PRESENT-PARTY-014**: The system shall draw on a character's page all six attributes, named in full, with their scores.
+- [x] **PRESENT-PARTY-015**: The system shall draw on a character's page every skill they hold at rank 1 or above, grouped by the party segment's skill groups in that segment's order, each with its rank.
+- [x] **PRESENT-PARTY-016**: The system shall draw under every skill on a character's page a bar filled to the progress toward the next rank that the party segment reports, and shall mark a skill at the rank cap as at the cap.
+- [x] **PRESENT-PARTY-017**: The system shall mark on a character's page every skill their class cannot train as no longer advancing.
+- [x] **PRESENT-PARTY-018**: The system shall draw on a character's page every equipment slot the items segment defines, with the name of the item in it or a mark that it is empty.
+- [x] **PRESENT-PARTY-019**: The system shall offer on the party screen no control that changes a character.
+
 ## Deferred
 
 - [D] **PRESENT-VIEW-010**: The system shall animate the transition between one party position and the next.

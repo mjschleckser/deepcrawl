@@ -48,6 +48,8 @@ are fed into, never the numbers.
 - [x] **PARTY-SKILL-006**: The system shall cap every skill rank at ten, and shall award no further rank however much experience is earned beyond it.
 - [x] **PARTY-SKILL-007**: The system shall require three hundred multiplied by a skill's current rank in experience to raise it by one rank.
 - [x] **PARTY-SKILL-011**: The system shall read a skill's rank from the experience accumulated in it, counting from rank zero, so that a rank a class granted free costs its holder no less to leave than one they earned.
+- [x] **PARTY-SKILL-013**: The system shall place every skill in exactly one of six groups — Weapon, Defence, Arcane, Divine, Stealth, Survival — listed in that order, and shall let nothing but presentation depend on the grouping.
+- [x] **PARTY-SKILL-012**: The system shall report a skill's progress toward its next rank as the share, from nought to one, of that rank's cost the accumulated experience has covered, reporting nought while the experience has not yet reached the current rank and one at the rank cap.
 
 ## Advancement
 

@@ -194,6 +194,12 @@ Early floors therefore stay *available* to a party that is underlevelled or rebu
 after a disaster, and stay *slow* for one that is not, without a rule forbidding
 anything.
 
+**How far a skill is toward its next rank** is the share of that rank's cost its
+experience has covered. It is reported here, beside the cost it is a share of, so that
+nothing that shows it has to know the formula. A rank a class granted free is reported
+as no progress until earned experience catches up with it, because that is how far the
+holder actually is from the next one; a skill at the cap is reported as complete.
+
 The cap of 10 is what lets content be calibrated at all: it fixes the top of the
 accuracy and damage curves, so the deepest floor can be built against a known ceiling
 rather than an open-ended one.
