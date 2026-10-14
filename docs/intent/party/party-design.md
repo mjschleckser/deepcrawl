@@ -15,7 +15,7 @@ Three principles shape the design.
 
 **One owner, many callers.** A potion drunk in a corridor and a mace swung in a fight
 both change a character's hit points. Neither segment writes the field. Both call an
-operation here, so the floor at zero, the death chain, and the five-member limit are
+operation here, so the floor at zero, the death chain, and the four-member limit are
 enforced in exactly one place, no matter what caused the change.
 
 **Characters are what they have done.** Progression is not a number awarded for
@@ -41,8 +41,9 @@ action worth taking.
 
 ## The Roster
 
-A party holds at most five characters. There is no seating: a character is in the party
-or not, and combat reaches all five alike. What a party is made of is therefore a
+A party holds at most four characters — as many as there are classes, so a second of
+anything means going without something else. There is no seating: a character is in the party or
+not, and combat reaches all four alike. What a party is made of is therefore a
 question about classes, skills and equipment rather than about an arrangement, which is
 the only kind of composition decision this game asks anyone to make.
 
@@ -334,7 +335,7 @@ show what it cost.
 ### Resolved
 
 1. ✅ **This segment is the only writer** of character state; everyone else calls an operation.
-2. ✅ **At most five characters**, with no seating among them.
+2. ✅ **At most four characters**, as many as there are classes, with no seating among them.
 3. ✅ **Progression is skill rank earned by use**, not experience and levels.
 4. ✅ **Total level is the sum of a character's skill ranks**, derived rather than stored, and confers nothing by itself.
 5. ✅ **An enemy carries a pot** that grows with the distinct skills used against it up to a ceiling, then divides equally.
@@ -362,5 +363,5 @@ show what it cost.
 
 ## References
 
-- `docs/high-level-design.md` — the five-member party and *setbacks, not erasure*.
+- `docs/high-level-design.md` — the four-member party and *setbacks, not erasure*.
 - `docs/intent/exploration/exploration-design.md` — the operations exploration calls, and the skills that own its deferred behaviour.

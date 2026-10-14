@@ -1,7 +1,7 @@
 {
   "id": "tam",
   "name": "Tam",
-  "order": 2,
+  "order": 1,
   "characterClass": "THIEF",
   "attributes": {
     "DEXTERITY": 16

@@ -24,7 +24,7 @@ design is built on.
 
 **Light never helps them.** A roamer notices the party by proximity, not by seeing
 their torch. That is a hard requirement from the exploration segment, and it has a
-consequence worth keeping: a party in the dark can be ambushed by something it could
+consequence worth keeping: a party in the dark can be hunted down by something it could
 not see but which knew perfectly well where they were. The dark did not attract the
 monster; it only blinded the party.
 
@@ -35,7 +35,7 @@ monster; it only blinded the party.
 | Roster | which combatants exist, their role, and what each is worth | the shape of a combatant, which the party segment defines |
 | Bands | which enemies gather, and how many | generation decides where a band goes |
 | Roaming | where a roamer stands, and how it moves on a floor | exploration owns the tick that moves it |
-| Awareness | whether a roamer knows where the party is | exploration hands the result to combat as surprise |
+| Awareness | whether a roamer knows where the party is, and so whether it gives chase | nothing outside this segment reads it |
 | Behaviour in a fight | choosing a legal target | combat resolves the attack |
 
 ## The Roster
@@ -214,13 +214,9 @@ them, and a stair lands them on its arrival tile. If something is already standi
 there, the encounter begins and the roamer steps aside, because the invariant holds
 however the two came to meet.
 
-### Surprise
-
-When contact happens, whether each side was aware is handed to combat as the surprise
-payload. A party that saw the roamer coming — which in practice means a lit party —
-enters the fight aware. A roamer inside its notice range is always aware. A party
-stumbling into something in the dark is therefore surprised by a monster that was not
-surprised at all.
+**Awareness ends at contact.** It decides whether a roamer chases and nothing else; it
+is not handed to combat, and neither side opens a fight ahead because it noticed the
+other first. Who acts first is decided by combat's own opening draw.
 
 ## Re-stocking
 

@@ -8,7 +8,7 @@ are fed into, never the numbers.
 
 ## The roster
 
-- [x] **PARTY-ROSTER-001**: The system shall hold at most five characters in a party.
+- [x] **PARTY-ROSTER-001**: The system shall hold at most four characters in a party.
 - [x] **PARTY-ROSTER-003**: If an operation would exceed the roster limit, then the system shall reject it and leave the party unchanged.
 - [x] **PARTY-ROSTER-006**: The system shall give a character no position within the party, and shall treat every member as equally present.
 - [x] **PARTY-ROSTER-005**: The system shall keep a character whose condition is `LOST` in the save as a record, and shall not count them against the roster limit.

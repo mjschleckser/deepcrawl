@@ -57,7 +57,7 @@ const hero = (id, cls) =>
     attack: { skill: Skill.BLADE, baseDamage: 9, accuracy: 30 },
   });
 
-function fightState({ enemies, light = 'BRIGHT', partyAware = true, enemiesAware = true } = {}) {
+function fightState({ enemies, light = 'BRIGHT' } = {}) {
   const party = createParty();
   addCharacter(party, hero('bram', CharacterClass.FIGHTER));
   addCharacter(party, hero('tam', CharacterClass.THIEF));
@@ -71,7 +71,6 @@ function fightState({ enemies, light = 'BRIGHT', partyAware = true, enemiesAware
       createEnemy({ id: 'a1', name: 'Goblin Archer', maxHitPoints: 7, potValue: 18, attack: { baseDamage: 5, accuracy: 24 } }),
     ]),
     light,
-    awareness: { party: partyAware, enemies: enemiesAware },
     rng: makeRng(4),
     origin: { floorId: 'f1', x: 2, y: 3 },
   });
@@ -1112,7 +1111,6 @@ describe('a fight that plays itself out', () => {
     pending: fight.pending,
     log: fight.log,
     actor: fight.actor,
-    notice: fight.notice,
     shakingId: fight.shakingId,
     shake: fight.shake,
     partway: fight.partway,
@@ -1175,143 +1173,6 @@ describe('a fight that plays itself out', () => {
 
     expect(fight.pending).toBeNull();
     expect(planOf(fight).prompt).toBeNull();
-  });
-
-  // @spec PRESENT-READY-015
-  // @spec PRESENT-READY-026
-  it('keeps the ambush card up while the ambushers act, and plays the fight beneath it', () => {
-    // Tough enough to survive being hit back, so the card's lifetime is what is under
-    // test rather than how fast the party kills.
-    const sturdy = (id) => createEnemy({
-      id, name: 'Goblin', maxHitPoints: 400, potValue: 14,
-      attack: { baseDamage: 1, accuracy: 24 },
-    });
-    const fight = opening({
-      partyAware: false,
-      enemies: [sturdy('g1'), sturdy('g2'), sturdy('a1')],
-    });
-
-    expect(planOf(fight).notice).toMatchObject({ text: "You've been ambushed!" });
-
-    // The card lasts until every goblin the ambush favoured has taken its turn — no
-    // longer, and not a turn less.
-    const goblins = fight.encounter.enemies.members.map((e) => e.id);
-    const swung = new Set();
-    for (let i = 0; i < 60 && swung.size < goblins.length; i++) {
-      // Still up, because a goblin is still owed the turn the ambush bought it.
-      expect(planOf(fight).notice).not.toBeNull();
-      if (fight.actor && fight.actor.side === 'ENEMIES') {
-        swung.add(fight.actor.id);
-        playEnemyTurn(fight);
-      } else if (fight.pending) {
-        defend(fight);
-      } else {
-        advanceClock(fight, FILL_BEAT_MS);
-      }
-    }
-
-    expect(swung.size).toBe(goblins.length);
-    expect(planOf(fight).notice).toBeNull();
-    // It played out beneath the card rather than waiting behind it.
-    expect(fight.turnsTaken).toBeGreaterThanOrEqual(goblins.length);
-  });
-
-  // @spec PRESENT-READY-033
-  it('names the party as the side caught when the party is', () => {
-    const fight = opening({ partyAware: false });
-
-    expect(planOf(fight).notice.text).toBe("You've been ambushed!");
-  });
-
-  // @spec PRESENT-READY-033
-  it('names the enemies as the side caught when they are', () => {
-    const fight = opening({ enemiesAware: false });
-
-    expect(planOf(fight).notice.text).toBe('Enemy has been ambushed!');
-  });
-
-  // @spec PRESENT-READY-033
-  it('tells the two cards apart on their first word, not their last', () => {
-    const jumped = planOf(opening({ partyAware: false })).notice.text;
-    const sprung = planOf(opening({ enemiesAware: false })).notice.text;
-
-    expect(jumped).not.toBe(sprung);
-    expect(jumped.split(' ')[0]).not.toBe(sprung.split(' ')[0]);
-  });
-
-  // @spec PRESENT-READY-015
-  it('does not bring the card back when an ambusher comes ready a second time', () => {
-    const quick = (id) => createEnemy({
-      id, name: 'Goblin', maxHitPoints: 30, attributes: { DEXTERITY: 30 },
-      attack: { baseDamage: 4, accuracy: 20 },
-    });
-    const fight = opening({ partyAware: false, enemies: [quick('g1'), quick('g2')] });
-
-    const swung = new Set();
-    for (let i = 0; i < 40 && swung.size < 2; i++) {
-      if (fight.actor && fight.actor.side === 'ENEMIES') {
-        swung.add(fight.actor.id);
-        playEnemyTurn(fight);
-      } else if (fight.pending) {
-        defend(fight);
-      } else {
-        advanceClock(fight, FILL_BEAT_MS);
-      }
-    }
-    expect(planOf(fight).notice).toBeNull();
-
-    // An ambusher now acts from exactly full to exactly nothing, so who is next turns
-    // on what the party drew. Put the party at the back of the queue, so that a goblin
-    // coming round a second time is what is actually under test.
-    for (const c of roster(fight.encounter.party)) fight.encounter.readiness.set(c.id, 0);
-
-    // Three times the party's speed: the goblins come round again before anybody else.
-    untilReady(fight);
-    expect(fight.actor.side).toBe('ENEMIES');
-
-    // A quick ambusher coming round again is simply fast, not ambushing twice.
-    expect(planOf(fight).notice).toBeNull();
-  });
-
-  // @spec PRESENT-READY-015
-  it('keeps the card up while an ambushing party is still to act', () => {
-    const fight = opening({ enemiesAware: false });
-
-    expect(planOf(fight).notice).not.toBeNull();
-    for (let i = 0; i < 2; i++) {
-      untilAsked(fight);
-      expect(planOf(fight).notice).not.toBeNull();
-      defend(fight);
-    }
-
-    untilAsked(fight);
-    defend(fight);
-
-    expect(planOf(fight).notice).toBeNull();
-  });
-
-  // @spec PRESENT-READY-015
-  it('counts an ambusher who falls before acting as done', () => {
-    const fight = opening({ enemiesAware: false });
-    untilAsked(fight);
-    const up = fight.pending.characterId;
-    expect(planOf(fight).notice).not.toBeNull();
-
-    // Every other ambusher goes down before their turn comes; the one still standing
-    // takes theirs, and that is the whole ambush spent.
-    for (const c of roster(fight.encounter.party)) {
-      if (c.id !== up) applyDamage(fight.encounter.party, c.id, 9999);
-    }
-    defend(fight);
-
-    expect(planOf(fight).notice).toBeNull();
-  });
-
-  // @spec PRESENT-READY-017
-  it('announces nothing when neither side was caught out', () => {
-    const fight = controller();
-
-    expect(planOf(fight).notice).toBeNull();
   });
 
   // @spec PRESENT-READY-024

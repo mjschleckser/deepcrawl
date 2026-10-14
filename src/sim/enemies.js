@@ -206,7 +206,6 @@ export function giveGround(roamer, floor, party) {
  * @spec ENEMY-MOVE-008
  * @spec ENEMY-CONTACT-001
  * @spec ENEMY-CONTACT-002
- * @spec ENEMY-CONTACT-004
  * @spec ENEMY-CONTACT-005
  */
 export function giveTicks(roamer, ticks, { floor, party }) {

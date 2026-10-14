@@ -44,14 +44,14 @@ function partyOf(...characters) {
 
 describe('the roster', () => {
   // @spec PARTY-ROSTER-001
-  it('holds at most five characters', () => {
+  it('holds at most four characters', () => {
     const party = createParty();
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 4; i++) {
       expect(addCharacter(party, fighter({ id: `f${i}` }))).toBe(true);
     }
 
-    expect(addCharacter(party, fighter({ id: 'sixth' }))).toBe(false);
-    expect(roster(party)).toHaveLength(5);
+    expect(addCharacter(party, fighter({ id: 'fifth' }))).toBe(false);
+    expect(roster(party)).toHaveLength(4);
   });
 
   // @spec PARTY-ROSTER-006

@@ -260,7 +260,6 @@ describe('input while a fight is on', () => {
       party,
       enemies: createEnemyGroup([createEnemy({ id: 'g1', name: 'Goblin', hitPoints: 40, potValue: 10 })]),
       light: 'BRIGHT',
-      awareness: { party: true, enemies: true },
       rng: makeRng(2),
       origin: { floorId: 'f1', x: 1, y: 1 },
     });
@@ -316,7 +315,6 @@ describe('when a fight ends', () => {
       party,
       enemies: createEnemyGroup([createEnemy({ id: 'g1', name: 'Goblin', hitPoints: 40, potValue: 10 })]),
       light: 'BRIGHT',
-      awareness: { party: true, enemies: true },
       rng: makeRng(2),
       origin: { floorId: 'f1', x: 1, y: 1 },
     });
@@ -345,7 +343,7 @@ describe('when a fight ends', () => {
       const encounter = beginEncounter({
         party,
         enemies: createEnemyGroup([createEnemy({ id: 'g1', name: 'Goblin', hitPoints: 40, potValue: 10 })]),
-        light: 'BRIGHT', awareness: { party: true, enemies: true },
+        light: 'BRIGHT',
         rng: makeRng(3), origin: { floorId: 'f1', x: 1, y: 1 },
       });
       const campaign = { encounter, state, concludeEncounter: () => { campaign.encounter = null; }, fleeEncounter: () => {} };

@@ -82,7 +82,7 @@ describe('the authored roster', () => {
   it('reads the party from its own files, in the order they were authored in', () => {
     const party = startingCharacters();
 
-    expect(party.map((c) => c.id)).toEqual(['bram', 'rook', 'tam', 'isolde', 'wren']);
+    expect(party.map((c) => c.id)).toEqual(['bram', 'tam', 'isolde', 'wren']);
     for (const c of party) {
       expect(c.condition).toBe(Condition.OK);
       expect(c.attack).not.toBeNull();
@@ -104,6 +104,6 @@ describe('the authored roster', () => {
     const party = createParty();
     for (const c of startingCharacters()) addCharacter(party, c);
 
-    expect(roster(party)).toHaveLength(5);
+    expect(roster(party)).toHaveLength(4);
   });
 });

@@ -239,11 +239,10 @@ re-open the fight with their next step.
 
 **A door between the two opens anyway, before the meeting is resolved.** Pushing a
 door open is the same act whichever side of it something is standing on, and the
-alternative is a fight through a shut door: the party cannot see what they walked into,
-and the encounter counts them unaware of a warband they are standing face to face with.
-The door opens, sight is recomputed against it, and only then does contact resolve — so
-whether the party was surprised is decided by what they can see now rather than by what
-the door hid a moment ago.
+alternative is a fight through a shut door, drawn over a corridor view that still shows
+the door shut and nobody behind it. The door opens, sight is recomputed against it, and
+only then does contact resolve — so the fight is drawn over the passage the party is
+actually facing.
 
 On a successful step, these resolve in a fixed order:
 
@@ -465,8 +464,9 @@ belongs with the rest of the map's discovery record.
 ## The Combat Handoff
 
 Exploration hands combat an explicit encounter payload rather than leaving combat to
-read exploration's state directly. The payload names the enemy group, the light level
-of the tile the encounter begins on, and which side was aware of the other.
+read exploration's state directly. The payload names the enemy group and the light
+level of the tile the encounter begins on. It carries nothing about who noticed whom:
+how a fight opens is combat's to decide, from the combatants alone.
 
 An explicit handoff rather than shared reads: the boundary between these two segments
 is exactly where cascade discipline pauses, and a boundary both sides read through
@@ -481,7 +481,7 @@ Neither segment writes those fields directly. The **party segment owns them**, a
 exploration and combat both call its operations.
 
 That keeps the invariants in one place: hit points cannot fall below zero, death and
-revival follow a single state machine, and the party is never larger than five, no
+revival follow a single state machine, and the party is never larger than four, no
 matter which segment triggered the change.
 
 | State | Owned by | Changed through |
@@ -603,7 +603,7 @@ widget occupies a corner and expands to full screen on tap.
 | Roamers on the automap | Shown where their tile is `bright` and nothing opaque stands between | Brightness alone; last-known position; always shown; visible at `dim` too | Seeing where enemies are is what carrying light buys, and a persistent marker would give it away for free. Brightness alone is not sight either: light pools by distance and ignores walls, so it would show a goblin standing in torchlight on the far side of solid stone. |
 | Roamers in the first-person view | Drawn where the corridor report puts them, under the automap's rule | Shown on the automap alone; shown whenever the party's own tile is lit | A monster the map shows and the passage does not is the two views disagreeing about the same tile, which is the one thing answering both projections here is meant to prevent. |
 | Exploration to combat | An explicit encounter payload | Both segments reading shared state freely | The segment boundary is where cascade pauses; a boundary read through freely is not a boundary. The payload is the contract that changes when the segments need to say something new. |
-| Party state | Owned by the party segment; exploration and combat both call its operations | Either segment writing character fields directly | Both segments legitimately change party state — damage in combat, a potion in exploration. Routing both through one owner keeps hit-point floors, the death state machine, and the five-member limit in a single place. |
+| Party state | Owned by the party segment; exploration and combat both call its operations | Either segment writing character fields directly | Both segments legitimately change party state — damage in combat, a potion in exploration. Routing both through one owner keeps hit-point floors, the death state machine, and the four-member limit in a single place. |
 | Floors the party has left | Frozen, then re-stocked on return in proportion to elapsed ticks | Live background simulation; no change at all on return | Background simulation costs time proportional to the campaign for changes nobody observes, while a wholly static dungeon is dead. A re-stocking buys the appearance of a living dungeon at the cost of one arrival-time pass. |
 | Re-stocking and the map | Discovery is never revised; only occupants, doors, and room contents change | Fogging the map again after long absences | The player earned the map. Making its layout decay would punish the mapping the game is built to reward; making its contents unreliable is the interesting half. |
 | Dim light | Penalises trap and secret-door detection, and hides enemies | Dim as purely cosmetic; dim also degrading mapping accuracy | Detection penalties make a failing torch dangerous without making the map itself lie, which would undermine the record the player is building. |
@@ -665,13 +665,12 @@ widget occupies a corner and expands to full screen on tap.
 3. **Auto-travel** — tap a discovered automap tile and walk there. Must interrupt on encounter, trap, or light expiry. Not in v1.
 4. **Player map annotations** — Etrian-style notes and icons. Out of scope.
 5. **Hunger stages and effects** — this segment supplies the tick only; thresholds and consequences belong to the hunger segment.
-6. **Ambush and first strike** — facing and awareness should decide who strikes first. The encounter payload carries an awareness field; the rule that reads it is combat's.
-7. **Keys and locked doors** — `lockedDoor` names a matching key, but whether keys are per-door ids, a keyring, or a generic unlock is the items segment's decision.
-8. **Spinners and teleporters** — tile features that defeat mapping. Deferred; the edge and feature model accommodates them unchanged.
-9. **Other adventuring parties** in the dungeon, carrying their own light. Noted as a future inhabitant of the same floor model.
-10. **Standing still is free and safe.** Because roamers move only on party ticks, a stationary party is never approached. Whether idling should carry a cost is an open design question.
-11. **Save size** — every floor is retained for the life of the campaign with a full edge model. Discovery is bitmasked; whether layouts need compaction is unmeasured.
-12. **Mapping-range and trap-finding modifiers** from items, tomes, and classes — the baseline map is never gated, but the extension mechanism is unspecified.
+6. **Keys and locked doors** — `lockedDoor` names a matching key, but whether keys are per-door ids, a keyring, or a generic unlock is the items segment's decision.
+7. **Spinners and teleporters** — tile features that defeat mapping. Deferred; the edge and feature model accommodates them unchanged.
+8. **Other adventuring parties** in the dungeon, carrying their own light. Noted as a future inhabitant of the same floor model.
+9. **Standing still is free and safe.** Because roamers move only on party ticks, a stationary party is never approached. Whether idling should carry a cost is an open design question.
+10. **Save size** — every floor is retained for the life of the campaign with a full edge model. Discovery is bitmasked; whether layouts need compaction is unmeasured.
+11. **Mapping-range and trap-finding modifiers** from items, tomes, and classes — the baseline map is never gated, but the extension mechanism is unspecified.
 
 ## References
 

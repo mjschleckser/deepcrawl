@@ -516,24 +516,6 @@ function drawFight(container, plan) {
   }
 
   // @spec PRESENT-FIGHT-014
-  // Bars that start full are otherwise unexplained, and the reasonable conclusion is
-  // that the fight is broken.
-  // @spec PRESENT-READY-015
-  if (plan.notice) {
-    const { text, bounds } = plan.notice;
-    const card = new Graphics();
-    card.roundRect(bounds.x, bounds.y, bounds.width, bounds.height, 8 * scale)
-      .fill({ color: FIGHT_COLOURS.panel, alpha: 0.95 });
-    card.roundRect(bounds.x, bounds.y, bounds.width, bounds.height, 8 * scale)
-      .stroke({ width: 2 * scale, color: FIGHT_COLOURS.banner });
-    container.addChild(card);
-
-    const shout = label(text, Math.round(26 * scale), FIGHT_COLOURS.banner);
-    shout.x = bounds.x + bounds.width / 2 - shout.width / 2;
-    shout.y = bounds.y + bounds.height / 2 - shout.height / 2;
-    container.addChild(shout);
-  }
-
   if (plan.banner) {
     const b = plan.banner.bounds;
     const panel = new Graphics();

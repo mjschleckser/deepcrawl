@@ -1,7 +1,7 @@
 {
   "id": "wren",
   "name": "Wren",
-  "order": 4,
+  "order": 3,
   "characterClass": "CLERIC",
   "attributes": {
     "DEXTERITY": 10

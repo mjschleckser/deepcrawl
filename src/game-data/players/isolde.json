@@ -1,7 +1,7 @@
 {
   "id": "isolde",
   "name": "Isolde",
-  "order": 3,
+  "order": 2,
   "characterClass": "MAGE",
   "attributes": {
     "DEXTERITY": 12

@@ -26,12 +26,11 @@ function party(...members) {
 const orc = (id, over = {}) =>
   createEnemy({ id, name: 'Orc', maxHitPoints: 12, potValue: 20, ...over });
 
-function encounter({ members, enemies, light = 'BRIGHT', partyAware = true, enemiesAware = true, seed = 7 } = {}) {
+function encounter({ members, enemies, light = 'BRIGHT', seed = 7 } = {}) {
   return beginEncounter({
     party: party(...members),
     enemies: createEnemyGroup(enemies),
     light,
-    awareness: { party: partyAware, enemies: enemiesAware },
     rng: makeRng(seed),
     origin: { floorId: 'f1', x: 3, y: 4 },
   });

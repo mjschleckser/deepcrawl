@@ -346,7 +346,7 @@ describe('contact', () => {
     expect({ x: moved.x, y: moved.y }).not.toEqual({ x: 5, y: 5 });
   });
 
-  // @spec ENEMY-CONTACT-004
+  // @spec ENEMY-AWARE-002
   it('reports an unnoticed roamer as unaware, whatever the light', () => {
     const floor = openFloor();
     const distant = createRoamer({ id: 'r1', floorId: 'f1', x: 0, y: 0, band: band(), dexterity: 10 });

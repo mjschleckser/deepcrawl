@@ -143,7 +143,7 @@ export const EnemyRole = { MELEE: 'MELEE', RANGED: 'RANGED', CASTER: 'CASTER' };
  * @spec COMBAT-ENEMY-007
  */
 export function createEnemyGroup(enemies) {
-  // Uncapped by the party's five, but a swarm is a shape rather than a number.
+  // Uncapped by the party's four, but a swarm is a shape rather than a number.
   return { members: enemies.slice(0, MAX_ENEMY_GROUP) };
 }
 
@@ -151,17 +151,13 @@ const enemyStanding = (e) => e.condition === Condition.OK && e.hitPoints > 0;
 
 /**
  * @spec COMBAT-SURPRISE-003
- * @spec COMBAT-SURPRISE-005
+ * @spec COMBAT-SURPRISE-010
  * @spec COMBAT-DARK-001
  * @spec COMBAT-DARK-002
  * @spec COMBAT-DARK-003
  */
-export function beginEncounter({ party, enemies, light, awareness, rng, origin }) {
+export function beginEncounter({ party, enemies, light, rng, origin }) {
   const dark = light === 'DARK';
-
-  let surprisedSide = null;
-  if (awareness.party && !awareness.enemies) surprisedSide = 'ENEMIES';
-  if (!awareness.party && awareness.enemies) surprisedSide = 'PARTY';
 
   const state = {
     party,
@@ -169,9 +165,6 @@ export function beginEncounter({ party, enemies, light, awareness, rng, origin }
     light,
     origin,
     rng,
-    surprisedSide,
-    // Kept, not just consumed: who knew what is worth telling the player.
-    awareness: { ...awareness },
     // Fighting blind is possible and awful: the party swings wildly at whatever is in
     // front of it.
     accuracyPenalty: dark ? DARK_ACCURACY_PENALTY : 0,
@@ -191,25 +184,13 @@ export function beginEncounter({ party, enemies, light, awareness, rng, origin }
 
   // Every fight opens somewhere different. A bar drawn at random means the same
   // warband met twice is not the same fight twice, and nobody is owed the first turn
-  // by the order they happen to be listed in.
+  // by the order they happen to be listed in. Nothing about how the two sides met
+  // reaches in: the draw alone decides the opening.
   // @spec COMBAT-SURPRISE-003
   // @spec COMBAT-SURPRISE-004
   // @spec COMBAT-SURPRISE-007
   for (const combatant of combatants(state)) {
-    // Drawn for everybody, including the side about to be handed a full bar, so that
-    // the surprised side's opening is the same as it would have been in a fight
-    // nobody was caught out in. Skipping the draw would shift the seeded stream and
-    // make an ambush change the numbers of the side it did not touch.
-    const drawn = rng.int(0, FULL_BAR - 1);
-    // Catching a side unready gives up a round: every aware combatant opens full and
-    // acts before the surprised side moves. Order among them is the ordinary
-    // same-beat rule, so speed still decides everything from the first action on.
-    // @spec COMBAT-SURPRISE-005
-    // @spec COMBAT-SURPRISE-006
-    // @spec COMBAT-SURPRISE-008
-    // @spec COMBAT-SURPRISE-009
-    const ambushing = surprisedSide !== null && combatant.side !== surprisedSide;
-    state.readiness.set(combatant.id, ambushing ? FULL_BAR : drawn);
+    state.readiness.set(combatant.id, rng.int(0, FULL_BAR - 1));
   }
 
   return state;

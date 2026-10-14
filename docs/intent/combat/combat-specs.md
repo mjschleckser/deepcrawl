@@ -28,12 +28,9 @@ specs fix the structure those numbers are fed into.
 
 ## Where the bars start
 
-- [x] **COMBAT-SURPRISE-003**: When an encounter begins, the system shall set the readiness of every combatant not on a side that caught the other unready to an independently drawn random share of a full bar, below a full bar.
+- [x] **COMBAT-SURPRISE-003**: When an encounter begins, the system shall set the readiness of every combatant on both sides to an independently drawn random share of a full bar, below a full bar.
 - [x] **COMBAT-SURPRISE-004**: The system shall draw every combatant's opening readiness from the encounter's own seeded generator, so that an encounter replayed from the same seed opens identically.
-- [x] **COMBAT-SURPRISE-005**: When one side begins an encounter unaware of the other, the system shall set every aware combatant's opening readiness to a full bar, and shall leave the unaware side's opening readiness as drawn.
-- [x] **COMBAT-SURPRISE-008**: When one side begins an encounter unaware of the other, the system shall act every aware combatant once before any unaware combatant acts.
-- [x] **COMBAT-SURPRISE-009**: The system shall order the aware side's opening actions among themselves by the same rule it orders any other combatants ready on the same beat.
-- [x] **COMBAT-SURPRISE-006**: When both sides are aware or both unaware, the system shall draw every combatant's opening readiness and shall fill no combatant's bar.
+- [x] **COMBAT-SURPRISE-010**: The system shall not vary any combatant's opening readiness with which side noticed the other, the encounter's light, or how the two sides came to meet.
 - [x] **COMBAT-SURPRISE-007**: The system shall apply the opening readiness once, at the start of an encounter, and shall raise readiness by Dexterity alone thereafter.
 
 ## Resolving an attack
@@ -90,7 +87,7 @@ specs fix the structure those numbers are fed into.
 ## Enemy groups
 
 - [x] **COMBAT-ENEMY-006**: The system shall resolve an enemy's action by the same rules it resolves a character's, reading the same fields from both.
-- [x] **COMBAT-ENEMY-002**: The system shall not limit an enemy group to five members.
+- [x] **COMBAT-ENEMY-002**: The system shall not limit an enemy group to the party's size.
 - [x] **COMBAT-ENEMY-007**: The system shall hold at most twenty enemies in an enemy group.
 
 ## Ending an encounter
@@ -105,5 +102,6 @@ specs fix the structure those numbers are fed into.
 ## Deferred
 
 - [D] **COMBAT-ACTION-007**: The system shall resolve the effect of each ability a skill rank unlocks.
+- [D] **COMBAT-SURPRISE-011**: Where a combatant carries an item or skill that grants an opening advantage, the system shall apply that advantage to that combatant's opening readiness alone, on either side alike.
 - [D] **COMBAT-ENEMY-005**: The system shall choose enemy actions by the behaviour its roster defines, beyond selecting a legal target.
 - [D] **COMBAT-STATUS-001**: The system shall apply and expire status effects such as poison, fear, and paralysis.

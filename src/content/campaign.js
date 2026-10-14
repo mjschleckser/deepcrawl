@@ -11,13 +11,13 @@ import { createLightSource } from '../sim/light.js';
 import { makeRng } from '../sim/rng.js';
 import {
   createExploration, generateFloor, generatePlan, resolveArrival,
-  resolveTileLight, isTileDiscovered, setCombatActive,
+  resolveTileLight, setCombatActive,
 } from '../sim/exploration.js';
 import {
   Attribute, createParty, addCharacter, awardEncounter, partyStepCost,
 } from '../sim/party.js';
 import {
-  createRoamer, giveTicks, giveGround, forgetParty, isAware, occupantsFor,
+  createRoamer, giveTicks, giveGround, forgetParty, occupantsFor,
 } from '../sim/enemies.js';
 import {
   beginEncounter, createEnemy, createEnemyGroup, encounterOutcome, attemptFlee, Outcome,
@@ -134,7 +134,6 @@ export function createCampaign({ seed = Date.now() >>> 0 } = {}) {
    * @spec EXPLORE-BOUND-002
    * @spec EXPLORE-BOUND-011
    * @spec ENEMY-CONTACT-001
-   * @spec ENEMY-CONTACT-003
    */
   function onContactCheck({ floorId, tile, at = null }) {
     const state = campaign.state;
@@ -152,12 +151,6 @@ export function createCampaign({ seed = Date.now() >>> 0 } = {}) {
       party: campaign.party,
       enemies: toEnemyGroup(met.band),
       light,
-      // The party knows what it can see; the roamer knows what it has noticed. Light
-      // decides the first and never the second.
-      awareness: {
-        party: light === LightLevel.BRIGHT && isTileDiscovered(state, floorId, met.x, met.y),
-        enemies: isAware(met),
-      },
       rng: makeRng(rng.int(1, 1e9)),
       origin: { floorId, x: tile.x, y: tile.y },
     });

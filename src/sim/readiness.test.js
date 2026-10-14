@@ -7,7 +7,7 @@ import {
 import {
   beginEncounter, createEnemy, createEnemyGroup,
   advanceBeats, nextActor, takeAction, readinessOf, actionCost,
-  readyActor, readinessPartway, actingOrder,
+  readyActor, readinessPartway,
   Action, FULL_BAR,
 } from './combat.js';
 
@@ -23,18 +23,16 @@ const orc = (id, dexterity) =>
     attributes: { DEXTERITY: dexterity },
   });
 
-function encounter({
-  members, enemies, partyAware = true, enemiesAware = true, light = 'BRIGHT', seed = 7,
-}) {
+function encounter({ members, enemies, light = 'BRIGHT', seed = 7, ...rest }) {
   const p = createParty();
   for (const m of members) addCharacter(p, m);
   return beginEncounter({
     party: p,
     enemies: createEnemyGroup(enemies),
     light,
-    awareness: { party: partyAware, enemies: enemiesAware },
     rng: makeRng(seed),
     origin: { floorId: 'f1', x: 3, y: 4 },
+    ...rest,
   });
 }
 
@@ -79,16 +77,24 @@ describe('where a fight starts', () => {
     expect(opening(again, 'o1')).toBe(opening(once, 'o1'));
   });
 
-  // @spec COMBAT-SURPRISE-006
-  it('gives neither side a head start when both know or neither does', () => {
-    const drawn = encounter({ members: [hero('bram', 12)], enemies: [orc('o1', 10)], seed: 3 });
-    const blind = encounter({
-      members: [hero('bram', 12)], enemies: [orc('o1', 10)], seed: 3,
-      partyAware: false, enemiesAware: false,
-    });
-
-    expect(opening(blind, 'bram')).toBe(opening(drawn, 'bram'));
-    expect(opening(blind, 'o1')).toBe(opening(drawn, 'o1'));
+  // @spec COMBAT-SURPRISE-010
+  it('opens the same whatever the light and however the two sides met', () => {
+    const plain = { members: [hero('bram', 12), hero('slow', 3)], enemies: [orc('o1', 10)] };
+    for (let seed = 1; seed <= 20; seed++) {
+      const drawn = encounter({ ...plain, seed });
+      const variants = [
+        encounter({ ...plain, seed, light: 'DARK' }),
+        // Whatever a caller says about who noticed whom, nothing reads it.
+        encounter({ ...plain, seed, awareness: { party: false, enemies: true } }),
+        encounter({ ...plain, seed, awareness: { party: true, enemies: false } }),
+      ];
+      for (const v of variants) {
+        for (const id of ['bram', 'slow', 'o1']) {
+          expect(opening(v, id)).toBe(opening(drawn, id));
+          expect(opening(v, id)).toBeLessThan(FULL_BAR);
+        }
+      }
+    }
   });
 
   // @spec COMBAT-SURPRISE-007
@@ -99,75 +105,6 @@ describe('where a fight starts', () => {
     advanceBeats(state, 2);
 
     expect(readinessOf(state, 'bram')).toBe(started + 24);
-  });
-
-  // @spec COMBAT-SURPRISE-005
-  it('fills the aware side and leaves the surprised side as drawn', () => {
-    const even = encounter({ members: [hero('bram', 12)], enemies: [orc('o1', 10)], seed: 9 });
-    const ambush = encounter({
-      members: [hero('bram', 12)], enemies: [orc('o1', 10)], seed: 9, enemiesAware: false,
-    });
-
-    expect(opening(ambush, 'bram')).toBe(FULL_BAR);
-    // The surprised side opens exactly where it would have without the ambush, which
-    // is only true while the aware side still draws and discards.
-    expect(opening(ambush, 'o1')).toBe(opening(even, 'o1'));
-  });
-
-  // @spec COMBAT-SURPRISE-005
-  it('fills every aware combatant, however slow and however poor the roll', () => {
-    for (let seed = 1; seed <= 40; seed++) {
-      const state = encounter({
-        members: [hero('bram', 12), hero('slow', 3)],
-        enemies: [orc('o1', 10)], seed, enemiesAware: false,
-      });
-      expect(opening(state, 'bram')).toBe(FULL_BAR);
-      expect(opening(state, 'slow')).toBe(FULL_BAR);
-    }
-  });
-
-  // @spec COMBAT-SURPRISE-005
-  it('fills the enemies when the party is the one caught out', () => {
-    const even = encounter({ members: [hero('bram', 12)], enemies: [orc('o1', 10)], seed: 21 });
-    const jumped = encounter({
-      members: [hero('bram', 12)], enemies: [orc('o1', 10)], seed: 21, partyAware: false,
-    });
-
-    expect(opening(jumped, 'bram')).toBe(opening(even, 'bram'));
-    expect(opening(jumped, 'o1')).toBe(FULL_BAR);
-  });
-
-  // @spec COMBAT-SURPRISE-008
-  it('gives the aware side a turn each before the surprised side moves', () => {
-    const state = encounter({
-      members: [hero('bram', 12), hero('tam', 4)],
-      enemies: [orc('o1', 20)], seed: 5, enemiesAware: false,
-    });
-
-    // Both ambushers are up at once, and the quick orc waits despite its speed.
-    const ready = actingOrder(state).filter((c) => readinessOf(state, c.id) >= FULL_BAR);
-    expect(ready.map((c) => c.id).sort()).toEqual(['bram', 'tam']);
-    expect(readinessOf(state, 'o1')).toBeLessThan(FULL_BAR);
-  });
-
-  // @spec COMBAT-SURPRISE-009
-  it('orders the ambushers among themselves by the rule any tie uses', () => {
-    const state = encounter({
-      members: [hero('slow', 4), hero('quick', 18)],
-      enemies: [orc('o1', 10)], seed: 5, enemiesAware: false,
-    });
-
-    // Both full, so the ordinary same-beat rule settles them: descending Dexterity.
-    expect(readyActor(state).id).toBe('quick');
-  });
-
-  // @spec COMBAT-SURPRISE-006
-  it('fills nobody when both sides saw each other coming', () => {
-    for (let seed = 1; seed <= 25; seed++) {
-      const state = encounter({ members: [hero('bram', 12)], enemies: [orc('o1', 10)], seed });
-      expect(opening(state, 'bram')).toBeLessThan(FULL_BAR);
-      expect(opening(state, 'o1')).toBeLessThan(FULL_BAR);
-    }
   });
 
   // @spec COMBAT-TIME-016

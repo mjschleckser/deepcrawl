@@ -35,7 +35,6 @@ function fightOf(viewport) {
       createEnemy({ id: 'g2', name: 'Goblin', maxHitPoints: 9, potValue: 10, attack: { baseDamage: 5, accuracy: 24 } }),
     ]),
     light: 'BRIGHT',
-    awareness: { party: true, enemies: true },
     rng: makeRng(1),
     origin: { floorId: 'f1', x: 1, y: 1 },
   });
@@ -440,7 +439,7 @@ describe('the formations in a fight', () => {
       createEnemy({ id: `e${i}`, name: 'Goblin', hitPoints: 9, potValue: 1 }));
     const encounter = beginEncounter({
       party, enemies: createEnemyGroup(enemies),
-      light: 'BRIGHT', awareness: { party: true, enemies: true },
+      light: 'BRIGHT',
       rng: makeRng(1), origin: { floorId: 'f1', x: 1, y: 1 },
     });
 

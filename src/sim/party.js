@@ -63,7 +63,7 @@ export function partyStepCost(party) {
   return Math.min(MAX_STEP_COST, Math.max(MIN_STEP_COST, scaled));
 }
 
-export const MAX_PARTY = 5;
+export const MAX_PARTY = 4;
 
 /**
  * Past this many distinct skills the pot stops growing, so a party cannot inflate it

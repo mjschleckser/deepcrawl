@@ -44,14 +44,14 @@ do. Thinking for an hour costs exactly what thinking for a second costs.
 ## The Shape of an Encounter
 
 ```
-exploration hands over ──▶ surprise ──▶ ACT ──▶ … ──▶ outcome ──▶ pot awarded
-                                        │  ▲
-                    time runs on until  │  │  the one who is ready acts,
-                    somebody is ready   └──┘  alone, and spends the bar
+exploration hands over ──▶ opening draw ──▶ ACT ──▶ … ──▶ outcome ──▶ pot awarded
+                                            │  ▲
+                        time runs on until  │  │  the one who is ready acts,
+                        somebody is ready   └──┘  alone, and spends the bar
 ```
 
-Exploration begins an encounter with a payload naming the enemy group, the light level
-of the tile it began on, and which side was aware of the other. Combat runs until one
+Exploration begins an encounter with a payload naming the enemy group and the light
+level of the tile it began on. Combat runs until one
 side is finished or the party escapes, then reports the outcome and the experience pot
 back.
 
@@ -68,7 +68,7 @@ anybody — and acting spends the bar so that the filling begins again.
 | | |
 |---|---|
 | Readiness rises by | the combatant's Dexterity, each beat of the fight's time |
-| Readiness starts at | a random share of a full bar, raised for the aware side in a surprise |
+| Readiness starts at | a random share of a full bar, for every combatant on both sides |
 | A combatant acts at | a full bar |
 | Acting costs | one full bar, whatever the action |
 | Anything left over | carries forward, so nothing is lost by coming ready a fraction late |
@@ -103,32 +103,25 @@ acting the instant they open their eyes.
 
 ### Where the bars start
 
-**Every combatant opens somewhere.** A fight nobody was caught out in begins with each
-bar set to a random share of a full one, drawn independently. Fights therefore open
-differently every time and nobody is owed the first turn by the roster order, which is
-what keeps an encounter with the same warband from playing out as the same fight twice.
+**Every combatant opens somewhere.** Every fight begins with each bar set to a random
+share of a full one, drawn independently for every combatant on both sides. Fights
+therefore open differently every time and nobody is owed the first turn by the roster
+order, which is what keeps an encounter with the same warband from playing out as the
+same fight twice.
 
 The randomness is in the opening only. From the first beat onwards the bars are the
 plain arithmetic of Dexterity, so a quick combatant handed a low opening still overtakes
 a slow one handed a high one, and the fight remains readable off the bars.
 
-### Surprise
+**Nothing about how the two sides met changes the draw.** There is no surprise and no
+ambush: which side noticed the other first, the light, and the direction either came
+from all leave the opening exactly as drawn. Who acts first is the draw's and
+Dexterity's to decide, and nothing in the corridor outside reaches in.
 
-**Catching a side unready fills the other side's bars.** Every combatant on the aware
-side opens on a full bar and acts before the surprised side moves; the surprised side
-keeps whatever it drew. Awareness comes from exploration: light, and whether the party
-saw what was coming.
-
-Surprise is therefore the one thing in a fight that overrides the opening draw, and it
-overrides it completely. That is what makes it worth avoiding and worth engineering: a
-side that is caught loses a full round of the fight, which is the largest swing any
-single circumstance produces, and it is legible at a glance from a column of full bars
-rather than having to be inferred from bars that merely look far along.
-
-Ordering within the ambushing side is still Dexterity's, and from the first action
-onward speed decides everything as it always does. What surprise buys is one round, not
-a permanent lead — a quick ambusher pulls ahead afterwards because they are quick, not
-because they ambushed.
+**Starting ahead is something a combatant carries.** The one thing that may move an
+opening off its draw is an item or a skill whose stated effect is to do so, belonging to
+the combatant it helps. No such item or skill exists yet; when one does, it changes that
+combatant's opening and nobody else's, and it works the same on either side.
 
 ## Resolving an Attack
 
@@ -295,8 +288,8 @@ stop a fight that has no other way to advance.
 An enemy group is a flat band of combatants, on the same footing as the party: each one
 fills a bar, acts alone when it is full, and may be struck by anybody.
 
-Enemy groups are **not capped at five**. Being outnumbered is a real and common threat,
-and it is the pressure that a party of five is measured against. A group of eight
+Enemy groups are **not capped at the party's four**. Being outnumbered is a real and
+common threat, and it is the pressure that a party of four is measured against. A group of eight
 including three casters is a different problem from a single large enemy, and both
 should be expressible.
 
@@ -382,12 +375,13 @@ whether or not it can see.
 | Speed | Dexterity itself, with a floor of one | A derived initiative statistic; a flat rate modified by equipment | A second statistic meaning the same thing is a second statistic to explain and to balance. Using the attribute undisguised also gives the widest honest spread — three actions to one across the range — which is what makes an extraordinarily quick character feel extraordinary. |
 | The cost of an action | One full bar for every action, carried on the action rather than assumed | A constant in the resolver; per-action weights from the start | Putting the cost on the action means weapon weight can arrive later as content rather than as a restructuring. Making them all equal now means there is nothing to balance before there are weapons to balance it against. |
 | Where the bars start | Each combatant on an independent random share of a bar | Every bar empty; every bar set by Dexterity | Empty bars make the opening of every fight the same fight, decided before anybody has done anything: the quickest combatant always moves first and the roster order settles every tie. A random opening makes the first few turns of an encounter genuinely uncertain while leaving everything after them to the arithmetic, so the same warband met twice is not the same fight twice. |
-| Surprise | The aware side's bars filled outright | A large fixed addition to the aware side's opening share, capped at a full bar; the surprised side emptied as well as the aware side filled; a free round handled outside the readiness rules | An addition was meant to let surprise compose with speed, but on a draw of nought to ninety-nine a head start large enough to be decisive caps most ambushers at full anyway — so it read as a full bar most of the time while being harder to explain and harder to see. Filling them says what actually happens: a side that is caught gives up a round. Emptying the surprised side as well would make surprise decide the fight rather than open it, and would leave nothing for the opening draw to do. Ordering inside the ambushing side stays Dexterity's, so speed still decides everything after the first round. |
+| How the meeting affects the opening | Not at all: every opening is drawn, whoever noticed whom | Surprise filling the bars of whichever side was aware of the other; a smaller head start for the aware side | Awareness is decided by proximity and line of sight, which a first-person party mostly cannot read and cannot steer, so surprise handed the largest swing in a fight to circumstance. Leaving every opening to the draw keeps fights varied without any of them being decided before the first turn. An advantage at the opening is still worth having, which is why it is left to items and skills — a build choice rather than an accident of the corridor. |
+| Who may start ahead | Only a combatant carrying an item or skill that grants it | Any combatant by a rule of the encounter; nobody, ever | A head start the player chose to carry is something they can plan around; one handed out by the encounter is something that merely happens to them. Forbidding it outright would throw away a kind of ability worth authoring. |
 | A failed escape | Costs the bar of whoever attempted it, and nothing else | Every conscious character's bar, as a round once cost; no further attempt until all have acted | A party that cannot escape is already in enough trouble, and charging the whole party for one character's failed attempt punishes the situation rather than the decision. A party that keeps trying is a party spending every action on the door instead of on the fight, which is cost enough without a rule to enforce it. |
 | Reach | None: every standing combatant may act on every other | Front and back rows, where melee reaches the front only; a reach penalty rather than a restriction | Rows decide a character's options before the fight starts, so most turns have one legal answer and a back-rank character with a sword has none at all — a player watching their own turn be skipped. With no reach rule at all, every turn is a choice of whom to spend it on, and the interesting version of protecting a caster becomes something equipment and abilities do rather than something a seating plan does. |
 | What bounds an action | What the combatant holds and knows | Where the combatant stands | A limit the player chose — this weapon, these slots, that ability — is one they can plan around and change. A limit imposed by a position assigned outside the fight is one they can only discover. |
 | Magic cost | Slots per rank, restored only by camping | A regenerating mana pool; per-round cooldowns | Slots make magic attrition, so the question is whether this is the fight worth the last heal. A pool or a cooldown would make descending deeper cost nothing, which is the whole pressure of a dungeon crawl. |
-| Enemy group size | Uncapped by the party's five, ceiling of twenty | Mirroring the party's five; genuinely unbounded | Being outnumbered is a real threat and a party of five should meet eight. A ceiling keeps a swarm a shape the game can express and the screen can hold, rather than an arbitrary number. |
+| Enemy group size | Uncapped by the party's four, ceiling of twenty | Mirroring the party's four; genuinely unbounded | Being outnumbered is a real threat and a party of four should meet eight. A ceiling keeps a swarm a shape the game can express and the screen can hold, rather than an arbitrary number. |
 | Fleeing | One attempt for the whole party, costing the bar of whoever made it | Per-character escape | A party does not leave one member behind, and per-character escape would turn a losing fight into a triage puzzle about who is abandoned. |
 | A combatant with no legal action | Passes, by a press, spending the full bar | Passing automatically, without a press; leaving the turn pending; skipping them without cost | A turn that never resolves stops a fight that has no other way to advance, since the fight's time does not move while anybody stands ready. Passing automatically would be the one turn in the game taken unattended, which is the rule the whole segment is built on. Making the pass a press keeps that rule exact and costs only a control that is almost never drawn. Passing free would make being stripped of options better than acting badly; spending the bar keeps the economy's one rule — a turn costs a bar — with no exception to explain. |
 | Defend as an action | None: there is no Defend | Defend raising defence until that character next acts; a Defend that also drew attacks toward the defender | With no rows and no reach, a defender shields nobody but themselves, so Defend buys one combatant a turn of safety at the cost of a turn of damage while the rest of the fight carries on unchanged. That is a turn spent to make the fight longer, which the *nothing accrues for staying longer* principle already argues against. The interesting version — a guard that covers somebody else — needs a reason one combatant can stand in front of another, which is exactly what this segment does not have. |
@@ -408,7 +402,7 @@ whether or not it can see.
 8. ✅ **Spell slots per rank**, restored only by camping.
 9. ✅ **Readiness fills by Dexterity**, at a floor of one point, and a full bar is what an action costs.
 10. ✅ **The fight's time never advances while anyone is being asked what to do.**
-11. ✅ **Every bar opens on a random share of full**, except that catching a side unready fills the other side's bars outright.
+11. ✅ **Every bar opens on a random share of full**, on both sides, whoever noticed whom. There is no surprise.
 12. ✅ **A combatant who falls loses the readiness they had banked.**
 13. ✅ **Nothing recharges as the fight's time passes**, so no stretch of a fight is worth taking for its own sake.
 14. ✅ **Every character's turn is taken by a press**, and the fight waits at that character without limit or penalty.
@@ -418,7 +412,7 @@ whether or not it can see.
 18. ✅ **There are no standing orders**: every turn is composed by hand.
 19. ✅ **Choosing a target and striking it are one instant**, so no action is ever aimed at something already gone.
 20. ✅ **Darkness penalises accuracy and removes deliberate targeting**, and never helps the enemy.
-21. ✅ **Enemy groups are not capped at five** and hold at most twenty, so a swarm is a shape rather than an unbounded number.
+21. ✅ **Enemy groups are not capped at the party's four** and hold at most twenty, so a swarm is a shape rather than an unbounded number.
 22. ✅ **Fleeing is one attempt for the whole party**, costing only the bar of the character who attempted it, allowed in the dark, and impossible against something far faster or something that forbids escape.
 23. ✅ **A defeated party stays where it fell**, to be abandoned or recovered by a fresh party.
 
@@ -426,7 +420,7 @@ whether or not it can see.
 
 1. **Per-action costs.** Every action costs one full bar. The cost lives on the action so that a heavy weapon can cost more later, but no action differs from another yet and no weapon exists to make one.
 2. **Automating a repetitive turn.** Every turn is composed by hand. Some way for a party to say once what it usually does is worth having again, but it wants a vocabulary that can talk about status effects, enemy kinds and remaining resources — none of which exist — and it must not become a fight that plays itself.
-3. **Ability definitions.** Skill ranks unlock abilities, but what each one does is unauthored content.
+3. **Ability definitions.** Skill ranks unlock abilities, but what each one does is unauthored content. This includes any item or skill that moves its carrier's opening readiness off the draw.
 4. **Enemy rosters and their pot values.** What any enemy is, and what it is worth, belongs with the enemies segment.
 5. **Enemy behaviour beyond choosing a legal target.** Focus fire, retreat, protecting casters — all later.
 6. **Status effects.** Poison, fear, paralysis and the rest have no model here.

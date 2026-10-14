@@ -175,7 +175,7 @@ export function buildFightPlan(
   viewport,
   {
     phase, outcome = null, pending = null, log = [], actor = null,
-    notice = null, shakingId = null, shake = 0,
+    shakingId = null, shake = 0,
     partway = 0, logScroll = 0,
   } = {},
 ) {
@@ -406,18 +406,6 @@ export function buildFightPlan(
         ? `${nameOf(encounter, pending.characterId)}: at whom?`
         : `${nameOf(encounter, pending.characterId)} is ready to act!`)
       : null,
-    // @spec PRESENT-READY-015
-    notice: notice
-      ? {
-        text: notice.text,
-        bounds: {
-          x: column.x + (column.width - bannerWidth) / 2,
-          y: bounds.y - bannerHeight - pad,
-          width: bannerWidth,
-          height: bannerHeight * 0.6,
-        },
-      }
-      : null,
     log: shownLog,
     banner,
     // Drawn and tapped are one thing: a fight nobody can touch is a fight a phone
@@ -618,12 +606,6 @@ export function createFightController({ encounter, viewport, onDraw }) {
     logScroll: 0,
     fill: 0,
     partway: 0,
-    // Whoever the ambush favoured. It lasts until the last of them has acted, and the
-    // card announcing it lasts exactly as long.
-    // @spec PRESENT-READY-015
-    // @spec PRESENT-READY-017
-    ambushers: ambushersOf(encounter),
-    notice: null,
   };
 
   nextTurn(fight);
@@ -639,7 +621,6 @@ export function createFightController({ encounter, viewport, onDraw }) {
  * @spec PRESENT-FIGHT-005
  */
 function nextTurn(fight) {
-  announce(fight);
   const result = encounterOutcome(fight.encounter);
   if (result.outcome !== Outcome.ONGOING) return end(fight, result);
 
@@ -662,57 +643,6 @@ function nextTurn(fight) {
     return;
   }
   ask(fight, actor.id);
-}
-
-/**
- * What the ambush card says, by which side was caught unready.
- *
- * Which side it was is the whole of what the card adds, so it is the whole of what the
- * card says. They differ on their first word rather than their last, because a card
- * read at a glance is read from its start.
- *
- * @spec PRESENT-READY-033
- */
-const AMBUSH_CARD = {
-  PARTY: "You've been ambushed!",
-  ENEMIES: 'Enemy has been ambushed!',
-};
-
-/**
- * Everyone the ambush handed a filled bar to, which is everyone on the aware side.
- *
- * @spec PRESENT-READY-015
- * @spec PRESENT-READY-017
- */
-function ambushersOf(encounter) {
-  if (!encounter.surprisedSide) return [];
-  const surprised = encounter.surprisedSide === 'PARTY'
-    ? roster(encounter.party).map((c) => c.id)
-    : encounter.enemies.members.map((e) => e.id);
-  return [...roster(encounter.party), ...encounter.enemies.members]
-    .map((c) => c.id)
-    .filter((id) => !surprised.includes(id));
-}
-
-/** Whether somebody can still take the turn the ambush handed them. */
-function ableToAct(encounter, id) {
-  const one = character(encounter.party, id) ?? encounter.enemies.members.find((e) => e.id === id);
-  return Boolean(one) && one.condition === Condition.OK && (one.hitPoints ?? 1) > 0;
-}
-
-/**
- * Keep the ambush card up while any ambusher is still to take the turn the ambush gave
- * them. Acting ends that one's part in it for good, and so does falling first: a quick
- * ambusher who comes ready again is simply fast, not ambushing twice.
- *
- * @spec PRESENT-READY-015
- * @spec PRESENT-READY-026
- */
-function announce(fight) {
-  fight.ambushers = fight.ambushers.filter((id) => ableToAct(fight.encounter, id));
-  fight.notice = fight.ambushers.length > 0
-    ? { text: AMBUSH_CARD[fight.encounter.surprisedSide] }
-    : null;
 }
 
 function end(fight, result) {
@@ -760,9 +690,6 @@ function names(fight) {
  * @spec PRESENT-FIGHT-010
  */
 function resolveOne(fight, actorId, action) {
-  // Their part in the ambush is over the moment they have swung.
-  // @spec PRESENT-READY-015
-  fight.ambushers = fight.ambushers.filter((id) => id !== actorId);
   const event = takeAction(fight.encounter, actorId, action);
   if (event && event.action === Action.ATTACK && event.targetId) {
     fight.log.push(describeEvent(event, names(fight), event.targetId, event.felled === true));

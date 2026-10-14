@@ -54,11 +54,12 @@ function stepIntoContact(campaign, limit = 20) {
 
 describe('a campaign has a party', () => {
   // @spec PARTY-DATA-002
-  it('fields the five characters its data files describe', () => {
+  // @spec PARTY-ROSTER-001
+  it('fields the four characters its data files describe', () => {
     const { party } = booted();
 
-    expect(roster(party)).toHaveLength(5);
-    expect(roster(party).map((c) => c.id)).toEqual(['bram', 'rook', 'tam', 'isolde', 'wren']);
+    expect(roster(party)).toHaveLength(4);
+    expect(roster(party).map((c) => c.id)).toEqual(['bram', 'tam', 'isolde', 'wren']);
     for (const c of roster(party)) expect(c.row).toBeUndefined();
   });
 
@@ -66,19 +67,19 @@ describe('a campaign has a party', () => {
     const { party } = booted();
     const speeds = roster(party).map((c) => c.attributes[Attribute.DEXTERITY]);
 
-    // Five scores, five rates: a fight in lockstep shows nothing about who is quick.
-    expect(new Set(speeds).size).toBe(5);
+    // Four scores, four rates: a fight in lockstep shows nothing about who is quick.
+    expect(new Set(speeds).size).toBe(4);
     // Far enough apart to be read off the bars, and no slower at the back than the
     // speed a party needs to outrun what it walks into.
     expect(Math.max(...speeds)).toBeGreaterThanOrEqual(1.5 * Math.min(...speeds));
     expect(Math.min(...speeds)).toBeGreaterThanOrEqual(10);
   });
 
-  it('brings one of each class, so every system has someone to use it', () => {
+  it('brings exactly one of each class, so every system has someone to use it', () => {
     const { party } = booted();
-    const classes = new Set(roster(party).map((c) => c.characterClass));
+    const classes = roster(party).map((c) => c.characterClass);
 
-    for (const cls of Object.values(CharacterClass)) expect(classes).toContain(cls);
+    expect([...classes].sort()).toEqual(Object.values(CharacterClass).sort());
   });
 
   // @spec EXPLORE-CLOCK-001
@@ -149,15 +150,15 @@ describe('walking into a warband', () => {
   });
 
   // @spec EXPLORE-BOUND-002
-  // @spec ENEMY-CONTACT-003
-  it('hands combat the enemy group, the light, and who was aware of whom', () => {
+  it('hands combat the enemy group and the light, and nothing about who noticed whom', () => {
     const campaign = booted();
     stepIntoContact(campaign);
 
     const encounter = campaign.encounter;
     expect(Object.values(LightLevel)).toContain(encounter.light);
-    expect(typeof encounter.awareness.party).toBe('boolean');
-    expect(typeof encounter.awareness.enemies).toBe('boolean');
+    expect(encounter.enemies.members.length).toBeGreaterThan(0);
+    expect(encounter.awareness).toBeUndefined();
+    expect(encounter.surprisedSide).toBeUndefined();
     expect(encounter.origin).toMatchObject({ floorId: expect.any(String) });
   });
 
@@ -187,7 +188,7 @@ describe('walking into a warband', () => {
   });
 
   // @spec EXPLORE-BOUND-012
-  it('opens the door it met a warband through, and is not ambushed by it', () => {
+  it('opens the door it met a warband through, before the fight begins', () => {
     const campaign = booted();
     const { state } = campaign;
     const floor = state.floors.get(state.party.floorId);
@@ -203,8 +204,6 @@ describe('walking into a warband', () => {
 
     expect(campaign.encounter).not.toBeNull();
     expect(isEdgeOpen(floor, state.party.tile.x, state.party.tile.y, state.party.facing)).toBe(true);
-    // Seen through the door they opened, so the warband is not ambushing them.
-    expect(campaign.encounter.surprisedSide).not.toBe('PARTY');
   });
 
   it('stops the party walking while a fight is on', () => {

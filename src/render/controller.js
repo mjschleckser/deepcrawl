@@ -114,7 +114,6 @@ export function layers(controller) {
       pending: fight.pending,
       log: fight.log,
       actor: fight.actor,
-      notice: fight.notice,
       shakingId: fight.shakingId,
       shake: fight.shake,
       partway: fight.partway,
