@@ -9,7 +9,6 @@
 import {
   Direction,
   EdgeKind,
-  LightLevel,
   contains,
   edgeDetail,
   edgeKey,
@@ -19,6 +18,18 @@ import {
 } from './floor.js';
 
 const ALL_DIRECTIONS = Object.values(Direction);
+
+/**
+ * How far the party sees, in steps on the grid with a diagonal step counting as one.
+ * The same four tiles a roamer notices the party from, so neither side outsees the
+ * other.
+ */
+export const SIGHT_RANGE = 4;
+
+/** Grid steps between two tiles, a diagonal step counting as one. */
+export function gridDistance(a, b) {
+  return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
+}
 
 const NEIGHBOUR = {
   [Direction.NORTH]: { dx: 0, dy: -1 },
@@ -140,8 +151,8 @@ export function hasLineOfSight(discoveredEdges, floor, from, to) {
 /**
  * Every tile the party can presently see.
  *
- * A line is traced to each candidate inside the cone and inside the reach of the
- * party's light. Tracing lines rather than spreading outward is what stops sight going
+ * A line is traced to each candidate inside the cone and inside the sight range.
+ * Tracing lines rather than spreading outward is what stops sight going
  * round a corner: ground beyond a turn stays hidden until the party reaches the corner
  * and looks along the new arm.
  *
@@ -211,40 +222,48 @@ export function isTrapKnown(state, floorId, x, y) {
 }
 
 /**
+ * Whether the party can see a tile from where it stands: within the sight range, with
+ * nothing opaque between. Facing is not part of it — this is the rule for picking out
+ * something standing there, and a roamer at the party's back is in front of their eyes
+ * the moment they turn.
+ *
+ * @spec EXPLORE-MAP-004
+ * @spec EXPLORE-MAP-005
+ * @spec EXPLORE-MAP-012
+ * @spec EXPLORE-VIEW-012
+ */
+export function canSee(state, floor, x, y) {
+  const origin = state.party.tile;
+  if (gridDistance(origin, { x, y }) > SIGHT_RANGE) return false;
+  return hasLineOfSight(state.discoveredEdges, floor, origin, { x, y });
+}
+
+/**
  * Work out what the party sees from where it stands, record it, and offer the result
  * to the trap segment for detection.
  *
+ * @spec EXPLORE-SIGHT-001
  * @spec EXPLORE-SIGHT-003
  * @spec EXPLORE-SIGHT-004
  * @spec EXPLORE-SIGHT-005
- * @spec EXPLORE-SIGHT-008
  * @spec EXPLORE-SIGHT-009
  * @spec EXPLORE-BOUND-008
  */
-export function computeSight(state, { resolveLight, litReach, enemiesVisibleAt }) {
+export function computeSight(state) {
   const floor = state.getFloor(state.party.floorId);
   const origin = state.party.tile;
   const tiles = [];
 
   const record = (x, y) => {
-    const level = resolveLight(x, y);
-    // Nothing is learned about a dark tile, and nothing standing on it is revealed.
-    if (level === LightLevel.DARK) return;
     discoverTile(state, floor, x, y);
-    tiles.push({
-      x,
-      y,
-      level,
-      feature: getTile(floor, x, y).feature,
-      enemiesVisible: enemiesVisibleAt(level),
-    });
+    tiles.push({ x, y, feature: getTile(floor, x, y).feature });
   };
 
   // The party always sees the ground under its own feet and the walls around it,
-  // whichever way it happens to be facing — unless it is standing in the dark.
+  // whichever way it happens to be facing.
   record(origin.x, origin.y);
 
-  for (const tile of visibleTiles(state, floor, origin, state.party.facing, litReach())) {
+  for (const tile of visibleTiles(state, floor, origin, state.party.facing, SIGHT_RANGE)) {
     record(tile.x, tile.y);
   }
 

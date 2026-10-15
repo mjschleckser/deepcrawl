@@ -2,7 +2,7 @@
 
 Specs for the combat segment. Design: `combat-design.md`.
 
-Band thresholds, graze and crit multipliers, darkness penalties, and how accuracy and
+Band thresholds, graze and crit multipliers, and how accuracy and
 defence are assembled from skill, attribute and equipment are all content data. These
 specs fix the structure those numbers are fed into.
 
@@ -30,7 +30,7 @@ specs fix the structure those numbers are fed into.
 
 - [x] **COMBAT-SURPRISE-003**: When an encounter begins, the system shall set the readiness of every combatant on both sides to an independently drawn random share of a full bar, below a full bar.
 - [x] **COMBAT-SURPRISE-004**: The system shall draw every combatant's opening readiness from the encounter's own seeded generator, so that an encounter replayed from the same seed opens identically.
-- [x] **COMBAT-SURPRISE-010**: The system shall not vary any combatant's opening readiness with which side noticed the other, the encounter's light, or how the two sides came to meet.
+- [x] **COMBAT-SURPRISE-010**: The system shall not vary any combatant's opening readiness with which side noticed the other or how the two sides came to meet.
 - [x] **COMBAT-SURPRISE-007**: The system shall apply the opening readiness once, at the start of an encounter, and shall raise readiness by Dexterity alone thereafter.
 
 ## Resolving an attack
@@ -56,7 +56,6 @@ specs fix the structure those numbers are fed into.
 
 - [ ] **COMBAT-ACTION-001**: When a character casts a spell, the system shall spend one spell slot of that spell's rank, and shall refuse the cast when no slot of that rank remains.
 - [ ] **COMBAT-ACTION-002**: The system shall not restore a spell slot during an encounter.
-- [ ] **COMBAT-ACTION-005**: When a character relights a doused light source, the system shall spend a full bar of that character's readiness.
 - [x] **COMBAT-ACTION-009**: When a combatant passes their turn, the system shall spend a full bar of their readiness and shall resolve no action.
 - [x] **COMBAT-ACTION-006**: The system shall apply every change to a character's hit points or condition through the party segment's operations.
 - [x] **COMBAT-ACTION-008**: The system shall take an attack's base damage and accuracy from the combatant that is acting, and the armour reducing it from the combatant struck, on either side alike.
@@ -69,11 +68,6 @@ specs fix the structure those numbers are fed into.
 - [x] **COMBAT-TURN-004**: If a character can legally take no action at all, then the system shall offer them passing and nothing else.
 - [x] **COMBAT-TURN-005**: The system shall report whether a flee attempt is certain to fail, by the same rules that resolve one, without taking the attempt or costing any readiness.
 
-## Darkness
-
-- [x] **COMBAT-DARK-001**: While an encounter is in darkness, the system shall apply an accuracy penalty to the party's attacks.
-- [x] **COMBAT-DARK-002**: While an encounter is in darkness, the system shall choose the party's targets at random among legal targets rather than allowing deliberate selection.
-- [x] **COMBAT-DARK-003**: The system shall not raise any enemy's accuracy, awareness, or effectiveness because the party's light level is low.
 
 ## Fleeing
 
@@ -82,7 +76,6 @@ specs fix the structure those numbers are fed into.
 - [x] **COMBAT-FLEE-003**: If a flee attempt fails, then the system shall spend the readiness of the character who attempted it, impose no further penalty, and allow another attempt as soon as any character is ready.
 - [x] **COMBAT-FLEE-004**: The system shall fail a flee attempt when the fastest enemy's Dexterity exceeds the party's slowest member's Dexterity by more than a quarter.
 - [x] **COMBAT-FLEE-005**: The system shall fail a flee attempt when any enemy present carries an ability that forbids escape.
-- [x] **COMBAT-FLEE-006**: The system shall allow a flee attempt in darkness on the same terms as in light.
 
 ## Enemy groups
 

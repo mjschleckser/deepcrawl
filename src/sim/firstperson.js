@@ -5,12 +5,13 @@
  * answers what may be shown; the presentation segment decides what that looks like.
  */
 
-import { Direction, LightLevel, STEP_DELTA, contains, getTile } from './floor.js';
+import { Direction, STEP_DELTA, contains, getTile } from './floor.js';
 
 /**
  * How many tiles of corridor are ever drawn. A limit on the drawing rather than on
- * the seeing: a party whose light reaches forty tiles still maps forty tiles, but
- * nested frames past a handful of depths are narrower than a pixel.
+ * the seeing, and deliberately further than the party maps: a passage that visibly
+ * goes on past where the map stops is what invites a player to walk it. Nested frames
+ * past a handful of depths are narrower than a pixel.
  */
 export const MAX_DRAWN_DEPTH = 6;
 
@@ -30,15 +31,13 @@ const RIGHT_OF = {
 };
 
 /**
- * Walk forward from the party, reporting each tile until the way is closed, the light
- * runs out, or the drawing limit is reached.
+ * Walk forward from the party, reporting each tile until the way is closed or the
+ * drawing limit is reached.
  *
  * @spec EXPLORE-VIEW-001
  * @spec EXPLORE-VIEW-002
- * @spec EXPLORE-VIEW-003
  * @spec EXPLORE-VIEW-004
  * @spec EXPLORE-VIEW-005
- * @spec EXPLORE-VIEW-006
  * @spec EXPLORE-VIEW-007
  * @spec EXPLORE-VIEW-008
  * @spec EXPLORE-VIEW-009
@@ -51,8 +50,7 @@ export function buildCorridorAhead(
   {
     isOpaque,
     portalAt = () => null,
-    resolveLight,
-    enemiesVisibleAt = () => false,
+    canSee = () => false,
     maxDepth = MAX_DRAWN_DEPTH,
   },
 ) {
@@ -65,13 +63,10 @@ export function buildCorridorAhead(
   let y = state.party.tile.y;
 
   for (let depth = 0; depth <= maxDepth; depth++) {
-    const level = resolveLight(x, y);
-
     // Left and right are the party's, not the map's, so the same gap reads as a left
     // opening walking north and a right opening walking back south.
     const slice = {
       depth,
-      level,
       feature: getTile(floor, x, y).feature,
       walledLeft: isOpaque(floor, x, y, LEFT_OF[facing]),
       walledRight: isOpaque(floor, x, y, RIGHT_OF[facing]),
@@ -79,20 +74,13 @@ export function buildCorridorAhead(
       // A door is a landmark whether or not it is in the way, so it is reported
       // alongside the blocking flag rather than being implied by it.
       portalAhead: null,
-      // The same light rule the automap draws a roamer by, so the map and the passage
+      // The same rule the automap draws a roamer by, so the map and the passage
       // cannot disagree about what is standing on a tile. The walk has already stopped
       // at the first opaque edge, so nothing reported here is seen through a wall.
       enemyHere:
-        enemiesVisibleAt(level)
+        canSee(x, y)
         && state.roamers.some((r) => r.floorId === floor.id && r.x === x && r.y === y),
     };
-
-    // The dark boundary is reported rather than omitted, so the view has somewhere to
-    // fade to instead of ending abruptly on a lit frame.
-    if (level === LightLevel.DARK) {
-      slices.push(slice);
-      return slices;
-    }
 
     const ahead = { x: x + dx, y: y + dy };
     const blocked = !contains(floor, ahead.x, ahead.y) || isOpaque(floor, x, y, facing);

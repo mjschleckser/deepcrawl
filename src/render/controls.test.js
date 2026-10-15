@@ -14,7 +14,6 @@ import { createController, pressPointer, layers } from './controller.js';
 import { createExploration, Verb, PartyAction } from '../sim/exploration.js';
 import { boundActions } from '../sim/input.js';
 import { createFloor, Direction } from '../sim/floor.js';
-import { createLightSource } from '../sim/light.js';
 import { readFile } from 'node:fs/promises';
 
 // A phone held upright: the smallest thing anyone will actually play on.
@@ -35,7 +34,6 @@ function fightOf(viewport) {
       createEnemy({ id: 'g1', name: 'Goblin', maxHitPoints: 9, potValue: 10, attack: { baseDamage: 5, accuracy: 24 } }),
       createEnemy({ id: 'g2', name: 'Goblin', maxHitPoints: 9, potValue: 10, attack: { baseDamage: 5, accuracy: 24 } }),
     ]),
-    light: 'BRIGHT',
     rng: makeRng(1),
     origin: { floorId: 'f1', x: 1, y: 1 },
   });
@@ -235,7 +233,6 @@ describe('tapping a drawn control', () => {
     const floor = createFloor({ id: 'f1', width: 7, height: 7 });
     const state = createExploration({
       floors: [floor], floorId: 'f1', tile: { x: 3, y: 3 }, facing: Direction.NORTH,
-      lightSources: [createLightSource({ id: 'l', brightRadius: 1, dimRadius: 4, remainingTicks: 99, lit: true })],
     });
     const { encounter } = fightOf(phone);
     const campaign = { encounter, state, concludeEncounter: () => { campaign.encounter = null; }, fleeEncounter: () => {} };
@@ -454,7 +451,6 @@ describe('the formations in a fight', () => {
       createEnemy({ id: `e${i}`, name: 'Goblin', hitPoints: 9, potValue: 1 }));
     const encounter = beginEncounter({
       party, enemies: createEnemyGroup(enemies),
-      light: 'BRIGHT',
       rng: makeRng(1), origin: { floorId: 'f1', x: 1, y: 1 },
     });
 

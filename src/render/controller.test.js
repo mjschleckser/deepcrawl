@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createFloor, setEdge, setTileFeature, EdgeKind, TileFeature, Direction } from '../sim/floor.js';
-import { createLightSource } from '../sim/light.js';
 import { createExploration, partyPosition, tickCount } from '../sim/exploration.js';
 import { createParty, createCharacter, addCharacter, CharacterClass, Row } from '../sim/party.js';
 import { beginEncounter, createEnemy, createEnemyGroup } from '../sim/combat.js';
@@ -11,8 +10,6 @@ import { createController, pressKey, pressPointer, releasePointer, resize, layer
 const viewport = { width: 800, height: 600 };
 
 const hud = (controller) => layers(controller).find((l) => l.name === 'hud').plan;
-const lamp = () =>
-  createLightSource({ id: 'l', brightRadius: 2, dimRadius: 5, remainingTicks: 99, lit: true });
 
 function harness({ withStairs = false } = {}) {
   const floor = createFloor({ id: 'f1', width: 7, height: 7 });
@@ -26,7 +23,6 @@ function harness({ withStairs = false } = {}) {
     floorId: 'f1',
     tile: { x: 3, y: 3 },
     facing: Direction.NORTH,
-    lightSources: [lamp()],
   });
   const onDraw = vi.fn();
   const controller = createController({ state, viewport, onDraw });
@@ -57,7 +53,7 @@ describe('the scene', () => {
     // The simulation is referenced, never duplicated.
     expect(controller.state).toBe(state);
     // Nothing here is a copy of anything the simulation owns.
-    for (const key of ['party', 'floors', 'roamers', 'ticks', 'discoveredTiles', 'lightSources']) {
+    for (const key of ['party', 'floors', 'roamers', 'ticks', 'discoveredTiles']) {
       expect(controller).not.toHaveProperty(key);
     }
     // What it does keep is the view's own business.
@@ -259,7 +255,6 @@ describe('input while a fight is on', () => {
     const encounter = beginEncounter({
       party,
       enemies: createEnemyGroup([createEnemy({ id: 'g1', name: 'Goblin', hitPoints: 40, potValue: 10 })]),
-      light: 'BRIGHT',
       rng: makeRng(2),
       origin: { floorId: 'f1', x: 1, y: 1 },
     });
@@ -314,7 +309,6 @@ describe('when a fight ends', () => {
     const encounter = beginEncounter({
       party,
       enemies: createEnemyGroup([createEnemy({ id: 'g1', name: 'Goblin', hitPoints: 40, potValue: 10 })]),
-      light: 'BRIGHT',
       rng: makeRng(2),
       origin: { floorId: 'f1', x: 1, y: 1 },
     });
@@ -343,7 +337,6 @@ describe('when a fight ends', () => {
       const encounter = beginEncounter({
         party,
         enemies: createEnemyGroup([createEnemy({ id: 'g1', name: 'Goblin', hitPoints: 40, potValue: 10 })]),
-        light: 'BRIGHT',
         rng: makeRng(3), origin: { floorId: 'f1', x: 1, y: 1 },
       });
       const campaign = { encounter, state, concludeEncounter: () => { campaign.encounter = null; }, fleeEncounter: () => {} };
@@ -432,8 +425,7 @@ describe('the party screen', () => {
     }
     const onPartyAction = vi.fn();
     const state = createExploration({
-      floors: [floor], floorId: 'f1', tile: { x: 3, y: 3 }, facing: Direction.NORTH,
-      lightSources: [lamp()], hooks: { onPartyAction },
+      floors: [floor], floorId: 'f1', tile: { x: 3, y: 3 }, facing: Direction.NORTH, hooks: { onPartyAction },
     });
     const party = createParty();
     for (const [id, cls] of [
@@ -514,8 +506,7 @@ describe('the party screen', () => {
     const campaign = fighting.controller.campaign;
     campaign.encounter = beginEncounter({
       party: campaign.party,
-      enemies: createEnemyGroup([createEnemy({ id: 'g1', name: 'Goblin', hitPoints: 40, potValue: 10 })]),
-      light: 'BRIGHT', rng: makeRng(2), origin: { floorId: 'f1', x: 3, y: 3 },
+      enemies: createEnemyGroup([createEnemy({ id: 'g1', name: 'Goblin', hitPoints: 40, potValue: 10 })]), rng: makeRng(2), origin: { floorId: 'f1', x: 3, y: 3 },
     });
     campaign.concludeEncounter = () => {};
     campaign.fleeEncounter = () => {};

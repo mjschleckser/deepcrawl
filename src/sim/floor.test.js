@@ -6,15 +6,13 @@ import {
   isEdgeOpen,
   getTile,
   setTileFeature,
-  setTileLight,
   EdgeKind,
   TileFeature,
-  LightLevel,
   Direction,
 } from './floor.js';
 
 // A bare 3x3 floor: open interior, walled border. Enough to exercise the edge model
-// without any floor-graph or lighting setup.
+// without any floor-graph setup.
 function blankFloor(overrides = {}) {
   return createFloor({ id: 'f1', width: 3, height: 3, ...overrides });
 }
@@ -118,21 +116,6 @@ describe('floor representation', () => {
 
     setTileFeature(floor, 1, 1, TileFeature.STAIRS_DOWN);
     expect(getTile(floor, 1, 1).feature).toBe(TileFeature.STAIRS_DOWN);
-  });
-
-  // @spec EXPLORE-FLOOR-007
-  it('gives every tile an intrinsic light level', () => {
-    const floor = blankFloor();
-    const levels = Object.values(LightLevel);
-
-    for (let y = 0; y < floor.height; y++) {
-      for (let x = 0; x < floor.width; x++) {
-        expect(levels).toContain(getTile(floor, x, y).intrinsicLight);
-      }
-    }
-
-    setTileLight(floor, 0, 0, LightLevel.BRIGHT);
-    expect(getTile(floor, 0, 0).intrinsicLight).toBe(LightLevel.BRIGHT);
   });
 
   // @spec EXPLORE-FLOOR-008

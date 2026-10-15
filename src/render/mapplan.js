@@ -60,7 +60,6 @@ function enemyMarker(px, py, size) {
  * @spec PRESENT-MAP-002
  * @spec PRESENT-MAP-004
  * @spec PRESENT-MAP-005
- * @spec PRESENT-MAP-006
  * @spec PRESENT-MAP-007
  * @spec PRESENT-MAP-008
  * @spec PRESENT-MAP-009
@@ -116,8 +115,7 @@ export function buildMapPlan(view, viewport, { expanded = false } = {}) {
     bounds: { x: originX, y: originY, width, height },
     cells,
     edges,
-    // Absent entirely when the party stands in the dark; the map itself stays drawn.
-    party: view.party ? { ...view.party, ...place(view.party.x, view.party.y) } : null,
+    party: { ...view.party, ...place(view.party.x, view.party.y) },
     enemies: view.enemies.map((enemy) => {
       const { px, py } = place(enemy.x, enemy.y);
       return { ...enemy, px, py, marker: enemyMarker(px, py, cellSize) };

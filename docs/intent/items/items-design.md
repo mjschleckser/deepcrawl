@@ -181,7 +181,7 @@ by name, as a combatant file is. A typo in content should fail where it was type
 
 1. **Loot, drops and affixes.** The HLD's items segment names generation within loot tables and affix rules. None of it exists: items are authored and given, never found. It wants floors tuned to drop against, which is a balance question and not a structural one.
 2. **More slots.** Rings, cloak, head and feet are slots with nothing to put in them. Adding one moves nothing already built.
-3. **Consumables and the pack.** A potion drunk mid-fight, and the party's shared bag, are what light the fight's *Inventory* option. They want a pack model, and the light sources exploration already carries in one are the obvious thing to fold in — which makes it a refactor of a working segment rather than an addition.
+3. **Consumables and the pack.** A potion drunk mid-fight, and the party's shared bag, are what light the fight's *Inventory* option. They want a pack model, which nothing in the game holds yet.
 4. **Two-handed weapons.** A weapon that claims the off hand as well as the main hand has nowhere to say so yet.
 5. **Weapon reach and exposure.** Combat removed rows on the promise that reach returns as a property of weapons and abilities. The property has no field here yet.
 6. **Encumbrance.** Nothing weighs anything, and nothing is slowed by what it carries.

@@ -1,12 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
-import { TileFeature, LightLevel, getTile } from '../sim/floor.js';
+import { TileFeature, getTile } from '../sim/floor.js';
 import {
   computeSight,
   perform,
   partyPosition,
   automapView,
   corridorAhead,
-  litSource,
   Verb,
 } from '../sim/exploration.js';
 import { createController, pressKey, layers } from '../render/controller.js';
@@ -54,13 +53,6 @@ describe('a generated campaign', () => {
 
     expect(first).toBe(second);
     expect(state.floors.size).toBe(2);
-  });
-
-  it('gives the party light and spares', () => {
-    const { state } = booted();
-
-    expect(litSource(state).id).toBe('torch-1');
-    expect(state.lightSources).toHaveLength(3);
   });
 
   it('has something to see and something to draw from the off', () => {
@@ -114,18 +106,5 @@ describe('descending', () => {
 
     const floor = state.getFloor(pit.toFloorId);
     expect(floor.rooms.length).toBeGreaterThan(0);
-  });
-});
-
-describe('the entrance', () => {
-  // @spec GEN-PLACE-006
-  it('lights the tile the campaign begins on, so the way out is never invisible', () => {
-    for (const seed of [1, 2, 3, 55]) {
-      const { state } = booted(seed);
-      const { floorId, tile } = partyPosition(state);
-      const floor = state.getFloor(floorId);
-
-      expect(getTile(floor, tile.x, tile.y).intrinsicLight).not.toBe(LightLevel.DARK);
-    }
   });
 });

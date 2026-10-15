@@ -16,7 +16,7 @@ export const Band = { MISS: 'MISS', GRAZE: 'GRAZE', HIT: 'HIT', CRIT: 'CRIT' };
 
 export const Action = {
   ATTACK: 'ATTACK', CAST: 'CAST', ABILITY: 'ABILITY',
-  SWAP: 'SWAP', RELIGHT: 'RELIGHT', PASS: 'PASS',
+  SWAP: 'SWAP', PASS: 'PASS',
 };
 
 export const Outcome = {
@@ -40,8 +40,6 @@ export const MAX_ENEMY_GROUP = 20;
 
 /** Fleeing fails against something more than a quarter faster than the hindmost. */
 export const FLEE_SPEED_RATIO = 1.25;
-
-export const DARK_ACCURACY_PENALTY = 40;
 
 /**
  * A full bar of readiness: what a combatant fills before they act, and what an action
@@ -152,25 +150,13 @@ const enemyStanding = (e) => e.condition === Condition.OK && e.hitPoints > 0;
 /**
  * @spec COMBAT-SURPRISE-003
  * @spec COMBAT-SURPRISE-010
- * @spec COMBAT-DARK-001
- * @spec COMBAT-DARK-002
- * @spec COMBAT-DARK-003
  */
-export function beginEncounter({ party, enemies, light, rng, origin }) {
-  const dark = light === 'DARK';
-
+export function beginEncounter({ party, enemies, rng, origin }) {
   const state = {
     party,
     enemies,
-    light,
     origin,
     rng,
-    // Fighting blind is possible and awful: the party swings wildly at whatever is in
-    // front of it.
-    accuracyPenalty: dark ? DARK_ACCURACY_PENALTY : 0,
-    deliberateTargeting: !dark,
-    // Light never helps the enemy. It only lets the party fight properly.
-    enemyAccuracyBonus: 0,
     // How full each combatant's bar is, by id. The fight's own clock, in beats, is
     // beside it; neither has anything to do with the exploration clock, which is
     // stopped for the whole encounter.
@@ -407,12 +393,11 @@ export function takeAction(state, actorId, action) {
   const baseDamage = action.baseDamage ?? baseDamageWith(swinger);
 
   const roll = state.rng.int(1, 100);
-  const penalty = actor.side === 'PARTY' ? state.accuracyPenalty : 0;
   // The band is resolved against defence, never against armour: being hard to hit and
   // being hard to hurt are different things, and one number doing both would make
   // heavy armour doubly good and squeeze the bands until armour outweighed practice.
   // @spec COMBAT-ATTACK-010
-  const band = attackBand(roll, accuracy - defenceOf(target) - penalty);
+  const band = attackBand(roll, accuracy - defenceOf(target));
   // Armour comes off afterwards, which is the whole of what armour does.
   // @spec COMBAT-ATTACK-012
   const damage = damageFor(band, baseDamage, armourOf(target));
@@ -447,7 +432,6 @@ export function takeAction(state, actorId, action) {
  * @spec COMBAT-FLEE-003
  * @spec COMBAT-FLEE-004
  * @spec COMBAT-FLEE-005
- * @spec COMBAT-FLEE-006
  */
 /**
  * Whether an escape is already lost, by the same rules that resolve one.

@@ -4,31 +4,26 @@ import {
   openEdge,
   setEdge,
   setTileFeature,
-  setTileLight,
   EdgeKind,
   TileFeature,
-  LightLevel,
   Direction,
 } from './floor.js';
-import { createLightSource } from './light.js';
-import { createExploration, corridorAhead, discoverEdge, MAX_DRAWN_DEPTH } from './exploration.js';
-
-const lamp = (over = {}) =>
-  createLightSource({ id: 'l', brightRadius: 2, dimRadius: 6, remainingTicks: 99, lit: true, ...over });
+import {
+  createExploration, corridorAhead, discoverEdge, MAX_DRAWN_DEPTH, SIGHT_RANGE,
+} from './exploration.js';
 
 // A north-south corridor one tile wide at x=3, party at the south end facing north.
-function corridorScene({ facing = Direction.NORTH, sources = [lamp()], roamers = [] } = {}) {
-  const floor = createFloor({ id: 'f1', width: 7, height: 9 });
-  for (let y = 0; y <= 8; y++) {
+function corridorScene({ facing = Direction.NORTH, roamers = [], length = 9 } = {}) {
+  const floor = createFloor({ id: 'f1', width: 7, height: length });
+  for (let y = 0; y < length; y++) {
     setEdge(floor, 3, y, Direction.WEST, EdgeKind.WALL);
     setEdge(floor, 3, y, Direction.EAST, EdgeKind.WALL);
   }
   const state = createExploration({
     floors: [floor],
     floorId: 'f1',
-    tile: { x: 3, y: 6 },
+    tile: { x: 3, y: length - 3 },
     facing,
-    lightSources: sources,
     roamers,
   });
   return { floor, state };
@@ -67,13 +62,13 @@ describe('the corridor ahead', () => {
     const northward = corridorAhead(
       createExploration({
         floors: [floor], floorId: 'f1', tile: { x: 3, y: 6 },
-        facing: Direction.NORTH, lightSources: [lamp()],
+        facing: Direction.NORTH,
       }),
     );
     const southward = corridorAhead(
       createExploration({
         floors: [floor], floorId: 'f1', tile: { x: 3, y: 2 },
-        facing: Direction.SOUTH, lightSources: [lamp()],
+        facing: Direction.SOUTH,
       }),
     );
 
@@ -93,17 +88,6 @@ describe('the corridor ahead', () => {
 
     expect(slices.find((s) => s.depth === 2).feature).toBe(TileFeature.STAIRS_DOWN);
     expect(slices.find((s) => s.depth === 1).feature).toBe(TileFeature.NONE);
-  });
-
-  // @spec EXPLORE-VIEW-003
-  it('reports the light level at each depth, dimming with distance', () => {
-    const { state } = corridorScene(); // bright 2, dim 6
-
-    const slices = corridorAhead(state);
-
-    expect(slices.find((s) => s.depth === 0).level).toBe(LightLevel.BRIGHT);
-    expect(slices.find((s) => s.depth === 2).level).toBe(LightLevel.BRIGHT);
-    expect(slices.find((s) => s.depth === 3).level).toBe(LightLevel.DIM);
   });
 });
 
@@ -137,34 +121,21 @@ describe('where the corridor report stops', () => {
     expect(corridorAhead(state).at(-1)).toMatchObject({ depth: 2, closedAhead: true });
   });
 
-  // @spec EXPLORE-VIEW-006
-  it('reports the dark boundary itself, so the view has something to fade into', () => {
-    // No carried light; the party's own tile is lit by the dungeon, nothing beyond is.
-    const { floor, state } = corridorScene({ sources: [] });
-    setTileLight(floor, 3, 6, LightLevel.DIM);
-
-    const slices = corridorAhead(state);
-
-    expect(slices.at(-1).level).toBe(LightLevel.DARK);
-    expect(slices.filter((s) => s.level === LightLevel.DARK)).toHaveLength(1);
-  });
-
   // @spec EXPLORE-VIEW-007
-  it('reports no more than the maximum drawn depth, however far light reaches', () => {
-    // A lamp that reaches the whole floor.
-    const { state } = corridorScene({
-      sources: [lamp({ brightRadius: 20, dimRadius: 40 })],
-    });
+  it('reports past the sight distance, out to the maximum drawn depth of six and no further', () => {
+    // A corridor running well past both.
+    const { state } = corridorScene({ length: 20 });
 
     const slices = corridorAhead(state);
 
-    expect(slices.length).toBeLessThanOrEqual(MAX_DRAWN_DEPTH + 1);
-    expect(MAX_DRAWN_DEPTH).toBeLessThan(20);
+    expect(MAX_DRAWN_DEPTH).toBe(6);
+    expect(MAX_DRAWN_DEPTH).toBeGreaterThan(SIGHT_RANGE);
+    expect(slices.map((s) => s.depth)).toEqual([0, 1, 2, 3, 4, 5, 6]);
   });
 
   // @spec EXPLORE-VIEW-011
   it('reports a warband standing on a tile ahead', () => {
-    // (3,5) is one ahead of the party and inside the lamp's bright ring.
+    // (3,5) is one ahead of the party.
     const { state } = corridorScene({ roamers: [{ id: 'r1', floorId: 'f1', x: 3, y: 5 }] });
 
     const slices = corridorAhead(state);
@@ -174,11 +145,14 @@ describe('where the corridor report stops', () => {
   });
 
   // @spec EXPLORE-VIEW-012
-  it('reports no warband on a tile too dim to pick one out of', () => {
-    // (3,3) is three ahead: inside the dim radius, outside the bright one.
-    const { state } = corridorScene({ roamers: [{ id: 'r1', floorId: 'f1', x: 3, y: 3 }] });
+  it('reports a warband by the automap rule: within four tiles, and not beyond', () => {
+    // Party at (3,17) facing north: (3,13) is four ahead, (3,12) five.
+    const near = corridorScene({ length: 20, roamers: [{ id: 'r1', floorId: 'f1', x: 3, y: 13 }] });
+    const far = corridorScene({ length: 20, roamers: [{ id: 'r1', floorId: 'f1', x: 3, y: 12 }] });
 
-    expect(corridorAhead(state).every((s) => s.enemyHere === false)).toBe(true);
+    expect(corridorAhead(near.state).find((s) => s.depth === 4).enemyHere).toBe(true);
+    // Depth five is still drawn, but nothing standing on it is picked out.
+    expect(corridorAhead(far.state).find((s) => s.depth === 5).enemyHere).toBe(false);
   });
 
   // @spec EXPLORE-VIEW-011

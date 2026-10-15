@@ -21,12 +21,6 @@ export const TileFeature = {
   PIT: 'PIT',
 };
 
-export const LightLevel = {
-  BRIGHT: 'BRIGHT',
-  DIM: 'DIM',
-  DARK: 'DARK',
-};
-
 export const Direction = {
   NORTH: 'NORTH',
   EAST: 'EAST',
@@ -87,7 +81,6 @@ export function edgeKey(floor, x, y, direction) {
  * @spec EXPLORE-FLOOR-001
  * @spec EXPLORE-FLOOR-003
  * @spec EXPLORE-FLOOR-006
- * @spec EXPLORE-FLOOR-007
  * @spec EXPLORE-FLOOR-008
  * @spec EXPLORE-FLOOR-009
  */
@@ -111,7 +104,7 @@ export function createFloor({ id, width, height, depthLabel = null }) {
 
   const tiles = [];
   for (let i = 0; i < width * height; i++) {
-    tiles.push({ feature: TileFeature.NONE, intrinsicLight: LightLevel.DARK });
+    tiles.push({ feature: TileFeature.NONE });
   }
 
   return { id, width, height, depthLabel, horizontalEdges, verticalEdges, tiles };
@@ -172,12 +165,6 @@ export function setTileFeature(floor, x, y, feature, { target } = {}) {
   // which is how a pit drops the party somewhere it cannot climb back from.
   if (target !== undefined) tile.target = target;
   return tile;
-}
-
-/** @spec EXPLORE-FLOOR-007 */
-export function setTileLight(floor, x, y, level) {
-  getTile(floor, x, y).intrinsicLight = level;
-  return getTile(floor, x, y);
 }
 
 export function isConnector(feature) {

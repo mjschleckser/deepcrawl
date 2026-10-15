@@ -42,7 +42,7 @@ likely to blur.
 | | Owned by exploration | Owned by presentation |
 |---|---|---|
 | Automap | which tiles, edges, traps, and enemies may be shown | how they are drawn, where the widget sits, how it expands |
-| First-person view | what stands ahead, to what depth, at what light | the perspective, the geometry, the colours |
+| First-person view | what stands ahead, and to what depth | the perspective, the geometry, the colours |
 | Input | the action vocabulary and both of its paths | reading the keyboard, hit-testing taps, drawing the controls |
 
 Exploration answers *what may be seen*. Presentation answers *what it looks like*.
@@ -100,11 +100,10 @@ the corridor at that frame.
 over it. Painting in this order removes the need for any depth test: a wall two tiles
 away simply cannot obscure one that is adjacent.
 
-**Light is drawn, not just obeyed.** Each depth is tinted by the light level the
-simulation resolved for that tile: full colour at `bright`, muted at `dim`, and not
-drawn at all at `dark`. The corridor therefore fades into blackness at the edge of the
-party's torch, and a guttering torch is something the player watches happen rather
-than reads in a status line.
+**Distance is drawn as shade.** Each depth is drawn a fixed step darker than the one
+nearer to it, by distance alone, so the corridor recedes rather than standing flat.
+Nothing in the dungeon is dark; the shading is perspective, and it is the same on every
+tile at the same depth.
 
 Stairs and pits are markings on the floor within the band for the depth they occupy.
 
@@ -130,8 +129,7 @@ shown and nothing else.
   a door shows whether it stands open: closed, it bars the edge; open, it leaves the
   gap the party walked through between its two posts.
 - Known traps carry a mark; stairs and pits carry their own.
-- The party is a triangle pointing the way it faces — absent entirely when the party
-  stands in the dark, while the rest of the map stays drawn.
+- The party is a triangle pointing the way it faces.
 - Enemies appear only where exploration reports them, which is only where the party
   can presently see them, and are drawn as a creature mark rather than a dot, so one is
   not read as a trap or as the party. Every enemy shares that mark; telling a goblin
@@ -718,7 +716,7 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 | Layer updates | Clear and rebuild the changed layer | Diffing against a retained scene model | A corridor is a few dozen polygons and a map a few hundred cells. Rebuilding removes the class of bug where the screen and the state disagree because an update was missed. |
 | Corridor geometry | Nested depth frames scaled toward a vanishing point | Raycasting into a texture-mapped wall; pre-rendered art per configuration | Frames are a handful of polygons per depth, need no art pipeline, and keep the view honestly 2D. Raycasting would contradict the project's non-goal and cost mobile performance for a view that only ever faces four directions. |
 | Draw order | Far to near | Near to far with depth testing | Painting far first makes occlusion automatic; there is no depth buffer to manage and no way for distant geometry to overwrite near geometry. |
-| Light in the view | Tint per depth, fading to black at the torch edge | Showing light only as a status readout | The player should watch the dark close in rather than read a number. It also makes the light rules legible without explanation. |
+| Shading in the view | A fixed step darker per depth, by distance alone | Every depth at full colour; fog that hides depths entirely | Flat colour at every depth makes nested frames read as a pattern rather than a passage. Shading by distance gives the corridor depth without implying anything is hidden. |
 | Surface size | The visible viewport, chrome and safe areas excluded | The layout viewport; `100vh` | On a phone browser the layout viewport is the height the page would have with the address bar hidden, so sizing to it puts the bottom of the game behind the chrome. Installed as an app the two agree, which is how the fault hides. |
 | Tap regions | Fractions of the viewport, with a pixel floor on size | Fractions alone; fixed pixel rectangles | The same layout has to work on a phone and a desktop window, so fractions hold the proportions — but a thumb does not shrink with the viewport, so the floor is in real pixels. |
 | Drawing the controls | Every tappable region is drawn | Leaving the view uncluttered and the regions invisible | A control nobody can see is a control only a keyboard player has, and the first target user is holding a phone. |
@@ -770,7 +768,7 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 2. ✅ **The ticker is stopped outside a fight**; redraws are triggered by change, not by time.
 3. ✅ **Layers are cleared and rebuilt** rather than diffed, and every drawing names every layer.
 4. ✅ **The corridor is nested depth frames**, drawn far to near, in 2D polygons.
-5. ✅ **Light is drawn as a per-depth tint**, fading to black at the edge of sight.
+5. ✅ **Each depth is shaded a fixed step darker** than the one nearer, by distance alone.
 6. ✅ **A door is drawn on the frame the corridor stops at**, closed as a panel with a handle and open as its frame alone.
 7. ✅ **An enemy the corridor report names is drawn standing at that depth**, with the same horned head the automap uses.
 8. ✅ **Tap regions are viewport fractions**, recomputed on resize, with a pixel floor on how small one may be drawn.

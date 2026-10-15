@@ -6,10 +6,25 @@
  * so that drawing it in sequence produces correct occlusion with no depth test.
  */
 
-import { LightLevel, TileFeature } from '../sim/floor.js';
+import { TileFeature } from '../sim/floor.js';
 import { depthFrames, hornedHead } from './geometry.js';
 
 const quad = (a, b, c, d) => [a.x, a.y, b.x, b.y, c.x, c.y, d.x, d.y];
+
+/**
+ * How much darker each depth is drawn than the one nearer to it. Distance alone decides
+ * it, so the corridor recedes rather than standing flat; nothing in the dungeon is dark.
+ */
+export const DEPTH_SHADE_STEP = 0.12;
+
+/**
+ * How bright a depth is drawn, from one at the party's own tile downward.
+ *
+ * @spec PRESENT-VIEW-007
+ */
+export function shadeAt(depth) {
+  return Math.max(0, 1 - DEPTH_SHADE_STEP * depth);
+}
 
 /** How tall an enemy stands in the frame of the tile it is on. */
 const FIGURE_HEIGHT = 0.62;
@@ -113,21 +128,8 @@ export function buildViewPlan(slices, viewport) {
   for (const slice of [...slices].reverse()) {
     const near = corners(frames[slice.depth]);
     const far = corners(frames[slice.depth + 1]);
-    const { depth, level, feature } = slice;
-
-    // A dark depth is the boundary the corridor fades into; it is drawn as darkness
-    // and nothing else, so the player sees the edge of their light rather than a wall.
-    if (level === LightLevel.DARK) {
-      shapes.push({
-        kind: 'darkness',
-        depth,
-        level,
-        points: quad(near.topLeft, near.topRight, near.bottomRight, near.bottomLeft),
-      });
-      continue;
-    }
-
-    const band = { depth, level };
+    const { depth, feature } = slice;
+    const band = { depth, shade: shadeAt(depth) };
 
     shapes.push({
       ...band,

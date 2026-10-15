@@ -9,14 +9,24 @@
 
 import { Application, Assets, Container, Graphics, Sprite, Text } from 'pixi.js';
 import { Direction, EdgeKind, TileFeature } from '../sim/floor.js';
-import { PIXI_APP_OPTIONS, PALETTE } from './appconfig.js';
+import { PIXI_APP_OPTIONS, PALETTE, shade } from './appconfig.js';
 
 const WALL_KINDS = new Set(['leftWall', 'rightWall', 'frontWall']);
 
+/**
+ * The corridor's tones at a shape's depth: the one palette, darkened by distance alone.
+ *
+ * @spec PRESENT-VIEW-007
+ */
+function tonesFor(shape) {
+  const tones = {};
+  for (const [name, colour] of Object.entries(PALETTE.view)) tones[name] = shade(colour, shape.shade ?? 1);
+  return tones;
+}
+
 function shapeColour(shape) {
-  const tones = PALETTE[shape.level] ?? PALETTE.DARK;
-  if (shape.kind === 'darkness') return PALETTE.darkness;
-  if (shape.kind === 'feature') return PALETTE.feature;
+  const tones = tonesFor(shape);
+  if (shape.kind === 'feature') return shade(PALETTE.feature, shape.shade ?? 1);
   if (WALL_KINDS.has(shape.kind)) return tones.wall;
   if (shape.kind === 'floor') return tones.floor;
   if (shape.kind === 'ceiling') return tones.ceiling;
@@ -31,7 +41,7 @@ function shapeColour(shape) {
  * @spec PRESENT-VIEW-013
  */
 function drawDoor(graphics, shape) {
-  const tones = PALETTE[shape.level] ?? PALETTE.DARK;
+  const tones = tonesFor(shape);
   const { x, y, width, height } = shape.rect;
 
   if (shape.open) {
@@ -52,7 +62,7 @@ function drawDoor(graphics, shape) {
  * @spec PRESENT-VIEW-015
  */
 function drawFigure(graphics, shape) {
-  const tones = PALETTE[shape.level] ?? PALETTE.DARK;
+  const tones = tonesFor(shape);
   const { x, y, width, height } = shape.body;
   const edge = Math.max(1, width * 0.06);
 

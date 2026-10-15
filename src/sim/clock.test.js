@@ -43,15 +43,6 @@ describe('the clock', () => {
     expect(tickCount(state)).toBe(1);
   });
 
-  // @spec EXPLORE-CLOCK-003
-  it('advances one tick when the party relights a doused source', () => {
-    const state = explorationAt();
-
-    perform(state, { relight: true });
-
-    expect(tickCount(state)).toBe(1);
-  });
-
   // @spec EXPLORE-CLOCK-004
   it('advances by the number of ticks the camp segment specifies', () => {
     const state = explorationAt();
@@ -68,7 +59,6 @@ describe('the clock', () => {
 
     perform(state, { verb: Verb.STEP_FORWARD });
     perform(state, { partyAction: PartyAction.SEARCH, commit: true });
-    perform(state, { relight: true });
 
     expect(tickCount(state)).toBe(0);
   });

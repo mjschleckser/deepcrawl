@@ -27,8 +27,7 @@ a tile rather than when the party stands on it.
 **Adjacent mechanics get hooks, not homes.** Hunger, traps, and roaming enemies all
 tick with exploration and all trigger on movement, but none of them belong to this
 segment. Exploration defines when they fire and what they may read; their rules
-live in their own segments. Light is the exception — it exists only to gate what
-exploration can see and record, so it is owned here.
+live in their own segments.
 
 ## Floor Representation
 
@@ -76,8 +75,7 @@ Tile features (on the tile, not the edge):
 - `stairsUp`, `stairsDown` — connectors to another floor, taken deliberately
 - `pit` — a one-way connector downward, taken involuntarily
 
-Each tile also carries an intrinsic light level (see *Sight, Light, and Discovery*)
-and a discovery record.
+Each tile also carries a discovery record (see *Sight and Discovery*).
 
 ### Floors the party has not reached
 
@@ -127,7 +125,6 @@ The tick is the unit of in-game time. Exploration owns the tick counter.
 |---|---|
 | Party enters a new tile | a **step cost** set by the party's average Dexterity |
 | An active search of the current tile | a fixed cost |
-| Relighting a doused light source | a fixed cost |
 | Camp actions (sleep, eat, rest, train) | defined by the camp segment |
 
 ### The step cost
@@ -142,9 +139,8 @@ than what is chasing it gradually opens a gap and eventually loses it, while a s
 one is run down however cleverly it turns. Outrunning something is a thing the party
 either can or cannot do, decided by who they brought.
 
-Because a step now costs several ticks rather than one, hunger and light are consumed
-at rates authored against that scale. Both were always per-tick; only the size of a
-tick relative to a footstep has changed.
+Because a step costs several ticks rather than one, hunger is consumed at a rate
+authored against that scale.
 
 **Does not advance the clock:**
 
@@ -154,7 +150,7 @@ tick relative to a footstep has changed.
 - Combat, in its entirety
 
 Combat standing outside the clock is deliberate: a long fight should not also
-starve the party and burn the torch down. Combat costs resources of its own, and
+starve the party. Combat costs resources of its own, and
 charging time for it would punish the same encounter twice.
 
 The corollary is a constraint on every segment, not a licence: because the clock
@@ -164,8 +160,7 @@ either, or stalling becomes the optimal play.
 
 The camp segment advances a clock it does not own. It calls exploration's tick
 advance; exploration remains the only writer of the counter. Those ticks reach hunger
-like any other, but not the party's carried light, which is out for the duration of
-the camp.
+like any other.
 
 ## Returning to a Floor
 
@@ -247,7 +242,7 @@ actually facing.
 On a successful step, these resolve in a fixed order:
 
 1. The party's tile becomes the target tile.
-2. The clock advances by the step cost — light burns down, hunger advances.
+2. The clock advances by the step cost, and hunger with it.
 3. Tile features resolve: a `pit` relocates the party to the floor and tile its
    connector's arrival rule resolves to, preserving facing.
 4. If the party has arrived on a floor it previously left, that floor is re-stocked.
@@ -271,74 +266,29 @@ costs the party eight ticks gives a roamer that crosses a tile in six ticks one 
 with two ticks carried forward; a roamer that needs twelve waits. Everything that
 chases the party does so at its own pace.
 
-The order is load-bearing in three places. Light burns down **before** sight is
-computed, so a torch that expires on this step is already spent when the party looks
-around, rather than granting one last free look. With a spare in the pack the next
-torch has already lit by then and nothing is lost; on the last torch, the party
-arrives blind. Roamers move **after** discovery, so the
+The order is load-bearing in two places. Roamers move **after** discovery, so the
 party sees the tile it entered as it was when it arrived, and a roamer that steps
 into view does so on the next recomputation. And only the occupied floor's roamers
 move: floors the party has left are frozen rather than simulated in the background.
 
-## Sight, Light, and Discovery
+## Sight and Discovery
 
-### Light levels
+Nothing in the dungeon is dark, and nothing the party carries decides what it can see.
+**The party sees a fixed distance — four
+tiles — and sees everything within it** that a line of sight reaches: the ground, its
+edges and features, and anything standing on it.
 
-Every tile resolves to one of three light levels.
-
-| Level | The party can see |
-|---|---|
-| `bright` | the tile, its edges, its features, traps it has detected, and any enemy standing on it |
-| `dim` | the tile, its edges, and its features — but not enemies, which are indistinguishable from shadow. Trap and secret-door detection are penalised. |
-| `dark` | nothing at all |
-
-A tile's resolved level is the brighter of its **intrinsic** level, set by generation,
-and the level **projected** onto it by the party's lit sources.
-
-Light is only ever beneficial. It does not affect encounter rates, and it does not
-make enemies more likely to notice the party.
-
-### Light sources
-
-A light source is a contract, not a torch:
-
-| Field | Meaning |
-|---|---|
-| `brightRadius` | tiles it raises to `bright` |
-| `dimRadius` | tiles it raises to `dim`, beyond the bright ring |
-| `remainingTicks` | ticks before it is spent; `null` for a permanent source |
-| `isLit` | whether it is currently burning |
-
-A torch is the only implementation in v1. Each torch the party carries is a separate
-instance with its own `remainingTicks` and `isLit`, so torches are spent one at a
-time rather than in parallel: exactly one burns, and when it is spent the next
-unspent torch lights automatically.
-
-A torch may also be extinguished by an external effect — a water attack, say. That
-does **not** trigger automatic relighting; a deliberate relight action is required.
-Relighting costs a tick during exploration and a character's action during combat,
-which is what makes dousing the party's light worth an attack. A relight resumes the
-same doused instance, which still holds whatever fuel it had; it does not reach for a
-fresh one.
-
-Carried light is put out for the duration of a camp and relit on breaking camp, so
-the ticks a camp consumes do not burn a torch. Camp has a fire of its own, and a
-party that had to sleep in shifts holding a torch would simply never sleep.
-
-Spells with a duration, refuelable lanterns, permanently lit equipment, and light
-carried by something other than the party are later implementations of the same
-contract. Nothing in sight resolution names a torch.
-
-Generation marks some tiles intrinsically `bright` or `dim` regardless of what the
-party carries — the dungeon entrance is always lit, so the party can never be
-stranded in the dark with no way to see.
+Four is the distance a roamer notices the party from, so neither side outsees the
+other: a party that can see a warband is one that warband can see.
 
 ### What the party sees
 
 Sight is cast into the **forward quadrant**: tiles lying within 45° either side of
-the party's facing, a 90° cone in total, with line of sight blocked by any opaque
-edge — a `wall`, a closed `door`, or an undiscovered `secretDoor`. The occupied tile
-and its four edges are always seen unless that tile is `dark`.
+the party's facing, a 90° cone in total, out to the sight distance, with line of sight
+blocked by any opaque edge — a `wall`, a closed `door`, or an undiscovered
+`secretDoor`. Distance is counted in steps on the grid, diagonal steps included, so
+the cone reaches as far along a diagonal as along a corridor. The occupied tile and
+its four edges are always seen.
 
 Sight is recomputed whenever the cone moves, which means on a turn as well as on a
 step. Turning costs no tick, but it points the party at ground it has not looked at;
@@ -367,19 +317,14 @@ can plainly see past a pillar's edge.
 
 ### Discovery
 
-A tile becomes discovered the moment sight reaches it at `dim` or better — not when
-the party stands on it. Discovering a tile also discovers its four edges and any
+A tile becomes discovered the moment sight reaches it — not when the party stands on
+it. Discovering a tile also discovers its four edges and any
 feature on it, **except undiscovered secret doors**, which stay indistinguishable
 from wall until the search mechanics find them. Without that carve-out, merely
 looking at a tile would give up its secrets and the search mechanic would never fire.
 
 Discovery is permanent and per-floor. It survives leaving the floor, reloading the
 save, and the party's death.
-
-Where every tile in view is `dark`, the party may still step, but sees nothing: no
-tile is discovered, no enemy is visible, and **automapping pauses**. Movement in the
-dark leaves no trace on the map, so a party that loses its light walks blind through
-corridors it will have to map again.
 
 ## The Automap
 
@@ -392,18 +337,14 @@ traps the party has found, and the party's own tile and facing.
 **It does not draw:** undiscovered tiles or secret doors, and roaming enemies the
 party cannot presently see.
 
-Seeing a roamer takes two things: its tile is `bright`, and nothing opaque stands
-between it and the party. Light alone will not do, because light pools by distance and
-pays no attention to walls — a goblin one tile away through solid stone is standing in
-torchlight the party cannot see it by. What the rule does *not* ask for is facing: a
-roamer behind the party, in the party's own light, is something they can see well
-enough. Last-known positions are never drawn, which is what carrying light is meant to
-buy.
+Seeing a roamer takes two things: it stands within the sight distance, and nothing
+opaque stands between it and the party. Distance alone will not do — a goblin one tile
+away through solid stone is close and unseen. What the rule does *not* ask for is
+facing: a roamer close behind the party is something they can hear and turn to well
+enough. Last-known positions are never drawn; a roamer that steps out of sight is gone
+from the map until it is seen again.
 
-**In darkness the map stays readable, but the party marker disappears.** The record
-of where the party has been is never lost; knowing where it currently stands is
-something light has to buy back. A party whose torch goes out still has its map and
-no idea where on it they are.
+The party's own tile and facing are always drawn.
 
 The automap is always available and needs no item or spell. Items, tomes, and
 classes may later extend mapping range and trap-finding, but the baseline map is
@@ -418,9 +359,8 @@ elsewhere.
 
 For each depth ahead of the party, exploration reports whether the way on is blocked,
 what stands on the edge the way on passes through, whether that tile is walled to the
-left and to the right, what feature stands on it, and what light it resolves to. The
-report stops at the first depth whose approach is opaque, at the first depth that
-resolves to `dark`, or at the maximum drawn depth, whichever comes first.
+left and to the right, and what feature stands on it. The report stops at the first
+depth whose approach is opaque, or at the maximum drawn depth, whichever comes first.
 
 The blocking rule is sight's rule, not a second one: a `wall`, a closed `door` or
 `lockedDoor`, an undiscovered `secretDoor`. A view that disagreed with sight about
@@ -438,9 +378,11 @@ stretch of corridor from another. A secret door the party has not found is repor
 the wall it imitates, exactly as sight reports it — the corridor report may never give
 away what searching has not yet earned.
 
-The maximum drawn depth is a limit on the drawing, not on the seeing. A party whose
-light reaches forty tiles still maps forty tiles; it is simply not shown forty nested
-frames, which at that distance are narrower than a pixel.
+The maximum drawn depth is a limit on the drawing, not on the seeing, and the two are
+set separately. The view draws further than the party maps, because a corridor that
+visibly goes on past where the map stops is what invites a player to walk it; nested
+frames past a handful of depths are narrower than a pixel, which is what caps the
+drawing.
 
 ## Hooks into Adjacent Segments
 
@@ -450,9 +392,9 @@ Rules beyond that line belong to the other segment.
 | Hook | Fires when | Exploration provides | Owned elsewhere |
 |---|---|---|---|
 | Hunger | every tick | the tick | stages, thresholds, effects |
-| Trap detection | sight is recomputed; the party searches | tiles in view or the searched tile, the party, the resolved light level | detection rules, disarm |
+| Trap detection | sight is recomputed; the party searches | tiles in view or the searched tile, and the party | detection rules, disarm |
 | Trap triggering | the party enters a tile | the entered tile and the party | which trap fires and what it does |
-| Roaming enemies | after discovery on each step | floor, party tile, resolved tile light levels | movement behavior, roster, respawn |
+| Roaming enemies | after discovery on each step | floor and party tile | movement behavior, roster, respawn |
 | Floor re-stocking | the party arrives on a floor it has visited before | the floor and the ticks elapsed since it was last left | how far enemies move, which rooms refill |
 | Encounter | the party and a roamer reach one another — either one attempting the other's tile | the encounter payload — see *The Combat Handoff* | all of combat |
 | Camp | the player enters camp | tick advance | sleep, eat, rest, train |
@@ -464,9 +406,9 @@ belongs with the rest of the map's discovery record.
 ## The Combat Handoff
 
 Exploration hands combat an explicit encounter payload rather than leaving combat to
-read exploration's state directly. The payload names the enemy group and the light
-level of the tile the encounter begins on. It carries nothing about who noticed whom:
-how a fight opens is combat's to decide, from the combatants alone.
+read exploration's state directly. The payload names the enemy group and where the encounter began. It carries nothing
+about who noticed whom: how a fight opens is combat's to decide, from the combatants
+alone.
 
 An explicit handoff rather than shared reads: the boundary between these two segments
 is exactly where cascade discipline pauses, and a boundary both sides read through
@@ -489,7 +431,6 @@ matter which segment triggered the change.
 | Party tile, facing, current floor | exploration | exploration |
 | Tick counter | exploration | exploration; camp calls its advance |
 | Per-tile discovery, door open flags, known traps | exploration | exploration |
-| Resolved light levels, torch states | exploration | exploration |
 | Floor layouts | dungeon generation | never mutated after creation |
 | Character hit points, status, death state | party | party operations, called by combat and exploration |
 | Party roster | party | party operations |
@@ -508,13 +449,15 @@ and dynamic state also persist, but are rewritten by the re-stocking on each ret
 
 Saved by this segment:
 
-- Every generated floor: id, dimensions, edge arrays, tile features, intrinsic light levels
+- Every generated floor: id, dimensions, edge arrays, tile features
 - Per-floor discovery record (tiles, edges, features, known traps)
 - Per-floor door open flags
 - Per-floor tick at which the party last left it
 - Party's current floor, tile, and facing
 - Tick counter
-- Every carried light source as a separate instance, with its remaining ticks and lit state
+
+A save from an earlier version that carries tile light levels or light sources still
+loads; those fields are ignored rather than treated as an error.
 
 Discovery is stored as a bitmask per floor rather than a per-tile object, since it
 is one bit per tile and floors accumulate for the life of the campaign.
@@ -585,37 +528,29 @@ widget occupies a corner and expands to full screen on tap.
 | Floor lifetime | Generated once, persisted forever | Regenerated from seed on revisit | Discovery, sprung traps, and looted tiles have to survive a revisit. Regeneration would undo the player's record of their own exploration. |
 | Step cost | Several ticks, set by the party's average Dexterity | A flat one tick per step | Speed becomes a property of the party rather than a combat statistic, and pursuit becomes a contest a party can win or lose by who they brought rather than by how they turn. |
 | Turning | Free, never ticks | Turning costs a tick | Free turning keeps the first-person view scannable, which matters most on a phone where looking around is the primary orientation gesture. |
-| Wall bump | No movement, no tick | Bumping costs a tick | A misjudged step should not cost food and torchlight. |
+| Wall bump | No movement, no tick | Bumping costs a tick | A misjudged step should not cost food. |
 | Stepping into an occupied tile | Barred: the encounter begins and the party stays where it is | Take the step, then check contact on arrival | Arriving on top of a warband leaves the two sharing a tile, and a fight broken off from there re-opens on the party's next step, since whatever they fled is standing on them. Barring the step makes meeting a thing that happens between tiles, so fleeing buys distance rather than a single step's reprieve. |
 | Movement verbs | Forward, backward, turn L/R, turn 180° | Forward and turns alone, withdrawing by turning about | Turning to leave is not the same act as backing away: it gives up sight of whatever they are retreating from, and the party walks the corridor behind them blind. The objection that a backward step enters a tile the facing never revealed costs nothing after all, since the party maps the tile it stands on however it arrived there. |
 | The corridor's door report | The edge ahead is reported as a door, open or closed, or as nothing | Reporting only whether the way on is blocked | A closed door and a dead end are otherwise the same report, so the view cannot tell a way on from the end of a passage. Open doors are reported for the reverse reason: a doorway already walked through is what distinguishes one corridor from another. |
 | Visibility propagation | A line traced from the party to each candidate tile | Spreading outward through non-opaque edges within the cone | Spreading is cheaper and has no corner cases to arbitrate, but it sees around corners: the map fills in ground beyond a turn the party has never looked along. That silently undoes the reason to map a dungeon at all, which is worth the cost of tracing lines. |
 | Lines through a corner point | Blocked only when both ways around the corner are blocked | Blocked when either way is blocked | A solid corner is blocked both ways and stays hidden. Blocking on either side would throw spurious shadows across open rooms, where a player can plainly see past the edge of a pillar. |
-| Light falloff distance | Chebyshev, so light pools square on the grid | Euclidean distance, rounded | A diagonal step costs the party no more than an orthogonal one, so light that reached further orthogonally than diagonally would contradict how the party moves. |
 | Sight shape | Forward-quadrant cast, 45° either side of facing | Straight-line corridor cast; full 360° radius | A straight line maps open rooms one file at a time and looks broken. A full circle would show what the party is not looking at. |
 | Discovery trigger | Sight reaches the tile | Standing on the tile | Mapping a room by walking every tile in it is tedious, and the first-person view already shows what sight-based discovery records. |
-| Light model | Three levels per tile: bright, dim, dark | A single binary lit/unlit; a continuous radius | Three tiers give a middle state where the party can map but cannot spot enemies, which is what makes pushing on with a guttering torch a real gamble. |
-| Light sources | A contract; torch is the only v1 implementation | Hard-coding the torch | Spells, lanterns, and enemy-carried light all arrive later. Nothing in sight resolution names a torch. |
-| Torch bookkeeping | Each torch a separate instance; exactly one lit; next lights automatically when one is spent | One pooled fuel total; all carried torches burning at once | Separate instances let an external effect douse a specific torch. Automatic relighting on burnout keeps routine walking frictionless, while a deliberate relight after a dousing keeps such attacks meaningful. |
 | Doors and sight | A closed door is opaque and impassable; it opens by being stepped through, and some start open | Doors transparent when closed; opening as its own action costing a tick | Seeing through closed doors would let the party map a room without entering it. Charging a tick to open would make every doorway a toll. |
-| Light and enemies | Light never worsens the party's position | Light raising encounter rate or enemy awareness | Light is a scarce resource the player already pays for; making it also a liability would push play toward travelling dark. |
 | Combat and time | Combat advances no ticks | Combat ticking per round | A long fight already costs resources. Charging time as well would punish the same encounter twice. |
-| Roamers on the automap | Shown where their tile is `bright` and nothing opaque stands between | Brightness alone; last-known position; always shown; visible at `dim` too | Seeing where enemies are is what carrying light buys, and a persistent marker would give it away for free. Brightness alone is not sight either: light pools by distance and ignores walls, so it would show a goblin standing in torchlight on the far side of solid stone. |
+| Roamers on the automap | Shown within the sight distance where nothing opaque stands between | Distance alone; last-known position; always shown | A persistent marker would give away where a warband is without the party having looked. Distance alone is not sight either: it ignores walls, so it would show a goblin on the far side of solid stone. |
+| Sight distance | A fixed four tiles, seeing everything within it | Carried light that burns down and sets the range; a range that differs by tile; sight stopped only by walls | A burning light asks the player to manage a timer whose only answer is carrying more torches, and dim tiles decide whether the dungeon is visible at all rather than posing a choice. Four is the distance a roamer notices the party from, so neither side outsees the other. Unbounded sight would map a room in one look and leave nothing to walk for. |
 | Roamers in the first-person view | Drawn where the corridor report puts them, under the automap's rule | Shown on the automap alone; shown whenever the party's own tile is lit | A monster the map shows and the passage does not is the two views disagreeing about the same tile, which is the one thing answering both projections here is meant to prevent. |
 | Exploration to combat | An explicit encounter payload | Both segments reading shared state freely | The segment boundary is where cascade pauses; a boundary read through freely is not a boundary. The payload is the contract that changes when the segments need to say something new. |
 | Party state | Owned by the party segment; exploration and combat both call its operations | Either segment writing character fields directly | Both segments legitimately change party state — damage in combat, a potion in exploration. Routing both through one owner keeps hit-point floors, the death state machine, and the four-member limit in a single place. |
 | Floors the party has left | Frozen, then re-stocked on return in proportion to elapsed ticks | Live background simulation; no change at all on return | Background simulation costs time proportional to the campaign for changes nobody observes, while a wholly static dungeon is dead. A re-stocking buys the appearance of a living dungeon at the cost of one arrival-time pass. |
 | Re-stocking and the map | Discovery is never revised; only occupants, doors, and room contents change | Fogging the map again after long absences | The player earned the map. Making its layout decay would punish the mapping the game is built to reward; making its contents unreliable is the interesting half. |
-| Dim light | Penalises trap and secret-door detection, and hides enemies | Dim as purely cosmetic; dim also degrading mapping accuracy | Detection penalties make a failing torch dangerous without making the map itself lie, which would undermine the record the player is building. |
-| Relighting a doused source | Costs a tick in exploration, an action in combat | Free relighting; automatic relighting after a dousing | A dousing has to cost something or the attack that caused it accomplishes nothing. Automatic relighting stays for ordinary burnout, where friction would only be tedium. |
-| Step resolution order | Fixed eight-step order | Resolving side effects in any order | Light burning before sight is computed, and roamers moving after discovery, are both observable behaviours that must be specified rather than emergent. |
+| Step resolution order | Fixed eight-step order | Resolving side effects in any order | Roamers moving after discovery is an observable behaviour that must be specified rather than emergent. |
 | Stairs versus pits | Stairs prompt on attempted entry; declining completes the step onto the tile. Pits fire on entry with no say | Declining cancels the step; stairs taken only by a verb while standing on them; stairs firing automatically like pits | A staircase that cannot be crossed is a wall with a prompt on it, and one generated in a corridor seals off the floor beyond it. Completing the step keeps the tile as passable as any other while the prompt still means no connector is ever taken by accident. Taking stairs only by a verb would leave a party no way to descend but one they have to be told about. |
 | Action classes | Movement verbs, plus party actions that open free and commit for a tick | Charging a tick to open any menu; charging nothing for any party action | Charging for looking punishes careful play, and charging for nothing removes the cost of acting. The split puts the price on the commitment. |
 | Traps and re-stocking | Traps are untouched: laid at generation, and party knowledge of them only grows | Clearing known-trap flags on refilled rooms; re-laying traps as part of re-stocking | A trap the party disarmed reappearing, or a map marking a brand-new trap as already known, are both worse than a floor whose traps are simply permanent. |
-| Relighting | Resumes the same doused instance | Consuming a fresh source on relight | A doused torch still holds its fuel; making the party throw it away would turn one enemy attack into the loss of a whole item. |
-| Light during camp | Carried light is out for the camp's duration | Burning carried light through every tick a camp consumes | A camp has its own fire. Burning a torch through a night's sleep would make resting unaffordable and encourage never camping. |
 | Corridor projection | Answered by exploration, beside the automap projection | Owned by the presentation segment that draws it | Both answer "what may be shown given what the party can see", which is sight's question. Splitting two identical concerns across two segments would put the automap's rules and the corridor's rules in different places. |
-| Maximum drawn depth | A cap on the report, separate from how far light reaches | Drawing as deep as the light goes | Sight and drawing have different natural limits. A torch reaching far should still map far; nested frames past a handful of depths are narrower than a pixel. |
+| Maximum drawn depth | Six, a cap on the report set separately from the sight distance of four | Drawing only as deep as the party maps | A corridor that visibly continues past where the map stops invites the player to walk it. Nested frames past a handful of depths are narrower than a pixel, which is what caps the drawing. |
 | Pit relocation | Steps 4-8 act on the landing tile; one step's ticks in total; features resolve at most once per step | Charging a second step's ticks for the landing; chaining pits within one step | Acting on the landing tile lets a pit drop the party onto a trap, which is the interesting case. Resolving features once per step bounds the fall without a special rule. |
 | Facing across floors | Preserved through stairs and pits | Facing set by the connector; facing randomised on arrival | Preserving facing keeps arrival predictable and costs nothing; a connector-defined facing is a detail generation would have to author for every connector. |
 
@@ -633,41 +568,34 @@ widget occupies a corner and expands to full screen on tap.
 8. ✅ **The party may step backward**, at the same cost and under the same rules as a forward step, without changing facing.
 9. ✅ **Combat does not advance the clock.** Exploration and camp are the only sources of time.
 10. ✅ **Party actions open free and commit for a tick.** Exploration routes them and charges the clock; the owning segments hold the rules.
-11. ✅ **Three light levels per tile**: bright, dim, dark.
-12. ✅ **Light is always beneficial** — no effect on encounter rate or enemy awareness.
-13. ✅ **Light distance is Chebyshev**, matching the way the party moves.
-14. ✅ **One torch burns at a time**, tracked per instance, relighting automatically when spent but not when doused.
-15. ✅ **Relighting a doused source costs a tick in exploration and an action in combat**, and resumes the same instance. Burnout still relights automatically.
-16. ✅ **Carried light is out for the duration of a camp**, so camp ticks do not burn it.
-17. ✅ **Sight is a true 90° cone** — 45° either side of facing.
-18. ✅ **Visibility is a traced line** from the party to each candidate tile; sight does not go round corners.
-19. ✅ **Closed doors are opaque**, so a room cannot be mapped before it is entered. Some doors start open; the rest open by being stepped through.
-20. ✅ **Sight never reveals an undiscovered secret door** — that is the search mechanic's job alone.
-21. ✅ **Discovery is by sight**, cast into the forward quadrant, at `dim` light or better.
-22. ✅ **Dim light penalises trap and secret-door detection**, on top of hiding enemies. It does not degrade mapping.
-23. ✅ **Darkness pauses automapping** but not movement; the existing map stays readable while the party marker vanishes.
-24. ✅ **Roamers appear where their tile is `bright` and nothing opaque stands between them and the party**, whether or not they fall inside the sight cast.
-25. ✅ **The corridor projection is exploration's**, answered beside the automap projection and drawn by presentation.
-26. ✅ **Maximum drawn depth is capped independently of light reach.**
-27. ✅ **The corridor report names the door on the edge ahead**, open or closed, and never an undiscovered secret one.
-28. ✅ **The corridor report names a warband standing on a tile ahead**, under the same rule the automap draws one by.
-29. ✅ **Trap detection and trap triggering are separate hooks.** Detection runs at sight and search and carries the light level; triggering runs on entry and does not.
-30. ✅ **Roamers move on their own tick cost**, not once per party step.
-31. ✅ **Floors the party has left are frozen**, then re-stocked on return in proportion to elapsed ticks — never actively simulated.
-32. ✅ **Re-stocking never revises discovery and never touches a trap.** Layout stays known, trap state is permanent; occupants, doors, and room contents change.
-33. ✅ **Re-stocking resolves immediately after relocation**, before the trap trigger fires.
-34. ✅ **Exploration hands combat an explicit payload**; party state is owned by the party segment and changed through its operations by both.
+11. ✅ **Sight is a true 90° cone** — 45° either side of facing.
+12. ✅ **Visibility is a traced line** from the party to each candidate tile; sight does not go round corners.
+13. ✅ **Closed doors are opaque**, so a room cannot be mapped before it is entered. Some doors start open; the rest open by being stepped through.
+14. ✅ **Sight never reveals an undiscovered secret door** — that is the search mechanic's job alone.
+15. ✅ **Discovery is by sight**, cast into the forward quadrant out to four tiles.
+16. ✅ **Roamers appear within the sight distance where nothing opaque stands between them and the party**, whether or not they fall inside the sight cast.
+17. ✅ **The corridor projection is exploration's**, answered beside the automap projection and drawn by presentation.
+18. ✅ **Maximum drawn depth is capped independently of the sight distance.**
+19. ✅ **The corridor report names the door on the edge ahead**, open or closed, and never an undiscovered secret one.
+20. ✅ **The corridor report names a warband standing on a tile ahead**, under the same rule the automap draws one by.
+21. ✅ **Trap detection and trap triggering are separate hooks.** Detection runs at sight and search; triggering runs on entry.
+22. ✅ **Roamers move on their own tick cost**, not once per party step.
+23. ✅ **Floors the party has left are frozen**, then re-stocked on return in proportion to elapsed ticks — never actively simulated.
+24. ✅ **Re-stocking never revises discovery and never touches a trap.** Layout stays known, trap state is permanent; occupants, doors, and room contents change.
+25. ✅ **Re-stocking resolves immediately after relocation**, before the trap trigger fires.
+26. ✅ **Exploration hands combat an explicit payload**; party state is owned by the party segment and changed through its operations by both.
+27. ✅ **The party sees four tiles, and everything within them** that a line of sight reaches; nothing is ever dark.
 
 ### Deferred
 
-1. **Re-stocking magnitude.** How far enemies move, which rooms refill, and how many ticks of absence separate a light rearrangement from a thorough one are all untuned. The trigger and the inputs are settled; the curve is not.
-2. **Skill-dependent enemy visibility on the automap.** Enemies currently show wherever they stand in `bright` light. Party skill was raised as a future modifier on that range; the mechanism is unspecified.
-3. **Auto-travel** — tap a discovered automap tile and walk there. Must interrupt on encounter, trap, or light expiry. Not in v1.
+1. **Re-stocking magnitude.** How far enemies move, which rooms refill, and how many ticks of absence separate a slight rearrangement from a thorough one are all untuned. The trigger and the inputs are settled; the curve is not.
+2. **Skill-dependent sight.** The party sees four tiles, and enemies within it. Party skill was raised as a future modifier on that range; the mechanism is unspecified.
+3. **Auto-travel** — tap a discovered automap tile and walk there. Must interrupt on encounter or trap. Not in v1.
 4. **Player map annotations** — Etrian-style notes and icons. Out of scope.
 5. **Hunger stages and effects** — this segment supplies the tick only; thresholds and consequences belong to the hunger segment.
 6. **Keys and locked doors** — `lockedDoor` names a matching key, but whether keys are per-door ids, a keyring, or a generic unlock is the items segment's decision.
 7. **Spinners and teleporters** — tile features that defeat mapping. Deferred; the edge and feature model accommodates them unchanged.
-8. **Other adventuring parties** in the dungeon, carrying their own light. Noted as a future inhabitant of the same floor model.
+8. **Other adventuring parties** in the dungeon. Noted as a future inhabitant of the same floor model.
 9. **Standing still is free and safe.** Because roamers move only on party ticks, a stationary party is never approached. Whether idling should carry a cost is an open design question.
 10. **Save size** — every floor is retained for the life of the campaign with a full edge model. Discovery is bitmasked; whether layouts need compaction is unmeasured.
 11. **Mapping-range and trap-finding modifiers** from items, tomes, and classes — the baseline map is never gated, but the extension mechanism is unspecified.

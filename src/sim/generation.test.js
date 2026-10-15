@@ -5,7 +5,6 @@ import {
   isEdgeOpen,
   EdgeKind,
   TileFeature,
-  LightLevel,
   Direction,
   contains,
 } from './floor.js';
@@ -389,15 +388,6 @@ describe('placement', () => {
       expect(floor.traps.length).toBeGreaterThanOrEqual(ARCH.traps.min);
       expect(floor.traps.length).toBeLessThanOrEqual(ARCH.traps.max);
     }
-  });
-
-  // @spec GEN-PLACE-005
-  it('leaves tiles dark except the rooms the archetype lights', () => {
-    const floor = generateFloor({ id: 'f', seed: 5, archetype: { ...ARCH, litRooms: 0 } });
-    expect(floor.tiles.every((t) => t.intrinsicLight === LightLevel.DARK)).toBe(true);
-
-    const lit = generateFloor({ id: 'f', seed: 5, archetype: { ...ARCH, litRooms: 2 } });
-    expect(lit.tiles.some((t) => t.intrinsicLight !== LightLevel.DARK)).toBe(true);
   });
 });
 

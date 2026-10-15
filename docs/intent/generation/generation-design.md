@@ -39,7 +39,6 @@ dungeon should not mean changing the generator.
 | Floor layout | walls, doors, secret doors, room shapes | nothing — frozen after creation |
 | Connectors | where stairs and pits sit, and what they point at | exploration decides what taking one does |
 | Traps | where they are laid, once | the trap segment owns detection, disarming, effects |
-| Lighting | the intrinsic light level of each tile | exploration resolves it against carried light |
 | Room contents | what refills a room, and when it is worth refilling | the enemies segment owns the bands it answers with, and everything they do once placed |
 
 ## Determinism
@@ -109,7 +108,7 @@ loop connections are eligible to become secret, and a loop is passed over if mak
 secret would leave the region it serves reachable only through secrets. A secret that
 is the sole way into somewhere is not a secret, it is a wall the party never gets past.
 
-### 6. Connectors, traps, and light
+### 6. Connectors and traps
 
 Stairs and pits are placed on floor tiles away from doorways, so a connector is never
 the tile a party is forced to cross.
@@ -125,9 +124,7 @@ The way back up is not bound by this. It is a fixed point every floor must have 
 arrival to resolve, and a landing that also holds a way onward is a legitimate room
 rather than a degenerate one.
 
-Traps are laid within the archetype's budget, weighted toward corridors and doorways. Intrinsic light is dark by default; an
-archetype may specify lit rooms, and the floor holding the dungeon entrance always
-lights the arrival tile.
+Traps are laid within the archetype's budget, weighted toward corridors and doorways.
 
 ## Archetypes
 
@@ -143,7 +140,6 @@ than values, and generation draws from those ranges.
 | `doorChance` | how often a room threshold becomes a door rather than an open archway |
 | `lockedChance`, `secretChance` | how often a door is locked, and how often a loop connection is secret |
 | `traps` | how many traps to lay, as a range |
-| `litRooms` | how many rooms are intrinsically lit |
 
 An archetype names no absolute coordinates and no specific rooms. A generator that
 needed hand-placed detail to produce a good floor would have failed at its job.
@@ -185,7 +181,7 @@ exists:
 | `RANDOM_ROOM` | a tile drawn from any room on the destination | pits, and later teleports |
 
 Descending a staircase therefore lands the party on the staircase back up, which is
-what makes a descent retraceable. Falling down a pit lands them somewhere in the dark
+what makes a descent retraceable. Falling down a pit lands them somewhere unknown
 with no way back, which is what makes a pit a hazard rather than a shortcut.
 
 Every floor holds at least one upward staircase, so `STAIRS_UP` can always be resolved.

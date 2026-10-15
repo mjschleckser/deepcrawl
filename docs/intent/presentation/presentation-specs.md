@@ -26,9 +26,9 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-VIEW-004**: For each side of a depth the simulation does not report as walled, the system shall draw an opening rather than a panel, so a side passage is visible from the corridor.
 - [x] **PRESENT-VIEW-005**: When the simulation reports the way ahead closed at a depth, the system shall draw a panel closing the corridor at that depth's frame.
 - [x] **PRESENT-VIEW-006**: The system shall draw floor and ceiling bands between each pair of consecutive depth frames.
-- [x] **PRESENT-VIEW-007**: The system shall tint each depth according to the light level the simulation reports for it, drawing nothing for a depth reported as dark.
+- [x] **PRESENT-VIEW-007**: The system shall draw each depth a fixed step darker than the depth nearer to it, by distance alone.
 - [x] **PRESENT-VIEW-008**: The system shall draw the feature the simulation reports at each depth — stairs or a pit — within that depth's band.
-- [x] **PRESENT-VIEW-009**: The system shall draw no depth beyond the maximum the simulation reports, however far the party's light reaches.
+- [x] **PRESENT-VIEW-009**: The system shall draw no depth beyond the maximum the simulation reports, however far the party sees.
 - [x] **PRESENT-VIEW-012**: When the simulation reports a closed door on the edge ahead at a depth, the system shall draw a door panel on that depth's far frame, filled distinguishably from the wall around it and carrying a handle.
 - [x] **PRESENT-VIEW-013**: When the simulation reports an open door on the edge ahead at a depth, the system shall draw that door's frame on that depth's far frame and shall leave what lies beyond it visible through the opening.
 - [x] **PRESENT-VIEW-014**: When the simulation reports a roaming enemy at a depth, the system shall draw a figure standing on the floor at that depth, scaled to that depth's frame.
@@ -41,7 +41,6 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-MAP-003**: When the player toggles the map, the system shall expand a collapsed automap to fill the viewport, and collapse an expanded one.
 - [x] **PRESENT-MAP-004**: The system shall draw the same content expanded as collapsed, differing only in scale.
 - [x] **PRESENT-MAP-005**: While the simulation reports a party position on the automap, the system shall draw a marker showing the party's tile and the direction it faces.
-- [x] **PRESENT-MAP-006**: While the simulation reports no party position (the party stands in the dark), the system shall draw the automap without any party marker, and shall still draw every discovered tile.
 - [x] **PRESENT-MAP-007**: The system shall draw walls, doors, and found secret doors with distinguishable strokes.
 - [x] **PRESENT-MAP-008**: The system shall mark tiles the simulation reports as holding a known trap, and mark stairs and pits distinguishably from one another.
 - [x] **PRESENT-MAP-009**: The system shall draw an enemy marker for each enemy the simulation reports, and for no other position.

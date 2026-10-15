@@ -3,16 +3,13 @@ import {
   createFloor,
   setEdge,
   setTileFeature,
-  setTileLight,
   getEdge,
   getTile,
   isEdgeOpen,
   EdgeKind,
   TileFeature,
-  LightLevel,
   Direction,
 } from './floor.js';
-import { createLightSource } from './light.js';
 import {
   createExploration,
   computeSight,
@@ -22,15 +19,10 @@ import {
   isTrapKnown,
   tickCount,
   partyPosition,
-  lightSources,
-  litSource,
   serialize,
   deserialize,
   Verb,
 } from './exploration.js';
-
-const torch = (over = {}) =>
-  createLightSource({ id: 'a', brightRadius: 1, dimRadius: 4, remainingTicks: 7, lit: true, ...over });
 
 // Two floors, the party on the upper one, having seen a little of it.
 function campaign() {
@@ -41,14 +33,12 @@ function campaign() {
   setTileFeature(upper, 3, 1, TileFeature.STAIRS_DOWN, {
     target: { floorId: 'lower', x: 1, y: 1 },
   });
-  setTileLight(upper, 0, 0, LightLevel.BRIGHT);
 
   const state = createExploration({
     floors: [upper, lower],
     floorId: 'upper',
     tile: { x: 3, y: 3 },
     facing: Direction.NORTH,
-    lightSources: [torch(), torch({ id: 'b', lit: false, remainingTicks: 12 })],
   });
   computeSight(state);
   recordTrapDetected(state, 'upper', 3, 2);
@@ -66,7 +56,7 @@ describe('saving exploration state', () => {
   });
 
   // @spec EXPLORE-SAVE-003
-  it('saves each floor dimensions, depth label, edges, features, and intrinsic light', () => {
+  it('saves each floor dimensions, depth label, edges, and features, and no light', () => {
     const restored = roundTrip(campaign());
     const upper = restored.floors.get('upper');
 
@@ -76,7 +66,7 @@ describe('saving exploration state', () => {
     expect(getEdge(upper, 3, 2, Direction.EAST)).toBe(EdgeKind.DOOR);
     expect(getTile(upper, 3, 1).feature).toBe(TileFeature.STAIRS_DOWN);
     expect(getTile(upper, 3, 1).target).toEqual({ floorId: 'lower', x: 1, y: 1 });
-    expect(getTile(upper, 0, 0).intrinsicLight).toBe(LightLevel.BRIGHT);
+    expect(serialize(campaign()).floors.every((f) => f.tiles.every((t) => !('intrinsicLight' in t)))).toBe(true);
   });
 
   // @spec EXPLORE-SAVE-003
@@ -117,14 +107,22 @@ describe('saving exploration state', () => {
     expect(tickCount(restored)).toBe(tickCount(original));
   });
 
-  // @spec EXPLORE-SAVE-005
-  it('saves each light source separately, with its own fuel and lit state', () => {
-    const restored = roundTrip(campaign());
-    const [a, b] = lightSources(restored);
+  // @spec EXPLORE-SAVE-007
+  it('loads a save that still carries tile light and light sources, ignoring both', () => {
+    const saved = JSON.parse(JSON.stringify(serialize(campaign())));
+    // An earlier version's save: every tile lit or not, and torches in the pack.
+    for (const floor of saved.floors) {
+      floor.tiles = floor.tiles.map((t) => ({ ...t, intrinsicLight: 'DARK' }));
+    }
+    saved.lightSources = [{ id: 'a', brightRadius: 1, dimRadius: 4, remainingTicks: 7, lit: true }];
+    saved.dousedSourceId = null;
 
-    expect(a).toMatchObject({ id: 'a', remainingTicks: 7, lit: true });
-    expect(b).toMatchObject({ id: 'b', remainingTicks: 12, lit: false });
-    expect(litSource(restored).id).toBe('a');
+    const restored = deserialize(saved);
+
+    expect(partyPosition(restored).tile).toEqual({ x: 3, y: 3 });
+    expect(isTileDiscovered(restored, 'upper', 3, 1)).toBe(true);
+    expect(getTile(restored.floors.get('upper'), 3, 1)).not.toHaveProperty('intrinsicLight');
+    expect(restored).not.toHaveProperty('lightSources');
   });
 
   // @spec EXPLORE-SAVE-006

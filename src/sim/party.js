@@ -450,7 +450,7 @@ export function awardEncounter(party, id, { pot, skillsUsed }) {
 
 /**
  * A skill used outside combat. The clock has already charged for it in ticks, and
- * ticks cost food and light, so there is nothing free here either.
+ * ticks cost food, so there is nothing free here either.
  *
  * @spec PARTY-XP-007
  */

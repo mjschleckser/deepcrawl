@@ -43,7 +43,6 @@ function unpackDiscovery(width, height, encoded) {
  * @spec EXPLORE-SAVE-001
  * @spec EXPLORE-SAVE-003
  * @spec EXPLORE-SAVE-004
- * @spec EXPLORE-SAVE-005
  */
 export function serialize(state) {
   const floors = [];
@@ -82,10 +81,8 @@ export function serialize(state) {
     // Secret doors the party has found, and the edges sight has recorded.
     discoveredEdges: [...state.discoveredEdges],
     departedAt: Object.fromEntries(state.departedAt),
-    lightSources: state.lightSources.map((source) => ({ ...source })),
     roamers: state.roamers.map((roamer) => ({ ...roamer })),
     restockMinElapsedTicks: state.restockMinElapsedTicks,
-    dousedSourceId: state.dousedSourceId ?? null,
   };
 }
 
@@ -93,8 +90,12 @@ export function serialize(state) {
  * Rebuild a campaign from a save. Floors are restored exactly as they were laid down,
  * never regenerated from a seed, so a party's own record of a floor still matches it.
  *
+ * A save from an earlier version may still carry tile light levels and light sources.
+ * Neither is read; the save loads as though they were never there.
+ *
  * @spec EXPLORE-SAVE-001
  * @spec EXPLORE-SAVE-002
+ * @spec EXPLORE-SAVE-007
  */
 export function restore(saved, createExploration, floorProvider = null) {
   const floors = saved.floors.map((data) => {
@@ -106,7 +107,7 @@ export function restore(saved, createExploration, floorProvider = null) {
     });
     floor.horizontalEdges = data.horizontalEdges.map((edge) => ({ ...edge }));
     floor.verticalEdges = data.verticalEdges.map((edge) => ({ ...edge }));
-    floor.tiles = data.tiles.map((tile) => ({ ...tile }));
+    floor.tiles = data.tiles.map(({ intrinsicLight, ...tile }) => tile);
     if (data.rooms) floor.rooms = data.rooms;
     if (data.seed !== null && data.seed !== undefined) floor.seed = data.seed;
     return floor;
@@ -119,14 +120,12 @@ export function restore(saved, createExploration, floorProvider = null) {
     tile: saved.party.tile,
     facing: saved.party.facing,
     keys: saved.keys,
-    lightSources: saved.lightSources,
     roamers: saved.roamers,
     restockMinElapsedTicks: saved.restockMinElapsedTicks,
   });
 
   state._advanceTicks(saved.ticks);
   state.discoveredEdges = new Set(saved.discoveredEdges);
-  state.dousedSourceId = saved.dousedSourceId;
   state.departedAt = new Map(Object.entries(saved.departedAt));
 
   for (const floor of floors) {
@@ -138,12 +137,6 @@ export function restore(saved, createExploration, floorProvider = null) {
       state.knownTraps.set(floor.id, new Set(saved.knownTraps[floor.id]));
     }
   }
-
-  // A restored source keeps the lit flag it was saved with, rather than being
-  // re-derived; the party picks up exactly where it put the game down.
-  state.lightSources.forEach((source, i) => {
-    source.lit = saved.lightSources[i].lit;
-  });
 
   return state;
 }

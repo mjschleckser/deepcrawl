@@ -193,8 +193,6 @@ export function giveGround(roamer, floor, party) {
  * slow pursuer rather than merely staying ahead of it.
  *
  * @spec ENEMY-AWARE-001
- * @spec ENEMY-AWARE-002
- * @spec EXPLORE-LIGHT-012
  * @spec ENEMY-AWARE-003
  * @spec ENEMY-AWARE-004
  * @spec ENEMY-AWARE-005
@@ -214,7 +212,7 @@ export function giveTicks(roamer, ticks, { floor, party }) {
 
   const next = { ...roamer, contacted: false };
 
-  // Proximity alone: a torch neither attracts a goblin nor hides the party from one.
+  // Proximity alone, walls or no walls: a roamer can hear a party it cannot see.
   if (chebyshev(next, party) <= NOTICE_RANGE) {
     next.awareness = AWARENESS_TICKS;
   } else if (roamerSees(next, floor, party) && next.awareness > 0) {

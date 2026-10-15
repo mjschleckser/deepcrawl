@@ -11,7 +11,6 @@ import { actionForKey, actionForTouch } from '../sim/input.js';
 import {
   automapView,
   corridorAhead,
-  litSource,
   perform,
   resolveConfirmation,
   setMenuOpen,
@@ -41,7 +40,6 @@ const DECLINE_KEYS = ['Escape'];
  */
 function stateSignature(state) {
   const { floorId, tile, facing } = state.party;
-  const source = litSource(state);
   const discovered = [...state.discoveredTiles.values()].reduce((n, set) => n + set.size, 0);
   return [
     floorId,
@@ -51,7 +49,6 @@ function stateSignature(state) {
     state.ticks,
     discovered,
     state.discoveredEdges.size,
-    source ? `${source.id}:${source.remainingTicks}` : 'dark',
     state.pendingConfirmation ? state.pendingConfirmation.kind : 'none',
   ].join('|');
 }

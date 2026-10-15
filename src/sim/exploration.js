@@ -9,7 +9,6 @@
 import {
   Direction,
   EdgeKind,
-  LightLevel,
   TileFeature,
   FACINGS,
   STEP_DELTA,
@@ -22,14 +21,7 @@ import {
   isStairs,
   openEdge,
 } from './floor.js';
-import {
-  brighter,
-  detectionAt,
-  enemiesVisibleAt,
-  projectedLevel,
-  tileDistance,
-} from './light.js';
-import { hasLineOfSight, isOpaque } from './sight.js';
+import { canSee, isOpaque } from './sight.js';
 import {
   computeSight as runSight,
   isEdgeKnown,
@@ -44,11 +36,12 @@ import { buildAutomapView } from './automap.js';
 import { buildCorridorAhead, MAX_DRAWN_DEPTH } from './firstperson.js';
 import { serialize as serializeState, restore } from './persistence.js';
 
-export { enemiesVisibleAt, detectionAt } from './light.js';
 export { SAVE_VERSION } from './persistence.js';
 export { MAX_DRAWN_DEPTH } from './firstperson.js';
 export { ArrivalRule, generateFloor, generatePlan, DEFAULT_ARCHETYPE } from './generation.js';
-export { isTileDiscovered, isEdgeKnown, isTrapKnown, recordTrapDetected } from './sight.js';
+export {
+  isTileDiscovered, isEdgeKnown, isTrapKnown, recordTrapDetected, SIGHT_RANGE,
+} from './sight.js';
 export { partyStepCost, MIN_STEP_COST, MAX_STEP_COST } from './party.js';
 
 export const Verb = {
@@ -105,7 +98,6 @@ export function createExploration({
   facing = Direction.NORTH,
   hooks = {},
   keys = [],
-  lightSources = [],
   roamers = [],
   stepCost = () => 1,
   restockMinElapsedTicks = DEFAULT_RESTOCK_MIN_ELAPSED_TICKS,
@@ -123,13 +115,8 @@ export function createExploration({
     discoveredEdges: new Set(),
     discoveredTiles: new Map(),
     knownTraps: new Map(),
-    // Only ever one of these is lit; the rest wait their turn in the pack.
-    lightSources: lightSources.map((source) => ({ ...source })),
     // Positions are owned by the roaming-enemy segment; exploration only reads them.
     roamers: roamers.map((roamer) => ({ ...roamer })),
-    dousedSourceId: null,
-    camped: false,
-    litBeforeCamp: null,
     // floorId -> tick at which the party last left it
     departedAt: new Map(),
     pendingConfirmation: null,
@@ -162,136 +149,7 @@ export function createExploration({
     return floor;
   };
 
-  // At most one source burns at a time, however many arrive lit.
-  enforceSingleFlame(state);
-
   return state;
-}
-
-/** @spec EXPLORE-LIGHT-006 */
-function enforceSingleFlame(state) {
-  let found = false;
-  for (const source of state.lightSources) {
-    if (source.lit && !source.spent && !found) {
-      found = true;
-    } else {
-      source.lit = false;
-    }
-  }
-}
-
-export function lightSources(state) {
-  return state.lightSources;
-}
-
-/** @spec EXPLORE-LIGHT-006 */
-export function litSource(state) {
-  return state.lightSources.find((source) => source.lit) ?? null;
-}
-
-export function addLightSource(state, source) {
-  state.lightSources.push({ ...source });
-  enforceSingleFlame(state);
-}
-
-/**
- * Burn the lit source down, and hand off to the next when it is spent.
- *
- * Burnout relights automatically because a party that must re-light by hand every few
- * dozen paces is being charged friction, not tension.
- *
- * @spec EXPLORE-LIGHT-007
- * @spec EXPLORE-LIGHT-008
- */
-function burnLight(state, ticks) {
-  const source = litSource(state);
-  if (!source || source.remainingTicks === null) return;
-
-  source.remainingTicks = Math.max(0, source.remainingTicks - ticks);
-  if (source.remainingTicks > 0) return;
-
-  source.spent = true;
-  source.lit = false;
-  const spare = state.lightSources.find((s) => !s.spent && s.remainingTicks !== 0);
-  if (spare) spare.lit = true;
-}
-
-/**
- * Put the party's light out from the outside — a water attack, say. Deliberately does
- * not reach for a spare: that is the difference between a torch burning out and one
- * being put out, and it is what makes dousing worth an attack.
- *
- * @spec EXPLORE-LIGHT-009
- */
-export function douseLight(state) {
-  const source = litSource(state);
-  if (!source) return null;
-  source.lit = false;
-  state.dousedSourceId = source.id;
-  return source;
-}
-
-/**
- * Relight the same instance that was doused, fuel intact.
- *
- * @spec EXPLORE-LIGHT-013
- */
-function relightSource(state) {
-  const doused = state.lightSources.find(
-    (s) => s.id === state.dousedSourceId && !s.spent,
-  );
-  const source = doused ?? state.lightSources.find((s) => !s.spent);
-  if (!source) return null;
-  source.lit = true;
-  state.dousedSourceId = null;
-  enforceSingleFlame(state);
-  return source;
-}
-
-/**
- * A camp has a fire of its own, so carried light is put out for the duration and the
- * ticks a camp consumes do not burn it.
- *
- * @spec EXPLORE-LIGHT-014
- */
-export function enterCamp(state) {
-  const source = litSource(state);
-  state.litBeforeCamp = source ? source.id : null;
-  for (const s of state.lightSources) s.lit = false;
-  state.camped = true;
-}
-
-/** @spec EXPLORE-LIGHT-015 */
-export function breakCamp(state) {
-  state.camped = false;
-  const previous = state.lightSources.find(
-    (s) => s.id === state.litBeforeCamp && !s.spent,
-  );
-  if (previous) previous.lit = true;
-  state.litBeforeCamp = null;
-  enforceSingleFlame(state);
-}
-
-/**
- * How far the party's own light reaches, which is as far as sight can go.
- */
-function litReach(state) {
-  const source = litSource(state);
-  return source ? source.dimRadius : 0;
-}
-
-/**
- * A tile's light is the brighter of what the dungeon gives it and what the party
- * brings. Light is only ever an improvement.
- *
- * @spec EXPLORE-LIGHT-001
- * @spec EXPLORE-LIGHT-002
- */
-export function resolveTileLight(state, x, y) {
-  const floor = currentFloor(state);
-  const intrinsic = getTile(floor, x, y).intrinsicLight ?? LightLevel.DARK;
-  const distance = tileDistance(state.party.tile, { x, y });
-  return brighter(intrinsic, projectedLevel(distance, litSource(state)));
 }
 
 /**
@@ -299,11 +157,7 @@ export function resolveTileLight(state, x, y) {
  * @spec EXPLORE-SIGHT-003
  */
 export function computeSight(state) {
-  return runSight(state, {
-    resolveLight: (x, y) => resolveTileLight(state, x, y),
-    litReach: () => Math.max(litReach(state), maxIntrinsicReach(state)),
-    enemiesVisibleAt,
-  });
+  return runSight(state);
 }
 
 /**
@@ -314,14 +168,7 @@ export function computeSight(state) {
  */
 export function automapView(state) {
   const floor = state.getFloor(state.party.floorId);
-  return buildAutomapView(state, {
-    resolveLight: (x, y) => resolveTileLight(state, x, y),
-    enemiesVisibleAt,
-    // Light pools by distance and knows nothing of walls, so brightness alone would
-    // show a warband standing in torchlight on the far side of solid stone.
-    inLineOfSight: (x, y) =>
-      hasLineOfSight(state.discoveredEdges, floor, state.party.tile, { x, y }),
-  });
+  return buildAutomapView(state, { canSee: (x, y) => canSee(state, floor, x, y) });
 }
 
 /**
@@ -334,8 +181,7 @@ export function corridorAhead(state, maxDepth = MAX_DRAWN_DEPTH) {
   return buildCorridorAhead(state, {
     isOpaque: (floor, x, y, dir) => isOpaque(state.discoveredEdges, floor, x, y, dir),
     portalAt: (floor, x, y, dir) => visiblePortal(state, floor, x, y, dir),
-    resolveLight: (x, y) => resolveTileLight(state, x, y),
-    enemiesVisibleAt,
+    canSee: (x, y) => canSee(state, state.getFloor(state.party.floorId), x, y),
     maxDepth,
   });
 }
@@ -353,15 +199,6 @@ export function serialize(state) {
  */
 export function deserialize(saved, { floorProvider = null } = {}) {
   return restore(saved, createExploration, floorProvider);
-}
-
-/**
- * A party with no light of its own can still see down a corridor the dungeon lights,
- * so sight cannot be bounded by the torch alone.
- */
-function maxIntrinsicReach(state) {
-  const floor = currentFloor(state);
-  return Math.max(floor.width, floor.height);
 }
 
 export function tickCount(state) {
@@ -476,7 +313,6 @@ function visiblePortal(state, floor, x, y, direction) {
 function advance(state, n) {
   if (state.combatActive || state.menuOpen || n <= 0) return 0;
   state._advanceTicks(n);
-  burnLight(state, n);
   state.hooks.onTick(n);
   return n;
 }
@@ -558,8 +394,6 @@ function maybeRestock(state, events) {
 /**
  * Everything a successful step sets off, in the one order the design fixes.
  *
- * Two orderings are load-bearing. The clock advances before sight is recomputed, so a
- * light source that expires on this step is already spent when the party looks around.
  * Roamers move after discovery, so the party sees the tile as it was on arrival.
  *
  * @spec EXPLORE-MOVE-008
@@ -778,7 +612,7 @@ function partyAction(state, action, commit) {
     const { x, y } = state.party.tile;
     state.hooks.onTrapDetect({
       floorId: state.party.floorId,
-      tiles: [{ x, y, level: resolveTileLight(state, x, y) }],
+      tiles: [{ x, y }],
       deliberate: true,
     });
   }
@@ -794,25 +628,12 @@ function partyAction(state, action, commit) {
  *
  * @spec EXPLORE-MOVE-001
  * @spec EXPLORE-ACTION-006
- * @spec EXPLORE-CLOCK-003
  * @spec EXPLORE-CLOCK-006
- * @spec EXPLORE-LIGHT-010
  */
 export function perform(state, action) {
   // Exploration does not accept input during a fight; combat owns the party then.
   if (state.combatActive && (action.verb || action.partyAction)) {
     return { rejected: true, blocked: false, events: [] };
-  }
-
-  if (action.relight) {
-    // A tick during exploration, a character's action during combat. Either way the
-    // party pays for having its light put out.
-    const source = relightSource(state);
-    if (state.combatActive) {
-      return { relit: Boolean(source), consumedAction: true, events: [] };
-    }
-    advance(state, 1);
-    return { relit: Boolean(source), events: [] };
   }
 
   if (action.verb === Verb.STEP_FORWARD) return takeStep(state, state.party.facing);

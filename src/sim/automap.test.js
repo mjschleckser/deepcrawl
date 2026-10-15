@@ -8,7 +8,6 @@ import {
   TileFeature,
   Direction,
 } from './floor.js';
-import { createLightSource } from './light.js';
 import {
   createExploration,
   computeSight,
@@ -18,18 +17,24 @@ import {
   partyPosition,
 } from './exploration.js';
 
-const lantern = (over = {}) =>
-  createLightSource({ id: 'l', brightRadius: 1, dimRadius: 4, remainingTicks: 99, lit: true, ...over });
-
-function scene({ sources = [lantern()], roamers = [], facing = Direction.NORTH } = {}) {
+function scene({ roamers = [], facing = Direction.NORTH } = {}) {
   const floor = createFloor({ id: 'f1', width: 7, height: 7 });
   const state = createExploration({
     floors: [floor],
     floorId: 'f1',
     tile: { x: 3, y: 3 },
     facing,
-    lightSources: sources,
     roamers,
+  });
+  return { floor, state };
+}
+
+/** A 13x13 floor with the party at its centre and one roamer standing at a given tile. */
+function wide(at) {
+  const floor = createFloor({ id: 'f1', width: 13, height: 13 });
+  const state = createExploration({
+    floors: [floor], floorId: 'f1', tile: { x: 6, y: 6 }, facing: Direction.NORTH,
+    roamers: [{ id: 'r1', floorId: 'f1', ...at }],
   });
   return { floor, state };
 }
@@ -124,7 +129,7 @@ describe('what the automap draws', () => {
 
   // @spec EXPLORE-MAP-008
   it('needs no item, spell, or class to be available', () => {
-    const { state } = scene({ sources: [] });
+    const { state } = scene();
     computeSight(state);
 
     // A party carrying nothing at all still gets a map of what it has seen.
@@ -133,30 +138,6 @@ describe('what the automap draws', () => {
 });
 
 describe('the party marker', () => {
-  // @spec EXPLORE-MAP-007
-  it('draws the party tile and facing while the party can see', () => {
-    const { state } = scene({ facing: Direction.EAST });
-    computeSight(state);
-
-    expect(automapView(state).party).toEqual({ x: 3, y: 3, facing: Direction.EAST });
-  });
-
-  // @spec EXPLORE-MAP-006
-  it('drops the party marker in the dark, while keeping the map readable', () => {
-    const { state } = scene();
-    computeSight(state); // map some ground while lit
-
-    const litView = automapView(state);
-    expect(litView.party).not.toBeNull();
-
-    state.lightSources[0].lit = false;
-    const darkView = automapView(state);
-
-    // The record of where the party has been survives; knowing where it stands does not.
-    expect(darkView.party).toBeNull();
-    expect(darkView.tiles.length).toBe(litView.tiles.length);
-  });
-
   // @spec EXPLORE-MAP-009
   it('always agrees with the party position the rest of the simulation reports', () => {
     const { state } = scene({ facing: Direction.SOUTH });
@@ -171,18 +152,19 @@ describe('the party marker', () => {
 
 describe('roaming enemies on the map', () => {
   // @spec EXPLORE-MAP-004
-  it('draws an enemy standing in bright light', () => {
-    // (3,2) is adjacent to the party, inside the lantern bright ring.
-    const { state } = scene({ roamers: [{ id: 'r1', floorId: 'f1', x: 3, y: 2 }] });
-    computeSight(state);
+  it('draws an enemy anywhere within four tiles with nothing between', () => {
+    const near = scene({ roamers: [{ id: 'r1', floorId: 'f1', x: 3, y: 2 }] }).state;
+    const far = wide({ x: 6, y: 2 }).state; // four tiles off
+    computeSight(near);
+    computeSight(far);
 
-    expect(automapView(state).enemies).toEqual([{ id: 'r1', x: 3, y: 2 }]);
+    expect(automapView(near).enemies).toEqual([{ id: 'r1', x: 3, y: 2 }]);
+    expect(automapView(far).enemies).toEqual([{ id: 'r1', x: 6, y: 2 }]);
   });
 
   // @spec EXPLORE-MAP-005
-  it('draws no enemy standing in dim light', () => {
-    // (3,0) is three away: inside the dim radius, outside the bright one.
-    const { state } = scene({ roamers: [{ id: 'r1', floorId: 'f1', x: 3, y: 0 }] });
+  it('draws no enemy more than four tiles away', () => {
+    const { state } = wide({ x: 6, y: 1 }); // five tiles off
     computeSight(state);
 
     expect(automapView(state).enemies).toEqual([]);
@@ -190,18 +172,17 @@ describe('roaming enemies on the map', () => {
 
   // @spec EXPLORE-MAP-005
   it('draws no enemy the party can no longer see, not even where it last stood', () => {
-    const { state } = scene({ roamers: [{ id: 'r1', floorId: 'f1', x: 3, y: 2 }] });
+    const { state } = wide({ x: 6, y: 4 });
     computeSight(state);
     expect(automapView(state).enemies).toHaveLength(1);
 
-    state.lightSources[0].lit = false;
+    state.roamers[0].y = 0; // walked out of sight
 
     expect(automapView(state).enemies).toEqual([]);
   });
-
   // @spec EXPLORE-MAP-012
-  it('draws no enemy standing behind a wall, however bright its tile', () => {
-    // (3,2) is adjacent and lit, but the party is looking at the wall between them.
+  it('draws no enemy standing behind a wall, however close', () => {
+    // (3,2) is adjacent, but the party is looking at the wall between them.
     const { floor, state } = scene({ roamers: [{ id: 'r1', floorId: 'f1', x: 3, y: 2 }] });
     setEdge(floor, 3, 3, Direction.NORTH, EdgeKind.WALL);
     computeSight(state);
@@ -223,7 +204,7 @@ describe('roaming enemies on the map', () => {
 
   // @spec EXPLORE-MAP-013
   it('draws an enemy standing behind the party, which sight never had to reach', () => {
-    // (3,4) is at the party's back: outside the sight cone, inside the lantern.
+    // (3,4) is at the party's back: outside the sight cone, inside the sight range.
     const { state } = scene({ roamers: [{ id: 'r1', floorId: 'f1', x: 3, y: 4 }] });
     computeSight(state);
 

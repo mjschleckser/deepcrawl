@@ -7,7 +7,7 @@
  */
 
 import {
-  Direction, EdgeKind, LightLevel, edgeDetail, edgeKey, getTile, isEdgeOpen,
+  Direction, EdgeKind, edgeDetail, edgeKey, getTile, isEdgeOpen,
 } from './floor.js';
 
 const ALL_DIRECTIONS = Object.values(Direction);
@@ -42,8 +42,6 @@ function drawnEdge(state, floor, x, y, direction) {
  * @spec EXPLORE-MAP-002
  * @spec EXPLORE-MAP-004
  * @spec EXPLORE-MAP-005
- * @spec EXPLORE-MAP-006
- * @spec EXPLORE-MAP-007
  * @spec EXPLORE-MAP-008
  * @spec EXPLORE-MAP-012
  * @spec EXPLORE-MAP-013
@@ -51,7 +49,7 @@ function drawnEdge(state, floor, x, y, direction) {
  */
 export function buildAutomapView(
   state,
-  { resolveLight, enemiesVisibleAt, inLineOfSight = () => true },
+  { canSee = () => true } = {},
 ) {
   const floor = state.getFloor(state.party.floorId);
   const discovered = state.discoveredTiles.get(floor.id) ?? new Set();
@@ -72,23 +70,14 @@ export function buildAutomapView(
   }
   tiles.sort((a, b) => a.y - b.y || a.x - b.x);
 
-  // The record of where the party has been is never lost; knowing where it currently
-  // stands is something light has to buy back.
-  const standingIn = resolveLight(state.party.tile.x, state.party.tile.y);
-  const party =
-    standingIn === LightLevel.DARK
-      ? null
-      : { ...state.party.tile, facing: state.party.facing };
+  const party = { ...state.party.tile, facing: state.party.facing };
 
   // An enemy appears only where the party can presently see it — never at a position
-  // where it was last spotted, which would hand over what carrying light is meant to
-  // buy. Seeing takes both halves: light enough to pick one out, and nothing opaque in
-  // between. Facing is not one of them; a roamer at the party's back is still in front
-  // of their eyes the moment they turn.
+  // where it was last spotted, which would hand over where a warband is without the
+  // party having looked.
   const enemies = state.roamers
     .filter((roamer) => roamer.floorId === floor.id)
-    .filter((roamer) => enemiesVisibleAt(resolveLight(roamer.x, roamer.y)))
-    .filter((roamer) => inLineOfSight(roamer.x, roamer.y))
+    .filter((roamer) => canSee(roamer.x, roamer.y))
     .map(({ id, x, y }) => ({ id, x, y }));
 
   return { floorId: floor.id, width: floor.width, height: floor.height, tiles, party, enemies };

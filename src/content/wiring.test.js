@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { LightLevel, STEP_DELTA, EdgeKind, setEdge, isEdgeOpen } from '../sim/floor.js';
+import { STEP_DELTA, EdgeKind, setEdge, isEdgeOpen } from '../sim/floor.js';
 import { makeRng } from '../sim/rng.js';
 import {
   computeSight, perform, partyPosition, tickCount, isTileDiscovered, isTrapKnown,
@@ -150,12 +150,12 @@ describe('walking into a warband', () => {
   });
 
   // @spec EXPLORE-BOUND-002
-  it('hands combat the enemy group and the light, and nothing about who noticed whom', () => {
+  it('hands combat the enemy group and where the fight began, and nothing more', () => {
     const campaign = booted();
     stepIntoContact(campaign);
 
     const encounter = campaign.encounter;
-    expect(Object.values(LightLevel)).toContain(encounter.light);
+    expect(encounter).not.toHaveProperty('light');
     expect(encounter.enemies.members.length).toBeGreaterThan(0);
     expect(encounter.awareness).toBeUndefined();
     expect(encounter.surprisedSide).toBeUndefined();

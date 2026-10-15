@@ -25,7 +25,7 @@ they are. This is why class can change and skill cannot be undone.
 
 **Advancement always costs something scarce.** In combat the clock is stopped, so
 advancement is bounded by what the enemy was worth. Outside it the clock runs, so
-training costs ticks, and ticks cost food and light. There is no action in the game
+training costs ticks, and ticks cost food. There is no action in the game
 that improves a character for free, because an action that did would become the only
 action worth taking.
 
@@ -114,7 +114,7 @@ passive. Skills are grouped for presentation only; nothing depends on the groupi
 | Survival | Cartography, Cooking, Foraging |
 
 Several of these are the missing owners of behaviour other segments already describe.
-**Alteration** owns the light spell exploration has been designing around. **Restoration**
+**Restoration**
 owns resurrection, which the death chain below requires. **Detection** owns trap and
 secret-door finding, which exploration has been calling into a segment that did not
 exist. **Cartography** owns mapping range, deferred in exploration since sight was
@@ -168,7 +168,7 @@ That leaves it available to a party that is underlevelled or rebuilding after a
 disaster, which is when it should be available.
 
 Outside combat a skill advances through use, bounded by the clock: searching, cooking
-and mapping all cost ticks, and ticks cost food and light.
+and mapping all cost ticks, and ticks cost food.
 
 #### What a rank costs
 

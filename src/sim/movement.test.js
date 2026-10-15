@@ -8,7 +8,6 @@ import {
   TileFeature,
   Direction,
 } from './floor.js';
-import { createLightSource } from './light.js';
 import {
   createExploration,
   perform,
@@ -35,7 +34,6 @@ function exploration(floors, opts = {}) {
     facing: opts.facing ?? Direction.NORTH,
     hooks: opts.hooks,
     keys: opts.keys,
-    lightSources: opts.lightSources,
   });
 }
 
@@ -599,10 +597,7 @@ describe('stepping into something', () => {
     const floor = openFloor();
     setEdge(floor, 1, 1, Direction.NORTH, EdgeKind.DOOR);
     const hooks = occupiedAhead();
-    const state = exploration([floor], {
-      hooks,
-      lightSources: [createLightSource({ id: 'torch', brightRadius: 2, dimRadius: 4, remainingTicks: 99, lit: true })],
-    });
+    const state = exploration([floor], { hooks });
 
     perform(state, { verb: Verb.STEP_FORWARD });
 

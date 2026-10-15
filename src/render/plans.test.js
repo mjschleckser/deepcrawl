@@ -1,16 +1,16 @@
 import { describe, it, expect } from 'vitest';
-import { LightLevel, TileFeature, EdgeKind, Direction } from '../sim/floor.js';
+import { TileFeature, EdgeKind, Direction } from '../sim/floor.js';
 import {
   depthFrames, tapRegionsFor, hitTest, TouchLayout, contentColumn, Anchor,
 } from './geometry.js';
-import { buildViewPlan } from './viewplan.js';
+import { buildViewPlan, shadeAt } from './viewplan.js';
+import { shade } from './appconfig.js';
 import { buildMapPlan } from './mapplan.js';
 
 const viewport = { width: 800, height: 600 };
 
 const slice = (over = {}) => ({
   depth: 0,
-  level: LightLevel.BRIGHT,
   feature: TileFeature.NONE,
   walledLeft: true,
   walledRight: true,
@@ -109,27 +109,21 @@ describe('the first-person draw plan', () => {
   });
 
   // @spec PRESENT-VIEW-007
-  it('carries the light level of its depth on every shape', () => {
-    const plan = buildViewPlan(
-      [slice({ depth: 0, level: LightLevel.BRIGHT }), slice({ depth: 1, level: LightLevel.DIM })],
-      viewport,
-    );
+  it('shades every shape by its depth alone, a fixed step darker each depth further', () => {
+    const plan = buildViewPlan([0, 1, 2, 3, 4, 5, 6].map((depth) => slice({ depth })), viewport);
 
-    for (const shape of plan.shapes) {
-      expect([LightLevel.BRIGHT, LightLevel.DIM]).toContain(shape.level);
-    }
-    expect(plan.shapes.filter((s) => s.depth === 1).every((s) => s.level === LightLevel.DIM)).toBe(true);
+    for (const shape of plan.shapes) expect(shape.shade).toBe(shadeAt(shape.depth));
+    const steps = [1, 2, 3, 4, 5, 6].map((d) => shadeAt(d - 1) - shadeAt(d));
+    for (const step of steps) expect(step).toBeCloseTo(steps[0]);
+    expect(shadeAt(0)).toBe(1);
+    expect(shadeAt(6)).toBeGreaterThan(0);
   });
 
   // @spec PRESENT-VIEW-007
-  it('draws nothing for a depth reported dark, beyond the boundary itself', () => {
-    const plan = buildViewPlan(
-      [slice({ depth: 0 }), slice({ depth: 1, level: LightLevel.DARK })],
-      viewport,
-    );
-
-    expect(plan.shapes.some((s) => s.depth === 1 && s.kind !== 'darkness')).toBe(false);
-    expect(kinds(plan, 'darkness')).toHaveLength(1);
+  it('darkens a colour in proportion, leaving it untouched at full shade', () => {
+    expect(shade(0x6b5640, 1)).toBe(0x6b5640);
+    expect(shade(0x6b5640, 0)).toBe(0x000000);
+    expect(shade(0x804020, 0.5)).toBe(0x402010);
   });
 
   // @spec PRESENT-VIEW-008
@@ -298,14 +292,6 @@ describe('the automap draw plan', () => {
     const plan = buildMapPlan(view, viewport, { expanded: false });
 
     expect(plan.party).toMatchObject({ x: 1, y: 1, facing: Direction.NORTH });
-  });
-
-  // @spec PRESENT-MAP-006
-  it('drops the party marker in the dark while keeping every discovered cell', () => {
-    const plan = buildMapPlan({ ...view, party: null }, viewport, { expanded: false });
-
-    expect(plan.party).toBeNull();
-    expect(plan.cells).toHaveLength(2);
   });
 
   // @spec PRESENT-MAP-007

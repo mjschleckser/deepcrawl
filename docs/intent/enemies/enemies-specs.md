@@ -31,7 +31,6 @@ are fed into.
 ## Awareness
 
 - [x] **ENEMY-AWARE-001**: When the party comes within a roamer's notice range, the system shall make that roamer aware.
-- [x] **ENEMY-AWARE-002**: The system shall not vary a roamer's awareness with the party's light level.
 - [x] **ENEMY-AWARE-003**: While the party stands in a roamer's line of sight, the system shall hold that roamer's awareness at full rather than letting it decay.
 - [x] **ENEMY-AWARE-004**: While the party is out of a roamer's line of sight, the system shall decay that roamer's awareness by the ticks that pass.
 - [x] **ENEMY-AWARE-005**: When a roamer's awareness has fully decayed, the system shall return it to unaware.

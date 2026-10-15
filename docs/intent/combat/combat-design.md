@@ -32,7 +32,7 @@ turn the player did not get to play, and combat is short enough that losing one 
 out of proportion to its arithmetic.
 
 **Nothing accrues for staying longer.** The exploration clock is stopped, so hunger
-does not advance and torches do not burn. That is a constraint on this segment rather
+does not advance. That is a constraint on this segment rather
 than a licence: nothing here may regenerate, recharge, or accumulate as the fight's own
 time passes, and the encounter pot is fixed by the enemies rather than by how long the
 fight ran.
@@ -50,8 +50,8 @@ exploration hands over ──▶ opening draw ──▶ ACT ──▶ … ──
                         somebody is ready   └──┘  alone, and spends the bar
 ```
 
-Exploration begins an encounter with a payload naming the enemy group and the light
-level of the tile it began on. Combat runs until one
+Exploration begins an encounter with a payload naming the enemy group and the floor
+and tile it began on. Combat runs until one
 side is finished or the party escapes, then reports the outcome and the experience pot
 back.
 
@@ -114,7 +114,7 @@ plain arithmetic of Dexterity, so a quick combatant handed a low opening still o
 a slow one handed a high one, and the fight remains readable off the bars.
 
 **Nothing about how the two sides met changes the draw.** There is no surprise and no
-ambush: which side noticed the other first, the light, and the direction either came
+ambush: which side noticed the other first and the direction either came
 from all leave the opening exactly as drawn. Who acts first is the draw's and
 Dexterity's to decide, and nothing in the corridor outside reaches in.
 
@@ -231,7 +231,6 @@ made.
 | Attack | a full bar | the attack carried by the combatant, until weapons carry it instead |
 | Cast | a full bar, and a spell slot of that rank | |
 | Use ability | a full bar | unlocked by a skill rank |
-| Relight | a full bar | a doused light source, per exploration |
 | Flee | a full bar, of the character who attempts it | resolved for the whole party; see below |
 
 A combatant acts when their bar is full and not otherwise, so how often anyone acts is
@@ -243,7 +242,7 @@ content.
 
 A caster holds a number of slots at each spell rank. Casting spends one of that rank,
 and slots are restored only by sleeping at camp — which costs ticks, and ticks cost
-food and light.
+food.
 
 This is what makes magic an attrition resource rather than a rotation. The question a
 caster faces on the fourth floor is not which spell is optimal but whether this is the
@@ -300,19 +299,6 @@ number, and so the screen can hold one legibly.
 Enemy behaviour is deliberately simple at this stage: pick a standing character and
 attack. Anything cleverer belongs with enemies, which are their own segment.
 
-## Darkness
-
-An encounter carries the light level of the tile it began on, because a fight in the
-dark is a different fight.
-
-Where the party cannot see, attacks suffer a heavy accuracy penalty and a target cannot
-be chosen deliberately — the attacker strikes at whatever is in front of them. A party
-whose last torch failed mid-corridor can still fight, badly, and relighting costs
-someone their action while the fight goes on around them.
-
-Light never helps the enemy. It does not raise the party's chance of being hit and it
-does not make enemies more aware; it only lets the party fight properly.
-
 ## Ending
 
 | Outcome | Condition |
@@ -358,9 +344,6 @@ additional penalty, no free strike for the enemy, and no bar on another characte
 trying the moment they come ready — a party that cannot escape is already in enough
 trouble. One character calls the retreat; the whole party leaves or nobody does.
 
-Fleeing in the dark is allowed. The party came from somewhere and can feel its way back
-whether or not it can see.
-
 ## Decisions & Alternatives
 
 | Decision | Chosen | Alternatives Considered | Rationale |
@@ -386,7 +369,6 @@ whether or not it can see.
 | A combatant with no legal action | Passes, by a press, spending the full bar | Passing automatically, without a press; leaving the turn pending; skipping them without cost | A turn that never resolves stops a fight that has no other way to advance, since the fight's time does not move while anybody stands ready. Passing automatically would be the one turn in the game taken unattended, which is the rule the whole segment is built on. Making the pass a press keeps that rule exact and costs only a control that is almost never drawn. Passing free would make being stripped of options better than acting badly; spending the bar keeps the economy's one rule — a turn costs a bar — with no exception to explain. |
 | Defend as an action | None: there is no Defend | Defend raising defence until that character next acts; a Defend that also drew attacks toward the defender | With no rows and no reach, a defender shields nobody but themselves, so Defend buys one combatant a turn of safety at the cost of a turn of damage while the rest of the fight carries on unchanged. That is a turn spent to make the fight longer, which the *nothing accrues for staying longer* principle already argues against. The interesting version — a guard that covers somebody else — needs a reason one combatant can stand in front of another, which is exactly what this segment does not have. |
 | Standing orders | None: every turn is composed by hand | An ordered rule list proposing an action and a target for the player to confirm; the same list taking its turn on a countdown; weights and scores | Orders were built to spare the player the repetitive nine tenths of an encounter, but the vocabulary they need to be worth having — conditions about status effects, enemy kinds and remaining resources — all wait on systems that do not exist. A rule list that can only say *attack the weakest* saves one press and costs a whole authoring screen, a persisted per-character field, and a second path into every action. Composing each turn by hand is correct while a turn is this small a decision, and orders can return once there is enough in a fight for a rule to be about. |
-| Darkness | Heavy accuracy penalty and no deliberate targeting | Forbidding combat in the dark; no effect | Fighting blind should be possible and awful. Forbidding it would make a failed torch a softlock; ignoring it would make light pointless in the place it matters most. |
 
 ## Open Questions & Future Decisions
 
@@ -411,10 +393,9 @@ whether or not it can see.
 17. ✅ **There is no Defend**, a defender having nobody to stand in front of.
 18. ✅ **There are no standing orders**: every turn is composed by hand.
 19. ✅ **Choosing a target and striking it are one instant**, so no action is ever aimed at something already gone.
-20. ✅ **Darkness penalises accuracy and removes deliberate targeting**, and never helps the enemy.
-21. ✅ **Enemy groups are not capped at the party's four** and hold at most twenty, so a swarm is a shape rather than an unbounded number.
-22. ✅ **Fleeing is one attempt for the whole party**, costing only the bar of the character who attempted it, allowed in the dark, and impossible against something far faster or something that forbids escape.
-23. ✅ **A defeated party stays where it fell**, to be abandoned or recovered by a fresh party.
+20. ✅ **Enemy groups are not capped at the party's four** and hold at most twenty, so a swarm is a shape rather than an unbounded number.
+21. ✅ **Fleeing is one attempt for the whole party**, costing only the bar of the character who attempted it, and impossible against something far faster or something that forbids escape.
+22. ✅ **A defeated party stays where it fell**, to be abandoned or recovered by a fresh party.
 
 ### Deferred
 

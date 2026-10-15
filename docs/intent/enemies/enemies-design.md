@@ -11,7 +11,7 @@ Enemies are what the dungeon is made dangerous with. This segment owns what they
 how they gather into groups, and how they move around a floor before anyone fights
 them.
 
-Three principles shape the design.
+Two principles shape the design.
 
 **A roster is content, not code.** An enemy is a row in a table: some numbers, a role,
 and what it is worth. Adding a goblin shaman is authoring. Nothing in the machinery
@@ -21,12 +21,6 @@ knows what a goblin is, which is what lets the dungeon grow without the systems 
 alone when it is full, may be struck by anybody and may strike anybody. A monster
 exempt from the fight's own rules would quietly undo the thing the whole combat
 design is built on.
-
-**Light never helps them.** A roamer notices the party by proximity, not by seeing
-their torch. That is a hard requirement from the exploration segment, and it has a
-consequence worth keeping: a party in the dark can be hunted down by something it could
-not see but which knew perfectly well where they were. The dark did not attract the
-monster; it only blinded the party.
 
 ## What This Segment Owns
 
@@ -144,12 +138,9 @@ A roamer is a band standing on a tile of a floor, moving as the party moves.
 ### Awareness
 
 A roamer is **unaware** until the party comes within its notice range, and aware
-thereafter. Notice range is a matter of distance alone.
-
-Nothing about the party's light changes this. A torch does not attract a goblin and
-darkness does not hide the party from one. What darkness does is stop the *party*
-seeing the *roamer* — which is exactly the asymmetry that makes losing a torch
-frightening rather than merely inconvenient.
+thereafter. Notice range is a matter of distance alone, walls or no walls, and it is
+the same four tiles the party sees: a roamer can hear a party it cannot see, so the
+first sight of one round a corner may be of something already coming.
 
 **Awareness decays with time, but never while the party is in sight.** A roamer that
 can see the party stays certain of where they are, however long the chase runs. Once
@@ -255,7 +246,7 @@ abilities are all later, and all want a reason more interesting than list order.
 | What role is for | What an enemy fights with, and nothing positional | A field deciding where an enemy stands | There is nowhere to stand: combat has no positions. Role survives because a swordsman and a caster still differ in what they do, what they can be given, and how they are drawn. |
 | Choosing a target | Drawn from every standing character | The first legal target; the weakest character | With everyone reachable, striking the first every time concentrates a whole band on one character by accident of list order, which kills them before the fight is a fight. Aiming at the weakest is a real behaviour worth having, but it belongs with the rest of enemy intelligence rather than arriving as a side effect of removing rows. |
 | Group composition | Named bands with count ranges | Filling an encounter budget from a table | A band is legible: a goblin warband is two to four goblins, and an author can picture it. Budgets are worth having later for variety, but they make it hard to say what any particular fight will be. |
-| Awareness | Proximity alone | Line of sight; noticing the party's light | The exploration segment forbids light affecting enemy awareness. Proximity also produces the asymmetry worth having, where the dark hides the roamer from the party rather than the party from the roamer. |
+| Awareness | Proximity alone | Line of sight, as the party sees | Proximity lets a roamer hear a party it cannot see, so something round a corner can already be coming when the party first lays eyes on it. That keeps corners dangerous, which line of sight on both sides would not. |
 | Contact | Neither side may enter the other's tile; the attempted entry is the encounter | Contact when the two share a tile | Sharing a tile makes a chase unresolvable: a pursuer that follows the party step for step is never escaped, because every attempt to break off ends with it still on top of them. Barring the entry hands the outcome of a chase back to speed. |
 | Pursuit speed | Each side pays its own tick cost to cross a tile | Aware roamers matching the party's pace exactly | Paying separately makes outrunning something a real possibility decided by who the party brought, rather than a chase nobody can ever win. It also makes Dexterity matter in a corridor and not only in a fight. |
 | Awareness decay | Runs down over ticks, and never while the party is in sight | Permanent once gained; decaying on a timer regardless of sight | Permanent awareness means a single goblin band pursues forever. Decaying while visible would let a party escape by walking backwards down a lit corridor. Breaking line of sight is the skill worth rewarding. |
@@ -274,7 +265,7 @@ abilities are all later, and all want a reason more interesting than list order.
 5. ✅ **A band is a named template** with count ranges, drawn from the seed.
 6. ✅ **Enemies fight under the same rules the party does**, reachable by anyone and able to reach anyone.
 7. ✅ **An enemy's target is drawn from every standing character**, never taken by list order.
-8. ✅ **Awareness is proximity alone**, and light never affects it.
+8. ✅ **Awareness is proximity alone.**
 9. ✅ **Awareness decays over ticks**, but never while the party is in the roamer's line of sight.
 10. ✅ **A successful escape from combat leaves the roamer unaware**, so fleeing buys something real.
 11. ✅ **Every roamer pays its own tick cost to cross a tile**, so a faster party can outrun a slower pursuer.
@@ -294,4 +285,4 @@ abilities are all later, and all want a reason more interesting than list order.
 ## References
 
 - `docs/intent/combat/combat-design.md` — the readiness, targeting, and pot these enemies feed.
-- `docs/intent/exploration/exploration-design.md` — the tick that moves a roamer, the re-stocking it serves, and the rule that light must never help it.
+- `docs/intent/exploration/exploration-design.md` — the tick that moves a roamer, the re-stocking it serves.

@@ -46,8 +46,6 @@ guarantees it with.
 - [x] **GEN-PLACE-009**: When a floor has more ways down than rooms, the system shall place one in each room and no more.
 - [x] **GEN-PLACE-003**: The system shall lay traps numbering within the archetype's trap range.
 - [ ] **GEN-PLACE-004**: The system shall lay every trap at generation, and shall neither add nor remove a trap on a floor thereafter.
-- [x] **GEN-PLACE-005**: The system shall set every tile's intrinsic light to dark, except the rooms the archetype marks lit.
-- [x] **GEN-PLACE-006**: The system shall light the arrival tile of the floor holding the dungeon entrance.
 
 ## The dungeon plan
 

@@ -4,7 +4,6 @@ import { versionStamp, MIN_TAP_PX } from './geometry.js';
 import { createController, layers } from './controller.js';
 import { createExploration } from '../sim/exploration.js';
 import { createFloor, Direction } from '../sim/floor.js';
-import { createLightSource } from '../sim/light.js';
 
 const viewport = { width: 800, height: 600 };
 
@@ -97,7 +96,6 @@ describe('the stamp on a drawn screen', () => {
     const floor = createFloor({ id: 'f1', width: 7, height: 7 });
     const state = createExploration({
       floors: [floor], floorId: 'f1', tile: { x: 3, y: 3 }, facing: Direction.NORTH,
-      lightSources: [createLightSource({ id: 'l', brightRadius: 1, dimRadius: 4, remainingTicks: 99, lit: true })],
     });
     return createController({ state, viewport, onDraw: () => {} });
   }

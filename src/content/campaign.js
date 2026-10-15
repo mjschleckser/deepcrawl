@@ -6,12 +6,10 @@
  * through a hook handed to it here, and none of them import each other.
  */
 
-import { setTileLight, LightLevel } from '../sim/floor.js';
-import { createLightSource } from '../sim/light.js';
 import { makeRng } from '../sim/rng.js';
 import {
   createExploration, generateFloor, generatePlan, resolveArrival,
-  resolveTileLight, setCombatActive,
+  setCombatActive,
 } from '../sim/exploration.js';
 import {
   Attribute, createParty, addCharacter, awardEncounter, partyStepCost,
@@ -147,11 +145,9 @@ export function createCampaign({ seed = Date.now() >>> 0 } = {}) {
       : state.roamers.find((r) => r.floorId === floorId && r.contacted);
     if (!met) return;
 
-    const light = resolveTileLight(state, tile.x, tile.y);
     campaign.encounter = beginEncounter({
       party: campaign.party,
       enemies: toEnemyGroup(met.band),
-      light,
       rng: makeRng(rng.int(1, 1e9)),
       origin: { floorId, x: tile.x, y: tile.y },
     });
@@ -199,11 +195,6 @@ export function createCampaign({ seed = Date.now() >>> 0 } = {}) {
       isTileOccupied,
       onRestock: ({ floorId, elapsed }) => restockFloor(floorId, elapsed),
     },
-    lightSources: [
-      createLightSource({ id: 'torch-1', brightRadius: 1, dimRadius: 4, remainingTicks: 4000, lit: true }),
-      createLightSource({ id: 'torch-2', brightRadius: 1, dimRadius: 4, remainingTicks: 4000 }),
-      createLightSource({ id: 'torch-3', brightRadius: 1, dimRadius: 4, remainingTicks: 4000 }),
-    ],
   });
   campaign.state = state;
 
@@ -215,10 +206,6 @@ export function createCampaign({ seed = Date.now() >>> 0 } = {}) {
   state.roamers = state.roamers.map((r) =>
     r.floorId === entrance.id ? giveGround(r, entrance, state.party.tile) : r,
   );
-  // The way out is always visible, so losing every torch is a crisis rather than a
-  // dead end.
-  // @spec GEN-PLACE-006
-  setTileLight(entrance, start.x, start.y, LightLevel.DIM);
 
   /**
    * Bank what a won fight taught, and take the warband off the floor.

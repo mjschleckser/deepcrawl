@@ -23,13 +23,12 @@ const orc = (id, dexterity) =>
     attributes: { DEXTERITY: dexterity },
   });
 
-function encounter({ members, enemies, light = 'BRIGHT', seed = 7, ...rest }) {
+function encounter({ members, enemies, seed = 7, ...rest }) {
   const p = createParty();
   for (const m of members) addCharacter(p, m);
   return beginEncounter({
     party: p,
     enemies: createEnemyGroup(enemies),
-    light,
     rng: makeRng(seed),
     origin: { floorId: 'f1', x: 3, y: 4 },
     ...rest,
@@ -78,12 +77,11 @@ describe('where a fight starts', () => {
   });
 
   // @spec COMBAT-SURPRISE-010
-  it('opens the same whatever the light and however the two sides met', () => {
+  it('opens the same however the two sides met', () => {
     const plain = { members: [hero('bram', 12), hero('slow', 3)], enemies: [orc('o1', 10)] };
     for (let seed = 1; seed <= 20; seed++) {
       const drawn = encounter({ ...plain, seed });
       const variants = [
-        encounter({ ...plain, seed, light: 'DARK' }),
         // Whatever a caller says about who noticed whom, nothing reads it.
         encounter({ ...plain, seed, awareness: { party: false, enemies: true } }),
         encounter({ ...plain, seed, awareness: { party: true, enemies: false } }),

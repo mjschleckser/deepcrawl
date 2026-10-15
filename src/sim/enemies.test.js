@@ -137,17 +137,6 @@ describe('awareness', () => {
     expect(isAware(giveTicks(near, 0, { floor, party: { x: 5, y: 6 } }))).toBe(true);
   });
 
-  // @spec ENEMY-AWARE-002
-  // @spec EXPLORE-LIGHT-012
-  it('notices the same whether the party is lit or in pitch dark', () => {
-    const floor = openFloor();
-    const lit = giveTicks(roamerAt(5, 5), 0, { floor, party: { x: 5, y: 6 }, light: 'BRIGHT' });
-    const dark = giveTicks(roamerAt(5, 5), 0, { floor, party: { x: 5, y: 6 }, light: 'DARK' });
-
-    expect(isAware(lit)).toBe(isAware(dark));
-    expect(awarenessOf(lit)).toBe(awarenessOf(dark));
-  });
-
   // @spec ENEMY-AWARE-003
   it('stays certain while the party is in sight, however long the chase runs', () => {
     const floor = openFloor();
@@ -347,12 +336,12 @@ describe('contact', () => {
     expect({ x: moved.x, y: moved.y }).not.toEqual({ x: 5, y: 5 });
   });
 
-  // @spec ENEMY-AWARE-002
-  it('reports an unnoticed roamer as unaware, whatever the light', () => {
+  // @spec ENEMY-AWARE-001
+  it('reports a roamer the party never came near as unaware', () => {
     const floor = openFloor();
     const distant = createRoamer({ id: 'r1', floorId: 'f1', x: 0, y: 0, band: band(), dexterity: 10 });
 
-    expect(isAware(giveTicks(distant, 0, { floor, party: { x: 10, y: 10 }, light: 'DARK' }))).toBe(false);
+    expect(isAware(giveTicks(distant, 0, { floor, party: { x: 10, y: 10 } }))).toBe(false);
   });
 });
 

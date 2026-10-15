@@ -26,11 +26,10 @@ function party(...members) {
 const orc = (id, over = {}) =>
   createEnemy({ id, name: 'Orc', maxHitPoints: 12, potValue: 20, ...over });
 
-function encounter({ members, enemies, light = 'BRIGHT', seed = 7 } = {}) {
+function encounter({ members, enemies, seed = 7 } = {}) {
   return beginEncounter({
     party: party(...members),
     enemies: createEnemyGroup(enemies),
-    light,
     rng: makeRng(seed),
     origin: { floorId: 'f1', x: 3, y: 4 },
   });
@@ -379,42 +378,6 @@ describe('fleeing', () => {
     expect(result.returnTo).toEqual({ floorId: 'f1', x: 3, y: 4 });
     expect(encounterOutcome(state).outcome).toBe(Outcome.ESCAPED);
     expect(encounterOutcome(state).pot).toBeUndefined();
-  });
-
-  // @spec COMBAT-FLEE-006
-  it('can be attempted in the dark on the same terms', () => {
-    const lit = encounter({ members: [hero('a', { attributes: { DEXTERITY: 12 } })], enemies: [orc('o1', { attributes: { DEXTERITY: 4 } })] });
-    const dark = encounter({ members: [hero('a', { attributes: { DEXTERITY: 12 } })], enemies: [orc('o1', { attributes: { DEXTERITY: 4 } })], light: 'DARK' });
-
-    expect(attemptFlee(dark).escaped).toBe(attemptFlee(lit).escaped);
-  });
-});
-
-describe('darkness', () => {
-  // @spec COMBAT-DARK-001
-  it('penalises the party accuracy in the dark', () => {
-    const lit = encounter({ members: [hero('a')], enemies: [orc('o1')] });
-    const dark = encounter({ members: [hero('a')], enemies: [orc('o1')], light: 'DARK' });
-
-    expect(dark.accuracyPenalty).toBeGreaterThan(0);
-    expect(lit.accuracyPenalty).toBe(0);
-  });
-
-  // @spec COMBAT-DARK-002
-  it('takes deliberate target choice away from the party in the dark', () => {
-    const dark = encounter({ members: [hero('a')], enemies: [orc('o1'), orc('o2')], light: 'DARK' });
-
-    expect(dark.deliberateTargeting).toBe(false);
-    expect(encounter({ members: [hero('a')], enemies: [orc('o1')] }).deliberateTargeting).toBe(true);
-  });
-
-  // @spec COMBAT-DARK-003
-  it('gives the enemy nothing for the party being in the dark', () => {
-    const lit = encounter({ members: [hero('a')], enemies: [orc('o1')] });
-    const dark = encounter({ members: [hero('a')], enemies: [orc('o1')], light: 'DARK' });
-
-    expect(dark.enemyAccuracyBonus).toBe(lit.enemyAccuracyBonus);
-    expect(dark.enemyAccuracyBonus).toBe(0);
   });
 });
 

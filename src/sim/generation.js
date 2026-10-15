@@ -10,12 +10,10 @@ import {
   createFloor,
   setEdge,
   setTileFeature,
-  setTileLight,
   getEdge,
   contains,
   Direction,
   EdgeKind,
-  LightLevel,
   TileFeature,
 } from './floor.js';
 import { makeRng, deriveRng } from './rng.js';
@@ -39,7 +37,6 @@ export const DEFAULT_ARCHETYPE = {
   lockedChance: 0.12,
   secretChance: 0.45,
   traps: { min: 3, max: 7 },
-  litRooms: 1,
 };
 
 const STEP = {
@@ -266,7 +263,6 @@ function placeDoors(floor, carved, rng, rooms, junctions, loopEdges, archetype) 
  * @spec GEN-PLACE-008
  * @spec GEN-PLACE-009
  * @spec GEN-PLACE-003
- * @spec GEN-PLACE-005
  */
 export function generateFloor({ id, seed, archetype = DEFAULT_ARCHETYPE, depthLabel = null, links = [] }) {
   const rng = makeRng(seed);
@@ -364,15 +360,6 @@ export function generateFloor({ id, seed, archetype = DEFAULT_ARCHETYPE, depthLa
     const spot = take();
     if (!spot) break;
     traps.push({ x: spot.x, y: spot.y });
-  }
-
-  const litRng = deriveRng(rng);
-  for (const room of litRng.shuffle(rooms).slice(0, archetype.litRooms)) {
-    for (let y = room.y; y < room.y + room.height; y++) {
-      for (let x = room.x; x < room.x + room.width; x++) {
-        setTileLight(floor, x, y, LightLevel.DIM);
-      }
-    }
   }
 
   floor.rooms = rooms;

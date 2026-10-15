@@ -3,13 +3,10 @@ import {
   createFloor,
   setEdge,
   setTileFeature,
-  setTileLight,
   EdgeKind,
   TileFeature,
-  LightLevel,
   Direction,
 } from './floor.js';
-import { createLightSource } from './light.js';
 import {
   createExploration,
   perform,
@@ -19,25 +16,20 @@ import {
   isEdgeKnown,
   recordTrapDetected,
   isTrapKnown,
-  enemiesVisibleAt,
-  detectionAt,
   discoverEdge,
+  SIGHT_RANGE,
   Verb,
   PartyAction,
 } from './exploration.js';
 
-const lantern = (over = {}) =>
-  createLightSource({ id: 'l', brightRadius: 1, dimRadius: 4, remainingTicks: 99, lit: true, ...over });
-
 // 7x7 open floor, party in the middle at (3,3) facing north.
-function scene({ sources = [lantern()], facing = Direction.NORTH, hooks } = {}) {
+function scene({ facing = Direction.NORTH, hooks } = {}) {
   const floor = createFloor({ id: 'f1', width: 7, height: 7 });
   const state = createExploration({
     floors: [floor],
     floorId: 'f1',
     tile: { x: 3, y: 3 },
     facing,
-    lightSources: sources,
     hooks,
   });
   return { floor, state };
@@ -88,6 +80,34 @@ function corridor() {
   }
   return { floor, state };
 }
+
+describe('how far the party sees', () => {
+  // @spec EXPLORE-SIGHT-001
+  it('sees four tiles, diagonals counting as one step, and no further', () => {
+    const floor = createFloor({ id: 'f1', width: 13, height: 13 });
+    const state = createExploration({
+      floors: [floor], floorId: 'f1', tile: { x: 6, y: 10 }, facing: Direction.NORTH,
+    });
+
+    computeSight(state);
+
+    expect(SIGHT_RANGE).toBe(4);
+    expect(isTileDiscovered(state, 'f1', 6, 6)).toBe(true); // four ahead
+    expect(isTileDiscovered(state, 'f1', 6, 5)).toBe(false); // five ahead
+    expect(isTileDiscovered(state, 'f1', 2, 6)).toBe(true); // four along the diagonal
+    expect(isTileDiscovered(state, 'f1', 1, 5)).toBe(false); // five along it
+  });
+
+  // @spec EXPLORE-SIGHT-004
+  it('discovers every tile in reach alike, the far ones as fully as the near', () => {
+    const { state } = scene();
+
+    const result = computeSight(state);
+
+    expect(result.tiles.find((t) => t.x === 3 && t.y === 0)).toEqual({ x: 3, y: 0, feature: TileFeature.NONE });
+    expect(result.tiles.find((t) => t.x === 3 && t.y === 2)).toEqual({ x: 3, y: 2, feature: TileFeature.NONE });
+  });
+});
 
 describe('what blocks sight', () => {
   // @spec EXPLORE-SIGHT-002
@@ -152,7 +172,6 @@ describe('sight does not go round corners', () => {
       floorId: 'f1',
       tile: { x: 3, y: 6 },
       facing: Direction.NORTH,
-      lightSources: [lantern()],
     });
     return { floor, state };
   }
@@ -212,7 +231,7 @@ describe('sight does not go round corners', () => {
 
 describe('discovery', () => {
   // @spec EXPLORE-SIGHT-003
-  it('always sees the occupied tile and its edges when that tile is not dark', () => {
+  it('always sees the occupied tile and its edges', () => {
     const { state } = scene();
 
     computeSight(state);
@@ -245,7 +264,7 @@ describe('discovery', () => {
 
     computeSight(state);
 
-    // Never stood on it, but it is two tiles ahead and lit.
+    // Never stood on it, but it is two tiles ahead.
     expect(isTileDiscovered(state, 'f1', 3, 1)).toBe(true);
   });
 
@@ -272,26 +291,6 @@ describe('discovery', () => {
     expect(isEdgeKnown(state, 'f1', 3, 2, Direction.EAST)).toBe(true);
   });
 
-  // @spec EXPLORE-SIGHT-008
-  it('records nothing at all in the dark', () => {
-    const { state } = scene({ sources: [lantern({ lit: false })] });
-
-    computeSight(state);
-
-    expect(isTileDiscovered(state, 'f1', 3, 3)).toBe(false);
-    expect(isTileDiscovered(state, 'f1', 3, 1)).toBe(false);
-  });
-
-  // @spec EXPLORE-SIGHT-008
-  it('still maps a tile the dungeon lights for itself while the party carries nothing', () => {
-    const { floor, state } = scene({ sources: [] });
-    setTileLight(floor, 3, 3, LightLevel.DIM);
-
-    computeSight(state);
-
-    expect(isTileDiscovered(state, 'f1', 3, 3)).toBe(true);
-  });
-
   // @spec EXPLORE-SIGHT-011
   it('records what a turn reveals, though a turn costs no tick', () => {
     const { state } = scene({ facing: Direction.NORTH });
@@ -314,7 +313,6 @@ describe('discovery', () => {
       floorId: 'upper',
       tile: { x: 3, y: 3 },
       facing: Direction.NORTH,
-      lightSources: [lantern()],
     });
 
     computeSight(state);
@@ -326,35 +324,7 @@ describe('discovery', () => {
   });
 });
 
-describe('what light gates', () => {
-  // @spec EXPLORE-SIGHT-006
-  it('reveals enemies in bright light only', () => {
-    expect(enemiesVisibleAt(LightLevel.BRIGHT)).toBe(true);
-    expect(enemiesVisibleAt(LightLevel.DIM)).toBe(false);
-    expect(enemiesVisibleAt(LightLevel.DARK)).toBe(false);
-  });
-
-  // @spec EXPLORE-SIGHT-006
-  it('marks each visible tile with whether an enemy on it would be seen', () => {
-    const { state } = scene();
-
-    const result = computeSight(state);
-    const adjacent = result.tiles.find((t) => t.x === 3 && t.y === 2);
-    const distant = result.tiles.find((t) => t.x === 3 && t.y === 0);
-
-    expect(adjacent.level).toBe(LightLevel.BRIGHT);
-    expect(adjacent.enemiesVisible).toBe(true);
-    expect(distant.level).toBe(LightLevel.DIM);
-    expect(distant.enemiesVisible).toBe(false);
-  });
-
-  // @spec EXPLORE-SIGHT-007
-  it('penalises trap and secret-door detection in dim light, and forbids it in the dark', () => {
-    expect(detectionAt(LightLevel.BRIGHT)).toEqual({ canDetect: true, penalised: false });
-    expect(detectionAt(LightLevel.DIM)).toEqual({ canDetect: true, penalised: true });
-    expect(detectionAt(LightLevel.DARK)).toEqual({ canDetect: false, penalised: false });
-  });
-
+describe('the trap record', () => {
   // @spec EXPLORE-SIGHT-010
   it('records a trap the trap segment reports, and keeps it', () => {
     const { state } = scene();
@@ -368,7 +338,7 @@ describe('what light gates', () => {
 
 describe('the trap detection boundary', () => {
   // @spec EXPLORE-BOUND-008
-  it('offers each tile sight reached to the trap segment, with its light level', () => {
+  it('offers each tile sight reached to the trap segment', () => {
     const onTrapDetect = vi.fn();
     const { state } = scene({ hooks: { onTrapDetect } });
 
@@ -378,7 +348,7 @@ describe('the trap detection boundary', () => {
       expect.objectContaining({
         floorId: 'f1',
         tiles: expect.arrayContaining([
-          expect.objectContaining({ x: 3, y: 2, level: LightLevel.BRIGHT }),
+          expect.objectContaining({ x: 3, y: 2 }),
         ]),
         deliberate: false,
       }),
@@ -386,7 +356,7 @@ describe('the trap detection boundary', () => {
   });
 
   // @spec EXPLORE-BOUND-007
-  it('offers the searched tile with its light level when the party searches', () => {
+  it('offers the searched tile when the party searches, and nothing else', () => {
     const onTrapDetect = vi.fn();
     const { state } = scene({ hooks: { onTrapDetect } });
     onTrapDetect.mockClear();
@@ -397,7 +367,7 @@ describe('the trap detection boundary', () => {
       expect.objectContaining({
         floorId: 'f1',
         deliberate: true,
-        tiles: [expect.objectContaining({ x: 3, y: 3, level: LightLevel.BRIGHT })],
+        tiles: [{ x: 3, y: 3 }],
       }),
     );
   });
