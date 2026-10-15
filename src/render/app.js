@@ -145,6 +145,8 @@ function drawMap(container, plan) {
  * @spec PRESENT-CTRL-001
  * @spec PRESENT-CTRL-003
  * @spec PRESENT-CTRL-006
+ * @spec PRESENT-CTRL-007
+ * @spec PRESENT-CTRL-010
  */
 function drawControl(container, control, { alpha = 0.55, scale = 1 } = {}) {
   const ghost = control.kind === 'ZONE';

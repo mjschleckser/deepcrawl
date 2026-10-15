@@ -134,6 +134,7 @@ export function createCampaign({ seed = Date.now() >>> 0 } = {}) {
    * @spec EXPLORE-BOUND-002
    * @spec EXPLORE-BOUND-011
    * @spec ENEMY-CONTACT-001
+   * @spec COMBAT-TIME-012
    */
   function onContactCheck({ floorId, tile, at = null }) {
     const state = campaign.state;

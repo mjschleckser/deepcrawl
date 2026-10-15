@@ -11,7 +11,8 @@ import {
 } from './fight.js';
 import { buildPromptPlan } from './promptplan.js';
 import { createController, pressPointer, layers } from './controller.js';
-import { createExploration } from '../sim/exploration.js';
+import { createExploration, Verb, PartyAction } from '../sim/exploration.js';
+import { boundActions } from '../sim/input.js';
 import { createFloor, Direction } from '../sim/floor.js';
 import { createLightSource } from '../sim/light.js';
 import { readFile } from 'node:fs/promises';
@@ -319,6 +320,20 @@ describe('controls over the dungeon', () => {
     expect(regions).not.toContain('TURN_AROUND');
     expect(regions).toContain('TURN_LEFT');
     expect(regions).toContain('TURN_RIGHT');
+  });
+
+  // @spec EXPLORE-INPUT-004
+  it('reaches every movement verb and party action by touch, by a control or by repeating one', () => {
+    const drawn = new Set(tapRegionsFor(phone).map((r) => r.region));
+    const byTouch = new Set(
+      boundActions().filter((b) => drawn.has(b.region)).map((b) => b.action),
+    );
+    // Turning about is two turns the same way.
+    if (byTouch.has(Verb.TURN_LEFT) || byTouch.has(Verb.TURN_RIGHT)) byTouch.add(Verb.TURN_AROUND);
+
+    for (const action of [...Object.values(Verb), ...Object.values(PartyAction)]) {
+      expect(byTouch).toContain(action);
+    }
   });
 
   // @spec EXPLORE-INPUT-004

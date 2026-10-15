@@ -19,7 +19,7 @@ specs fix the structure those numbers are fed into.
 - [x] **COMBAT-TIME-009**: The system shall resolve one combatant's action completely before another combatant acts.
 - [x] **COMBAT-TIME-010**: The system shall resolve an action's target at the moment that action is taken, so that no action is aimed at a combatant that has since stopped being a legal target.
 - [x] **COMBAT-TIME-011**: The system shall not restore hit points, spell slots, or any other resource because the fight's time has passed.
-- [ ] **COMBAT-TIME-012**: The system shall not advance the exploration clock for any reason while an encounter is running.
+- [x] **COMBAT-TIME-012**: The system shall not advance the exploration clock for any reason while an encounter is running.
 - [x] **COMBAT-TIME-013**: When a combatant stops being able to act, the system shall discard the readiness they had accumulated rather than holding it for their return.
 - [x] **COMBAT-TIME-014**: The system shall not raise the readiness of a combatant unable to act.
 - [x] **COMBAT-TIME-016**: The system shall report which combatant is ready to act without advancing the fight's time.
@@ -41,8 +41,8 @@ specs fix the structure those numbers are fed into.
 - [x] **COMBAT-ATTACK-004**: The system shall deal reduced damage on a graze, full damage on a hit, and increased damage on a crit.
 - [x] **COMBAT-ATTACK-005**: The system shall deal at least one twentieth of an attack's base damage, rounded up and never below one, whenever that attack lands.
 - [x] **COMBAT-ATTACK-006**: The system shall raise the band as the attacker's accuracy rises relative to the target's defence, so that a greater advantage never produces a worse band on the same roll.
-- [ ] **COMBAT-ATTACK-010**: The system shall resolve an attack's band against the target's defence and shall not let the target's armour affect which band the attack falls into.
-- [ ] **COMBAT-ATTACK-012**: The system shall subtract the target's armour from the damage of a landed attack, after the band's multiplier and before the minimum.
+- [x] **COMBAT-ATTACK-010**: The system shall resolve an attack's band against the target's defence and shall not let the target's armour affect which band the attack falls into.
+- [x] **COMBAT-ATTACK-012**: The system shall subtract the target's armour from the damage of a landed attack, after the band's multiplier and before the minimum.
 
 ## Targeting
 

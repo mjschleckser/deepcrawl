@@ -3,7 +3,7 @@ import { LightLevel, STEP_DELTA, EdgeKind, setEdge, isEdgeOpen } from '../sim/fl
 import { makeRng } from '../sim/rng.js';
 import {
   computeSight, perform, partyPosition, tickCount, isTileDiscovered, isTrapKnown,
-  recordTrapDetected, Verb,
+  recordTrapDetected, advanceForCamp, Verb, PartyAction,
 } from '../sim/exploration.js';
 import {
   Attribute, Condition, CharacterClass, Skill, character, roster, skillRank, applyDamage,
@@ -204,6 +204,19 @@ describe('walking into a warband', () => {
 
     expect(campaign.encounter).not.toBeNull();
     expect(isEdgeOpen(floor, state.party.tile.x, state.party.tile.y, state.party.facing)).toBe(true);
+  });
+
+  // @spec COMBAT-TIME-012
+  it('moves the exploration clock for nothing while a fight is on', () => {
+    const campaign = booted();
+    stepIntoContact(campaign);
+    const ticks = tickCount(campaign.state);
+
+    perform(campaign.state, { verb: Verb.STEP_FORWARD });
+    perform(campaign.state, { partyAction: PartyAction.SEARCH, commit: true });
+    advanceForCamp(campaign.state, 5);
+
+    expect(tickCount(campaign.state)).toBe(ticks);
   });
 
   it('stops the party walking while a fight is on', () => {

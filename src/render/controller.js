@@ -56,6 +56,7 @@ function stateSignature(state) {
   ].join('|');
 }
 
+/** @spec PRESENT-SCENE-007 */
 export function createController({ state, viewport, onDraw, campaign = null }) {
   const controller = {
     state, viewport, onDraw, campaign,
@@ -281,6 +282,7 @@ function applyAction(controller, action) {
 
   // The map is the one action that changes how things are drawn rather than what is
   // true, so the controller answers it rather than the simulation.
+  // @spec PRESENT-MAP-003
   if (action.partyAction === PartyAction.TOGGLE_MAP) {
     controller.expanded = !controller.expanded;
     redraw(controller);

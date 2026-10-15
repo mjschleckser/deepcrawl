@@ -76,7 +76,7 @@ tuning the game does not rewrite its specs.
 - [x] **EXPLORE-LIGHT-014**: While the party is camped, the system shall keep every carried light source unlit, so that the ticks a camp consumes do not reduce any source's remaining ticks.
 - [x] **EXPLORE-LIGHT-015**: When the party breaks camp, the system shall relight the source that was lit when camp began, if the party still carries it.
 - [ ] **EXPLORE-LIGHT-011**: The system shall not vary encounter rate with the party's light level.
-- [ ] **EXPLORE-LIGHT-012**: The system shall not vary any enemy's awareness of the party with the party's light level.
+- [x] **EXPLORE-LIGHT-012**: The system shall not vary any enemy's awareness of the party with the party's light level.
 
 ## Sight and discovery
 
@@ -159,7 +159,7 @@ tuning the game does not rewrite its specs.
 ## Input
 
 - [x] **EXPLORE-INPUT-001**: The system shall give every movement verb and every party action — `STEP_FORWARD`, `STEP_BACKWARD`, `TURN_LEFT`, `TURN_RIGHT`, `TURN_AROUND`, `PARTY`, `INVENTORY`, `SPELLS`, `SEARCH`, `INTERACT`, `TOGGLE_MAP` — a keyboard path.
-- [ ] **EXPLORE-INPUT-004**: The system shall leave every movement verb and party action achievable by touch, whether through a control of its own or through repeating another.
+- [x] **EXPLORE-INPUT-004**: The system shall leave every movement verb and party action achievable by touch, whether through a control of its own or through repeating another.
 - [x] **EXPLORE-INPUT-002**: The system shall produce an identical action for a given verb whether it originated from keyboard or from touch.
 - [x] **EXPLORE-INPUT-003**: The system shall not expose to the simulation which input device produced an action.
 

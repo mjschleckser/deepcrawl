@@ -736,6 +736,16 @@ describe('putting something in a slot', () => {
   });
 
   // @spec PARTY-OP-003
+  it('refuses a slot the item does not fit, and changes nothing', () => {
+    const party = partyWith(CharacterClass.FIGHTER);
+
+    expect(equip(party, 'x', sword, Slot.BODY)).toBe(false);
+
+    expect(character(party, 'x').equipment[Slot.BODY]).toBeUndefined();
+    expect(character(party, 'x').equipment[Slot.MAIN_HAND]).toBeUndefined();
+  });
+
+  // @spec PARTY-OP-003
   it('admits the class the item does name', () => {
     const party = partyWith(CharacterClass.FIGHTER);
 

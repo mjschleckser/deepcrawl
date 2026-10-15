@@ -9,7 +9,7 @@ are fed into.
 ## The roster
 
 - [x] **ENEMY-ROSTER-001**: The system shall define each enemy with an id, a name, a role, the six attributes, skill ranks, maximum hit points, an attack, a pot value, and whether it forbids escape.
-- [ ] **ENEMY-ROSTER-002**: The system shall give every enemy exactly one role from: melee, ranged, or caster.
+- [x] **ENEMY-ROSTER-002**: The system shall give every enemy exactly one role from: melee, ranged, or caster.
 - [x] **ENEMY-ROSTER-003**: The system shall give an enemy every field a character has except a class, and shall read the same fields from both wherever a combatant is used.
 - [x] **ENEMY-ROSTER-009**: The system shall give an enemy no class, and shall take its maximum hit points as authored rather than deriving them from a class.
 - [x] **ENEMY-ROSTER-011**: When an enemy's hit points reach zero, the system shall set its condition to `DEAD` rather than to `UNCONSCIOUS`.

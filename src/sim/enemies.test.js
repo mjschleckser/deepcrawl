@@ -138,6 +138,7 @@ describe('awareness', () => {
   });
 
   // @spec ENEMY-AWARE-002
+  // @spec EXPLORE-LIGHT-012
   it('notices the same whether the party is lit or in pitch dark', () => {
     const floor = openFloor();
     const lit = giveTicks(roamerAt(5, 5), 0, { floor, party: { x: 5, y: 6 }, light: 'BRIGHT' });

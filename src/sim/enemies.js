@@ -194,6 +194,7 @@ export function giveGround(roamer, floor, party) {
  *
  * @spec ENEMY-AWARE-001
  * @spec ENEMY-AWARE-002
+ * @spec EXPLORE-LIGHT-012
  * @spec ENEMY-AWARE-003
  * @spec ENEMY-AWARE-004
  * @spec ENEMY-AWARE-005

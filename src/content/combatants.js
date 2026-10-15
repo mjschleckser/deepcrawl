@@ -123,6 +123,8 @@ export function buildEnemy(file, data) {
 
   return createEnemy({
     ...commonFields(file, data),
+    // Exactly one role, and one the roster knows.
+    // @spec ENEMY-ROSTER-002
     role: oneOf(file, 'role', data.role ?? EnemyRole.MELEE, EnemyRole),
     potValue: data.potValue ?? 10,
     forbidsEscape: data.forbidsEscape ?? false,

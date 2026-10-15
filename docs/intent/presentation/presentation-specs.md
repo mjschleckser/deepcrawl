@@ -16,7 +16,7 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-SCENE-005**: If an action changes no simulation state, then the system shall not redraw.
 - [x] **PRESENT-SCENE-010**: The system shall name every layer in every drawing, giving a layer with nothing to show an empty drawing rather than omitting it, so that nothing from a previous drawing can persist.
 - [x] **PRESENT-SCENE-006**: When redrawing a layer, the system shall clear and rebuild it rather than reconciling it against what it drew before.
-- [ ] **PRESENT-SCENE-007**: The system shall hold no copy of game state in the presentation layer, deriving every drawing from simulation state at the moment of drawing, except for a record of events the simulation has already reported and will not report again.
+- [x] **PRESENT-SCENE-007**: The system shall hold no copy of game state in the presentation layer, deriving every drawing from simulation state at the moment of drawing, except for a record of events the simulation has already reported and will not report again.
 
 ## First-person view
 
@@ -38,7 +38,7 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 
 - [x] **PRESENT-MAP-001**: The system shall draw the automap from the simulation's automap view and from no other source.
 - [x] **PRESENT-MAP-002**: While collapsed, the system shall draw the automap as an overlay occupying one corner of the viewport.
-- [ ] **PRESENT-MAP-003**: When the player toggles the map, the system shall expand a collapsed automap to fill the viewport, and collapse an expanded one.
+- [x] **PRESENT-MAP-003**: When the player toggles the map, the system shall expand a collapsed automap to fill the viewport, and collapse an expanded one.
 - [x] **PRESENT-MAP-004**: The system shall draw the same content expanded as collapsed, differing only in scale.
 - [x] **PRESENT-MAP-005**: While the simulation reports a party position on the automap, the system shall draw a marker showing the party's tile and the direction it faces.
 - [x] **PRESENT-MAP-006**: While the simulation reports no party position (the party stands in the dark), the system shall draw the automap without any party marker, and shall still draw every discovered tile.
@@ -68,8 +68,8 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-CTRL-005**: When a pointer press lands on a drawn control, the system shall perform that control's action.
 - [x] **PRESENT-CTRL-006**: The system shall register no input handler on a drawn object, hit-testing the plan instead.
 
-- [ ] **PRESENT-CTRL-007**: The system shall draw a navigation zone as its label alone, without a panel or an outline, while it is not pressed.
-- [ ] **PRESENT-CTRL-010**: The system shall draw a button with a panel and a frame whether or not it is pressed.
+- [x] **PRESENT-CTRL-007**: The system shall draw a navigation zone as its label alone, without a panel or an outline, while it is not pressed.
+- [x] **PRESENT-CTRL-010**: The system shall draw a button with a panel and a frame whether or not it is pressed.
 - [x] **PRESENT-CTRL-011**: The system shall carry on each control which of the two kinds it is, rather than leaving it to be worked out while drawing.
 - [x] **PRESENT-CTRL-012**: The system shall scale drawn controls and their text with the viewport, from the size the phone layout uses up to twice it, and no further.
 - [x] **PRESENT-CTRL-013**: The system shall carry the scale on the plan rather than working it out while drawing.

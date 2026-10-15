@@ -70,7 +70,7 @@ are fed into, never the numbers.
 ## Operations
 
 - [x] **PARTY-OP-001**: When combat or exploration applies damage, the system shall apply it through the party's own operation, enforcing the floor at zero and the condition chain.
-- [ ] **PARTY-OP-003**: When equipment is changed, the system shall refuse a slot the item does not fit and a class that may not wield it.
+- [x] **PARTY-OP-003**: When equipment is changed, the system shall refuse a slot the item does not fit and a class that may not wield it.
 
 ## Persistence
 

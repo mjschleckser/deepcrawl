@@ -26,6 +26,7 @@ export const TouchRegion = {
  * Every action the party has during exploration, with both of its paths.
  *
  * @spec EXPLORE-INPUT-001
+ * @spec EXPLORE-INPUT-004
  */
 const BINDINGS = [
   { action: Verb.STEP_FORWARD, keys: ['w', 'ArrowUp'], region: TouchRegion.FORWARD },
