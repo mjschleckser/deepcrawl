@@ -1,5 +1,4 @@
 import { execSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import { formatVersion } from './src/version.js';
@@ -13,19 +12,13 @@ const git = (command, fallback) => {
   }
 };
 
-const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
-
 /**
  * Stamped into the build so the running game can say which build it is.
  *
  * @spec PRESENT-BUILD-003
  * @spec PRESENT-BUILD-004
  */
-const APP_VERSION = formatVersion({
-  version: pkg.version,
-  commits: Number(git('git rev-list --count HEAD', '0')),
-  sha: git('git rev-parse --short HEAD', ''),
-});
+const APP_VERSION = formatVersion({ commits: git('git rev-list --count HEAD', '0') });
 
 // Base path matches the GitHub Pages project URL: https://<user>.github.io/deepcrawl/
 export default defineConfig({

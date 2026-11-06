@@ -8,18 +8,15 @@
  */
 
 /**
- * `MAJOR.MINOR.PATCH+SHA`, with the commit count as the patch. Every commit therefore
- * ships a version that is new and correctly ordered without anyone raising a number by
- * hand.
+ * `Build 64`, the number being the commit count. Every commit therefore ships a higher
+ * number without anyone raising it by hand. With no count there is no number to claim,
+ * and the stand-in shows instead.
  *
  * @spec PRESENT-BUILD-004
  */
-export function formatVersion({ version = '0.0.0', commits = 0, sha = '' } = {}) {
-  const [major = '0', minor = '0'] = String(version).split('.');
-  const count = Number(commits);
-  const patch = Number.isFinite(count) && count > 0 ? Math.floor(count) : 0;
-  const core = `${major}.${minor}.${patch}`;
-  return sha ? `${core}+${sha}` : core;
+export function formatVersion({ commits = 0 } = {}) {
+  const count = Math.floor(Number(commits));
+  return count > 0 ? `Build ${count}` : '';
 }
 
 /**

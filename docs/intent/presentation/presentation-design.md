@@ -677,11 +677,12 @@ apart. This is a progressive web app, and an installed one goes on serving what 
 already has until it decides otherwise, so the second case is common rather than
 exotic.
 
-The version reads `MAJOR.MINOR.PATCH+SHA`. Major and minor are authored; **the patch is
-the number of commits on the branch**, so every commit ships a version that is both new
-and correctly ordered without anyone remembering to raise it, and the short commit hash
-after it names the exact source. All of it is fixed when the app is built and read from
-a constant — nothing works out a version while drawing.
+The stamp reads `Build 64`. **The build number is the number of commits on the branch**,
+so every commit ships a number that is higher than the last without anyone remembering to
+raise it. One rising number is what makes the question quick to answer: the player
+compares it with the last one they saw, and a higher number is a newer build. It is fixed
+when the app is built and read from a constant — nothing works out a version while
+drawing.
 
 The stamp never sits on top of a control. Where the controls reach that corner it moves
 above them, because it is information for the player who goes looking for it and
@@ -806,7 +807,7 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 | Paging keys | The arrow keys, `A` and `D`, and `1` to `4` | Arrow keys alone; a dedicated pair of keys | `A` and `D` are the turn keys and free while the screen holds the input, so a keyboard player pages without moving their hand. The number keys match how fights already address a slot by number. |
 | Skill progress | A bar of experience toward the next rank under every rank | The rank alone | Progression is spread across skills by a pot split equally, and a bare rank hides which skills a fight is about to pay off. The share is the party segment's to compute, so the screen cannot drift from the rule it shows. |
 | Skills a class cannot train | Drawn, marked as no longer advancing | Hidden; drawn like any other | Hiding them understates a character who changed class, and drawing them plainly promises progress that will never come. |
-| The build stamp | Drawn in the corner of the running game, with the commit count as its patch | A version on an about screen; no version at all; a build date | "It does not work" and "you are looking at a cached build" are the same report without it, and a service worker makes the second common. Taking the patch from the commit count means nobody has to remember to raise a number, and it orders correctly by construction. |
+| The build stamp | Drawn in the corner of the running game, as a build number taken from the commit count | A version on an about screen; no version at all; a build date; a version and commit hash, `MAJOR.MINOR.PATCH+SHA` | "It does not work" and "you are looking at a cached build" are the same report without it, and a service worker makes the second common. Taking the number from the commit count means nobody has to remember to raise it, and it orders correctly by construction. A hash names the exact source but cannot be read as newer or older, and it buries the one digit that changes. |
 | Starter floor | Hand-authored data, deleted when generation lands | Waiting for dungeon generation; generating a floor here | The segment cannot be seen to work without a floor to walk, and building a generator inside the presentation segment would put it in the wrong place permanently. |
 
 ## Open Questions & Future Decisions
@@ -841,7 +842,7 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 26. ✅ **A turn offers a fixed four — Attack, Magic, Inventory, Flee — with whatever cannot be taken drawn greyed and inert** in its own place, keeping its number.
 27. ✅ **The prompt names who is ready to act**, and is absent while nothing waits on the player.
 28. ✅ **Prompts are drawn from the simulation's pending confirmation**, never from the renderer's own flag.
-29. ✅ **The build's version is drawn in the bottom-left corner**, its patch number the commit count, fixed at build time.
+29. ✅ **The build number is drawn in the bottom-left corner**, taken from the commit count and fixed at build time.
 30. ✅ **A hand-authored starter floor** stands in until dungeon generation exists.
 31. ✅ **The party screen is one character a page**, read-only, opened and closed by `PARTY`, holding the input and stopping the clock while open.
 32. ✅ **A skill on the party screen shows its rank and its progress toward the next**, the share computed by the party segment.

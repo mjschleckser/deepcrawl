@@ -81,7 +81,7 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-BUILD-001**: The system shall draw the build's version in the bottom-left corner of the viewport, above every other layer.
 - [x] **PRESENT-BUILD-002**: The system shall place the version stamp clear of everything else the screen draws, moving it above whatever occupies that corner rather than over it.
 - [x] **PRESENT-BUILD-003**: The system shall read the version from a constant fixed when the app was built, rather than deriving one while drawing.
-- [x] **PRESENT-BUILD-004**: The system shall compose the version from the authored major and minor numbers, a patch equal to the number of commits, and the short commit hash.
+- [x] **PRESENT-BUILD-004**: The system shall compose the version as the word `Build` followed by a number equal to the number of commits, and shall compose no version when that number is unavailable.
 - [x] **PRESENT-BUILD-005**: If the build supplied no version, then the system shall draw a stand-in rather than nothing, so that the stamp is never silently absent.
 - [x] **PRESENT-BUILD-006**: The system shall decide the stamp's position in the draw plan rather than while drawing.
 
