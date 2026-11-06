@@ -113,7 +113,7 @@ justification.
 - **Real-time or action combat.** No timing windows, no reaction tests, and no
   clock that advances while the player is deciding. Combat orders its turns by a
   readiness that fills in the fight's own time, but that time stops the moment
-  anyone needs asking — a turn order wearing a bar, never a test of speed.
+  anyone needs asking — a turn order, never a test of speed.
 - **Roguelike run structure.** No permadeath, no run-scoped meta-progression, no
   wiping the save on a party loss.
 - **Positional combat.** There is no battlefield at all: no grid, no rows, no reach.
@@ -188,7 +188,9 @@ flowchart TB
 **Combat.** Party-vs-party resolution, with no position in it: every combatant may
 act on every other, and what a combatant can do is decided by their abilities and
 equipment rather than by where they stand. Owns readiness, targeting, ability
-effects, and damage.
+effects, and damage. Readiness is how the fight decides who acts next; what the player
+reads is the turn order it projects, a queue of who acts in what order, so the
+arithmetic of the bars never has to be watched or waited for.
 
 There is no scheduler above combat and exploration. Each owns its own advance of time
 — exploration the tick, combat the readiness that fills in the fight's own time — and
@@ -248,6 +250,7 @@ work first reaches it rather than all at once.
 | Decision | Alternatives considered | Rationale |
 |---|---|---|
 | Turn-based throughout, with combat's order of acting set by a readiness that fills in the fight's own time | A round in which everyone acts once, resolved in initiative order; real-time action on a live clock | The game is about decisions, not execution, and the simulation has to stay a deterministic state machine testable without a renderer. A readiness bar costs neither: the fight's time advances only between actions, never while a decision is pending, so an hour of thought costs exactly what a second of it costs. A round in which everyone acts once would make a quick character and a slow one differ only in who moves first, wasting the attribute that decides speed everywhere else in the game. |
+| The order of acting is shown as a queue of upcoming turns, projected from readiness | A readiness bar on every combatant, filling on screen; true rounds with a fixed order, as Baldur's Gate 3 and Divinity: Original Sin run them | A filling bar beside a hit-point bar is two similar bars side by side, which a phone screen makes easy to confuse, and watching bars fill is time spent waiting rather than deciding. A queue answers the only question the bars were asked, who acts next, and lets the fight jump straight to the next turn. Keeping readiness underneath keeps the difference between a quick combatant and a slow one: the quick one simply appears in the queue more often. True rounds would show the same strip but reduce Dexterity to who moves first. |
 | No scheduler above combat and exploration; each advances its own time | A turn engine owning one action queue for the whole game, with both segments submitting to it | The two run on clocks that are not the same clock and never run at once: exploration counts ticks that spend food, combat counts a readiness that fills only between actions and stops dead for a decision. An engine over both would arbitrate nothing, and would need a unit of time that fits a corridor and a sword swing equally — which is the coupling the turn-based commitment exists to avoid. Each segment owning its own advance keeps the two clocks from ever having to be reconciled. |
 | Single persistent save, campaign-shaped | Roguelike runs with permadeath; multiple save slots | Consequences have to persist for decisions to weigh anything. One slot rather than many keeps the player from save-scumming around the consequence. |
 | No positioning: any combatant may act on any other | Front row / back row, where row sets reach and exposure; a free tactical grid (XCOM/FFT) | Rows constrain who may be targeted without asking the player anything: a character's options follow from where they were put long before the fight, so most turns have one legal answer and the back rank often has none. Removing them puts every combatant in reach of every other, which makes each turn a choice of *whom to spend it on* rather than a check of who is allowed to act. Reach, exposure and the protective role a front rank played return as properties of equipment and abilities, which are chosen in the fight's own terms. A grid would cost a phone screen and pathfinding for the same question. |
@@ -283,7 +286,7 @@ Falsification signals — conditions under which Deepcrawl would be judged broke
 
 - Genre prior art: the later Wizardry entries — first-person stepped exploration
   with a corner automap. Etrian Odyssey for mapping as a pleasure in itself; Darkest
-  Dungeon for recoverable-loss design; Dungeon Encounters for a fight read off filling
-  bars rather than off a battlefield.
+  Dungeon for recoverable-loss design; Baldur's Gate 3 and the Divinity: Original Sin
+  games for a turn order read off a strip along the top of the screen.
 - Development process: Linked-Intent Development — https://linked-intent.dev
 - Live deployment: https://mjschleckser.github.io/deepcrawl/

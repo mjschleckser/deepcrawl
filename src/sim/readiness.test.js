@@ -7,7 +7,7 @@ import {
 import {
   beginEncounter, createEnemy, createEnemyGroup,
   advanceBeats, nextActor, takeAction, readinessOf, actionCost,
-  readyActor, readinessPartway,
+  turnOrder,
   Action, FULL_BAR,
 } from './combat.js';
 
@@ -103,14 +103,6 @@ describe('where a fight starts', () => {
     advanceBeats(state, 2);
 
     expect(readinessOf(state, 'bram')).toBe(started + 24);
-  });
-
-  // @spec COMBAT-TIME-016
-  it('leaves nobody ready to act at the moment a fight opens', () => {
-    for (let seed = 1; seed <= 25; seed++) {
-      const state = encounter({ members: [hero('bram', 18)], enemies: [orc('o1', 18)], seed });
-      expect(readyActor(state)).toBeNull();
-    }
   });
 });
 
@@ -305,43 +297,95 @@ describe('what time does not buy', () => {
   });
 });
 
-describe('reading the bars without moving the fight', () => {
-  // @spec COMBAT-TIME-016
-  it('names nobody while nobody is full, and leaves the fight where it was', () => {
+describe('the turn order', () => {
+  // @spec COMBAT-QUEUE-001
+  it('lists as many of the next turns as it is asked for', () => {
     const state = emptied(encounter({ members: [hero('bram', 12)], enemies: [orc('o1', 10)] }));
 
-    expect(readyActor(state)).toBeNull();
-    expect(state.beats).toBe(0);
-    expect(readinessOf(state, 'bram')).toBe(0);
+    const order = turnOrder(state, 6);
+
+    expect(order).toHaveLength(6);
+    for (const turn of order) expect(['bram', 'o1']).toContain(turn.id);
   });
 
-  // @spec COMBAT-TIME-016
-  it('names whoever is full, in acting order', () => {
-    const state = emptied(encounter({ members: [hero('bram', 12)], enemies: [orc('o1', 10)] }));
-    advanceBeats(state, 10);
+  // @spec COMBAT-QUEUE-002
+  it('always opens on whoever the fight will act next', () => {
+    for (let seed = 1; seed <= 25; seed++) {
+      const state = encounter({
+        members: [hero('bram', 12), hero('tam', 16)], enemies: [orc('o1', 10), orc('o2', 7)], seed,
+      });
 
-    expect(readyActor(state).id).toBe('bram');
-    expect(state.beats).toBe(10);
+      const [first] = turnOrder(state, 4);
+
+      expect(first.id).toBe(nextActor(state).id);
+      // And still, now that they stand ready and have not yet acted.
+      expect(turnOrder(state, 4)[0].id).toBe(first.id);
+    }
   });
 
-  // @spec COMBAT-TIME-017
-  it('reports a bar partway through a beat as that share of what the beat adds', () => {
-    const state = emptied(encounter({ members: [hero('bram', 12)], enemies: [orc('o1', 10)] }));
-    advanceBeats(state, 2);
+  // @spec COMBAT-QUEUE-003
+  it('forecasts exactly what the fight then does, ties and all', () => {
+    for (let seed = 1; seed <= 25; seed++) {
+      const state = encounter({
+        members: [hero('bram', 12), hero('tam', 12)], enemies: [orc('o1', 12), orc('o2', 7)], seed,
+      });
 
-    expect(readinessPartway(state, 'bram', 0)).toBe(24);
-    expect(readinessPartway(state, 'bram', 0.5)).toBe(30);
-    expect(readinessPartway(state, 'o1', 0.25)).toBe(22.5);
-    // Partway is a report, not a beat.
-    expect(state.beats).toBe(2);
+      const forecast = turnOrder(state, 12).map((t) => t.id);
+      const played = [];
+      for (let i = 0; i < 12; i++) {
+        const actor = nextActor(state);
+        played.push(actor.id);
+        takeAction(state, actor.id, { kind: Action.PASS });
+      }
+
+      expect(forecast).toEqual(played);
+    }
   });
 
-  // @spec COMBAT-TIME-017
-  it('reports nothing for somebody who cannot act', () => {
-    const state = emptied(encounter({ members: [hero('bram', 12), hero('tam', 12)], enemies: [orc('o1', 10)] }));
-    advanceBeats(state, 3);
+  // @spec COMBAT-QUEUE-004
+  it('holds a quick combatant more often than a slow one', () => {
+    const state = emptied(encounter({ members: [hero('quick', 18)], enemies: [orc('slow', 6)] }));
+
+    const ids = turnOrder(state, 8).map((t) => t.id);
+
+    expect(ids.filter((id) => id === 'quick')).toHaveLength(6);
+    expect(ids.filter((id) => id === 'slow')).toHaveLength(2);
+  });
+
+  // @spec COMBAT-QUEUE-005
+  it('changes nothing about the fight by being asked', () => {
+    const state = encounter({ members: [hero('bram', 12)], enemies: [orc('o1', 10)], seed: 9 });
+    const twin = encounter({ members: [hero('bram', 12)], enemies: [orc('o1', 10)], seed: 9 });
+    const bars = [...state.readiness];
+    const beats = state.beats;
+
+    const once = turnOrder(state, 10);
+    const again = turnOrder(state, 10);
+
+    expect(again).toEqual(once);
+    expect([...state.readiness]).toEqual(bars);
+    expect(state.beats).toBe(beats);
+    // Nothing drawn: the generator is exactly where its untouched twin's is.
+    expect(state.rng.int(0, 1000000)).toBe(twin.rng.int(0, 1000000));
+  });
+
+  // @spec COMBAT-QUEUE-006
+  it('lists nobody unable to act', () => {
+    const state = encounter({
+      members: [hero('bram', 12), hero('tam', 12)], enemies: [orc('o1', 10)],
+    });
     applyDamage(state.party, 'bram', 9999);
 
-    expect(readinessPartway(state, 'bram', 0.5)).toBe(0);
+    expect(turnOrder(state, 8).map((t) => t.id)).not.toContain('bram');
+  });
+
+  // @spec COMBAT-QUEUE-007
+  it('reports nothing once the encounter is over', () => {
+    const state = encounter({ members: [hero('bram', 12)], enemies: [orc('o1', 10)] });
+    const foe = state.enemies.members[0];
+    foe.hitPoints = 0;
+    foe.condition = 'DEAD';
+
+    expect(turnOrder(state, 8)).toEqual([]);
   });
 });

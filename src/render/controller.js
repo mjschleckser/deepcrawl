@@ -24,7 +24,8 @@ import { buildPromptPlan } from './promptplan.js';
 import { buildViewPlan } from './viewplan.js';
 import { buildMapPlan } from './mapplan.js';
 import {
-  buildFightPlan, createFightController, chooseOption, goBack, dismissOutcome, passTurn,
+  buildFightPlan, createFightController, chooseOption, pressOption, goBack, dismissOutcome,
+  passTurn,
   advanceClock, fightIsPlaying, scrollLog, FightPhase,
 } from './fight.js';
 
@@ -120,7 +121,6 @@ export function layers(controller) {
       actor: fight.actor,
       shakingId: fight.shakingId,
       shake: fight.shake,
-      partway: fight.partway,
       logScroll: fight.logScroll,
     });
     return [
@@ -135,8 +135,9 @@ export function layers(controller) {
           viewport,
           scale: uiScale(viewport),
           controls: [],
-          // The fight's own panel is what stands in the corner during a fight.
-          stamp: stampFor(viewport, [fightPlan.bounds]),
+          // The fight's own panel is what stands in the corner during a fight, and a
+          // tall menu can rise past it.
+          stamp: stampFor(viewport, [fightPlan.bounds, fightPlan.menu?.box].filter(Boolean)),
         },
       },
     ];
@@ -309,13 +310,26 @@ const within = (box, px, py) =>
   px >= box.x && px <= box.x + box.width && py >= box.y && py <= box.y + box.height;
 
 /**
- * Turn a wheel over the fight into a walk back through its log.
+ * Turn a wheel over the fight into a walk back through its log. A wheel is not a press,
+ * so it leaves an open menu alone.
  *
  * @spec PRESENT-FIGHT-031
+ * @spec PRESENT-MENU-015
  */
 export function scrollFightLog(controller, lines) {
   syncFight(controller);
   if (!controller.fight || !scrollLog(controller.fight, lines)) return false;
+  redraw(controller);
+  return true;
+}
+
+/** A choice was made. Fleeing can end a fight outright; anything else is just drawn. */
+function settleChoice(controller) {
+  const { fight } = controller;
+  if (fight.phase === FightPhase.ENDED && fight.fled?.escaped) {
+    controller.campaign.fleeEncounter();
+    syncFight(controller);
+  }
   redraw(controller);
   return true;
 }
@@ -357,14 +371,7 @@ function pressKeyInFight(controller, key) {
   const option = Number.parseInt(key, 10);
   if (!Number.isInteger(option) || option < 1) return false;
   if (!chooseOption(fight, option - 1)) return false;
-
-  // Fleeing can end a fight outright.
-  if (fight.phase === FightPhase.ENDED && fight.fled?.escaped) {
-    controller.campaign.fleeEncounter();
-    syncFight(controller);
-  }
-  redraw(controller);
-  return true;
+  return settleChoice(controller);
 }
 
 export function pressKey(controller, key) {
@@ -406,6 +413,18 @@ export function pressPointer(controller, px, py) {
 
   if (controller.fight) {
     const plan = layers(controller).find((l) => l.name === 'fight').plan;
+    const control = hit(plan.controls, px, py);
+
+    // A press outside an open menu and the row closes the menu and is spent on that:
+    // whatever lies beneath it is not pressed as well. The gaps inside the two are not
+    // outside them, so a thumb that just misses an entry loses nothing.
+    // @spec PRESENT-MENU-009
+    if (plan.menu && !control) {
+      if (within(plan.menu.box, px, py) || within(plan.regions.controlsBox, px, py)) return false;
+      goBack(controller.fight);
+      redraw(controller);
+      return true;
+    }
 
     // A press on the scrollbar's track pages the log, above the thumb or below it.
     // @spec PRESENT-FIGHT-033
@@ -416,15 +435,15 @@ export function pressPointer(controller, px, py) {
       return true;
     }
 
-    const control = hit(plan.controls, px, py);
     if (!control) return false;
 
     if (control.role === 'DISMISS') return pressKeyInFight(controller, 'Enter');
-    if (control.role === 'BACK') return pressKeyInFight(controller, 'Escape');
     // The one press a character with nothing to do can make.
     // @spec PRESENT-FIGHT-043
     if (control.role === 'PASS') return pressKeyInFight(controller, 'Enter');
-    return pressKeyInFight(controller, String(control.optionIndex + 1));
+    if (control.role === 'TARGET') return pressKeyInFight(controller, String(control.entryIndex + 1));
+    if (!pressOption(controller.fight, control.optionIndex)) return false;
+    return settleChoice(controller);
   }
 
   if (controller.state.pendingConfirmation) {

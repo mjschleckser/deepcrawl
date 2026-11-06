@@ -101,6 +101,25 @@ that invites a party to stall until something refills; nothing here refills.
 held, so a character brought back to consciousness begins filling from empty instead of
 acting the instant they open their eyes.
 
+### The turn order
+
+Readiness decides who acts; it is not what the player reads. Combat reports the **turn
+order**: the next several turns of the fight, in the order they will come, worked out
+from the readiness everyone holds now.
+
+The projection is the fight's own arithmetic run forward on a copy. It fills bars by
+Dexterity, settles ties by the same rule, and spends one full bar for each turn it lists.
+A quick combatant therefore appears in it more often than a slow one, which is how three
+actions to one reads in a queue. It draws no random number and changes nothing, so asking
+for it costs the fight nothing and any number of askings give the same answer.
+
+**Its first entry is always whoever acts next.** The projection and the fight cannot
+disagree about that, because they are the same rules applied to the same bars.
+
+**Beyond the first entry it is a forecast, and an honest one.** It assumes everyone
+standing stays standing. When a combatant falls, the turns they held leave the order, and
+the turns behind close up. Nothing else moves it, because nothing else changes a bar.
+
 ### Where the bars start
 
 **Every combatant opens somewhere.** Every fight begins with each bar set to a random
@@ -111,7 +130,7 @@ same fight twice.
 
 The randomness is in the opening only. From the first beat onwards the bars are the
 plain arithmetic of Dexterity, so a quick combatant handed a low opening still overtakes
-a slow one handed a high one, and the fight remains readable off the bars.
+a slow one handed a high one, and the turn order can be read ahead with confidence.
 
 **Nothing about how the two sides met changes the draw.** There is no surprise and no
 ambush: which side noticed the other first and the direction either came
@@ -199,7 +218,7 @@ tuned so an ordinary goblin takes two solid hits and a fresh fighter falls in fi
 |---|---|
 | Fresh fighter, sword (acc 20, dmg 8), Blade 2, Perception 10 | accuracy 30, base damage 10 |
 | Same fighter, Heavy Armour 2, Dexterity 10 | defence 26 |
-| Goblin | defence 20, armour 2, accuracy 24 |
+| Goblin | defence 17, armour 2, accuracy 24 |
 
 A level-appropriate attacker therefore sits at about **+10** over what it is attacking,
 which on the band thresholds gives 4% miss, 35% graze, 50% hit, 11% crit. Missing is
@@ -354,6 +373,8 @@ trouble. One character calls the retreat; the whole party leaves or nobody does.
 | Attack resolution | One roll into four bands: miss, graze, hit, crit | Binary hit or miss; always-hit with variable damage | A binary result makes an unfavourable matchup produce nothing at all, so the player watches turns evaporate. Four bands make it produce less, so a losing fight is still being played. |
 | Band widths | Narrow miss, wide middle, distant crit | Even bands | A miss should mean badly outmatched, not unlucky; a reliable crit should mean a real accuracy advantage rather than a good afternoon. |
 | The order of acting | A readiness that fills with the fight's own time; whoever fills first acts, alone | A round in which everyone acts once, resolved in descending Dexterity | A round makes a quick combatant and a slow one differ only in who moves first, which wastes the attribute already deciding speed everywhere else, and it caps the difference between them at one place in a queue. A bar lets the quick act twice while the slow act once, which is the difference actually worth building an attribute on. |
+| What the player is told about the order | A projected turn order, with readiness itself kept inside the simulation | Reporting each combatant's readiness for a bar to be drawn from; true rounds, whose order needs no projecting | A bar has to be watched filling, and a player comparing bars is working out the turn order by eye. Reporting that order directly answers the question for them and lets the fight's time pass without being shown. True rounds would make the list trivial but give up the difference between a quick combatant and a slow one. |
+| Who projects the turn order | Combat, by the rules that resolve the fight | The presentation layer, reading readiness and Dexterity | A second copy of the arithmetic could drift from the first, and a queue that names the wrong combatant is worse than no queue. |
 | Choosing and resolving | Both in the same instant, one combatant at a time | Everyone selects, then everything resolves in order | Committing before you know is worth something, but it costs every action the existence of its target: a heal aimed at somebody who dies first is spent on nothing, and the lesson it teaches is to have acted sooner, which the player had no way to do. Resolving as each combatant comes ready removes the wasted action entirely, and is the only shape a readiness bar admits. |
 | Speed | Dexterity itself, with a floor of one | A derived initiative statistic; a flat rate modified by equipment | A second statistic meaning the same thing is a second statistic to explain and to balance. Using the attribute undisguised also gives the widest honest spread — three actions to one across the range — which is what makes an extraordinarily quick character feel extraordinary. |
 | The cost of an action | One full bar for every action, carried on the action rather than assumed | A constant in the resolver; per-action weights from the start | Putting the cost on the action means weapon weight can arrive later as content rather than as a restructuring. Making them all equal now means there is nothing to balance before there are weapons to balance it against. |
@@ -396,10 +417,11 @@ trouble. One character calls the retreat; the whole party leaves or nobody does.
 20. ✅ **Enemy groups are not capped at the party's four** and hold at most twenty, so a swarm is a shape rather than an unbounded number.
 21. ✅ **Fleeing is one attempt for the whole party**, costing only the bar of the character who attempted it, and impossible against something far faster or something that forbids escape.
 22. ✅ **A defeated party stays where it fell**, to be abandoned or recovered by a fresh party.
+23. ✅ **Combat reports a projected turn order**, by its own rules and without changing anything, and readiness stays inside the simulation.
 
 ### Deferred
 
-1. **Per-action costs.** Every action costs one full bar. The cost lives on the action so that a heavy weapon can cost more later, but no action differs from another yet and no weapon exists to make one.
+1. **Per-action costs.** Every action costs one full bar. The cost lives on the action so that a heavy weapon can cost more later, but no action differs from another yet and no weapon exists to make one. When costs differ, the turn order will have to assume a cost for turns not yet chosen.
 2. **Automating a repetitive turn.** Every turn is composed by hand. Some way for a party to say once what it usually does is worth having again, but it wants a vocabulary that can talk about status effects, enemy kinds and remaining resources — none of which exist — and it must not become a fight that plays itself.
 3. **Ability definitions.** Skill ranks unlock abilities, but what each one does is unauthored content. This includes any item or skill that moves its carrier's opening readiness off the draw.
 4. **Enemy rosters and their pot values.** What any enemy is, and what it is worth, belongs with the enemies segment.

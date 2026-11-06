@@ -147,6 +147,11 @@ function drawMap(container, plan) {
   container.addChild(graphics);
 }
 
+/** Shrink a line of text that would otherwise spill out of the control it sits on. */
+function fitWithin(text, width) {
+  if (text.width > width) text.scale.set(width / text.width);
+}
+
 /**
  * One drawn control: a panel, the action it performs, and any key as quieter text
  * beside it. The plan decided where it sits; nothing here registers a handler, because
@@ -172,10 +177,12 @@ function drawControl(container, control, { alpha = 0.55, scale = 1 } = {}) {
       .fill({ color: 0x0b0906, alpha: dim ? alpha * 0.55 : alpha });
   }
   if (!ghost || control.pressed) {
+    // The option a menu rose from stays marked, so the question keeps its source.
+    // @spec PRESENT-MENU-005
     graphics.roundRect(control.x, control.y, control.width, control.height, 6)
       .stroke({
-        width: 1.5,
-        color: PALETTE.map.wall,
+        width: control.open ? 2.5 : 1.5,
+        color: control.open ? FIGHT_COLOURS.banner : PALETTE.map.wall,
         alpha: dim ? 0.35 : (ghost ? 0.85 : 0.9),
       });
   }
@@ -194,6 +201,7 @@ function drawControl(container, control, { alpha = 0.55, scale = 1 } = {}) {
       fontFamily: 'monospace',
     },
   });
+  fitWithin(name, control.width - 6 * scale);
   name.x = control.x + control.width / 2 - name.width / 2;
   name.y = control.y + control.height / 2 - name.height / 2 - (footnote ? 6 * scale : 0);
   container.addChild(name);
@@ -209,6 +217,7 @@ function drawControl(container, control, { alpha = 0.55, scale = 1 } = {}) {
         fontFamily: 'monospace',
       },
     });
+    fitWithin(hint, control.width - 6 * scale);
     hint.x = control.x + control.width / 2 - hint.width / 2;
     hint.y = control.y + control.height - hint.height - 4 * scale;
     container.addChild(hint);
@@ -319,8 +328,7 @@ export async function createRenderer(mount) {
 const FIGHT_COLOURS = {
   panel: 0x0b0906,
   frame: 0x6b5640,
-  // Each side's card in two shades: the subdued ground, and the brighter fill that
-  // readiness lays across it.
+  // Each side's card on a subdued ground, and the brighter shade that marks a side.
   enemy: 0x3a211a,
   enemyReady: 0x8a4a35,
   enemyDown: 0x241713,
@@ -405,32 +413,6 @@ function drawFight(container, plan) {
       container.addChild(sprite);
     }
 
-    // Readiness: one length sliding to the right, with a brighter edge leading it, so
-    // two bars are compared at a glance and the movement between frames is smooth.
-    // @spec PRESENT-READY-001
-    // @spec PRESENT-READY-027
-    // @spec PRESENT-READY-031
-    const ready = bars.readiness;
-    const readyY = at + (ready.y - card.y);
-    const radius = ready.height / 2;
-    graphics.roundRect(ready.x, readyY, ready.width, ready.height, radius)
-      .fill({ color: 0x000000, alpha: 0.42 });
-
-    const filled = ready.width * (card.down ? 0 : card.readiness);
-    if (filled > 0) {
-      const full = card.readiness >= 1;
-      graphics.roundRect(ready.x, readyY, Math.max(filled, ready.height), ready.height, radius)
-        .fill(full ? FIGHT_COLOURS.banner : colours.ready);
-      // A lighter band along the top of the fill, which is what keeps a flat bar from
-      // reading as a flat bar.
-      graphics.roundRect(ready.x, readyY, Math.max(filled, ready.height), ready.height * 0.45, radius)
-        .fill({ color: 0xffffff, alpha: full ? 0.22 : 0.12 });
-      // The leading edge, brightest where the filling is happening.
-      const edge = Math.min(3 * scale, filled);
-      graphics.rect(ready.x + filled - edge, readyY, edge, ready.height)
-        .fill({ color: full ? 0xfff0c0 : FIGHT_COLOURS.banner, alpha: full ? 0.9 : 0.75 });
-    }
-
     // Who they are: name, total level, and a condition worth naming.
     // @spec PRESENT-READY-029
     const identity = bars.identity;
@@ -482,14 +464,58 @@ function drawFight(container, plan) {
   for (const member of plan.enemies) {
     drawCombatant(member, {
       ground: member.down ? FIGHT_COLOURS.enemyDown : FIGHT_COLOURS.enemy,
-      ready: FIGHT_COLOURS.enemyReady,
     });
   }
   for (const member of plan.party) {
     drawCombatant(member, {
       ground: member.down ? FIGHT_COLOURS.allyDown : FIGHT_COLOURS.ally,
-      ready: FIGHT_COLOURS.allyReady,
     });
+  }
+
+  // The turn order, read and never pressed. Every tile was placed by the plan; a tile
+  // whose picture has not arrived still stands for its combatant by frame and mark.
+  // @spec PRESENT-STRIP-001
+  // @spec PRESENT-STRIP-003
+  // @spec PRESENT-STRIP-004
+  // @spec PRESENT-STRIP-005
+  // @spec PRESENT-STRIP-006
+  const stripArt = new Graphics();
+  container.addChild(stripArt);
+  for (const tile of plan.strip.tiles) {
+    const party = tile.side === 'PARTY';
+    stripArt.rect(tile.x, tile.y, tile.size, tile.size)
+      .fill({ color: party ? FIGHT_COLOURS.ally : FIGHT_COLOURS.enemy, alpha: 0.95 });
+
+    const texture = portraitTexture(tile.portrait);
+    if (texture) {
+      const sprite = new Sprite(texture);
+      sprite.x = tile.x;
+      sprite.y = tile.y;
+      sprite.width = tile.size;
+      sprite.height = tile.size;
+      container.addChild(sprite);
+    }
+
+    const frame = new Graphics();
+    frame.rect(tile.x, tile.y, tile.size, tile.size).stroke({
+      width: tile.current ? 3 * scale : 2 * scale,
+      color: tile.current
+        ? FIGHT_COLOURS.banner
+        : (party ? FIGHT_COLOURS.allyReady : FIGHT_COLOURS.enemyReady),
+    });
+    container.addChild(frame);
+
+    if (tile.mark) {
+      const size = Math.round(tile.size * 0.34);
+      const plate = new Graphics();
+      plate.rect(tile.x + tile.size - size - 2 * scale, tile.y + tile.size - size - 2 * scale, size, size)
+        .fill({ color: FIGHT_COLOURS.panel, alpha: 0.85 });
+      container.addChild(plate);
+      const mark = label(tile.mark, Math.round(size * 0.9), FIGHT_COLOURS.text);
+      mark.x = tile.x + tile.size - size - 2 * scale + (size - mark.width) / 2;
+      mark.y = tile.y + tile.size - size - 2 * scale + (size - mark.height) / 2;
+      container.addChild(mark);
+    }
   }
 
   // The log is a box of its own and keeps its place, whatever is in it.
@@ -556,11 +582,47 @@ function drawFight(container, plan) {
   // @spec PRESENT-FIGHT-017
   // @spec PRESENT-FIGHT-042
   const controls = plan.controls ?? [];
-  for (const control of controls.filter((c) => !c.overlay)) {
+  for (const control of controls.filter((c) => !c.overlay && c.role !== 'TARGET')) {
     drawControl(container, control, { alpha: 0.7, scale });
   }
   for (const control of controls.filter((c) => c.overlay)) {
     drawControl(container, control, { alpha: 0.95, scale });
+  }
+
+  // Over everything else, because it covers whatever it rose in front of: a name, the
+  // hit points that decide the choice, and the number that picks it.
+  // @spec PRESENT-MENU-004
+  // @spec PRESENT-MENU-006
+  // @spec PRESENT-MENU-008
+  if (plan.menu) {
+    const b = plan.menu.box;
+    const panel = new Graphics();
+    panel.roundRect(b.x, b.y, b.width, b.height, 6).fill({ color: FIGHT_COLOURS.panel, alpha: 0.97 });
+    panel.roundRect(b.x, b.y, b.width, b.height, 6).stroke({ width: 2, color: FIGHT_COLOURS.banner });
+    container.addChild(panel);
+
+    for (const entry of controls.filter((c) => c.role === 'TARGET')) {
+      const frame = new Graphics();
+      frame.roundRect(entry.x, entry.y, entry.width, entry.height, 4)
+        .stroke({ width: 1, color: FIGHT_COLOURS.frame });
+      container.addChild(frame);
+
+      const middle = entry.y + entry.height / 2;
+      const name = label(entry.label, Math.round(13 * scale), FIGHT_COLOURS.text);
+      name.x = entry.x + 6 * scale;
+      name.y = middle - name.height / 2;
+      container.addChild(name);
+
+      const hint = label(entry.hint ?? '', Math.round(10 * scale), FIGHT_COLOURS.dim);
+      hint.x = entry.x + entry.width - hint.width - 5 * scale;
+      hint.y = middle - hint.height / 2;
+      container.addChild(hint);
+
+      const detail = label(entry.detail, Math.round(12 * scale), FIGHT_COLOURS.dim);
+      detail.x = hint.x - detail.width - 6 * scale;
+      detail.y = middle - detail.height / 2;
+      container.addChild(detail);
+    }
   }
 }
 

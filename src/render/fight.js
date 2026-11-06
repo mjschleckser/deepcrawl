@@ -13,38 +13,28 @@ import { Condition, Skill, character, roster, totalLevel } from '../sim/party.js
 import { MIN_TAP_PX, ControlKind, uiScale, contentColumn } from './geometry.js';
 import {
   Action, Band, Outcome, attackTargets,
-  encounterOutcome, readyActor, advanceBeats, takeAction, attemptFlee,
-  fleeCertainToFail, readinessPartway, FULL_BAR,
+  encounterOutcome, nextActor, takeAction, attemptFlee,
+  fleeCertainToFail, turnOrder,
 } from '../sim/combat.js';
 import { selectEnemyTarget } from '../sim/enemies.js';
 
 export const FightPhase = { ACTING: 'ACTING', ENDED: 'ENDED' };
 
 /**
- * The pause between one resolved action and the next, in real milliseconds. It has
- * nothing to do with the fight's own time, which advances in beats and stops while
- * anybody is being asked.
+ * The pause before an enemy takes its turn, in real milliseconds, and how long a judder
+ * lasts. It has nothing to do with the fight's own time, which never plays out on
+ * screen.
  *
- * It is what stops the enemies' turns landing between two frames and arriving as a
- * wall of text nobody watched happen.
+ * It is the only wait in a fight, and it is what stops the enemies' turns landing
+ * between two frames and arriving as a wall of text nobody watched happen.
  *
  * @spec PRESENT-READY-005
  * @spec PRESENT-READY-006
  */
-export const BEAT_MS = 630;
+export const BEAT_MS = 350;
 
-/**
- * How long one beat of the fight's time takes on screen while the bars are filling.
- *
- * It sets only the pace, and the same span applies to every bar alike, so the relative
- * speeds stay the simulation's: at Dexterity 10 a bar fills in ten beats, whatever this
- * is. Slow enough that a race between two bars can be watched rather than merely
- * reported — ten beats is a little under four seconds here.
- *
- * @spec PRESENT-READY-024
- * @spec PRESENT-READY-032
- */
-export const FILL_BEAT_MS = 375;
+/** How many turns the strip along the top of the screen shows. */
+export const TURN_STRIP_LENGTH = 8;
 
 /** How badly hurt a combatant is, by the share of their hit points left. */
 export const Wound = { HEALTHY: 'HEALTHY', WOUNDED: 'WOUNDED', CRITICAL: 'CRITICAL' };
@@ -88,9 +78,17 @@ const LOG_LINES = 5;
 const LOG_LINE_HEIGHT = 15;
 /** The line that names who is up, reserved whether or not anybody is. */
 const PROMPT_HEIGHT = 26;
-/** Controls a character is ever offered at once: the four slots. */
-const MOST_OPTIONS = OPTION_SLOTS.length;
 const SCROLLBAR_WIDTH = 6;
+
+/** A tile in the turn strip, and how much larger whoever acts now is drawn. */
+const STRIP_TILE = 36;
+const STRIP_GAP = 4;
+const STRIP_CURRENT_SCALE = 1.3;
+
+/** One entry of a menu, and the room around entries. */
+const MENU_ENTRY_HEIGHT = 44;
+const MENU_ENTRY_WIDTH = 190;
+const MENU_GAP = 4;
 
 /** One combatant, at the scale the phone layout was designed against. */
 const ROW_HEIGHT = 34;
@@ -98,16 +96,105 @@ const ROW_GAP = 5;
 const CARD_GAP = 8;
 /** The portrait is square and as tall as the row, so a column stays aligned. */
 const PORTRAIT_GAP = 4;
-/** Three bars, stacked, with a hairline between them. */
+/** Two bars, stacked, with a hairline between them. */
 const BAR_GAP = 1;
 
-const nameOf = (encounter, id) =>
-  roster(encounter.party).find((c) => c.id === id)?.name
-  ?? encounter.enemies.members.find((e) => e.id === id)?.name
-  ?? id;
+/**
+ * Each enemy's letter, for those sharing a name with another of their group. Read from
+ * the listing, which keeps the fallen in place, so a letter never moves to somebody else.
+ *
+ * @spec PRESENT-FIGHT-046
+ * @spec PRESENT-FIGHT-047
+ * @spec PRESENT-FIGHT-048
+ */
+function enemyLetters(encounter) {
+  const { members } = encounter.enemies;
+  const counts = new Map();
+  for (const e of members) counts.set(e.name, (counts.get(e.name) ?? 0) + 1);
+
+  const seen = new Map();
+  const letters = new Map();
+  for (const e of members) {
+    if (counts.get(e.name) < 2) continue;
+    const nth = seen.get(e.name) ?? 0;
+    seen.set(e.name, nth + 1);
+    letters.set(e.id, String.fromCharCode(65 + nth));
+  }
+  return letters;
+}
+
+/** What the fight calls everybody in it, wherever it names them. */
+function fightNames(encounter) {
+  const letters = enemyLetters(encounter);
+  const names = {};
+  for (const c of roster(encounter.party)) names[c.id] = c.name;
+  for (const e of encounter.enemies.members) {
+    names[e.id] = letters.has(e.id) ? `${e.name} ${letters.get(e.id)}` : e.name;
+  }
+  return names;
+}
 
 /**
- * Lay a side out as one column: a portrait, and three bars stacked beside it.
+ * The turn strip's place on the screen, and the size of a tile in it. Sized from the
+ * column alone, so it stays put all encounter.
+ *
+ * @spec PRESENT-FIGHT-026
+ */
+function stripMetrics(column, scale) {
+  const pad = CARD_GAP * scale;
+  const gap = STRIP_GAP * scale;
+  const room = column.width - pad * 2 - gap * (TURN_STRIP_LENGTH - 1);
+  const tile = Math.min(STRIP_TILE * scale, room / (TURN_STRIP_LENGTH - 1 + STRIP_CURRENT_SCALE));
+  const current = tile * STRIP_CURRENT_SCALE;
+  return {
+    tile, current, gap,
+    box: { x: column.x, y: pad, width: column.width, height: current },
+  };
+}
+
+/**
+ * The strip of turns along the top of the screen: read, never pressed, so it carries no
+ * hit region. The order is the simulation's and is only laid out here.
+ *
+ * @spec PRESENT-STRIP-001
+ * @spec PRESENT-STRIP-002
+ * @spec PRESENT-STRIP-003
+ * @spec PRESENT-STRIP-004
+ * @spec PRESENT-STRIP-005
+ * @spec PRESENT-STRIP-006
+ * @spec PRESENT-STRIP-007
+ * @spec PRESENT-STRIP-008
+ * @spec PRESENT-STRIP-009
+ * @spec PRESENT-STRIP-010
+ */
+function layOutStrip(encounter, phase, metrics, scale) {
+  const { box, tile, current, gap } = metrics;
+  const turns = phase === FightPhase.ENDED ? [] : turnOrder(encounter, TURN_STRIP_LENGTH);
+  const letters = enemyLetters(encounter);
+  let x = box.x + CARD_GAP * scale;
+
+  const tiles = turns.map(({ id, side }, i) => {
+    const hero = roster(encounter.party).find((c) => c.id === id);
+    const who = hero ?? encounter.enemies.members.find((e) => e.id === id);
+    const size = i === 0 ? current : tile;
+    const drawn = {
+      id, side,
+      portrait: who.portrait ?? null,
+      mark: hero ? hero.name.charAt(0).toUpperCase() : letters.get(id) ?? null,
+      current: i === 0,
+      x,
+      y: box.y + (box.height - size) / 2,
+      size,
+    };
+    x += size + gap;
+    return drawn;
+  });
+
+  return { box, tiles };
+}
+
+/**
+ * Lay a side out as one column: a portrait, and two bars stacked beside it.
  *
  * Everything a combatant is drawn from is positioned here — the portrait's square and
  * each bar's rectangle — so that drawing is only painting.
@@ -122,7 +209,7 @@ function layOutColumn(cards, column, top, scale, { height = ROW_HEIGHT * scale }
   const portrait = height;
   const portraitGap = PORTRAIT_GAP * scale;
   const barGap = BAR_GAP * scale;
-  const barHeight = (height - barGap * 2) / 3;
+  const barHeight = (height - barGap) / 2;
   const barsX = column.x + portrait + portraitGap;
   const barsWidth = Math.max(1, column.width - portrait - portraitGap);
 
@@ -141,9 +228,9 @@ function layOutColumn(cards, column, top, scale, { height = ROW_HEIGHT * scale }
       width: column.width,
       height,
       portraitBox: { x: column.x, y, size: portrait },
-      // Readiness on top, because it is what the fight is read off; identity in the
-      // middle, which changes least; hit points beneath, checked under pressure.
-      bars: { readiness: bar(0), identity: bar(1), health: bar(2) },
+      // Who they are above, how they are doing beneath. One filled bar to a card, so
+      // there is never a second to mistake it for.
+      bars: { identity: bar(0), health: bar(1) },
     };
   });
 }
@@ -176,19 +263,13 @@ export function buildFightPlan(
   {
     phase, outcome = null, pending = null, log = [], actor = null,
     shakingId = null, shake = 0,
-    partway = 0, logScroll = 0,
+    logScroll = 0,
   } = {},
 ) {
   const scale = uiScale(viewport);
   const column = contentColumn(viewport);
   const pad = CARD_GAP * scale;
-
-  // How full a bar is, as a share of one, partway through whatever beat is filling it.
-  // Read from the simulation rather than counted here, so the screen and the fight
-  // cannot disagree about who is next.
-  // @spec PRESENT-READY-002
-  // @spec PRESENT-READY-025
-  const filled = (id) => Math.min(1, readinessPartway(encounter, id, partway) / FULL_BAR);
+  const names = fightNames(encounter);
 
   // How much of their hit points somebody has left, and how bad that is.
   // @spec PRESENT-READY-022
@@ -214,7 +295,7 @@ export function buildFightPlan(
   // @spec PRESENT-READY-030
   const drawCombatant = (who, down) => ({
     id: who.id,
-    name: who.name,
+    name: names[who.id],
     level: totalLevel(who),
     // Until status effects exist, a combatant's only status is their condition, and
     // only worth saying when it is not the ordinary one.
@@ -225,7 +306,6 @@ export function buildFightPlan(
     // Kept in place: the shape of a side that has lost its middle is information.
     down,
     ...healthOf(who),
-    readiness: filled(who.id),
     acting: actor?.id === who.id,
     offsetY: offsetOf(who.id),
   });
@@ -240,13 +320,7 @@ export function buildFightPlan(
   // moment they are reading it.
   // @spec PRESENT-FIGHT-025
   // @spec PRESENT-FIGHT-026
-  const metrics = controlMetrics({
-    column, scale,
-    // The most controls this encounter will ever put on offer: an option for each
-    // thing a character may do, or a target for each enemy there is. Both are settled
-    // when the fight begins, so the room they need never changes while it is fought.
-    most: Math.max(MOST_OPTIONS, encounter.enemies.members.length),
-  });
+  const metrics = controlMetrics({ column, scale });
   const lineHeight = LOG_LINE_HEIGHT * scale;
   const logHeight = LOG_LINES * lineHeight + pad;
   const promptHeight = PROMPT_HEIGHT * scale;
@@ -361,6 +435,12 @@ export function buildFightPlan(
     track.height,
     Math.max(MIN_TAP_PX * 0.4, track.height * Math.min(1, shown / Math.max(1, log.length))),
   );
+  const strip = stripMetrics(column, scale);
+  const { menu, controls } = fightControls({
+    bounds, pending, banner, metrics, top: controlsBox.y, scale,
+    ceiling: strip.box.y + strip.box.height,
+  });
+
   const scrollbar = hidden > 0
     ? {
       track,
@@ -394,6 +474,7 @@ export function buildFightPlan(
     regions: { formation, logBox, promptLine, controlsBox },
     logBox,
     scrollbar,
+    strip: layOutStrip(encounter, phase, strip, scale),
     enemies: laidEnemies,
     party: laidParty,
     pending,
@@ -401,51 +482,95 @@ export function buildFightPlan(
     // over a fight that is playing invites a press nothing is listening for.
     // @spec PRESENT-READY-013
     // @spec PRESENT-READY-014
-    prompt: pending
-      ? (pending.targets
-        ? `${nameOf(encounter, pending.characterId)}: at whom?`
-        : `${nameOf(encounter, pending.characterId)} is ready to act!`)
-      : null,
+    prompt: pending ? `${names[pending.characterId]} is ready to act!` : null,
     log: shownLog,
     banner,
+    menu,
     // Drawn and tapped are one thing: a fight nobody can touch is a fight a phone
     // player can watch and not play.
-    controls: fightControls({ bounds, pending, banner, metrics, top: controlsBox.y }),
+    controls,
   };
 }
 
 /**
  * How much room the controls need, and how they divide the column. Worked out before
- * the panel is sized, because the panel is sized to fit them.
+ * the panel is sized, because the panel is sized to fit them. The four always share one
+ * row: a further choice opens as a menu over the panel, so nothing is reserved for it.
+ *
+ * @spec PRESENT-FIGHT-045
  */
-function controlMetrics({ column, scale, most = MOST_OPTIONS }) {
+function controlMetrics({ column, scale }) {
   const gap = 8 * scale;
   const buttonHeight = Math.max(MIN_TAP_PX, 52 * scale);
-
-  // Wrap onto as many columns as the width allows, so a narrow phone never squeezes a
-  // control below a thumb.
-  const columns = Math.max(1, Math.floor((column.width - gap) / (MIN_TAP_PX * 1.8 * scale + gap)));
-  // Room for the most this encounter will ever offer, and the way back beneath it.
-  // Reserved whatever is on offer now, so that being asked which goblin never moves a
-  // control the player is already reaching for.
-  // @spec PRESENT-FIGHT-028
-  const rows = Math.max(1, Math.ceil(most / columns));
+  const columns = OPTION_SLOTS.length;
 
   return {
-    gap, buttonHeight, columns, rows,
+    gap, buttonHeight, columns,
     width: Math.max(MIN_TAP_PX, (column.width - gap * (columns + 1)) / columns),
-    height: (rows + 1) * (buttonHeight + gap),
+    height: buttonHeight,
   };
 }
 
 /**
- * A control per option on offer, plus the way back and the way out.
+ * Lay a menu out rising from the button that opened it: one column while that fits
+ * beneath the turn strip, and as many as it takes when it does not. Laid over the panel
+ * and moving nothing in it.
+ *
+ * @spec PRESENT-MENU-003
+ * @spec PRESENT-MENU-004
+ * @spec PRESENT-MENU-006
+ * @spec PRESENT-MENU-007
+ * @spec PRESENT-MENU-008
+ */
+function layOutMenu({ pending, opener, bounds, ceiling, metrics, scale }) {
+  const gap = MENU_GAP * scale;
+  const inset = metrics.gap;
+  const entryHeight = Math.max(MIN_TAP_PX, MENU_ENTRY_HEIGHT * scale);
+  const count = pending.targets.length;
+  const foot = opener.y - metrics.gap;
+
+  const fits = Math.floor((foot - ceiling - gap) / (entryHeight + gap));
+  const columns = Math.ceil(count / Math.max(1, fits));
+  const rows = Math.ceil(count / columns);
+  const room = bounds.width - inset * 2 - gap * (columns + 1);
+  const entryWidth = Math.min(MENU_ENTRY_WIDTH * scale, room / columns);
+
+  const width = columns * (entryWidth + gap) + gap;
+  const height = rows * (entryHeight + gap) + gap;
+  const box = {
+    x: Math.max(bounds.x + inset, Math.min(opener.x, bounds.x + bounds.width - inset - width)),
+    y: foot - height,
+    width,
+    height,
+  };
+
+  const entries = pending.targets.map((target, index) => ({
+    kind: ControlKind.BUTTON,
+    role: 'TARGET',
+    entryIndex: index,
+    label: target.name,
+    detail: `${target.hitPoints}/${target.maxHitPoints}`,
+    available: true,
+    reason: null,
+    hint: index < 9 ? String(index + 1) : null,
+    x: box.x + gap + Math.floor(index / rows) * (entryWidth + gap),
+    y: box.y + gap + (index % rows) * (entryHeight + gap),
+    width: entryWidth,
+    height: entryHeight,
+  }));
+
+  return { menu: { box, openedBy: pending.openedBy }, entries };
+}
+
+/**
+ * A control per option on offer, and an entry for anything an open menu is asking.
  *
  * Every option is drawn whether or not it can be taken: an unavailable one keeps its
  * slot, loses its key hint to the reason it cannot be pressed, and does nothing. When
  * none of the four can be taken, a Pass turn control is laid over them — over, not
  * instead of, because the four underneath are the explanation for why it is there.
  *
+ * @spec PRESENT-MENU-005
  * @spec PRESENT-CTRL-001
  * @spec PRESENT-CTRL-002
  * @spec PRESENT-CTRL-003
@@ -457,62 +582,57 @@ function controlMetrics({ column, scale, most = MOST_OPTIONS }) {
  * @spec PRESENT-FIGHT-042
  * @spec PRESENT-FIGHT-044
  */
-function fightControls({ bounds, pending, banner, metrics, top }) {
-  const { gap, buttonHeight, columns, width } = metrics;
+function fightControls({ bounds, pending, banner, metrics, top, ceiling, scale }) {
+  const { gap, buttonHeight, width } = metrics;
 
   if (banner) {
     const bannerWidth = Math.min(banner.bounds.width - gap * 2, 320 * (buttonHeight / 52));
-    return [{
-      kind: ControlKind.BUTTON, role: 'DISMISS', label: 'Onward', hint: 'Enter',
-      x: banner.bounds.x + (banner.bounds.width - bannerWidth) / 2,
-      y: banner.bounds.y + banner.bounds.height - buttonHeight - gap,
-      width: bannerWidth, height: buttonHeight,
-    }];
+    return {
+      menu: null,
+      controls: [{
+        kind: ControlKind.BUTTON, role: 'DISMISS', label: 'Onward', hint: 'Enter',
+        x: banner.bounds.x + (banner.bounds.width - bannerWidth) / 2,
+        y: banner.bounds.y + banner.bounds.height - buttonHeight - gap,
+        width: bannerWidth, height: buttonHeight,
+      }],
+    };
   }
-  if (!pending) return [];
+  if (!pending) return { menu: null, controls: [] };
 
-  const choices = pending.targets
-    ? pending.targets.map((t) => ({ label: t.name, available: true, reason: null }))
-    : pending.options;
-
-  const controls = choices.map((choice, index) => ({
+  const controls = pending.options.map((choice, index) => ({
     kind: ControlKind.BUTTON,
-    role: pending.targets ? 'TARGET' : 'OPTION',
+    role: 'OPTION',
     optionIndex: index,
     label: choice.label,
     // What cannot be pressed says so, and says why in the place the key would sit.
     available: choice.available,
     reason: choice.available ? null : choice.reason,
     hint: choice.available ? String(index + 1) : null,
-    x: bounds.x + gap + (index % columns) * (width + gap),
-    y: top + Math.floor(index / columns) * (buttonHeight + gap),
+    open: Boolean(pending.targets) && pending.openedBy === index,
+    x: bounds.x + gap + index * (width + gap),
+    y: top,
     width, height: buttonHeight,
   }));
 
   // Laid across the row it covers, so the four greyed options stay readable beneath it.
   if (!pending.targets && pending.mustPass) {
-    const rowWidth = Math.min(columns, choices.length) * width
-      + (Math.min(columns, choices.length) - 1) * gap;
-    const rows = Math.ceil(choices.length / columns);
+    const count = pending.options.length;
     controls.push({
       kind: ControlKind.BUTTON, role: 'PASS', label: 'Pass turn', hint: 'Enter',
       overlay: true,
       x: bounds.x + gap,
-      y: top + (rows - 1) * (buttonHeight + gap) / 2,
-      width: Math.max(MIN_TAP_PX, rowWidth),
+      y: top,
+      width: Math.max(MIN_TAP_PX, count * width + (count - 1) * gap),
       height: buttonHeight,
     });
   }
 
-  controls.push({
-    kind: ControlKind.BUTTON, role: 'BACK', label: 'Back', hint: 'Esc',
-    x: bounds.x + gap,
-    y: top + metrics.rows * (buttonHeight + gap),
-    width: Math.max(MIN_TAP_PX, bounds.width * 0.3),
-    height: buttonHeight,
-  });
+  if (!pending.targets) return { menu: null, controls };
 
-  return controls;
+  const { menu, entries } = layOutMenu({
+    pending, opener: controls[pending.openedBy], bounds, ceiling, metrics, scale,
+  });
+  return { menu, controls: [...controls, ...entries] };
 }
 
 /**
@@ -579,7 +699,10 @@ function optionsFor(encounter, characterId) {
 /** @spec PRESENT-FIGHT-007 */
 function targetsFor(encounter, characterId, action) {
   if (action !== FightAction.ATTACK) return null;
-  return attackTargets(encounter, characterId).map((t) => ({ id: t.id, name: t.name }));
+  const names = fightNames(encounter);
+  return attackTargets(encounter, characterId).map((t) => ({
+    id: t.id, name: names[t.id], hitPoints: t.hitPoints, maxHitPoints: t.maxHitPoints,
+  }));
 }
 
 export function createFightController({ encounter, viewport, onDraw }) {
@@ -594,9 +717,8 @@ export function createFightController({ encounter, viewport, onDraw }) {
     turnsTaken: 0,
     outcome: null,
     dismissed: false,
-    // The player's clocks, in milliseconds: how long since the last action played, how
-    // long the shake has been running, and how far into the beat of filling now under
-    // way.
+    // The player's clocks, in milliseconds: how far into the pause before an enemy's
+    // turn, and how long the shake has been running.
     beat: 0,
     shake: 0,
     shakingId: null,
@@ -604,8 +726,6 @@ export function createFightController({ encounter, viewport, onDraw }) {
     // newest line, which is where it stays until they take it somewhere else.
     // @spec PRESENT-FIGHT-032
     logScroll: 0,
-    fill: 0,
-    partway: 0,
   };
 
   nextTurn(fight);
@@ -613,29 +733,20 @@ export function createFightController({ encounter, viewport, onDraw }) {
 }
 
 /**
- * Hand the turn to whoever is ready. A party member is asked; an enemy is left standing
- * until the beat that plays it.
+ * Hand the turn to whoever acts next, running the fight's time straight on to them. A
+ * party member is asked at once; an enemy is left standing for the pause that plays it.
  *
  * @spec COMBAT-TIME-003
  * @spec COMBAT-TIME-009
  * @spec PRESENT-FIGHT-005
+ * @spec PRESENT-READY-034
+ * @spec PRESENT-READY-035
  */
 function nextTurn(fight) {
   const result = encounterOutcome(fight.encounter);
   if (result.outcome !== Outcome.ONGOING) return end(fight, result);
 
-  // Nobody full yet: the bars fill in front of the player, on the fill clock, rather
-  // than jumping straight to whoever wins the race.
-  // @spec PRESENT-READY-024
-  const actor = readyActor(fight.encounter);
-  fight.fill = 0;
-  fight.partway = 0;
-  if (!actor) {
-    fight.actor = null;
-    fight.pending = null;
-    return;
-  }
-
+  const actor = nextActor(fight.encounter);
   fight.actor = actor;
   if (actor.side !== 'PARTY') {
     fight.pending = null;
@@ -671,15 +782,9 @@ function ask(fight, characterId) {
     options,
     targets: null,
     action: null,
+    openedBy: null,
     mustPass: options.every((o) => !o.available),
   };
-}
-
-function names(fight) {
-  const map = {};
-  for (const c of roster(fight.encounter.party)) map[c.id] = c.name;
-  for (const e of fight.encounter.enemies.members) map[e.id] = e.name;
-  return map;
 }
 
 /**
@@ -692,7 +797,7 @@ function names(fight) {
 function resolveOne(fight, actorId, action) {
   const event = takeAction(fight.encounter, actorId, action);
   if (event && event.action === Action.ATTACK && event.targetId) {
-    fight.log.push(describeEvent(event, names(fight), event.targetId, event.felled === true));
+    fight.log.push(describeEvent(event, fightNames(fight.encounter), event.targetId, event.felled === true));
     // The card that moves is the card that swung: nothing else in a fight moves, so a
     // blow is otherwise a number changing on a panel of numbers.
     // @spec PRESENT-READY-018
@@ -773,20 +878,17 @@ export function scrollLog(fight, lines) {
 export function fightIsPlaying(fight) {
   if (!fight || fight.phase !== FightPhase.ACTING) return false;
   if (fight.shakingId) return true;
-  // Waiting on a press costs no frames; only the bars and the beat move on their own.
+  // Waiting on a press costs no frames; only the pause moves on its own.
   return !fight.pending;
 }
 
 /**
- * Run the player's clock on by the milliseconds that actually passed: the bars filling
- * and the beat between actions. Only the filling moves the fight's own time, and only
- * while nobody is up.
+ * Run the player's clock on by the milliseconds that actually passed: the pause before
+ * an enemy's turn, and any judder still decaying. None of it moves the fight's own time.
  *
  * @spec PRESENT-READY-005
  * @spec PRESENT-READY-006
  * @spec PRESENT-READY-008
- * @spec PRESENT-READY-024
- * @spec PRESENT-READY-032
  */
 export function advanceClock(fight, ms) {
   if (!fightIsPlaying(fight)) return false;
@@ -798,23 +900,6 @@ export function advanceClock(fight, ms) {
       fight.shake = 0;
       fight.shakingId = null;
     }
-  }
-
-  if (!fight.actor) {
-    fight.fill += ms;
-    while (fight.fill >= FILL_BEAT_MS) {
-      fight.fill -= FILL_BEAT_MS;
-      advanceBeats(fight.encounter, 1);
-      // Somebody is up, or the fight is over between one beat and the next: either
-      // way the turn passes rather than the bars going on filling.
-      if (readyActor(fight.encounter)
-        || encounterOutcome(fight.encounter).outcome !== Outcome.ONGOING) {
-        nextTurn(fight);
-        return true;
-      }
-    }
-    fight.partway = fight.fill / FILL_BEAT_MS;
-    return true;
   }
 
   // Somebody is being asked, and nothing happens until they are answered.
@@ -831,21 +916,30 @@ export function advanceClock(fight, ms) {
  * Take the nth option on offer. A number key and a tap land here identically, carrying
  * no record of which was used.
  *
+ * While a menu is open the nth thing on offer is its nth entry, not the nth option.
+ *
  * @spec PRESENT-FIGHT-013
+ * @spec PRESENT-FIGHT-037
+ * @spec PRESENT-MENU-001
+ * @spec PRESENT-MENU-002
+ * @spec PRESENT-MENU-008
+ * @spec PRESENT-MENU-014
  */
 export function chooseOption(fight, index) {
   if (fight.phase !== FightPhase.ACTING || !fight.pending) return false;
 
   const characterId = fight.pending.characterId;
-
-  // Choosing a target for an action already picked.
-  if (fight.pending.targets) {
-    const target = fight.pending.targets[index];
-    if (!target) return false;
+  const strike = (target) => {
     resolveOne(fight, characterId, {
       kind: Action.ATTACK, targetId: target.id, ...attackOf(fight.encounter, characterId),
     });
     return true;
+  };
+
+  // Choosing a target for an action already picked.
+  if (fight.pending.targets) {
+    const target = fight.pending.targets[index];
+    return target ? strike(target) : false;
   }
 
   const option = fight.pending.options[index];
@@ -869,8 +963,10 @@ export function chooseOption(fight, index) {
   }
 
   const targets = targetsFor(fight.encounter, characterId, option.action);
-  if (targets && targets.length > 0) {
-    fight.pending = { ...fight.pending, action: option.action, targets };
+  // A question with one answer is not asked.
+  if (targets?.length === 1) return strike(targets[0]);
+  if (targets?.length > 1) {
+    fight.pending = { ...fight.pending, action: option.action, targets, openedBy: index };
     return true;
   }
 
@@ -880,16 +976,36 @@ export function chooseOption(fight, index) {
 }
 
 /**
- * Back out of a half-made choice. A turn belongs to one character and resolves the
- * instant it is taken, so there is nothing behind this one to reach back to.
+ * Press one of the four on the row. With no menu open that is choosing it. With one
+ * open, the button that opened it closes it, a greyed one stays inert, and any other
+ * closes it and goes on as though it had never been open.
+ *
+ * @spec PRESENT-MENU-009
+ * @spec PRESENT-MENU-010
+ * @spec PRESENT-MENU-011
+ */
+export function pressOption(fight, index) {
+  if (fight.phase !== FightPhase.ACTING || !fight.pending) return false;
+  if (!fight.pending.targets) return chooseOption(fight, index);
+
+  if (!fight.pending.options[index]?.available) return false;
+  const opener = fight.pending.openedBy === index;
+  goBack(fight);
+  return opener || chooseOption(fight, index);
+}
+
+/**
+ * Close an open menu. A turn belongs to one character and resolves the instant it is
+ * taken, so there is nothing behind this one to reach back to.
  *
  * @spec PRESENT-FIGHT-009
+ * @spec PRESENT-MENU-009
  */
 export function goBack(fight) {
   if (fight.phase !== FightPhase.ACTING || !fight.pending) return false;
 
   if (fight.pending.targets) {
-    fight.pending = { ...fight.pending, action: null, targets: null };
+    fight.pending = { ...fight.pending, action: null, targets: null, openedBy: null };
     return true;
   }
   return false;

@@ -22,9 +22,17 @@ specs fix the structure those numbers are fed into.
 - [x] **COMBAT-TIME-012**: The system shall not advance the exploration clock for any reason while an encounter is running.
 - [x] **COMBAT-TIME-013**: When a combatant stops being able to act, the system shall discard the readiness they had accumulated rather than holding it for their return.
 - [x] **COMBAT-TIME-014**: The system shall not raise the readiness of a combatant unable to act.
-- [x] **COMBAT-TIME-016**: The system shall report which combatant is ready to act without advancing the fight's time.
-- [x] **COMBAT-TIME-017**: The system shall report a combatant's readiness partway through a beat as their readiness plus that fraction of what the beat will add, and shall report no readiness for a combatant unable to act.
 - [x] **COMBAT-TIME-015**: The system shall allow a combatant whose readiness fills more than once between two actions of a slower combatant to act that many times.
+
+## The turn order
+
+- [x] **COMBAT-QUEUE-001**: While an encounter is ongoing, the system shall report the turn order as a list of the fight's next turns, of a length the caller asks for, each entry naming the combatant who takes that turn.
+- [x] **COMBAT-QUEUE-002**: The system shall name as the first entry of the turn order the combatant the fight will act next.
+- [x] **COMBAT-QUEUE-003**: The system shall project the turn order by the rules that resolve the fight: raising readiness by Dexterity, settling combatants ready on the same beat by the acting order, and spending one full bar for each turn listed.
+- [x] **COMBAT-QUEUE-004**: The system shall list a combatant in the turn order as often as their readiness fills, so that a quicker combatant holds more of its entries than a slower one.
+- [x] **COMBAT-QUEUE-005**: The system shall change no readiness, advance no fight time, and draw no random number when reporting the turn order.
+- [x] **COMBAT-QUEUE-006**: The system shall list only combatants able to act in the turn order.
+- [x] **COMBAT-QUEUE-007**: When an encounter is no longer ongoing, the system shall report an empty turn order.
 
 ## Where the bars start
 

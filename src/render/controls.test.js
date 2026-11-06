@@ -7,10 +7,10 @@ import {
   uiScale, contentColumn, MAX_UI_SCALE,
 } from './geometry.js';
 import {
-  buildFightPlan, createFightController, advanceClock, FightPhase, FILL_BEAT_MS,
+  buildFightPlan, createFightController, chooseOption, advanceClock, FightPhase, BEAT_MS,
 } from './fight.js';
 import { buildPromptPlan } from './promptplan.js';
-import { createController, pressPointer, layers } from './controller.js';
+import { createController, pressPointer, scrollFightLog, layers } from './controller.js';
 import { createExploration, Verb, PartyAction } from '../sim/exploration.js';
 import { boundActions } from '../sim/input.js';
 import { createFloor, Direction } from '../sim/floor.js';
@@ -22,7 +22,7 @@ const desktop = { width: 1440, height: 900 };
 
 const allControls = (plan) => plan.controls ?? [];
 
-function fightOf(viewport) {
+function fightOf(viewport, foes = 2) {
   const party = createParty();
   addCharacter(party, createCharacter({
     id: 'bram', name: 'Bram', characterClass: CharacterClass.FIGHTER,
@@ -30,16 +30,15 @@ function fightOf(viewport) {
   }));
   const encounter = beginEncounter({
     party,
-    enemies: createEnemyGroup([
-      createEnemy({ id: 'g1', name: 'Goblin', maxHitPoints: 9, potValue: 10, attack: { baseDamage: 5, accuracy: 24 } }),
-      createEnemy({ id: 'g2', name: 'Goblin', maxHitPoints: 9, potValue: 10, attack: { baseDamage: 5, accuracy: 24 } }),
-    ]),
+    enemies: createEnemyGroup(Array.from({ length: foes }, (_, i) => createEnemy({
+      id: `g${i + 1}`, name: 'Goblin', maxHitPoints: 9, potValue: 10, attack: { baseDamage: 5, accuracy: 24 },
+    }))),
     rng: makeRng(1),
     origin: { floorId: 'f1', x: 1, y: 1 },
   });
   const fight = createFightController({ encounter, viewport, onDraw: vi.fn() });
-  // Let the bars fill until the party is asked, which is where every control appears.
-  advanceClock(fight, FILL_BEAT_MS * 20);
+  // Run on until the party is asked, which is where every control appears.
+  for (let i = 0; i < 40 && !fight.pending; i++) advanceClock(fight, BEAT_MS);
   return { encounter, fight };
 }
 
@@ -114,12 +113,13 @@ describe('combat controls', () => {
   // @spec PRESENT-FIGHT-017
   it('gives every target a control once an attack has been chosen', () => {
     const { encounter, fight } = fightOf(phone);
-    // Pick attack, which asks for a target.
-    fight.pending = { ...fight.pending, action: 'ATTACK', targets: [{ id: 'g1', name: 'Goblin' }] };
+    chooseOption(fight, 0);
 
     const plan = buildFightPlan(encounter, phone, { phase: FightPhase.SELECTING, pending: fight.pending });
+    const entries = allControls(plan).filter((c) => c.role === 'TARGET');
 
-    expect(allControls(plan).find((c) => c.optionIndex === 0).label).toBe('Goblin');
+    expect(entries.map((c) => c.label)).toEqual(['Goblin A', 'Goblin B']);
+    for (const entry of entries) expect(entry.height).toBeGreaterThanOrEqual(MIN_TAP_PX);
   });
 
   // @spec PRESENT-CTRL-003
@@ -129,17 +129,6 @@ describe('combat controls', () => {
     for (const control of allControls(buildFightPlan(encounter, phone, { phase: FightPhase.SELECTING, pending: fight.pending }))) {
       expect(control.label).not.toMatch(/^\[?\d/);
     }
-  });
-
-  // @spec PRESENT-CTRL-001
-  it('offers a back control while a choice is pending', () => {
-    const { encounter, fight } = fightOf(phone);
-
-    const back = allControls(buildFightPlan(encounter, phone, { phase: FightPhase.SELECTING, pending: fight.pending }))
-      .find((c) => c.role === 'BACK');
-
-    expect(back).toBeDefined();
-    expect(back.height).toBeGreaterThanOrEqual(MIN_TAP_PX);
   });
 
   // @spec PRESENT-CTRL-001
@@ -229,18 +218,17 @@ describe('the outcome banner', () => {
 });
 
 describe('tapping a drawn control', () => {
-  function fightController() {
+  function fightController(foes) {
     const floor = createFloor({ id: 'f1', width: 7, height: 7 });
     const state = createExploration({
       floors: [floor], floorId: 'f1', tile: { x: 3, y: 3 }, facing: Direction.NORTH,
     });
-    const { encounter } = fightOf(phone);
+    const { encounter } = fightOf(phone, foes);
     const campaign = { encounter, state, concludeEncounter: () => { campaign.encounter = null; }, fleeEncounter: () => {} };
     const controller = createController({ state, campaign, viewport: phone, onDraw: vi.fn() });
-    // A fight opens with its bars still filling; these tests are about the controls
-    // that appear once somebody is ready to be asked.
+    // These tests are about the controls that appear once somebody is being asked.
     for (let i = 0; i < 40 && !controller.fight.pending; i++) {
-      advanceClock(controller.fight, FILL_BEAT_MS);
+      advanceClock(controller.fight, BEAT_MS);
     }
     return { controller };
   }
@@ -285,17 +273,83 @@ describe('tapping a drawn control', () => {
     expect(controller.fight.pending.targets).toBeNull();
   });
 
-  // @spec PRESENT-CTRL-005
-  it('steps back when the press lands on the back control', () => {
+  // @spec PRESENT-MENU-009
+  it('closes an open menu when the press lands outside it, doing nothing else', () => {
     const { controller } = fightController();
     const plan = () => layers(controller).find((l) => l.name === 'fight').plan;
-    const attack = plan().controls.find((c) => c.optionIndex === 0);
+    const attack = plan().controls.find((c) => c.role === 'OPTION' && c.optionIndex === 0);
     pressPointer(controller, attack.x + attack.width / 2, attack.y + attack.height / 2);
+    const turns = controller.fight.turnsTaken;
 
-    const back = plan().controls.find((c) => c.role === 'BACK');
-    pressPointer(controller, back.x + back.width / 2, back.y + back.height / 2);
+    expect(pressPointer(controller, 2, phone.height / 2)).toBe(true);
 
     expect(controller.fight.pending.targets).toBeNull();
+    expect(controller.fight.turnsTaken).toBe(turns);
+  });
+
+  // @spec PRESENT-MENU-009
+  it('closes the menu rather than paging the log when the scrollbar is pressed', () => {
+    const { controller } = fightController();
+    const plan = () => layers(controller).find((l) => l.name === 'fight').plan;
+    controller.fight.log = Array.from({ length: 40 }, (_, i) => `line ${i + 1}`);
+    const attack = plan().controls.find((c) => c.role === 'OPTION' && c.optionIndex === 0);
+    pressPointer(controller, attack.x + attack.width / 2, attack.y + attack.height / 2);
+    const { track } = plan().scrollbar;
+
+    pressPointer(controller, track.x + track.width / 2, track.y + 1);
+
+    expect(controller.fight.pending.targets).toBeNull();
+    expect(controller.fight.logScroll).toBe(0);
+  });
+
+  // @spec PRESENT-MENU-015
+  it('scrolls the log on the wheel with a menu open, and leaves the menu', () => {
+    const { controller } = fightController();
+    const plan = () => layers(controller).find((l) => l.name === 'fight').plan;
+    controller.fight.log = Array.from({ length: 40 }, (_, i) => `line ${i + 1}`);
+    const attack = plan().controls.find((c) => c.role === 'OPTION' && c.optionIndex === 0);
+    pressPointer(controller, attack.x + attack.width / 2, attack.y + attack.height / 2);
+
+    scrollFightLog(controller, 3);
+
+    expect(controller.fight.logScroll).toBe(3);
+    expect(controller.fight.pending.targets).not.toBeNull();
+  });
+
+  // @spec PRESENT-FIGHT-013
+  it('resolves a tap on a menu entry just as its number would', () => {
+    const { controller } = fightController();
+    const plan = () => layers(controller).find((l) => l.name === 'fight').plan;
+    const attack = plan().controls.find((c) => c.role === 'OPTION' && c.optionIndex === 0);
+    pressPointer(controller, attack.x + attack.width / 2, attack.y + attack.height / 2);
+    const entry = plan().controls.filter((c) => c.role === 'TARGET')[1];
+
+    pressPointer(controller, entry.x + entry.width / 2, entry.y + entry.height / 2);
+
+    expect(controller.fight.turnsTaken).toBe(1);
+    expect(controller.fight.log[0]).toContain('Goblin B');
+  });
+
+  // @spec PRESENT-BUILD-002
+  it('keeps the version stamp clear of a menu that rises past the panel', () => {
+    const { controller } = fightController(20);
+    const fightPlan = () => layers(controller).find((l) => l.name === 'fight').plan;
+    const attack = fightPlan().controls.find((c) => c.role === 'OPTION' && c.optionIndex === 0);
+    pressPointer(controller, attack.x + attack.width / 2, attack.y + attack.height / 2);
+
+    const { stamp } = layers(controller).find((l) => l.name === 'hud').plan;
+
+    expect(fightPlan().menu.box.y).toBeLessThan(fightPlan().bounds.y);
+    expect(stamp.y + stamp.size).toBeLessThanOrEqual(fightPlan().menu.box.y);
+  });
+
+  // @spec PRESENT-STRIP-008
+  it('does nothing when the press lands on the turn strip', () => {
+    const { controller } = fightController();
+    const [tile] = layers(controller).find((l) => l.name === 'fight').plan.strip.tiles;
+
+    expect(pressPointer(controller, tile.x + tile.size / 2, tile.y + tile.size / 2)).toBe(false);
+    expect(controller.fight.turnsTaken).toBe(0);
   });
 
   // @spec PRESENT-CTRL-006

@@ -258,26 +258,35 @@ const readyNow = (state) =>
   actingOrder(state).filter((c) => readinessOf(state, c.id) >= FULL_BAR);
 
 /**
- * Whoever is ready to act right now, or nobody. Unlike nextActor this never runs the
- * fight's time on, so a caller can let the bars fill at a pace of its own choosing.
+ * The next turns of the fight, in the order they will come: the fight's own arithmetic
+ * run forward on a copy of the bars. A forecast and not a beat, so nothing moves, nothing
+ * is drawn from the generator, and it assumes everyone standing stays standing.
  *
- * @spec COMBAT-TIME-016
+ * @spec COMBAT-QUEUE-001
+ * @spec COMBAT-QUEUE-002
+ * @spec COMBAT-QUEUE-003
+ * @spec COMBAT-QUEUE-004
+ * @spec COMBAT-QUEUE-005
+ * @spec COMBAT-QUEUE-006
+ * @spec COMBAT-QUEUE-007
  */
-export function readyActor(state) {
-  if (encounterOutcome(state).outcome !== Outcome.ONGOING) return null;
-  return readyNow(state)[0] ?? null;
-}
+export function turnOrder(state, count) {
+  if (encounterOutcome(state).outcome !== Outcome.ONGOING) return [];
 
-/**
- * How full a combatant's bar is some share of the way through the beat now filling it.
- * A report and not a beat: nothing moves, and nobody becomes ready because of it.
- *
- * @spec COMBAT-TIME-017
- */
-export function readinessPartway(state, id, fraction) {
-  const combatant = combatants(state).find((c) => c.id === id);
-  if (!combatant) return 0;
-  return readinessOf(state, id) + speedOf(combatant.dexterity) * fraction;
+  const order = actingOrder(state);
+  const bars = new Map(order.map((c) => [c.id, state.readiness.get(c.id) ?? 0]));
+  const turns = [];
+
+  while (turns.length < count && order.length > 0) {
+    const ready = order.find((c) => bars.get(c.id) >= FULL_BAR);
+    if (ready) {
+      turns.push({ id: ready.id, side: ready.side });
+      bars.set(ready.id, bars.get(ready.id) - FULL_BAR);
+    } else {
+      for (const c of order) bars.set(c.id, bars.get(c.id) + speedOf(c.dexterity));
+    }
+  }
+  return turns;
 }
 
 /**

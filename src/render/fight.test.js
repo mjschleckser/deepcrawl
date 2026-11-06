@@ -5,13 +5,14 @@ import {
   roster, Condition,
 } from '../sim/party.js';
 import {
-  beginEncounter, createEnemy, createEnemyGroup, readinessOf, FULL_BAR,
+  beginEncounter, createEnemy, createEnemyGroup, readinessOf, turnOrder, FULL_BAR,
   Action, Outcome, Band,
 } from '../sim/combat.js';
+import { MIN_TAP_PX } from './geometry.js';
 import {
-  buildFightPlan, createFightController, chooseOption, goBack, dismissOutcome,
+  buildFightPlan, createFightController, chooseOption, pressOption, goBack, dismissOutcome,
   playEnemyTurn, passTurn, advanceClock, fightIsPlaying, scrollLog,
-  SHAKE_PIXELS, FILL_BEAT_MS, Wound, OPTION_SLOTS,
+  SHAKE_PIXELS, TURN_STRIP_LENGTH, Wound, OPTION_SLOTS,
   FightPhase, FightAction, describeEvent, BEAT_MS,
 } from './fight.js';
 
@@ -26,25 +27,11 @@ function defend(fight) {
 /** The option occupying one of the four fixed slots. */
 const slot = (fight, action) => fight.pending.options.find((o) => o.action === action);
 
-/** Let the fight move on a little, whatever it is waiting for. */
-function nudge(fight, spans = 4) {
-  for (let i = 0; i < spans; i++) advanceClock(fight, FILL_BEAT_MS);
-  return fight;
-}
-
-/** Let the bars fill, a beat at a time, until somebody is up. */
-function untilReady(fight, limit = 200) {
-  for (let i = 0; i < limit && fight.phase === FightPhase.ACTING && !fight.actor; i++) {
-    advanceClock(fight, FILL_BEAT_MS);
-  }
-  return fight;
-}
 
 /** Walk the fight on until the party is being asked something, or it ends. */
 function untilAsked(fight, limit = 200) {
   for (let i = 0; i < limit && fight.phase === FightPhase.ACTING && !fight.pending; i++) {
-    if (fight.actor) playEnemyTurn(fight);
-    else advanceClock(fight, FILL_BEAT_MS);
+    playEnemyTurn(fight);
   }
   return fight;
 }
@@ -76,12 +63,8 @@ function fightState({ enemies, light = 'BRIGHT' } = {}) {
   });
 }
 
-/** A fight run on to its first turn, which is where most of what is tested begins. */
+/** A fight as it opens, which is already at its first turn. */
 const controller = (over = {}) =>
-  untilReady(createFightController({ encounter: fightState(over), viewport, onDraw: vi.fn() }));
-
-/** A fight exactly as it opens, before any time has passed. */
-const opening = (over = {}) =>
   createFightController({ encounter: fightState(over), viewport, onDraw: vi.fn() });
 
 describe('what a fight draws', () => {
@@ -101,18 +84,19 @@ describe('what a fight draws', () => {
   });
 
   // @spec PRESENT-READY-028
-  it('draws a portrait and three stacked bars for every combatant', () => {
+  it('draws a portrait and two stacked bars for every combatant, and no readiness', () => {
     const plan = buildFightPlan(fightState(), viewport, { phase: FightPhase.ACTING });
 
     for (const drawn of [...plan.enemies, ...plan.party]) {
       expect(drawn.portraitBox.size).toBe(drawn.height);
       expect(drawn.portraitBox.x).toBe(drawn.x);
-      const { readiness, identity, health } = drawn.bars;
-      // Readiness above, identity in the middle, hit points beneath.
-      expect(readiness.y).toBeLessThan(identity.y);
+      const { identity, health } = drawn.bars;
+      // Identity above, hit points beneath, and nothing else to mistake them for.
       expect(identity.y).toBeLessThan(health.y);
+      expect(Object.keys(drawn.bars).sort()).toEqual(['health', 'identity']);
+      expect(drawn.readiness).toBeUndefined();
       // Beside the portrait, never over it.
-      for (const bar of [readiness, identity, health]) {
+      for (const bar of [identity, health]) {
         expect(bar.x).toBeGreaterThanOrEqual(drawn.portraitBox.x + drawn.portraitBox.size);
         expect(bar.x + bar.width).toBeLessThanOrEqual(drawn.x + drawn.width + 0.001);
       }
@@ -134,35 +118,6 @@ describe('what a fight draws', () => {
     // A condition worth saying is said; an ordinary one is not.
     expect(plan.party.find((c) => c.id === 'bram').status).toBe(Condition.UNCONSCIOUS);
     expect(plan.party.find((c) => c.id === 'tam').status).toBeNull();
-  });
-
-  // @spec PRESENT-READY-027
-  it('reports readiness as a share of one, for a bar filled with arrowheads', () => {
-    const encounter = fightState();
-    encounter.readiness.set('bram', 50);
-    encounter.readiness.set('g1', 100);
-
-    const plan = buildFightPlan(encounter, viewport, { phase: FightPhase.ACTING });
-
-    expect(plan.party.find((c) => c.id === 'bram').readiness).toBeCloseTo(0.5, 5);
-    expect(plan.enemies.find((e) => e.id === 'g1').readiness).toBe(1);
-    // A share the drawing can lay arrowheads along, never a count of its own.
-    for (const drawn of [...plan.party, ...plan.enemies]) {
-      expect(drawn.readiness).toBeLessThanOrEqual(1);
-      expect(drawn.bars.readiness.width).toBeGreaterThan(0);
-    }
-  });
-
-  // @spec PRESENT-READY-031
-  it('marks a full bar as ready, and a filling one as not', () => {
-    const encounter = fightState();
-    encounter.readiness.set('bram', 100);
-    encounter.readiness.set('tam', 30);
-
-    const plan = buildFightPlan(encounter, viewport, { phase: FightPhase.ACTING });
-
-    expect(plan.party.find((c) => c.id === 'bram').readiness).toBe(1);
-    expect(plan.party.find((c) => c.id === 'tam').readiness).toBeLessThan(1);
   });
 
   // @spec PRESENT-FIGHT-024
@@ -254,10 +209,11 @@ describe('a panel that stays where it is', () => {
   // @spec PRESENT-FIGHT-026
   // @spec PRESENT-FIGHT-027
   it('keeps every region where it was when a prompt arrives', () => {
-    const fight = opening();
-    const quiet = planWith(fight);
-    untilAsked(fight);
+    const fight = untilAsked(controller());
     const asked = planWith(fight);
+    const quiet = buildFightPlan(fight.encounter, viewport, {
+      phase: fight.phase, pending: null, log: fight.log, actor: null,
+    });
 
     expect(asked.bounds).toEqual(quiet.bounds);
     expect(asked.regions).toEqual(quiet.regions);
@@ -266,23 +222,6 @@ describe('a panel that stays where it is', () => {
     expect(asked.prompt).toBeTruthy();
     for (const [i, card] of asked.party.entries()) {
       expect(card.y).toBe(quiet.party[i].y);
-    }
-  });
-
-  // @spec PRESENT-FIGHT-026
-  // @spec PRESENT-FIGHT-028
-  it('keeps every region where it was when targets are offered', () => {
-    const fight = controller();
-    untilAsked(fight);
-    const before = planWith(fight);
-
-    chooseOption(fight, fight.pending.options.findIndex((o) => o.action === FightAction.ATTACK));
-    const choosing = planWith(fight);
-
-    expect(choosing.pending.targets).not.toBeNull();
-    expect(choosing.regions).toEqual(before.regions);
-    for (const [i, card] of choosing.enemies.entries()) {
-      expect(card.y).toBe(before.enemies[i].y);
     }
   });
 
@@ -488,7 +427,7 @@ describe('choosing what to do', () => {
   it('skips anyone who cannot act', () => {
     const encounter = fightState();
     applyDamage(encounter.party, 'bram', 9999);
-    const fight = untilReady(createFightController({ encounter, viewport, onDraw: vi.fn() }));
+    const fight = createFightController({ encounter, viewport, onDraw: vi.fn() });
 
     // A body is never asked anything, however full the bar it had.
     for (let i = 0; i < 6 && fight.phase === FightPhase.ACTING; i++) {
@@ -504,7 +443,7 @@ describe('choosing what to do', () => {
   it('offers no attack to somebody with nothing to swing', () => {
     const encounter = fightState();
     character(encounter.party, 'isolde').attack = null;
-    const fight = untilReady(createFightController({ encounter, viewport, onDraw: vi.fn() }));
+    const fight = createFightController({ encounter, viewport, onDraw: vi.fn() });
 
     while (fight.pending && fight.pending.characterId !== 'isolde') {
       defend(fight);
@@ -530,16 +469,14 @@ describe('choosing what to do', () => {
   // @spec COMBAT-TARGET-004
   it('offers nobody who has already fallen', () => {
     const encounter = fightState();
-    for (const id of ['g1', 'g2']) {
-      const foe = encounter.enemies.members.find((e) => e.id === id);
-      foe.hitPoints = 0;
-      foe.condition = Condition.DEAD;
-    }
-    const fight = untilReady(createFightController({ encounter, viewport, onDraw: vi.fn() }));
+    const foe = encounter.enemies.members.find((e) => e.id === 'g1');
+    foe.hitPoints = 0;
+    foe.condition = Condition.DEAD;
+    const fight = createFightController({ encounter, viewport, onDraw: vi.fn() });
     untilAsked(fight);
     chooseOption(fight, fight.pending.options.findIndex((o) => o.action === FightAction.ATTACK));
 
-    expect(fight.pending.targets.map((t) => t.id)).toEqual(['a1']);
+    expect(fight.pending.targets.map((t) => t.id)).toEqual(['g2', 'a1']);
   });
 
   // @spec COMBAT-TIME-009
@@ -608,7 +545,7 @@ describe('the four a turn offers', () => {
   it('keeps an option it cannot offer in its own place, marked unavailable', () => {
     const encounter = fightState();
     character(encounter.party, 'isolde').attack = null;
-    const fight = untilReady(createFightController({ encounter, viewport, onDraw: vi.fn() }));
+    const fight = createFightController({ encounter, viewport, onDraw: vi.fn() });
 
     while (fight.pending && fight.pending.characterId !== 'isolde') {
       defend(fight);
@@ -647,7 +584,7 @@ describe('the four a turn offers', () => {
         attack: { baseDamage: 5, accuracy: 24 }, forbidsEscape: true,
       })],
     });
-    const fight = untilReady(createFightController({ encounter, viewport, onDraw: vi.fn() }));
+    const fight = createFightController({ encounter, viewport, onDraw: vi.fn() });
     untilAsked(fight);
 
     expect(slot(fight, FightAction.FLEE).available).toBe(false);
@@ -662,7 +599,7 @@ describe('the four a turn offers', () => {
         attributes: { DEXTERITY: 20 }, attack: { baseDamage: 5, accuracy: 24 },
       })],
     });
-    const fight = untilReady(createFightController({ encounter, viewport, onDraw: vi.fn() }));
+    const fight = createFightController({ encounter, viewport, onDraw: vi.fn() });
     untilAsked(fight);
 
     // A hopeless run is not offered and then charged for; it is not offered.
@@ -689,7 +626,7 @@ describe('the four a turn offers', () => {
         attributes: { DEXTERITY: 20 }, attack: { baseDamage: 5, accuracy: 24 },
       })],
     });
-    const fight = untilReady(createFightController({ encounter, viewport, onDraw: vi.fn() }));
+    const fight = createFightController({ encounter, viewport, onDraw: vi.fn() });
     untilAsked(fight);
 
     // Two different causes, two different sentences.
@@ -720,7 +657,7 @@ describe('the four a turn offers', () => {
   it('accepts no action the character cannot legally take', () => {
     const encounter = fightState();
     character(encounter.party, 'isolde').attack = null;
-    const fight = untilReady(createFightController({ encounter, viewport, onDraw: vi.fn() }));
+    const fight = createFightController({ encounter, viewport, onDraw: vi.fn() });
     while (fight.pending && fight.pending.characterId !== 'isolde') {
       defend(fight);
       untilAsked(fight);
@@ -760,7 +697,7 @@ describe('the four a turn offers', () => {
   it('binds each option to the same number whether or not it can be taken', () => {
     const encounter = fightState();
     character(encounter.party, 'isolde').attack = null;
-    const fight = untilReady(createFightController({ encounter, viewport, onDraw: vi.fn() }));
+    const fight = createFightController({ encounter, viewport, onDraw: vi.fn() });
     untilAsked(fight);
 
     const armed = fight.pending.options.map((o) => o.action);
@@ -784,7 +721,7 @@ describe('a turn with nothing in it', () => {
       })],
     });
     for (const c of roster(encounter.party)) c.attack = null;
-    const fight = untilReady(createFightController({ encounter, viewport, onDraw: vi.fn() }));
+    const fight = createFightController({ encounter, viewport, onDraw: vi.fn() });
     untilAsked(fight);
     return fight;
   }
@@ -846,7 +783,7 @@ describe('a turn with nothing in it', () => {
     const whose = fight.pending.characterId;
 
     // However long the clock runs, a turn nobody pressed for is not taken.
-    for (let i = 0; i < 40; i++) advanceClock(fight, FILL_BEAT_MS);
+    for (let i = 0; i < 40; i++) advanceClock(fight, BEAT_MS);
 
     expect(fight.turnsTaken).toBe(0);
     expect(fight.pending.characterId).toBe(whose);
@@ -1084,27 +1021,6 @@ describe('the panel is sized to what is in it', () => {
   });
 });
 
-describe('the pace the bars are drawn at', () => {
-  // @spec PRESENT-READY-032
-  it('gives every bar the same span of real time per beat', () => {
-    const encounter = fightState();
-    const fight = createFightController({ encounter, viewport, onDraw: vi.fn() });
-    const beats = fight.encounter.beats;
-
-    // One span of real time buys exactly one beat, for everybody at once.
-    advanceClock(fight, FILL_BEAT_MS);
-
-    expect(fight.encounter.beats).toBe(beats + 1);
-  });
-
-  // @spec PRESENT-READY-024
-  it('is slow enough that a bar takes several seconds to fill', () => {
-    // A Dexterity-10 combatant needs ten beats for a bar; the pace makes that readable
-    // rather than instant.
-    expect(FILL_BEAT_MS * 10).toBeGreaterThanOrEqual(3000);
-  });
-});
-
 describe('a fight that plays itself out', () => {
   const planOf = (fight) => buildFightPlan(fight.encounter, viewport, {
     phase: fight.phase,
@@ -1113,21 +1029,6 @@ describe('a fight that plays itself out', () => {
     actor: fight.actor,
     shakingId: fight.shakingId,
     shake: fight.shake,
-    partway: fight.partway,
-  });
-
-  // @spec PRESENT-READY-001
-  // @spec PRESENT-READY-002
-  it('carries how full every bar is, as the simulation has it', () => {
-    const fight = controller();
-    const plan = planOf(fight);
-
-    for (const card of [...plan.party, ...plan.enemies]) {
-      expect(card.readiness).toBeGreaterThanOrEqual(0);
-      expect(card.readiness).toBeLessThanOrEqual(1);
-    }
-    // Whoever is up is full; that is what being up means.
-    expect(plan.party.find((c) => c.id === fight.actor.id).readiness).toBe(1);
   });
 
   // @spec PRESENT-READY-003
@@ -1173,60 +1074,6 @@ describe('a fight that plays itself out', () => {
 
     expect(fight.pending).toBeNull();
     expect(planOf(fight).prompt).toBeNull();
-  });
-
-  // @spec PRESENT-READY-024
-  // @spec COMBAT-SURPRISE-003
-  it('opens with every bar part-filled and nobody up', () => {
-    const fight = opening();
-    const plan = planOf(fight);
-
-    expect(fight.actor).toBeNull();
-    expect(fight.pending).toBeNull();
-    for (const card of [...plan.party, ...plan.enemies]) {
-      expect(card.readiness).toBeGreaterThanOrEqual(0);
-      expect(card.readiness).toBeLessThan(1);
-    }
-    expect(fightIsPlaying(fight)).toBe(true);
-  });
-
-  // @spec PRESENT-READY-024
-  it('fills the bars a beat per span of real time, and not faster', () => {
-    const fight = opening();
-
-    advanceClock(fight, FILL_BEAT_MS - 1);
-    expect(fight.encounter.beats).toBe(0);
-
-    advanceClock(fight, 1);
-    expect(fight.encounter.beats).toBe(1);
-
-    // However far along the bars opened, the fight's time moves a beat a span.
-    const beats = fight.encounter.beats;
-    advanceClock(fight, FILL_BEAT_MS * 3);
-    expect(fight.encounter.beats).toBeLessThanOrEqual(beats + 3);
-  });
-
-  // @spec PRESENT-READY-024
-  it('stops filling the moment somebody is up', () => {
-    const fight = controller();
-    const beats = fight.encounter.beats;
-
-    advanceClock(fight, FILL_BEAT_MS * 20);
-
-    expect(fight.encounter.beats).toBe(beats);
-  });
-
-  // @spec PRESENT-READY-025
-  it('draws a bar partway through the beat that is filling it', () => {
-    const fight = opening();
-    // Empty every bar, so what is drawn is the filling and nothing else.
-    for (const id of fight.encounter.readiness.keys()) fight.encounter.readiness.set(id, 0);
-    advanceClock(fight, FILL_BEAT_MS * 2 + FILL_BEAT_MS / 2);
-
-    const bram = planOf(fight).party.find((c) => c.id === 'bram');
-
-    // Two beats and half of a third, at Bram's ten a beat, of a hundred.
-    expect(bram.readiness).toBeCloseTo(0.25, 5);
   });
 
   // @spec PRESENT-READY-022
@@ -1283,15 +1130,465 @@ describe('a fight that plays itself out', () => {
 
     for (const card of [...plan.party, ...plan.enemies]) expect(card.offsetY).toBe(0);
   });
+});
+
+describe('the turn strip', () => {
+  const planOf = (fight, over = {}) => buildFightPlan(fight.encounter, viewport, {
+    phase: fight.phase, pending: fight.pending, log: fight.log, actor: fight.actor, ...over,
+  });
+
+  // @spec PRESENT-STRIP-001
+  // @spec PRESENT-STRIP-007
+  it('runs along the top of the screen, in the order the simulation reports', () => {
+    const fight = controller();
+    const plan = planOf(fight);
+    const { tiles, box } = plan.strip;
+
+    expect(tiles.map((t) => t.id))
+      .toEqual(turnOrder(fight.encounter, TURN_STRIP_LENGTH).map((t) => t.id));
+    expect(box.y + box.height).toBeLessThanOrEqual(plan.bounds.y);
+    expect(box.y).toBeLessThan(viewport.height / 4);
+    for (const [i, tile] of tiles.entries()) {
+      expect(tile.x).toBeGreaterThanOrEqual(plan.bounds.x);
+      expect(tile.x + tile.size).toBeLessThanOrEqual(plan.bounds.x + plan.bounds.width);
+      if (i > 0) expect(tile.x).toBeGreaterThan(tiles[i - 1].x);
+    }
+  });
+
+  // @spec PRESENT-STRIP-002
+  it('shows the same number of turns however few are fighting', () => {
+    const fight = controller({
+      enemies: [createEnemy({ id: 'g1', name: 'Goblin', maxHitPoints: 90, potValue: 14, attack: { baseDamage: 1, accuracy: 24 } })],
+    });
+
+    expect(planOf(fight).strip.tiles).toHaveLength(TURN_STRIP_LENGTH);
+    defend(fight);
+    expect(planOf(fight).strip.tiles).toHaveLength(TURN_STRIP_LENGTH);
+  });
+
+  // @spec PRESENT-STRIP-003
+  it('draws whoever acts now larger and highlighted, and nobody else', () => {
+    const fight = controller();
+    const [first, ...rest] = planOf(fight).strip.tiles;
+
+    expect(first.id).toBe(fight.actor.id);
+    expect(first.current).toBe(true);
+    for (const tile of rest) {
+      expect(tile.current).toBe(false);
+      expect(tile.size).toBeLessThan(first.size);
+    }
+  });
+
+  // @spec PRESENT-STRIP-004
+  it('carries each tile\'s portrait and side', () => {
+    const encounter = fightState();
+    encounter.enemies.members[0].portrait = '/art/goblin.png';
+    const plan = planOf(createFightController({ encounter, viewport, onDraw: vi.fn() }));
+
+    const sides = new Set(plan.strip.tiles.map((t) => t.side));
+    expect(sides).toEqual(new Set(['PARTY', 'ENEMIES']));
+    const goblin = plan.strip.tiles.find((t) => t.id === 'g1');
+    expect(goblin.portrait).toBe('/art/goblin.png');
+  });
+
+  // @spec PRESENT-STRIP-005
+  it("marks a tile with a character's initial or an enemy's letter", () => {
+    const { tiles } = planOf(controller()).strip;
+    const markOf = (id) => tiles.find((t) => t.id === id)?.mark;
+
+    expect(markOf('bram')).toBe('B');
+    expect(markOf('g1')).toBe('A');
+    expect(markOf('g2')).toBe('B');
+    // Alone of its name, so it has no letter to show.
+    expect(markOf('a1')).toBeNull();
+  });
+
+  // @spec PRESENT-STRIP-006
+  it('keeps a tile whose portrait is missing', () => {
+    const fight = controller();
+    const tile = planOf(fight).strip.tiles.find((t) => t.id === 'bram');
+
+    expect(tile.portrait).toBeNull();
+    expect(tile.size).toBeGreaterThan(0);
+    expect(tile.mark).toBe('B');
+  });
+
+  // @spec PRESENT-STRIP-007
+  it('drops a fallen combatant, because the simulation does', () => {
+    const encounter = fightState();
+    const foe = encounter.enemies.members.find((e) => e.id === 'g1');
+    foe.hitPoints = 0;
+    foe.condition = Condition.DEAD;
+    const fight = createFightController({ encounter, viewport, onDraw: vi.fn() });
+
+    expect(planOf(fight).strip.tiles.map((t) => t.id)).not.toContain('g1');
+  });
+
+  // @spec PRESENT-STRIP-008
+  it('offers nothing to press along the strip', () => {
+    const plan = planOf(untilAsked(controller()));
+    const stripFoot = plan.strip.box.y + plan.strip.box.height;
+
+    for (const control of plan.controls) expect(control.y).toBeGreaterThanOrEqual(stripFoot);
+  });
+
+  // @spec PRESENT-STRIP-009
+  it('places every tile in the plan', () => {
+    for (const tile of planOf(controller()).strip.tiles) {
+      expect(Number.isFinite(tile.x)).toBe(true);
+      expect(Number.isFinite(tile.y)).toBe(true);
+      expect(tile.size).toBeGreaterThan(0);
+    }
+  });
+
+  // @spec PRESENT-STRIP-010
+  it('shows no turns once the fight has ended', () => {
+    const fight = controller();
+    for (const foe of fight.encounter.enemies.members) {
+      foe.hitPoints = 0;
+      foe.condition = Condition.DEAD;
+    }
+
+    const plan = planOf(fight, { phase: FightPhase.ENDED, outcome: { outcome: Outcome.VICTORY, pot: 1 } });
+
+    expect(plan.strip.tiles).toEqual([]);
+  });
+
+  // @spec PRESENT-FIGHT-026
+  it('keeps its place as the fight wears on', () => {
+    const fight = controller();
+    const opened = planOf(fight).strip.box;
+
+    for (let i = 0; i < 8 && fight.phase === FightPhase.ACTING; i++) {
+      untilAsked(fight);
+      if (fight.pending) defend(fight);
+    }
+
+    expect(planOf(fight).strip.box).toEqual(opened);
+  });
+});
+
+describe('telling enemies of one name apart', () => {
+  const planOf = (fight) => buildFightPlan(fight.encounter, viewport, {
+    phase: fight.phase, pending: fight.pending, log: fight.log, actor: fight.actor,
+  });
+
+  // @spec PRESENT-FIGHT-046
+  it('letters them in listing order on their cards', () => {
+    expect(planOf(controller()).enemies.slice(0, 2).map((e) => e.name))
+      .toEqual(['Goblin A', 'Goblin B']);
+  });
+
+  // @spec PRESENT-FIGHT-046
+  it('uses the same name in the log and in a menu', () => {
+    const fight = controller();
+    chooseOption(fight, 0);
+
+    expect(fight.pending.targets.map((t) => t.name).slice(0, 2)).toEqual(['Goblin A', 'Goblin B']);
+
+    chooseOption(fight, 0);
+    expect(fight.log[0]).toContain('Goblin A');
+  });
+
+  // @spec PRESENT-FIGHT-047
+  it('gives no letter to a name nothing else in the group shares', () => {
+    expect(planOf(controller()).enemies[2].name).toBe('Goblin Archer');
+  });
+
+  // @spec PRESENT-FIGHT-048
+  it('keeps a letter after the enemy before it falls, and after it falls itself', () => {
+    const encounter = fightState();
+    const foe = encounter.enemies.members.find((e) => e.id === 'g1');
+    foe.hitPoints = 0;
+    foe.condition = Condition.DEAD;
+
+    const plan = planOf(createFightController({ encounter, viewport, onDraw: vi.fn() }));
+
+    expect(plan.enemies[0].name).toBe('Goblin A');
+    expect(plan.enemies[1].name).toBe('Goblin B');
+  });
+});
+
+describe('the action menu', () => {
+  const narrow = { width: 375, height: 667 };
+  const planOf = (fight, vp = viewport) => buildFightPlan(fight.encounter, vp, {
+    phase: fight.phase, pending: fight.pending, log: fight.log, actor: fight.actor,
+  });
+  const options = (plan) => plan.controls.filter((c) => c.role === 'OPTION');
+  const entries = (plan) => plan.controls.filter((c) => c.role === 'TARGET');
+  const lone = () => [createEnemy({
+    id: 'g1', name: 'Goblin', maxHitPoints: 90, potValue: 14, attack: { baseDamage: 5, accuracy: 24 },
+  })];
+
+  // @spec PRESENT-MENU-001
+  it('strikes at once when there is only one thing to strike', () => {
+    const fight = controller({ enemies: lone() });
+    const whose = fight.pending.characterId;
+
+    chooseOption(fight, 0);
+
+    expect(fight.turnsTaken).toBe(1);
+    expect(fight.pending?.characterId).not.toBe(whose);
+    expect(fight.pending?.targets ?? null).toBeNull();
+  });
+
+  // @spec PRESENT-MENU-002
+  it('opens a menu and takes nothing while there is a choice to make', () => {
+    const fight = controller();
+
+    chooseOption(fight, 0);
+
+    expect(fight.turnsTaken).toBe(0);
+    expect(fight.pending.targets).toHaveLength(3);
+    expect(planOf(fight).menu).not.toBeNull();
+  });
+
+  // @spec PRESENT-MENU-002
+  it('draws no menu until something opens one', () => {
+    expect(planOf(controller()).menu).toBeNull();
+  });
+
+  // @spec PRESENT-MENU-003
+  it('rises from the top of the button that opened it, starting at its left edge', () => {
+    const fight = controller();
+    chooseOption(fight, 0);
+    const plan = planOf(fight);
+    const attack = options(plan)[0];
+
+    expect(plan.menu.box.x).toBe(attack.x);
+    expect(plan.menu.box.y + plan.menu.box.height).toBeLessThanOrEqual(attack.y);
+    expect(attack.y - (plan.menu.box.y + plan.menu.box.height)).toBeLessThan(plan.scale * 12);
+  });
+
+  // @spec PRESENT-MENU-003
+  it('moves inward rather than leaving the panel when opened from the far end', () => {
+    const fight = controller();
+    chooseOption(fight, 0);
+    fight.pending = { ...fight.pending, openedBy: 3 };
+    const plan = planOf(fight, narrow);
+
+    expect(plan.menu.box.x + plan.menu.box.width).toBeLessThanOrEqual(plan.bounds.x + plan.bounds.width);
+    expect(plan.menu.box.x).toBeLessThan(options(plan)[3].x);
+  });
+
+  // @spec PRESENT-MENU-004
+  // @spec PRESENT-FIGHT-026
+  it('moves no control and no region', () => {
+    const fight = controller();
+    const before = planOf(fight);
+
+    chooseOption(fight, 0);
+    const after = planOf(fight);
+
+    expect(after.regions).toEqual(before.regions);
+    expect(after.bounds).toEqual(before.bounds);
+    for (const [i, option] of options(after).entries()) {
+      const was = options(before)[i];
+      expect([option.x, option.y, option.width, option.height])
+        .toEqual([was.x, was.y, was.width, was.height]);
+    }
+    for (const [i, card] of after.enemies.entries()) expect(card.y).toBe(before.enemies[i].y);
+  });
+
+  // @spec PRESENT-MENU-005
+  it('keeps the four drawn, with the one that opened it marked as open', () => {
+    const fight = controller();
+    chooseOption(fight, 0);
+
+    const row = options(planOf(fight));
+
+    expect(row).toHaveLength(OPTION_SLOTS.length);
+    expect(row.map((o) => o.open)).toEqual([true, false, false, false]);
+  });
+
+  // @spec PRESENT-MENU-006
+  it('puts each target\'s hit points on their entry', () => {
+    const fight = controller();
+    fight.encounter.enemies.members[0].hitPoints = 4;
+    chooseOption(fight, 0);
+
+    const first = entries(planOf(fight))[0];
+
+    expect(first.label).toBe('Goblin A');
+    expect(first.detail).toBe('4/9');
+  });
+
+  // @spec PRESENT-MENU-007
+  it('stays one column while one column fits', () => {
+    const fight = controller();
+    chooseOption(fight, 0);
+
+    expect(new Set(entries(planOf(fight, narrow)).map((e) => e.x)).size).toBe(1);
+  });
+
+  // @spec PRESENT-MENU-007
+  // @spec PRESENT-CTRL-002
+  it('wraps a swarm into columns, staying below the strip and thumb-sized', () => {
+    const many = Array.from({ length: 20 }, (_, i) => createEnemy({
+      id: `g${i}`, name: 'Goblin', maxHitPoints: 9, potValue: 14, attack: { baseDamage: 1, accuracy: 24 },
+    }));
+    const fight = untilAsked(controller({ enemies: many }));
+    chooseOption(fight, 0);
+
+    const plan = planOf(fight, narrow);
+    const drawn = entries(plan);
+
+    expect(drawn).toHaveLength(20);
+    expect(new Set(drawn.map((e) => e.x)).size).toBeGreaterThan(1);
+    expect(plan.menu.box.y).toBeGreaterThanOrEqual(plan.strip.box.y + plan.strip.box.height);
+    for (const entry of drawn) {
+      expect(entry.height).toBeGreaterThanOrEqual(MIN_TAP_PX);
+      expect(entry.x + entry.width).toBeLessThanOrEqual(plan.bounds.x + plan.bounds.width + 0.001);
+    }
+  });
+
+  // @spec PRESENT-MENU-008
+  // @spec PRESENT-FIGHT-037
+  it('gives the number keys to the menu while it is open', () => {
+    const fight = controller();
+    chooseOption(fight, 0);
+
+    expect(entries(planOf(fight)).map((e) => e.hint)).toEqual(['1', '2', '3']);
+
+    chooseOption(fight, 1);
+    expect(fight.turnsTaken).toBe(1);
+    expect(fight.log[0]).toContain('Goblin B');
+  });
+
+  // @spec PRESENT-MENU-008
+  it('numbers only the first nine, the keys running out there', () => {
+    const many = Array.from({ length: 11 }, (_, i) => createEnemy({
+      id: `g${i}`, name: 'Goblin', maxHitPoints: 9, potValue: 14, attack: { baseDamage: 1, accuracy: 24 },
+    }));
+    const fight = untilAsked(controller({ enemies: many }));
+    chooseOption(fight, 0);
+
+    const hints = entries(planOf(fight)).map((e) => e.hint);
+
+    expect(hints[8]).toBe('9');
+    expect(hints[9]).toBeNull();
+  });
+
+  // @spec PRESENT-MENU-009
+  // @spec PRESENT-FIGHT-009
+  it('closes when the button that opened it is pressed again, taking nothing', () => {
+    const fight = controller();
+    pressOption(fight, 0);
+    expect(fight.pending.targets).not.toBeNull();
+
+    expect(pressOption(fight, 0)).toBe(true);
+
+    expect(fight.pending.targets).toBeNull();
+    expect(fight.turnsTaken).toBe(0);
+  });
+
+  // @spec PRESENT-MENU-010
+  it('treats a press on a different option as if no menu were open', () => {
+    const fight = controller();
+    const whose = fight.pending.characterId;
+    pressOption(fight, 0);
+
+    pressOption(fight, fight.pending.options.findIndex((o) => o.action === FightAction.FLEE));
+
+    // Flee was pressed: it either got the party out or spent this character's turn.
+    expect(fight.phase === FightPhase.ENDED || fight.turnsTaken === 1).toBe(true);
+    expect(fight.pending?.characterId).not.toBe(whose);
+    expect(fight.pending?.targets ?? null).toBeNull();
+  });
+
+  // @spec PRESENT-MENU-011
+  it('leaves the menu open when a greyed option is pressed', () => {
+    const fight = controller();
+    pressOption(fight, 0);
+    const magic = fight.pending.options.findIndex((o) => o.action === FightAction.MAGIC);
+
+    expect(pressOption(fight, magic)).toBe(false);
+
+    expect(fight.pending.targets).not.toBeNull();
+    expect(fight.turnsTaken).toBe(0);
+  });
+
+  // @spec PRESENT-MENU-014
+  it('attempts Flee on the press, with no menu', () => {
+    const fight = controller();
+    const whose = fight.pending.characterId;
+
+    pressOption(fight, fight.pending.options.findIndex((o) => o.action === FightAction.FLEE));
+
+    expect(fight.phase === FightPhase.ENDED || fight.turnsTaken === 1).toBe(true);
+    expect(fight.pending?.characterId).not.toBe(whose);
+  });
+
+  // @spec PRESENT-FIGHT-045
+  it('keeps the four on one row at every width, and sizes the region to that row', () => {
+    for (const vp of [narrow, { width: 320, height: 568 }, viewport]) {
+      const plan = planOf(controller(), vp);
+      const row = options(plan);
+
+      expect(row).toHaveLength(4);
+      expect(new Set(row.map((o) => o.y)).size).toBe(1);
+      for (const option of row) expect(option.width).toBeGreaterThanOrEqual(MIN_TAP_PX);
+      expect(plan.regions.controlsBox.height).toBeLessThan(row[0].height * 1.5);
+    }
+  });
+
+  // @spec PRESENT-FIGHT-045
+  it('does not grow the controls for a crowd', () => {
+    const many = Array.from({ length: 12 }, (_, i) => createEnemy({
+      id: `g${i}`, name: 'Goblin', maxHitPoints: 9, potValue: 14, attack: { baseDamage: 1, accuracy: 24 },
+    }));
+    const crowd = planOf(controller({ enemies: many }));
+
+    expect(crowd.regions.controlsBox.height).toBe(planOf(controller()).regions.controlsBox.height);
+  });
+});
+
+describe('the pace of a fight', () => {
+  /** Enemies so slow that the party's turns run on from one another. */
+  const dawdling = () => [createEnemy({
+    id: 's1', name: 'Slug', maxHitPoints: 90, potValue: 14,
+    attributes: { DEXTERITY: 1 }, attack: { baseDamage: 1, accuracy: 24 },
+  })];
+
+  /** A fight stopped at the moment an enemy is the next to act. */
+  function atAnEnemy() {
+    const fight = controller();
+    for (let i = 0; i < 40 && fight.pending; i++) defend(fight);
+    expect(fight.pending).toBeNull();
+    expect(fight.actor.side).toBe('ENEMIES');
+    return fight;
+  }
+
+  // @spec PRESENT-READY-035
+  it('reaches the first turn the moment the fight opens', () => {
+    const fight = controller();
+
+    expect(fight.actor).not.toBeNull();
+  });
+
+  // @spec PRESENT-READY-035
+  it('runs straight on to the next turn when one ends, with no time passing on screen', () => {
+    const fight = controller();
+
+    defend(fight);
+
+    expect(fight.actor).not.toBeNull();
+  });
+
+  // @spec PRESENT-READY-034
+  it('asks the next character at once, with no pause', () => {
+    const fight = controller({ enemies: dawdling() });
+    const first = fight.pending.characterId;
+
+    defend(fight);
+
+    expect(fight.pending).not.toBeNull();
+    expect(fight.pending.characterId).not.toBe(first);
+  });
 
   // @spec PRESENT-READY-005
-  it('plays an enemy turn a beat after the last action, not the instant it is due', () => {
-    const fight = controller();
-    for (let i = 0; i < 20 && !(fight.actor && fight.actor.side === 'ENEMIES'); i++) {
-      if (fight.pending) defend(fight);
-      else advanceClock(fight, FILL_BEAT_MS);
-    }
-    expect(fight.pending).toBeNull();
+  it('waits one pause before an enemy takes its turn', () => {
+    const fight = atAnEnemy();
     fight.beat = 0;
     const taken = fight.turnsTaken;
 
@@ -1303,13 +1600,28 @@ describe('a fight that plays itself out', () => {
   });
 
   // @spec PRESENT-READY-006
-  it("leaves the fight's own time alone, however many seconds pass", () => {
-    const fight = controller();
+  it("spends none of the fight's own time on that pause", () => {
+    const fight = atAnEnemy();
+    fight.beat = 0;
     const beats = fight.encounter.beats;
 
-    advanceClock(fight, BEAT_MS * 20);
+    advanceClock(fight, BEAT_MS - 1);
 
-    // Seconds are the player's; beats are the fight's, and only an action spends them.
     expect(fight.encounter.beats).toBe(beats);
+  });
+
+  // @spec PRESENT-READY-018
+  // @spec PRESENT-SCENE-011
+  it('finishes a judder while the next character is being asked, then stops', () => {
+    const fight = controller({ enemies: dawdling() });
+    defend(fight);
+    expect(fight.pending).not.toBeNull();
+
+    expect(fightIsPlaying(fight)).toBe(true);
+
+    advanceClock(fight, BEAT_MS);
+
+    expect(fight.shakingId).toBeNull();
+    expect(fightIsPlaying(fight)).toBe(false);
   });
 });
