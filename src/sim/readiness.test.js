@@ -7,8 +7,8 @@ import {
 import {
   beginEncounter, createEnemy, createEnemyGroup,
   advanceBeats, nextActor, takeAction, readinessOf, actionCost,
-  turnOrder,
-  Action, FULL_BAR,
+  turnOrder, hitDamage,
+  Action, Band, FULL_BAR,
 } from './combat.js';
 
 const hero = (id, dexterity, over = {}) =>
@@ -294,6 +294,55 @@ describe('what time does not buy', () => {
     advanceBeats(state, 200);
 
     expect({ ...(character(state.party, 'bram').slots ?? {}) }).toEqual(slots);
+  });
+});
+
+describe('what a hit would deal', () => {
+  const swinger = () => hero('bram', 12, {
+    attack: { baseDamage: 9, accuracy: 30, skill: 'BLADE' },
+  });
+  const armoured = (armour) => createEnemy({
+    id: 'o1', name: 'Orc', maxHitPoints: 400, potValue: 20, armour,
+    attributes: { DEXTERITY: 1 },
+  });
+
+  // @spec COMBAT-ATTACK-013
+  it('reports exactly what a real hit then deals', () => {
+    let hits = 0;
+    for (let seed = 1; seed <= 40; seed++) {
+      const state = encounter({ members: [swinger()], enemies: [armoured(2)], seed });
+      const forecast = hitDamage(state, 'bram', 'o1');
+
+      const event = takeAction(state, 'bram', attack('o1'));
+
+      if (event.band !== Band.HIT) continue;
+      hits += 1;
+      expect(event.damage).toBe(forecast);
+    }
+    expect(hits).toBeGreaterThan(0);
+  });
+
+  // @spec COMBAT-ATTACK-013
+  it("takes the target's armour off, and never reports less than a landed blow's minimum", () => {
+    const bare = encounter({ members: [swinger()], enemies: [armoured(0)] });
+    const plated = encounter({ members: [swinger()], enemies: [armoured(3)] });
+    const walled = encounter({ members: [swinger()], enemies: [armoured(999)] });
+
+    expect(hitDamage(plated, 'bram', 'o1')).toBe(hitDamage(bare, 'bram', 'o1') - 3);
+    expect(hitDamage(walled, 'bram', 'o1')).toBeGreaterThanOrEqual(1);
+  });
+
+  // @spec COMBAT-ATTACK-013
+  it('rolls nothing and changes nothing by being asked', () => {
+    const state = encounter({ members: [swinger()], enemies: [armoured(2)], seed: 9 });
+    const twin = encounter({ members: [swinger()], enemies: [armoured(2)], seed: 9 });
+    const bars = [...state.readiness];
+
+    hitDamage(state, 'bram', 'o1');
+
+    expect([...state.readiness]).toEqual(bars);
+    expect(state.enemies.members[0].hitPoints).toBe(400);
+    expect(state.rng.int(0, 1000000)).toBe(twin.rng.int(0, 1000000));
   });
 });
 

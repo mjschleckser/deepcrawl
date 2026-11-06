@@ -14,7 +14,7 @@ import { MIN_TAP_PX, ControlKind, uiScale, contentColumn } from './geometry.js';
 import {
   Action, Band, Outcome, attackTargets,
   encounterOutcome, nextActor, takeAction, attemptFlee,
-  fleeCertainToFail, turnOrder,
+  fleeCertainToFail, turnOrder, hitDamage,
 } from '../sim/combat.js';
 import { selectEnemyTarget } from '../sim/enemies.js';
 
@@ -87,7 +87,7 @@ const STRIP_CURRENT_SCALE = 1.3;
 
 /** One entry of a menu, and the room around entries. */
 const MENU_ENTRY_HEIGHT = 44;
-const MENU_ENTRY_WIDTH = 190;
+const MENU_ENTRY_WIDTH = 230;
 const MENU_GAP = 4;
 
 /** One combatant, at the scale the phone layout was designed against. */
@@ -99,40 +99,10 @@ const PORTRAIT_GAP = 4;
 /** Two bars, stacked, with a hairline between them. */
 const BAR_GAP = 1;
 
-/**
- * Each enemy's letter, for those sharing a name with another of their group. Read from
- * the listing, which keeps the fallen in place, so a letter never moves to somebody else.
- *
- * @spec PRESENT-FIGHT-046
- * @spec PRESENT-FIGHT-047
- * @spec PRESENT-FIGHT-048
- */
-function enemyLetters(encounter) {
-  const { members } = encounter.enemies;
-  const counts = new Map();
-  for (const e of members) counts.set(e.name, (counts.get(e.name) ?? 0) + 1);
-
-  const seen = new Map();
-  const letters = new Map();
-  for (const e of members) {
-    if (counts.get(e.name) < 2) continue;
-    const nth = seen.get(e.name) ?? 0;
-    seen.set(e.name, nth + 1);
-    letters.set(e.id, String.fromCharCode(65 + nth));
-  }
-  return letters;
-}
-
-/** What the fight calls everybody in it, wherever it names them. */
-function fightNames(encounter) {
-  const letters = enemyLetters(encounter);
-  const names = {};
-  for (const c of roster(encounter.party)) names[c.id] = c.name;
-  for (const e of encounter.enemies.members) {
-    names[e.id] = letters.has(e.id) ? `${e.name} ${letters.get(e.id)}` : e.name;
-  }
-  return names;
-}
+const nameOf = (encounter, id) =>
+  roster(encounter.party).find((c) => c.id === id)?.name
+  ?? encounter.enemies.members.find((e) => e.id === id)?.name
+  ?? id;
 
 /**
  * The turn strip's place on the screen, and the size of a tile in it. Sized from the
@@ -170,7 +140,6 @@ function stripMetrics(column, scale) {
 function layOutStrip(encounter, phase, metrics, scale) {
   const { box, tile, current, gap } = metrics;
   const turns = phase === FightPhase.ENDED ? [] : turnOrder(encounter, TURN_STRIP_LENGTH);
-  const letters = enemyLetters(encounter);
   let x = box.x + CARD_GAP * scale;
 
   const tiles = turns.map(({ id, side }, i) => {
@@ -180,7 +149,7 @@ function layOutStrip(encounter, phase, metrics, scale) {
     const drawn = {
       id, side,
       portrait: who.portrait ?? null,
-      mark: hero ? hero.name.charAt(0).toUpperCase() : letters.get(id) ?? null,
+      mark: hero ? hero.name.charAt(0).toUpperCase() : null,
       current: i === 0,
       x,
       y: box.y + (box.height - size) / 2,
@@ -269,7 +238,6 @@ export function buildFightPlan(
   const scale = uiScale(viewport);
   const column = contentColumn(viewport);
   const pad = CARD_GAP * scale;
-  const names = fightNames(encounter);
 
   // How much of their hit points somebody has left, and how bad that is.
   // @spec PRESENT-READY-022
@@ -295,7 +263,7 @@ export function buildFightPlan(
   // @spec PRESENT-READY-030
   const drawCombatant = (who, down) => ({
     id: who.id,
-    name: names[who.id],
+    name: who.name,
     level: totalLevel(who),
     // Until status effects exist, a combatant's only status is their condition, and
     // only worth saying when it is not the ordinary one.
@@ -482,7 +450,7 @@ export function buildFightPlan(
     // over a fight that is playing invites a press nothing is listening for.
     // @spec PRESENT-READY-013
     // @spec PRESENT-READY-014
-    prompt: pending ? `${names[pending.characterId]} is ready to act!` : null,
+    prompt: pending ? `${nameOf(encounter, pending.characterId)} is ready to act!` : null,
     log: shownLog,
     banner,
     menu,
@@ -521,6 +489,7 @@ function controlMetrics({ column, scale }) {
  * @spec PRESENT-MENU-006
  * @spec PRESENT-MENU-007
  * @spec PRESENT-MENU-008
+ * @spec PRESENT-MENU-016
  */
 function layOutMenu({ pending, opener, bounds, ceiling, metrics, scale }) {
   const gap = MENU_GAP * scale;
@@ -550,6 +519,7 @@ function layOutMenu({ pending, opener, bounds, ceiling, metrics, scale }) {
     entryIndex: index,
     label: target.name,
     detail: `${target.hitPoints}/${target.maxHitPoints}`,
+    preview: `${target.damage} dmg`,
     available: true,
     reason: null,
     hint: index < 9 ? String(index + 1) : null,
@@ -696,12 +666,15 @@ function optionsFor(encounter, characterId) {
   });
 }
 
-/** @spec PRESENT-FIGHT-007 */
+/**
+ * @spec PRESENT-FIGHT-007
+ * @spec PRESENT-MENU-017
+ */
 function targetsFor(encounter, characterId, action) {
   if (action !== FightAction.ATTACK) return null;
-  const names = fightNames(encounter);
   return attackTargets(encounter, characterId).map((t) => ({
-    id: t.id, name: names[t.id], hitPoints: t.hitPoints, maxHitPoints: t.maxHitPoints,
+    id: t.id, name: t.name, hitPoints: t.hitPoints, maxHitPoints: t.maxHitPoints,
+    damage: hitDamage(encounter, characterId, t.id),
   }));
 }
 
@@ -787,6 +760,13 @@ function ask(fight, characterId) {
   };
 }
 
+function names(fight) {
+  const map = {};
+  for (const c of roster(fight.encounter.party)) map[c.id] = c.name;
+  for (const e of fight.encounter.enemies.members) map[e.id] = e.name;
+  return map;
+}
+
 /**
  * Take one action, write down what it did, and pass the turn on.
  *
@@ -797,7 +777,7 @@ function ask(fight, characterId) {
 function resolveOne(fight, actorId, action) {
   const event = takeAction(fight.encounter, actorId, action);
   if (event && event.action === Action.ATTACK && event.targetId) {
-    fight.log.push(describeEvent(event, fightNames(fight.encounter), event.targetId, event.felled === true));
+    fight.log.push(describeEvent(event, names(fight), event.targetId, event.felled === true));
     // The card that moves is the card that swung: nothing else in a fight moves, so a
     // blow is otherwise a number changing on a panel of numbers.
     // @spec PRESENT-READY-018

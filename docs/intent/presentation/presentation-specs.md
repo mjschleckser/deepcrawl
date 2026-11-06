@@ -111,8 +111,8 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-STRIP-002**: The system shall draw the same fixed number of tiles in the turn strip throughout an encounter, asking the simulation for that many turns.
 - [x] **PRESENT-STRIP-003**: The system shall draw the first tile of the turn strip larger than the others and highlighted.
 - [x] **PRESENT-STRIP-004**: The system shall draw each tile of the turn strip with the combatant's portrait inside a frame coloured by their side.
-- [x] **PRESENT-STRIP-005**: The system shall mark each tile of the turn strip with a character's initial, or with an enemy's letter when that enemy has one.
-- [x] **PRESENT-STRIP-006**: If a combatant's portrait is missing, then the system shall draw that combatant's tile in the turn strip with its frame and mark alone.
+- [x] **PRESENT-STRIP-005**: The system shall mark a character's tile in the turn strip with their initial, and shall draw no mark on an enemy's tile.
+- [x] **PRESENT-STRIP-006**: If a combatant's portrait is missing, then the system shall still draw that combatant's tile in the turn strip, with its frame and any mark it carries.
 - [x] **PRESENT-STRIP-007**: The system shall take the order of the turn strip from the simulation's report and from no reckoning of its own.
 - [x] **PRESENT-STRIP-008**: The system shall give the turn strip no hit region, so that a press on it does nothing.
 - [x] **PRESENT-STRIP-009**: The system shall decide the position of every tile in the turn strip in the plan rather than while drawing.
@@ -132,6 +132,8 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-MENU-011**: While a fight menu is open, when the player presses an option marked unavailable, the system shall leave the menu open and do nothing else.
 - [x] **PRESENT-MENU-014**: When the player presses Flee while it is available, the system shall attempt the escape at once and open no menu.
 - [x] **PRESENT-MENU-015**: While a fight menu is open, when the player turns the wheel, the system shall scroll the log and leave the menu open.
+- [x] **PRESENT-MENU-016**: The system shall draw on a fight menu entry for an attack target the damage the simulation reports for a plain hit on that target.
+- [x] **PRESENT-MENU-017**: The system shall list attack targets in a fight menu in the order their column lists them.
 
 ## Prompts
 
@@ -179,9 +181,6 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-FIGHT-007**: When an action needs a target, the system shall take as its possible answers exactly the combatants the simulation reports as legal targets for it.
 - [x] **PRESENT-FIGHT-008**: When a character's action is chosen, the system shall resolve it at once and pass on to whoever comes ready next.
 - [x] **PRESENT-FIGHT-009**: When the player backs out while a fight menu is open, the system shall close that menu and return to that character's open choice, never to an earlier character, and shall do nothing when no menu is open.
-- [x] **PRESENT-FIGHT-046**: When an enemy group holds more than one enemy of the same name, the system shall name each of them with a letter in listing order, wherever the fight names that enemy: on its card, on its turn strip tile, in the log, and in a menu.
-- [x] **PRESENT-FIGHT-047**: The system shall give no letter to an enemy whose name no other enemy in its group shares.
-- [x] **PRESENT-FIGHT-048**: The system shall settle each enemy's letter when the encounter begins and keep it for the whole of the encounter, including after that enemy falls.
 - [x] **PRESENT-FIGHT-010**: The system shall build the combat log from the events a resolved action reports, and shall report nothing the simulation did not do.
 - [x] **PRESENT-FIGHT-011**: The system shall name, for each resolved attack, who acted, which band the attack fell in, the damage it dealt, and whether it felled its target.
 - [x] **PRESENT-FIGHT-012**: While an encounter is running, the system shall accept no exploration movement verb or party action.

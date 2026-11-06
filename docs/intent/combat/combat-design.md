@@ -209,6 +209,13 @@ instead, and still trains the same weapon skill. This is why the governing attri
 a property of the weapon rather than of the skill: a dagger and a longsword are both
 Blade, and they are not the same argument for what makes a character dangerous.
 
+### What a hit would deal
+
+Combat reports what a plain hit by one combatant on another would deal: the attacker's
+base damage at the hit band, less the target's armour, held to the same minimum as any
+landed blow. It is the sum a real blow runs through, so a preview and a result can only
+differ by the band. Asking rolls nothing and changes nothing.
+
 ### What the numbers come out at
 
 The calibration anchor is a fresh party against a floor-one goblin. Everything above is
@@ -418,6 +425,7 @@ trouble. One character calls the retreat; the whole party leaves or nobody does.
 21. ✅ **Fleeing is one attempt for the whole party**, costing only the bar of the character who attempted it, and impossible against something far faster or something that forbids escape.
 22. ✅ **A defeated party stays where it fell**, to be abandoned or recovered by a fresh party.
 23. ✅ **Combat reports a projected turn order**, by its own rules and without changing anything, and readiness stays inside the simulation.
+24. ✅ **Combat reports what a plain hit would deal**, by the sum a real blow runs through, without rolling or changing anything.
 
 ### Deferred
 

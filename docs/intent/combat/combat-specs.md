@@ -51,6 +51,7 @@ specs fix the structure those numbers are fed into.
 - [x] **COMBAT-ATTACK-006**: The system shall raise the band as the attacker's accuracy rises relative to the target's defence, so that a greater advantage never produces a worse band on the same roll.
 - [x] **COMBAT-ATTACK-010**: The system shall resolve an attack's band against the target's defence and shall not let the target's armour affect which band the attack falls into.
 - [x] **COMBAT-ATTACK-012**: The system shall subtract the target's armour from the damage of a landed attack, after the band's multiplier and before the minimum.
+- [x] **COMBAT-ATTACK-013**: The system shall report the damage one combatant's plain hit would deal another, by the calculation a resolved hit uses, without making a roll or changing the encounter.
 
 ## Targeting
 

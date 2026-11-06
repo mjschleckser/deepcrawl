@@ -355,6 +355,20 @@ function findTarget(state, targetId) {
 }
 
 /**
+ * What a plain hit by one combatant on another would deal. The sum a resolved blow runs
+ * through, so a preview and a result can only differ by the band; nothing is rolled and
+ * nothing changes.
+ *
+ * @spec COMBAT-ATTACK-013
+ */
+export function hitDamage(state, actorId, targetId) {
+  const swinger = recordOf(state, actorId);
+  const target = findTarget(state, targetId);
+  if (!swinger || !target) return 0;
+  return damageFor(Band.HIT, baseDamageWith(swinger), armourOf(target));
+}
+
+/**
  * Take one combatant's turn: chosen and resolved in the same instant, and paid for out
  * of their bar.
  *

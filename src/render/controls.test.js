@@ -10,7 +10,7 @@ import {
   buildFightPlan, createFightController, chooseOption, advanceClock, FightPhase, BEAT_MS,
 } from './fight.js';
 import { buildPromptPlan } from './promptplan.js';
-import { createController, pressPointer, scrollFightLog, layers } from './controller.js';
+import { createController, pressKey, pressPointer, scrollFightLog, layers } from './controller.js';
 import { createExploration, Verb, PartyAction } from '../sim/exploration.js';
 import { boundActions } from '../sim/input.js';
 import { createFloor, Direction } from '../sim/floor.js';
@@ -118,7 +118,7 @@ describe('combat controls', () => {
     const plan = buildFightPlan(encounter, phone, { phase: FightPhase.SELECTING, pending: fight.pending });
     const entries = allControls(plan).filter((c) => c.role === 'TARGET');
 
-    expect(entries.map((c) => c.label)).toEqual(['Goblin A', 'Goblin B']);
+    expect(entries.map((c) => c.label)).toEqual(['Goblin', 'Goblin']);
     for (const entry of entries) expect(entry.height).toBeGreaterThanOrEqual(MIN_TAP_PX);
   });
 
@@ -319,15 +319,20 @@ describe('tapping a drawn control', () => {
   // @spec PRESENT-FIGHT-013
   it('resolves a tap on a menu entry just as its number would', () => {
     const { controller } = fightController();
+    const { controller: twin } = fightController();
     const plan = () => layers(controller).find((l) => l.name === 'fight').plan;
     const attack = plan().controls.find((c) => c.role === 'OPTION' && c.optionIndex === 0);
     pressPointer(controller, attack.x + attack.width / 2, attack.y + attack.height / 2);
     const entry = plan().controls.filter((c) => c.role === 'TARGET')[1];
 
     pressPointer(controller, entry.x + entry.width / 2, entry.y + entry.height / 2);
+    pressKey(twin, '1');
+    pressKey(twin, '2');
 
+    const health = (c) => c.fight.encounter.enemies.members.map((e) => e.hitPoints);
     expect(controller.fight.turnsTaken).toBe(1);
-    expect(controller.fight.log[0]).toContain('Goblin B');
+    expect(health(controller)).toEqual(health(twin));
+    expect(controller.fight.log).toEqual(twin.fight.log);
   });
 
   // @spec PRESENT-BUILD-002

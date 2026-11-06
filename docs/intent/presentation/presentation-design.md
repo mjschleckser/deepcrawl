@@ -220,17 +220,17 @@ top of it.
 │                  ╔═════════════════════╗                          │ ← the corridor,
 │                  ║                     ║                          │   still there
 ├───────────────────────────────────────────────────────────────────┤
-│  ┌──┐ Goblin A    Lv 6     ┌──┐ Bram         Lv 41                │
+│  ┌──┐ Goblin      Lv 6     ┌──┐ Bram         Lv 41                │
 │  └──┘ ████████ 9/9         └──┘ █████░░░ 14/20                    │
-│  ┌──┐ Goblin B    Lv 6     ┌──┐ Rook         Lv 38                │
+│  ┌──┐ Goblin      Lv 6     ┌──┐ Rook         Lv 38                │
 │  └──┘ ████░░░░ 4/9         └──┘ ████████ 20/20                    │
-│  ┌──┐ Goblin C    down     ┌──┐ Isolde       Lv 33                │
+│  ┌──┐ Goblin      down     ┌──┐ Isolde       Lv 33                │
 │  └──┘ ░░░░░░░░ 0/9         └──┘ ████████ 20/20                    │
 │         ↑ enemies, left            ↑ the party, right             │
 ├───────────────────────────────────────────────────────────────────┤
-│ Rook grazes Goblin B for 3.                                       │
-│ Goblin A hits Bram for 6.                                         │ ← the log
-│ Tam crits Goblin C for 14. Goblin C falls.                        │
+│ Rook grazes Goblin for 3.                                         │
+│ Goblin hits Bram for 6.                                           │ ← the log
+│ Tam crits Goblin for 14. Goblin falls.                            │
 ├───────────────────────────────────────────────────────────────────┤
 │ Bram is ready to act!                                             │ ← who is up
 │  [1] Attack   [2] Magic   [3] Inventory   [4] Flee                │ ← the controls
@@ -246,17 +246,14 @@ tiles. It is read and never pressed. The automap is not drawn during a fight, so
 of the screen is free.
 
 **A tile says who, and whose side, without being read.** It carries the combatant's
-portrait inside a frame coloured by side, and a small mark: a character's initial, or an
-enemy's letter when it has one. If the portrait is missing the frame and the mark still
-stand for the combatant.
+portrait inside a frame coloured by side, and a character also carries their initial. If
+the portrait is missing, the frame still says whose side the turn belongs to.
 
-**Enemies of one name are told apart by letter.** When a group holds more than one enemy
-of the same name, each is named with a letter in listing order, *Goblin A*, *Goblin B*,
-everywhere the fight names it: its card, its tile, the log, and the choice of targets. A
-strip of identical portraits, or a choice between three things all called *Goblin*, would
-ask the player to choose without saying what they are choosing between. A letter is
-settled when the encounter begins and stays with that enemy after it falls. An enemy whose
-name nothing else in its group shares carries no letter.
+**Enemies of one name are told apart by position.** Every enemy is called by its own name
+alone. A column lists a side in a fixed order and the fallen keep their places, and a menu
+of targets lists whoever is standing in that same order, so the first entry is always the
+highest standing card. The strip and the log do not say which of several goblins they
+mean; when one acts, the highlight on its card does.
 
 **Enemies on the left, the party on the right**, each side a single column of
 combatants however many there are. There are no ranks to draw, because there are none
@@ -493,10 +490,10 @@ on the press.
 **A further choice opens as a menu off the button that asked it.**
 
 ```
-│  ┌───────────────┐                                                │
-│  │ Goblin A  9/9 │ 1                                              │
-│  │ Goblin B  4/9 │ 2                                              │
-│  └──┬────────────┘                                                │
+│  ┌──────────────────────┐                                         │
+│  │ Goblin   9/9  7 dmg  │ 1                                       │
+│  │ Goblin   4/9  7 dmg  │ 2                                       │
+│  └──┬───────────────────┘                                         │
 │  [[Attack]]  [Magic]   [Inventory]   [Flee]                       │
 ```
 
@@ -508,6 +505,12 @@ the press that raised it, rather than the row turning into a different row.
 
 **A menu entry for a combatant carries their hit points**, because a tall menu covers the
 cards the player would otherwise read to decide.
+
+**A target's entry says what a hit would deal.** The figure is the one the simulation
+reports for a plain hit on that target, armour taken off, so a choice of whom to strike
+can be made from the numbers: a blow worth at least the hit points beside it finishes
+the job, if it lands as a hit. It says nothing about grazes, crits or misses. It is a
+guide to the ordinary result, and the log reports what actually happened.
 
 **A menu is one column until it runs out of height.** It starts at the left edge of the
 button that opened it, moved inward as far as it must to stay within the panel, and its
@@ -777,7 +780,8 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 | How a side is arranged | Enemies in one column on the left, the party in one on the right | Two ranks a side, as the rows once were; one combined list ordered by readiness | A column is the honest shape of a side with no positions in it, and it holds two combatants or twelve without changing shape. Facing columns keep *us* and *them* answerable without reading a single name. A list ordered by readiness would reorder itself under the player's eye on every beat, which is the one thing a display being read under pressure must not do. |
 | What a combatant is drawn as | A portrait, then two stacked bars: identity, hit points | Three bars with readiness on top; a single card whose fill is readiness | Two filled bars side by side on one card are easy to mistake for one another on a phone, and hit points are the one that must never be misread. With the order of acting drawn once at the top, a card has only two questions left to answer. |
 | How the order of acting is drawn | A strip of the next turns along the top of the screen, one tile per turn | A readiness bar on each card; a list inside the fight panel | A strip answers *who is next* in one look, in one place, instead of asking the player to compare a bar on every card. The top of the screen is free during a fight, so the strip costs the panel nothing. Fixing its length keeps it the same shape all fight. |
-| Telling enemies of one name apart | A letter after the name, wherever the fight names them | Portraits alone; numbering by position in the column | A strip tile and a target entry both have to say which goblin, and identical portraits and names cannot. A letter is short enough to sit on a tile, and it reads as a name rather than as a place in a column or as a number key. |
+| Telling enemies of one name apart | By position: a menu lists targets in column order | A letter after the name, wherever the fight names them | Fights are small enough that order settles which is which, and a letter is one more thing on every card, tile and log line for the player to read past. The cost is that the strip and the log cannot say which of several goblins they mean. A letter is the answer if larger groups make that matter. |
+| What a target's entry predicts | The damage of a plain hit, armour taken off | A range from graze to crit; an average weighted by the chance of each band; no prediction | One number is what a phone-width entry can carry and what a player can compare at a glance. A range or an average would need reading, and the point is to choose quickly. Showing the ordinary result keeps the bands a surprise worth having. |
 | The panel's regions | Fixed: combatants, log, prompt line, controls, each keeping its place and size all encounter | Sizing each region to its content, so the panel grows and shrinks as the fight goes | A fight is read under time pressure. A prompt that pushed the formation up as it appeared would move what the player is reading at the moment they are reading it. Fixed regions cost some empty space in a small fight and buy a screen that can be read at a glance every time. |
 | Where a further choice appears | A menu opening off the pressed button, rising as far as the turn strip | Replacing the four options with the choices; a separate screen; tapping the target's card | Replacing the row changes what is under the thumb and loses sight of what was asked. A menu keeps the question attached to the press that raised it, and needs no room reserved in the row. It rises rather than falls because the row sits at the foot of the screen. |
 | One legal target | The menu opens anyway, holding one entry | The first press strikes it | Skipping the question saves one press but changes what a press on Attack does partway through a fight, so a thumb already reaching for the menu lands on something else. One rhythm on every turn is worth more than a press saved at the end of a fight. |
@@ -824,7 +828,7 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 13. ✅ **Labels name the action**, with any keyboard hint as secondary text.
 14. ✅ **Enemies are a column on the left and the party a column on the right**, each centred vertically on its own count, every position decided in the plan.
 15. ✅ **A combatant is a portrait and two stacked bars** — identity, hit points — and the one acting is highlighted.
-16. ✅ **The order of acting is a strip of the next turns along the top of the screen**, its first tile whoever acts now, and enemies of one name are told apart by letter.
+16. ✅ **The order of acting is a strip of the next turns along the top of the screen**, its first tile whoever acts now, and enemies of one name are told apart by position.
 17. ✅ **The fight's own time is never played out on screen**: a fight runs straight on to the next turn.
 18. ✅ **The bottom bar is hit points**, coloured by the share left; other resources join them when they exist.
 19. ✅ **A portrait is an image file**, one per class and per enemy kind.

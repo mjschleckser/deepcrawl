@@ -590,7 +590,7 @@ function drawFight(container, plan) {
   }
 
   // Over everything else, because it covers whatever it rose in front of: a name, the
-  // hit points that decide the choice, and the number that picks it.
+  // hit points and the blow that decide the choice, and the number that picks it.
   // @spec PRESENT-MENU-004
   // @spec PRESENT-MENU-006
   // @spec PRESENT-MENU-008
@@ -608,20 +608,28 @@ function drawFight(container, plan) {
       container.addChild(frame);
 
       const middle = entry.y + entry.height / 2;
-      const name = label(entry.label, Math.round(13 * scale), FIGHT_COLOURS.text);
-      name.x = entry.x + 6 * scale;
-      name.y = middle - name.height / 2;
-      container.addChild(name);
-
       const hint = label(entry.hint ?? '', Math.round(10 * scale), FIGHT_COLOURS.dim);
       hint.x = entry.x + entry.width - hint.width - 5 * scale;
       hint.y = middle - hint.height / 2;
       container.addChild(hint);
 
+      // What a hit is worth is the number being chosen by, so it is the brighter one.
+      // @spec PRESENT-MENU-016
+      const preview = label(entry.preview, Math.round(12 * scale), FIGHT_COLOURS.banner);
+      preview.x = hint.x - preview.width - 6 * scale;
+      preview.y = middle - preview.height / 2;
+      container.addChild(preview);
+
       const detail = label(entry.detail, Math.round(12 * scale), FIGHT_COLOURS.dim);
-      detail.x = hint.x - detail.width - 6 * scale;
+      detail.x = preview.x - detail.width - 8 * scale;
       detail.y = middle - detail.height / 2;
       container.addChild(detail);
+
+      const name = label(entry.label, Math.round(13 * scale), FIGHT_COLOURS.text);
+      fitWithin(name, detail.x - entry.x - 12 * scale);
+      name.x = entry.x + 6 * scale;
+      name.y = middle - name.height / 2;
+      container.addChild(name);
     }
   }
 }

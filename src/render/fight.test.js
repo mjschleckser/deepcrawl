@@ -5,7 +5,7 @@ import {
   roster, Condition,
 } from '../sim/party.js';
 import {
-  beginEncounter, createEnemy, createEnemyGroup, readinessOf, turnOrder, FULL_BAR,
+  beginEncounter, createEnemy, createEnemyGroup, readinessOf, turnOrder, hitDamage, FULL_BAR,
   Action, Outcome, Band,
 } from '../sim/combat.js';
 import { MIN_TAP_PX } from './geometry.js';
@@ -1192,14 +1192,12 @@ describe('the turn strip', () => {
   });
 
   // @spec PRESENT-STRIP-005
-  it("marks a tile with a character's initial or an enemy's letter", () => {
+  it("marks a character's tile with their initial, and an enemy's with nothing", () => {
     const { tiles } = planOf(controller()).strip;
     const markOf = (id) => tiles.find((t) => t.id === id)?.mark;
 
     expect(markOf('bram')).toBe('B');
-    expect(markOf('g1')).toBe('A');
-    expect(markOf('g2')).toBe('B');
-    // Alone of its name, so it has no letter to show.
+    expect(markOf('g1')).toBeNull();
     expect(markOf('a1')).toBeNull();
   });
 
@@ -1269,43 +1267,24 @@ describe('the turn strip', () => {
 });
 
 describe('telling enemies of one name apart', () => {
-  const planOf = (fight) => buildFightPlan(fight.encounter, viewport, {
-    phase: fight.phase, pending: fight.pending, log: fight.log, actor: fight.actor,
+  // @spec PRESENT-READY-029
+  it('calls every enemy by its own name alone', () => {
+    const plan = buildFightPlan(fightState(), viewport, { phase: FightPhase.ACTING });
+
+    expect(plan.enemies.map((e) => e.name)).toEqual(['Goblin', 'Goblin', 'Goblin Archer']);
   });
 
-  // @spec PRESENT-FIGHT-046
-  it('letters them in listing order on their cards', () => {
-    expect(planOf(controller()).enemies.slice(0, 2).map((e) => e.name))
-      .toEqual(['Goblin A', 'Goblin B']);
-  });
-
-  // @spec PRESENT-FIGHT-046
-  it('uses the same name in the log and in a menu', () => {
-    const fight = controller();
-    chooseOption(fight, 0);
-
-    expect(fight.pending.targets.map((t) => t.name).slice(0, 2)).toEqual(['Goblin A', 'Goblin B']);
-
-    chooseOption(fight, 0);
-    expect(fight.log[0]).toContain('Goblin A');
-  });
-
-  // @spec PRESENT-FIGHT-047
-  it('gives no letter to a name nothing else in the group shares', () => {
-    expect(planOf(controller()).enemies[2].name).toBe('Goblin Archer');
-  });
-
-  // @spec PRESENT-FIGHT-048
-  it('keeps a letter after the enemy before it falls, and after it falls itself', () => {
+  // @spec PRESENT-MENU-017
+  it('lists targets top to bottom as the column does, passing over the fallen', () => {
     const encounter = fightState();
-    const foe = encounter.enemies.members.find((e) => e.id === 'g1');
+    const foe = encounter.enemies.members.find((e) => e.id === 'g2');
     foe.hitPoints = 0;
     foe.condition = Condition.DEAD;
+    const fight = untilAsked(createFightController({ encounter, viewport, onDraw: vi.fn() }));
 
-    const plan = planOf(createFightController({ encounter, viewport, onDraw: vi.fn() }));
+    chooseOption(fight, 0);
 
-    expect(plan.enemies[0].name).toBe('Goblin A');
-    expect(plan.enemies[1].name).toBe('Goblin B');
+    expect(fight.pending.targets.map((t) => t.id)).toEqual(['g1', 'a1']);
   });
 });
 
@@ -1424,8 +1403,22 @@ describe('the action menu', () => {
 
     const first = entries(planOf(fight))[0];
 
-    expect(first.label).toBe('Goblin A');
+    expect(first.label).toBe('Goblin');
     expect(first.detail).toBe('4/9');
+  });
+
+  // @spec PRESENT-MENU-016
+  it('puts what a plain hit would deal on each target\'s entry', () => {
+    const fight = controller();
+    fight.encounter.enemies.members[2].armour = 3;
+    const whose = fight.pending.characterId;
+    chooseOption(fight, 0);
+
+    const drawn = entries(planOf(fight));
+
+    expect(drawn[0].preview).toBe(`${hitDamage(fight.encounter, whose, 'g1')} dmg`);
+    expect(drawn[2].preview).toBe(`${hitDamage(fight.encounter, whose, 'a1')} dmg`);
+    expect(drawn[2].preview).not.toBe(drawn[0].preview);
   });
 
   // @spec PRESENT-MENU-007
@@ -1467,7 +1460,9 @@ describe('the action menu', () => {
 
     chooseOption(fight, 1);
     expect(fight.turnsTaken).toBe(1);
-    expect(fight.log[0]).toContain('Goblin B');
+    const [first, second] = fight.encounter.enemies.members;
+    expect(first.hitPoints).toBe(first.maxHitPoints);
+    expect(second.hitPoints).toBeLessThan(second.maxHitPoints);
   });
 
   // @spec PRESENT-MENU-008
