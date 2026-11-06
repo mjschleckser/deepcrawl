@@ -120,8 +120,7 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 
 ## The action menu
 
-- [x] **PRESENT-MENU-001**: When the player presses an available fight option whose action needs an answer and has exactly one possible answer, the system shall take that action on that answer at once and open no menu.
-- [x] **PRESENT-MENU-002**: When the player presses an available fight option whose action has more than one possible answer, the system shall open a menu of those answers off that option's button and shall take no action until an entry is chosen.
+- [x] **PRESENT-MENU-002**: When the player presses an available fight option whose action needs an answer, the system shall open a menu of the possible answers off that option's button, however few there are, and shall take no action until an entry is chosen.
 - [x] **PRESENT-MENU-003**: The system shall draw a fight menu rising from the top edge of the button that opened it, starting at that button's left edge and moved inward only as far as it must to stay within the fight panel.
 - [x] **PRESENT-MENU-004**: The system shall draw a fight menu over whatever is behind it, moving no control and no region of the fight panel.
 - [x] **PRESENT-MENU-005**: While a fight menu is open, the system shall keep the four options drawn and shall mark the option that opened the menu as open.

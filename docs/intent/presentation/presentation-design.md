@@ -482,10 +482,13 @@ the player is already wondering what happened.
 is always `4`, whether or not the two between them can be pressed, so a number key means
 the same thing in every fight.
 
-**An option asks a further question only when there is one.** Attack with one enemy
-standing has one possible answer, so a single press strikes it. With two or more, the
-press opens a menu of the legal targets, so an illegal choice cannot be expressed rather
-than being refused after the fact. Flee asks nothing at all and resolves on the press.
+**An option that needs an answer always asks for one.** Attack opens a menu of the legal
+targets on every turn, however many are standing, so an illegal choice cannot be
+expressed rather than being refused after the fact. With one enemy left the menu holds
+one entry, and the turn takes the same two presses in the same two places as every other
+turn. A fight is played from a rhythm the thumb has learned, and that rhythm must not
+change at the moment the second-last enemy falls. Flee asks nothing at all and resolves
+on the press.
 
 **A further choice opens as a menu off the button that asked it.**
 
@@ -777,7 +780,7 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 | Telling enemies of one name apart | A letter after the name, wherever the fight names them | Portraits alone; numbering by position in the column | A strip tile and a target entry both have to say which goblin, and identical portraits and names cannot. A letter is short enough to sit on a tile, and it reads as a name rather than as a place in a column or as a number key. |
 | The panel's regions | Fixed: combatants, log, prompt line, controls, each keeping its place and size all encounter | Sizing each region to its content, so the panel grows and shrinks as the fight goes | A fight is read under time pressure. A prompt that pushed the formation up as it appeared would move what the player is reading at the moment they are reading it. Fixed regions cost some empty space in a small fight and buy a screen that can be read at a glance every time. |
 | Where a further choice appears | A menu opening off the pressed button, rising as far as the turn strip | Replacing the four options with the choices; a separate screen; tapping the target's card | Replacing the row changes what is under the thumb and loses sight of what was asked. A menu keeps the question attached to the press that raised it, and needs no room reserved in the row. It rises rather than falls because the row sits at the foot of the screen. |
-| One legal target | The first press strikes it | Asking anyway, for one consistent rhythm | A question with one answer is a press spent on nothing, and in the last moments of a fight it is paid on every turn. |
+| One legal target | The menu opens anyway, holding one entry | The first press strikes it | Skipping the question saves one press but changes what a press on Attack does partway through a fight, so a thumb already reaching for the menu lands on something else. One rhythm on every turn is worth more than a press saved at the end of a fight. |
 | The log's size | A fixed window of the last few lines, scrollable back through the rest | Growing to fit what has happened; clearing between turns; a full-height transcript | A fixed window keeps the panel still, and scrolling keeps what scrolled off reachable — which matters because a fight plays on while the player looks away. A growing log would move everything below it on every action. |
 | Hit points | A bar under each combatant, coloured by the share left, with the numbers on it | The number alone | A column of fractions has to be read one at a time; a column of bars shows how hurt the whole party is in one look, and the colour carries the urgency before the length is even judged. |
 | Portraits | An image file per class and per enemy kind, drawn at one size | Shapes drawn in code, as the map's marks are; no portrait at all | A picture is recognised faster than a name is read, which is what makes a column of six scannable. Files mean real art arrives by replacing them rather than by rewriting a draw routine, and one size keeps a column aligned whatever it holds. |

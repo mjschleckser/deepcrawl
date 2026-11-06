@@ -1320,16 +1320,31 @@ describe('the action menu', () => {
     id: 'g1', name: 'Goblin', maxHitPoints: 90, potValue: 14, attack: { baseDamage: 5, accuracy: 24 },
   })];
 
-  // @spec PRESENT-MENU-001
-  it('strikes at once when there is only one thing to strike', () => {
+  // @spec PRESENT-MENU-002
+  it('asks even when there is only one thing to strike', () => {
     const fight = controller({ enemies: lone() });
-    const whose = fight.pending.characterId;
 
     chooseOption(fight, 0);
 
+    expect(fight.turnsTaken).toBe(0);
+    expect(fight.pending.targets.map((t) => t.id)).toEqual(['g1']);
+    expect(entries(planOf(fight))).toHaveLength(1);
+
+    chooseOption(fight, 0);
     expect(fight.turnsTaken).toBe(1);
-    expect(fight.pending?.characterId).not.toBe(whose);
-    expect(fight.pending?.targets ?? null).toBeNull();
+  });
+
+  // @spec PRESENT-MENU-009
+  it('makes a double press on Attack harmless with one enemy left', () => {
+    const fight = controller({ enemies: lone() });
+    const whose = fight.pending.characterId;
+
+    pressOption(fight, 0);
+    pressOption(fight, 0);
+
+    expect(fight.turnsTaken).toBe(0);
+    expect(fight.pending.characterId).toBe(whose);
+    expect(fight.pending.targets).toBeNull();
   });
 
   // @spec PRESENT-MENU-002

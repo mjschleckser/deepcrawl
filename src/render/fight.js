@@ -920,7 +920,6 @@ export function advanceClock(fight, ms) {
  *
  * @spec PRESENT-FIGHT-013
  * @spec PRESENT-FIGHT-037
- * @spec PRESENT-MENU-001
  * @spec PRESENT-MENU-002
  * @spec PRESENT-MENU-008
  * @spec PRESENT-MENU-014
@@ -929,17 +928,15 @@ export function chooseOption(fight, index) {
   if (fight.phase !== FightPhase.ACTING || !fight.pending) return false;
 
   const characterId = fight.pending.characterId;
-  const strike = (target) => {
-    resolveOne(fight, characterId, {
-      kind: Action.ATTACK, targetId: target.id, ...attackOf(fight.encounter, characterId),
-    });
-    return true;
-  };
 
   // Choosing a target for an action already picked.
   if (fight.pending.targets) {
     const target = fight.pending.targets[index];
-    return target ? strike(target) : false;
+    if (!target) return false;
+    resolveOne(fight, characterId, {
+      kind: Action.ATTACK, targetId: target.id, ...attackOf(fight.encounter, characterId),
+    });
+    return true;
   }
 
   const option = fight.pending.options[index];
@@ -963,9 +960,8 @@ export function chooseOption(fight, index) {
   }
 
   const targets = targetsFor(fight.encounter, characterId, option.action);
-  // A question with one answer is not asked.
-  if (targets?.length === 1) return strike(targets[0]);
-  if (targets?.length > 1) {
+  // Asked however few there are, so a press on Attack means the same thing on every turn.
+  if (targets?.length > 0) {
     fight.pending = { ...fight.pending, action: option.action, targets, openedBy: index };
     return true;
   }
