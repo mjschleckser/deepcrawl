@@ -9,6 +9,7 @@ import {
   Action, Outcome, Band,
 } from '../sim/combat.js';
 import { MIN_TAP_PX } from './geometry.js';
+import { weaponSymbol } from './symbols.js';
 import {
   buildFightPlan, createFightController, chooseOption, pressOption, goBack, dismissOutcome,
   playEnemyTurn, passTurn, advanceClock, fightIsPlaying, scrollLog,
@@ -37,6 +38,9 @@ function untilAsked(fight, limit = 200) {
 }
 
 const viewport = { width: 900, height: 640 };
+
+/** Held in the hand of a character authored with a blade. */
+const mace = { name: 'Mace', skill: Skill.BLUNT, damage: 8, accuracy: 20, governs: 'MIGHT' };
 
 const hero = (id, cls) =>
   createCharacter({
@@ -909,6 +913,20 @@ describe('input in a fight', () => {
 });
 
 describe('what a won fight teaches', () => {
+  // @spec COMBAT-ACTION-010
+  it('credits a blow to the weapon in hand, not the attack the character was authored with', () => {
+    const encounter = fightState();
+    const fight = createFightController({ encounter, viewport, onDraw: vi.fn() });
+    const whose = fight.pending.characterId;
+    character(encounter.party, whose).equipment.MAIN_HAND = mace;
+
+    chooseOption(fight, 0);
+    chooseOption(fight, 0);
+
+    const trained = [...encounter.skillsByActor.get(whose)];
+    expect(trained).toEqual([Skill.BLUNT]);
+  });
+
   // @spec PRESENT-FIGHT-008
   it('records the skill each attack used, so a victory advances something', () => {
     const fight = controller({
@@ -1416,9 +1434,33 @@ describe('the action menu', () => {
 
     const drawn = entries(planOf(fight));
 
-    expect(drawn[0].preview).toBe(`${hitDamage(fight.encounter, whose, 'g1')} dmg`);
-    expect(drawn[2].preview).toBe(`${hitDamage(fight.encounter, whose, 'a1')} dmg`);
+    expect(drawn[0].preview).toBe(String(hitDamage(fight.encounter, whose, 'g1')));
+    expect(drawn[2].preview).toBe(String(hitDamage(fight.encounter, whose, 'a1')));
     expect(drawn[2].preview).not.toBe(drawn[0].preview);
+  });
+
+  // @spec PRESENT-MENU-018
+  it('carries the skill of the weapon in hand, not the attack the character was authored with', () => {
+    const encounter = fightState();
+    const fight = createFightController({ encounter, viewport, onDraw: vi.fn() });
+    character(encounter.party, fight.pending.characterId).equipment.MAIN_HAND = mace;
+
+    chooseOption(fight, 0);
+
+    for (const entry of entries(planOf(fight))) expect(entry.weapon).toBe(Skill.BLUNT);
+  });
+
+  // @spec PRESENT-MENU-018
+  it('has a symbol of its own for each weapon skill', () => {
+    const drawn = [Skill.BLADE, Skill.BLUNT, Skill.POLEARM, Skill.BOW]
+      .map((skill) => JSON.stringify(weaponSymbol(skill)));
+
+    expect(new Set(drawn).size).toBe(4);
+  });
+
+  // @spec PRESENT-MENU-018
+  it('falls back on the sword for a skill with no symbol of its own', () => {
+    expect(weaponSymbol('EVOCATION')).toEqual(weaponSymbol(Skill.BLADE));
   });
 
   // @spec PRESENT-MENU-007
@@ -1456,8 +1498,6 @@ describe('the action menu', () => {
     const fight = controller();
     chooseOption(fight, 0);
 
-    expect(entries(planOf(fight)).map((e) => e.hint)).toEqual(['1', '2', '3']);
-
     chooseOption(fight, 1);
     expect(fight.turnsTaken).toBe(1);
     const [first, second] = fight.encounter.enemies.members;
@@ -1466,17 +1506,11 @@ describe('the action menu', () => {
   });
 
   // @spec PRESENT-MENU-008
-  it('numbers only the first nine, the keys running out there', () => {
-    const many = Array.from({ length: 11 }, (_, i) => createEnemy({
-      id: `g${i}`, name: 'Goblin', maxHitPoints: 9, potValue: 14, attack: { baseDamage: 1, accuracy: 24 },
-    }));
-    const fight = untilAsked(controller({ enemies: many }));
+  it('prints no number on an entry', () => {
+    const fight = controller();
     chooseOption(fight, 0);
 
-    const hints = entries(planOf(fight)).map((e) => e.hint);
-
-    expect(hints[8]).toBe('9');
-    expect(hints[9]).toBeNull();
+    for (const entry of entries(planOf(fight))) expect(entry.hint).toBeNull();
   });
 
   // @spec PRESENT-MENU-009

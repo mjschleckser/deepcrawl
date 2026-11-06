@@ -491,8 +491,8 @@ on the press.
 
 ```
 │  ┌──────────────────────┐                                         │
-│  │ Goblin   9/9  7 dmg  │ 1                                       │
-│  │ Goblin   4/9  7 dmg  │ 2                                       │
+│  │ Goblin      7 ⚔  9/9 │                                         │
+│  │ Goblin      7 ⚔  4/9 │                                         │
 │  └──┬───────────────────┘                                         │
 │  [[Attack]]  [Magic]   [Inventory]   [Flee]                       │
 ```
@@ -512,12 +512,21 @@ can be made from the numbers: a blow worth at least the hit points beside it fin
 the job, if it lands as a hit. It says nothing about grazes, crits or misses. It is a
 guide to the ordinary result, and the log reports what actually happened.
 
+**An entry reads as a blow against a body:** the name, then the damage, then a symbol of
+the weapon striking it, then the target's hit points. The symbol sits between the two
+numbers so that neither needs a label: one side is what is being dealt and the other what
+it is being dealt to. It follows the weapon the character is actually using, so a sword,
+a mace, a spear and a bow each have their own, one for each weapon skill. Symbols are
+drawn in code, as the map's marks are.
+
 **A menu is one column until it runs out of height.** It starts at the left edge of the
 button that opened it, moved inward as far as it must to stay within the panel, and its
 entries are no smaller than a thumb. It may rise past the top of the panel as far as the
 foot of the turn strip. If one column would rise further, it wraps into as many columns
-as it needs, which is how twenty enemies stay on a phone screen. Entries are numbered in
-order, and the number keys take the first nine.
+as it needs, which is how twenty enemies stay on a phone screen. The number keys take the
+first nine entries in the order they are listed, and an entry does not print its number:
+it would be a third figure on a line whose two figures are the point of it, and a phone
+player has no use for it.
 
 Magic and Inventory will open their menus the same way, off their own buttons, once there
 are spells and items to list. An entry that needs a further answer, such as a spell that
@@ -545,8 +554,8 @@ actions that carry no trace of where they came from.
 | Confirm | `Enter` | tap the confirm control |
 | Close an open menu | `Escape` | tap its button again, or tap outside it |
 
-While a menu is open the number keys address its entries rather than the row, so the
-number beside each thing on screen is always the one that picks it.
+While a menu is open the number keys address its entries rather than the row, counting
+down from the top.
 
 Every option and menu entry on offer is a drawn control with its own hit region, sized
 like any other. A fight a player can watch but not act in is worse than no fight at all,
@@ -782,6 +791,8 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 | What a combatant is drawn as | A portrait, then two stacked bars: identity, hit points | Three bars with readiness on top; a single card whose fill is readiness | Two filled bars side by side on one card are easy to mistake for one another on a phone, and hit points are the one that must never be misread. With the order of acting drawn once at the top, a card has only two questions left to answer. |
 | How the order of acting is drawn | A strip of the next turns along the top of the screen, one tile per turn | A readiness bar on each card; a list inside the fight panel | A strip answers *who is next* in one look, in one place, instead of asking the player to compare a bar on every card. The top of the screen is free during a fight, so the strip costs the panel nothing. Fixing its length keeps it the same shape all fight. |
 | Telling enemies of one name apart | By position: a menu lists targets in column order | A letter after the name, wherever the fight names them | Fights are small enough that order settles which is which, and a letter is one more thing on every card, tile and log line for the player to read past. The cost is that the strip and the log cannot say which of several goblins they mean. A letter is the answer if larger groups make that matter. |
+| How an entry is laid out | Name, damage, weapon symbol, hit points, with no key number | Labelling the figures (`6 dmg`, `9/9 HP`); hit points before damage; printing each entry's key | A symbol between two figures says which is which without a word of label, which keeps a phone-width line short and quick to scan. A printed key is a third figure competing with the two that decide the choice, and it serves only the keyboard, where counting down a short list is easy. |
+| Weapon symbols | Drawn in code, one per weapon skill | Emoji or font glyphs; an image file per weapon | Glyphs for weapons vary by device or are missing from a monospace font, so the same entry would read differently from phone to phone. Four small shapes need no art pipeline, and the map's marks already work this way. |
 | What a target's entry predicts | The damage of a plain hit, armour taken off | A range from graze to crit; an average weighted by the chance of each band; no prediction | One number is what a phone-width entry can carry and what a player can compare at a glance. A range or an average would need reading, and the point is to choose quickly. Showing the ordinary result keeps the bands a surprise worth having. |
 | The panel's regions | Fixed: combatants, log, prompt line, controls, each keeping its place and size all encounter | Sizing each region to its content, so the panel grows and shrinks as the fight goes | A fight is read under time pressure. A prompt that pushed the formation up as it appeared would move what the player is reading at the moment they are reading it. Fixed regions cost some empty space in a small fight and buy a screen that can be read at a glance every time. |
 | Where a further choice appears | A menu opening off the pressed button, rising as far as the turn strip | Replacing the four options with the choices; a separate screen; tapping the target's card | Replacing the row changes what is under the thumb and loses sight of what was asked. A menu keeps the question attached to the press that raised it, and needs no room reserved in the row. It rises rather than falls because the row sits at the foot of the screen. |

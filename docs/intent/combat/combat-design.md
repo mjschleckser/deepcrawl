@@ -254,7 +254,7 @@ made.
 
 | Action | Costs | Notes |
 |---|---|---|
-| Attack | a full bar | the attack carried by the combatant, until weapons carry it instead |
+| Attack | a full bar | the weapon in hand, or the attack the combatant was authored with if they hold none; what it trains is that weapon's skill |
 | Cast | a full bar, and a spell slot of that rank | |
 | Use ability | a full bar | unlocked by a skill rank |
 | Flee | a full bar, of the character who attempts it | resolved for the whole party; see below |

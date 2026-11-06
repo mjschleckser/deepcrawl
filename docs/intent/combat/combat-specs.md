@@ -68,6 +68,7 @@ specs fix the structure those numbers are fed into.
 - [x] **COMBAT-ACTION-009**: When a combatant passes their turn, the system shall spend a full bar of their readiness and shall resolve no action.
 - [x] **COMBAT-ACTION-006**: The system shall apply every change to a character's hit points or condition through the party segment's operations.
 - [x] **COMBAT-ACTION-008**: The system shall take an attack's base damage and accuracy from the combatant that is acting, and the armour reducing it from the combatant struck, on either side alike.
+- [x] **COMBAT-ACTION-010**: When a character attacks, the system shall record as the skill used the skill of the weapon they are using, rather than the skill of the attack they were authored with.
 
 ## Taking a turn
 

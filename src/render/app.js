@@ -10,6 +10,7 @@
 import { Application, Assets, Container, Graphics, Sprite, Text } from 'pixi.js';
 import { Direction, EdgeKind, TileFeature } from '../sim/floor.js';
 import { PIXI_APP_OPTIONS, PALETTE, shade } from './appconfig.js';
+import { weaponSymbol } from './symbols.js';
 
 const WALL_KINDS = new Set(['leftWall', 'rightWall', 'frontWall']);
 
@@ -373,6 +374,35 @@ const label = (text, size, colour) =>
   new Text({ text, style: { fill: colour, fontSize: size, fontFamily: 'monospace' } });
 
 /**
+ * Paint a weapon symbol into a square. The shapes are the symbol's; this only scales
+ * them to the square and strokes them.
+ *
+ * @spec PRESENT-MENU-018
+ */
+function drawWeaponSymbol(container, skill, x, y, size, scale) {
+  const { lines, curves, circles, polygons } = weaponSymbol(skill);
+  const at = (value, origin) => origin + value * size;
+  const ink = { width: 2 * scale, color: FIGHT_COLOURS.text, cap: 'round' };
+  const art = new Graphics();
+
+  for (const [x1, y1, x2, y2] of lines) {
+    art.moveTo(at(x1, x), at(y1, y)).lineTo(at(x2, x), at(y2, y)).stroke(ink);
+  }
+  for (const [x1, y1, cx, cy, x2, y2] of curves) {
+    art.moveTo(at(x1, x), at(y1, y))
+      .quadraticCurveTo(at(cx, x), at(cy, y), at(x2, x), at(y2, y))
+      .stroke(ink);
+  }
+  for (const [cx, cy, radius] of circles) {
+    art.circle(at(cx, x), at(cy, y), radius * size).fill(FIGHT_COLOURS.text);
+  }
+  for (const points of polygons) {
+    art.poly(points.map((value, i) => at(value, i % 2 === 0 ? x : y))).fill(FIGHT_COLOURS.text);
+  }
+  container.addChild(art);
+}
+
+/**
  * Draw a fight over the corridor. Both sides in their columns, the fallen still in
  * place, the options on offer, and the log — which is how an action that lands in one
  * frame is perceived at all.
@@ -608,25 +638,28 @@ function drawFight(container, plan) {
       container.addChild(frame);
 
       const middle = entry.y + entry.height / 2;
-      const hint = label(entry.hint ?? '', Math.round(10 * scale), FIGHT_COLOURS.dim);
-      hint.x = entry.x + entry.width - hint.width - 5 * scale;
-      hint.y = middle - hint.height / 2;
-      container.addChild(hint);
 
-      // What a hit is worth is the number being chosen by, so it is the brighter one.
+      // Laid out from the right edge: name, damage, weapon, hit points, so the two
+      // figures sit either side of the symbol and neither needs a label.
       // @spec PRESENT-MENU-016
-      const preview = label(entry.preview, Math.round(12 * scale), FIGHT_COLOURS.banner);
-      preview.x = hint.x - preview.width - 6 * scale;
-      preview.y = middle - preview.height / 2;
-      container.addChild(preview);
-
-      const detail = label(entry.detail, Math.round(12 * scale), FIGHT_COLOURS.dim);
-      detail.x = preview.x - detail.width - 8 * scale;
+      // @spec PRESENT-MENU-018
+      const detail = label(entry.detail, Math.round(13 * scale), FIGHT_COLOURS.dim);
+      detail.x = entry.x + entry.width - detail.width - 7 * scale;
       detail.y = middle - detail.height / 2;
       container.addChild(detail);
 
+      const symbolSize = 22 * scale;
+      const symbolX = detail.x - symbolSize - 7 * scale;
+      drawWeaponSymbol(container, entry.weapon, symbolX, middle - symbolSize / 2, symbolSize, scale);
+
+      // What a hit is worth is the number being chosen by, so it is the brighter one.
+      const preview = label(entry.preview, Math.round(14 * scale), FIGHT_COLOURS.banner);
+      preview.x = symbolX - preview.width - 5 * scale;
+      preview.y = middle - preview.height / 2;
+      container.addChild(preview);
+
       const name = label(entry.label, Math.round(13 * scale), FIGHT_COLOURS.text);
-      fitWithin(name, detail.x - entry.x - 12 * scale);
+      fitWithin(name, preview.x - entry.x - 12 * scale);
       name.x = entry.x + 6 * scale;
       name.y = middle - name.height / 2;
       container.addChild(name);

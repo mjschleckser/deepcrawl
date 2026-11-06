@@ -126,13 +126,14 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-MENU-005**: While a fight menu is open, the system shall keep the four options drawn and shall mark the option that opened the menu as open.
 - [x] **PRESENT-MENU-006**: The system shall draw on a fight menu entry that names a combatant their name and their remaining and maximum hit points.
 - [x] **PRESENT-MENU-007**: The system shall draw a fight menu as one column, and if one column would rise past the foot of the turn strip, then shall wrap it into as many columns as keep it below the strip.
-- [x] **PRESENT-MENU-008**: While a fight menu is open, the system shall number its entries in order and shall bind the number keys to the first nine of them rather than to the four options.
+- [x] **PRESENT-MENU-008**: While a fight menu is open, the system shall bind the number keys to the first nine of its entries in listing order rather than to the four options, and shall print no number on an entry.
 - [x] **PRESENT-MENU-009**: While a fight menu is open, when the player presses `Escape`, presses the button that opened it, or presses outside both the menu and the row of options, the system shall close the menu, take no action, and pass the press to nothing beneath it.
 - [x] **PRESENT-MENU-010**: While a fight menu is open, when the player presses a different available option, the system shall close the menu and treat the press as it would with no menu open.
 - [x] **PRESENT-MENU-011**: While a fight menu is open, when the player presses an option marked unavailable, the system shall leave the menu open and do nothing else.
 - [x] **PRESENT-MENU-014**: When the player presses Flee while it is available, the system shall attempt the escape at once and open no menu.
 - [x] **PRESENT-MENU-015**: While a fight menu is open, when the player turns the wheel, the system shall scroll the log and leave the menu open.
-- [x] **PRESENT-MENU-016**: The system shall draw on a fight menu entry for an attack target the damage the simulation reports for a plain hit on that target.
+- [x] **PRESENT-MENU-016**: The system shall draw on a fight menu entry for an attack target, in this order: the target's name, the damage the simulation reports for a plain hit on that target, a weapon symbol, and the target's hit points.
+- [x] **PRESENT-MENU-018**: The system shall draw on an attack target's entry the symbol for the skill of the weapon the acting character is using, with a distinct symbol for each of Blade, Blunt, Polearm and Bow.
 - [x] **PRESENT-MENU-017**: The system shall list attack targets in a fight menu in the order their column lists them.
 
 ## Prompts

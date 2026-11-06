@@ -17,6 +17,7 @@ import {
   fleeCertainToFail, turnOrder, hitDamage,
 } from '../sim/combat.js';
 import { selectEnemyTarget } from '../sim/enemies.js';
+import { weaponOf } from '../sim/items.js';
 
 export const FightPhase = { ACTING: 'ACTING', ENDED: 'ENDED' };
 
@@ -205,13 +206,14 @@ function layOutColumn(cards, column, top, scale, { height = ROW_HEIGHT * scale }
 }
 
 /**
- * What an attack trains. The damage and the accuracy belong to the combatant swinging
- * until a weapon carries them; the skill comes with them.
+ * What an attack trains: the skill of the weapon being used, which is the same weapon
+ * that decides the damage and the accuracy.
  *
  * @spec COMBAT-ACTION-008
+ * @spec COMBAT-ACTION-010
  */
 const attackOf = (encounter, id) => ({
-  skill: character(encounter.party, id)?.attack?.skill ?? Skill.BLADE,
+  skill: weaponOf(character(encounter.party, id))?.skill ?? Skill.BLADE,
 });
 
 const standing = (e) => e.condition === Condition.OK && e.hitPoints > 0;
@@ -490,6 +492,7 @@ function controlMetrics({ column, scale }) {
  * @spec PRESENT-MENU-007
  * @spec PRESENT-MENU-008
  * @spec PRESENT-MENU-016
+ * @spec PRESENT-MENU-018
  */
 function layOutMenu({ pending, opener, bounds, ceiling, metrics, scale }) {
   const gap = MENU_GAP * scale;
@@ -519,10 +522,11 @@ function layOutMenu({ pending, opener, bounds, ceiling, metrics, scale }) {
     entryIndex: index,
     label: target.name,
     detail: `${target.hitPoints}/${target.maxHitPoints}`,
-    preview: `${target.damage} dmg`,
+    preview: String(target.damage),
+    weapon: target.weapon,
     available: true,
     reason: null,
-    hint: index < 9 ? String(index + 1) : null,
+    hint: null,
     x: box.x + gap + Math.floor(index / rows) * (entryWidth + gap),
     y: box.y + gap + (index % rows) * (entryHeight + gap),
     width: entryWidth,
@@ -672,9 +676,11 @@ function optionsFor(encounter, characterId) {
  */
 function targetsFor(encounter, characterId, action) {
   if (action !== FightAction.ATTACK) return null;
+  const weapon = attackOf(encounter, characterId).skill;
   return attackTargets(encounter, characterId).map((t) => ({
     id: t.id, name: t.name, hitPoints: t.hitPoints, maxHitPoints: t.maxHitPoints,
     damage: hitDamage(encounter, characterId, t.id),
+    weapon,
   }));
 }
 
