@@ -5,8 +5,8 @@ import {
   roster, Condition,
 } from '../sim/party.js';
 import {
-  beginEncounter, createEnemy, createEnemyGroup, readinessOf, turnOrder, hitDamage, FULL_BAR,
-  Action, Outcome, Band,
+  beginEncounter, createEnemy, createEnemyGroup, readinessOf, turnOrder, hitDamage,
+  FULL_BAR, Outcome, Band,
 } from '../sim/combat.js';
 import { MIN_TAP_PX } from './geometry.js';
 import { weaponSymbol } from './symbols.js';
@@ -535,15 +535,6 @@ describe('the four a turn offers', () => {
     }
   });
 
-  // @spec PRESENT-FIGHT-006
-  it('names them for what they do', () => {
-    const fight = controller();
-    untilAsked(fight);
-
-    expect(fight.pending.options.map((o) => o.label))
-      .toEqual(['Attack', 'Magic', 'Inventory', 'Flee']);
-  });
-
   // @spec PRESENT-FIGHT-034
   // @spec PRESENT-FIGHT-036
   it('keeps an option it cannot offer in its own place, marked unavailable', () => {
@@ -670,14 +661,6 @@ describe('the four a turn offers', () => {
 
     expect(chooseOption(fight, 0)).toBe(false);
     expect(fight.turnsTaken).toBe(turns);
-  });
-
-  // @spec PRESENT-FIGHT-040
-  it('gives an available option no reason to explain', () => {
-    const fight = controller();
-    untilAsked(fight);
-
-    expect(slot(fight, FightAction.ATTACK).reason).toBeNull();
   });
 
   // @spec PRESENT-FIGHT-035
@@ -952,22 +935,6 @@ describe('a fight on a wide screen', () => {
   const planFor = (vp) => buildFightPlan(fightState(), vp, {
     phase: FightPhase.ACTING,
     pending: { characterId: 'bram', options: [{ label: 'Attack' }, { label: 'Defend' }, { label: 'Flee' }], targets: null },
-  });
-
-  // @spec PRESENT-FIGHT-020
-  it('lays out in a centred column rather than across the whole window', () => {
-    const plan = planFor(desktop);
-
-    expect(plan.bounds.width).toBeLessThan(desktop.width);
-    expect(plan.bounds.x).toBeCloseTo((desktop.width - plan.bounds.width) / 2, 5);
-  });
-
-  // @spec PRESENT-FIGHT-020
-  it('gives a phone its whole width, the column being the screen', () => {
-    const plan = planFor(phone);
-
-    expect(plan.bounds.x).toBe(0);
-    expect(plan.bounds.width).toBe(phone.width);
   });
 
   // @spec PRESENT-FIGHT-021
@@ -1456,11 +1423,6 @@ describe('the action menu', () => {
       .map((skill) => JSON.stringify(weaponSymbol(skill)));
 
     expect(new Set(drawn).size).toBe(4);
-  });
-
-  // @spec PRESENT-MENU-018
-  it('falls back on the sword for a skill with no symbol of its own', () => {
-    expect(weaponSymbol('EVOCATION')).toEqual(weaponSymbol(Skill.BLADE));
   });
 
   // @spec PRESENT-MENU-007

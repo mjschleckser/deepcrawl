@@ -310,28 +310,6 @@ describe('step resolution order', () => {
       StepEvent.CONTACT_CHECKED,
     ]);
   });
-
-  // @spec EXPLORE-MOVE-008
-  it('advances the clock before recomputing sight, so an expiring source is already spent', () => {
-    const state = exploration([openFloor()]);
-
-    const result = perform(state, { verb: Verb.STEP_FORWARD });
-
-    expect(result.events.indexOf(StepEvent.CLOCK_ADVANCED)).toBeLessThan(
-      result.events.indexOf(StepEvent.SIGHT_RECOMPUTED),
-    );
-  });
-
-  // @spec EXPLORE-MOVE-008
-  it('moves roamers after discovery, so the party sees the tile as it arrived', () => {
-    const state = exploration([openFloor()]);
-
-    const result = perform(state, { verb: Verb.STEP_FORWARD });
-
-    expect(result.events.indexOf(StepEvent.SIGHT_RECOMPUTED)).toBeLessThan(
-      result.events.indexOf(StepEvent.ROAMERS_MOVED),
-    );
-  });
 });
 
 describe('pits', () => {

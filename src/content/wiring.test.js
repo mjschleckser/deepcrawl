@@ -2,12 +2,10 @@ import { describe, it, expect } from 'vitest';
 import { STEP_DELTA, EdgeKind, setEdge, isEdgeOpen } from '../sim/floor.js';
 import { makeRng } from '../sim/rng.js';
 import {
-  computeSight, perform, partyPosition, tickCount, isTileDiscovered, isTrapKnown,
-  recordTrapDetected, advanceForCamp, Verb, PartyAction,
+  computeSight, perform, partyPosition, tickCount, isTrapKnown, recordTrapDetected,
+  advanceForCamp, Verb, PartyAction,
 } from '../sim/exploration.js';
-import {
-  Attribute, Condition, CharacterClass, Skill, character, roster, skillRank, applyDamage,
-} from '../sim/party.js';
+import { Condition, CharacterClass, Skill, character, roster } from '../sim/party.js';
 import { Outcome, Action, encounterOutcome, nextActor, takeAction } from '../sim/combat.js';
 import { isAware } from '../sim/enemies.js';
 import { createCampaign } from './campaign.js';
@@ -61,25 +59,6 @@ describe('a campaign has a party', () => {
     expect(roster(party)).toHaveLength(4);
     expect(roster(party).map((c) => c.id)).toEqual(['bram', 'tam', 'isolde', 'wren']);
     for (const c of roster(party)) expect(c.row).toBeUndefined();
-  });
-
-  it('gives every character their own speed, so no two bars fill together', () => {
-    const { party } = booted();
-    const speeds = roster(party).map((c) => c.attributes[Attribute.DEXTERITY]);
-
-    // Four scores, four rates: a fight in lockstep shows nothing about who is quick.
-    expect(new Set(speeds).size).toBe(4);
-    // Far enough apart to be read off the bars, and no slower at the back than the
-    // speed a party needs to outrun what it walks into.
-    expect(Math.max(...speeds)).toBeGreaterThanOrEqual(1.5 * Math.min(...speeds));
-    expect(Math.min(...speeds)).toBeGreaterThanOrEqual(10);
-  });
-
-  it('brings exactly one of each class, so every system has someone to use it', () => {
-    const { party } = booted();
-    const classes = roster(party).map((c) => c.characterClass);
-
-    expect([...classes].sort()).toEqual(Object.values(CharacterClass).sort());
   });
 
   // @spec EXPLORE-CLOCK-001

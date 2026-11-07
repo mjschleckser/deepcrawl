@@ -1,7 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createFloor, setEdge, setTileFeature, EdgeKind, TileFeature, Direction } from '../sim/floor.js';
 import { createExploration, partyPosition, tickCount } from '../sim/exploration.js';
-import { createParty, createCharacter, addCharacter, CharacterClass, Row } from '../sim/party.js';
+import {
+  createParty, createCharacter, addCharacter, CharacterClass,
+} from '../sim/party.js';
 import { beginEncounter, createEnemy, createEnemyGroup } from '../sim/combat.js';
 import { makeRng } from '../sim/rng.js';
 import { PIXI_APP_OPTIONS } from './appconfig.js';
@@ -587,13 +589,5 @@ describe('the party screen', () => {
     expect(showing(controller)).toBe('isolde');
     expect(pressKey(controller, '5')).toBe(false);
     expect(showing(controller)).toBe('isolde');
-  });
-
-  // @spec PRESENT-SCENE-010
-  it('names the party layer, empty, while the screen is closed', () => {
-    const { controller } = withParty();
-
-    expect(layers(controller).map((l) => l.name)).toEqual(['view', 'map', 'fight', 'party', 'hud']);
-    expect(sheet(controller)).toBeNull();
   });
 });

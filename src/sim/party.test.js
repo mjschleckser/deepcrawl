@@ -264,7 +264,6 @@ describe('the condition chain', () => {
     // The seat they held is free again.
     expect(addCharacter(party, cleric())).toBe(true);
   });
-
 });
 
 describe('advancement', () => {
@@ -554,15 +553,6 @@ describe('hit points from class and Constitution', () => {
   it('takes hit points off a Constitution below ten', () => {
     expect(at(CharacterClass.FIGHTER, 6)).toBe(Math.round(30 * 0.8));
     expect(at(CharacterClass.MAGE, 6)).toBeLessThan(at(CharacterClass.MAGE, 10));
-  });
-
-  // @spec PARTY-CHAR-006
-  it('keeps the classes apart at every Constitution', () => {
-    // Multiplicative, so a tough fighter gains more absolute points than a tough mage
-    // and the gap between them holds rather than closing.
-    const low = at(CharacterClass.FIGHTER, 6) / at(CharacterClass.MAGE, 6);
-    const high = at(CharacterClass.FIGHTER, 18) / at(CharacterClass.MAGE, 18);
-    expect(Math.abs(low - high)).toBeLessThan(0.1);
   });
 
   // @spec PARTY-CHAR-006

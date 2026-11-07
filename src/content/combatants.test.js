@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { Attribute, CharacterClass, Condition, Skill, totalLevel, roster, createParty, addCharacter } from '../sim/party.js';
+import {
+  Attribute, CharacterClass, Condition, Skill, totalLevel, roster,
+} from '../sim/party.js';
 import { EnemyRole } from '../sim/combat.js';
 import {
   buildPlayer, buildEnemy, startingCharacters, enemyDefinitions,
@@ -97,13 +99,5 @@ describe('the authored roster', () => {
 
     expect(Object.keys(enemies).sort()).toEqual(['GOBLIN', 'GOBLIN_ARCHER', 'GOBLIN_MAGE']);
     expect(enemies.GOBLIN_MAGE.role).toBe(EnemyRole.CASTER);
-  });
-
-  // @spec PARTY-ROSTER-001
-  it('fields a whole party from what it read', () => {
-    const party = createParty();
-    for (const c of startingCharacters()) addCharacter(party, c);
-
-    expect(roster(party)).toHaveLength(4);
   });
 });

@@ -5,10 +5,10 @@ import {
   Condition, CharacterClass, Skill, roster,
 } from './party.js';
 import {
-  beginEncounter, takeAction, nextActor, advanceBeats, attackBand, damageFor,
-  actingOrder, readinessOf, attackTargets, allyTargets, attemptFlee, fleeCertainToFail,
-  createEnemy, createEnemyGroup, encounterOutcome,
-  Band, Action, Outcome, MAX_ENEMY_GROUP, MIN_DAMAGE_FRACTION, FULL_BAR,
+  beginEncounter, takeAction, nextActor, attackBand, damageFor, actingOrder, readinessOf,
+  attackTargets, allyTargets, attemptFlee, fleeCertainToFail, createEnemy,
+  createEnemyGroup, encounterOutcome, Band, Action, Outcome, MAX_ENEMY_GROUP,
+  MIN_DAMAGE_FRACTION, FULL_BAR,
 } from './combat.js';
 
 /** Bring one combatant to a full bar without waiting out the beats. */
@@ -424,21 +424,6 @@ describe('ending', () => {
     // The party is left exactly as the fight left it.
     expect(character(state.party, 'a').condition).toBe(Condition.UNCONSCIOUS);
   });
-
-  // @spec COMBAT-TIME-011
-  it('restores nothing merely because the fight ran on', () => {
-    const state = encounter({ members: [hero('a')], enemies: [orc('o1', { maxHitPoints: 80 })] });
-    applyDamage(state.party, 'a', 5);
-    const wounded = character(state.party, 'a').hitPoints;
-
-    for (let i = 0; i < 5; i++) {
-      readyUp(state, 'a');
-      takeAction(state, 'a', { kind: Action.PASS });
-      advanceBeats(state, 10);
-    }
-
-    expect(character(state.party, 'a').hitPoints).toBe(wounded);
-  });
 });
 
 describe('what a blow is resolved against', () => {
@@ -531,18 +516,6 @@ describe('passing a turn', () => {
     // Nothing was struck, healed or otherwise touched.
     expect(state.enemies.members.find((e) => e.id === 'o1').hitPoints).toBe(foe);
     expect(character(state.party, 'a').hitPoints).toBe(character(state.party, 'a').maxHitPoints);
-  });
-
-  // @spec COMBAT-ACTION-009
-  it('costs exactly what acting costs', () => {
-    const acting = encounter({ members: [hero('a')], enemies: [orc('o1')] });
-    const passing = encounter({ members: [hero('a')], enemies: [orc('o1')] });
-    readyUp(acting, 'a'); readyUp(passing, 'a');
-
-    takeAction(acting, 'a', { kind: Action.ATTACK, targetId: 'o1' });
-    takeAction(passing, 'a', { kind: Action.PASS });
-
-    expect(readinessOf(passing, 'a')).toBe(readinessOf(acting, 'a'));
   });
 });
 

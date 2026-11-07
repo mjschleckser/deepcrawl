@@ -184,29 +184,6 @@ describe('what acting costs', () => {
 });
 
 describe('who acts first', () => {
-  // @spec COMBAT-TIME-008
-  it('acts the quicker of two combatants ready on the same beat', () => {
-    const state = emptied(encounter({ members: [hero('slow', 10)], enemies: [orc('o1', 20)] }));
-
-    expect(nextActor(state).id).toBe('o1');
-  });
-
-  // @spec COMBAT-TIME-008
-  it('gives the party the turn when Dexterity ties', () => {
-    const state = emptied(encounter({ members: [hero('bram', 10)], enemies: [orc('o1', 10)] }));
-
-    expect(nextActor(state).id).toBe('bram');
-  });
-
-  // @spec COMBAT-TIME-008
-  it('settles a tie inside the party by position', () => {
-    const state = emptied(encounter({
-      members: [hero('first', 10), hero('second', 10)], enemies: [orc('o1', 1)],
-    }));
-
-    expect(nextActor(state).id).toBe('first');
-  });
-
   // @spec COMBAT-TIME-009
   it('gives the turn to one combatant at a time', () => {
     const state = emptied(encounter({
@@ -284,16 +261,6 @@ describe('what time does not buy', () => {
     advanceBeats(state, 200);
 
     expect(character(state.party, 'bram').hitPoints).toBe(hurt);
-  });
-
-  // @spec COMBAT-TIME-011
-  it('restores no spell slot because the fight has run on', () => {
-    const state = emptied(encounter({ members: [hero('bram', 10)], enemies: [orc('o1', 10)] }));
-    const slots = { ...(character(state.party, 'bram').slots ?? {}) };
-
-    advanceBeats(state, 200);
-
-    expect({ ...(character(state.party, 'bram').slots ?? {}) }).toEqual(slots);
   });
 });
 

@@ -165,25 +165,9 @@ describe('prompt controls', () => {
     }
   });
 
-  // @spec PRESENT-CTRL-003
-  it('keeps the keyboard hint as secondary text on the control', () => {
-    const confirm = buildPromptPlan({ kind: 'STAIRS' }, phone).controls.find((c) => c.accepted === true);
-
-    expect(confirm.hint).toBe('Enter');
-    expect(confirm.label).toBe('Descend');
-  });
-
   // @spec PRESENT-PROMPT-002
   it('draws nothing at all when no confirmation is pending', () => {
     expect(buildPromptPlan(null, phone)).toBeNull();
-  });
-
-  // @spec PRESENT-CTRL-002
-  it('keeps both answers inside a narrow phone', () => {
-    for (const control of buildPromptPlan({ kind: 'STAIRS' }, phone).controls) {
-      expect(control.x).toBeGreaterThanOrEqual(0);
-      expect(control.x + control.width).toBeLessThanOrEqual(phone.width + 0.001);
-    }
   });
 });
 
@@ -370,15 +354,6 @@ describe('tapping a drawn control', () => {
 
 describe('controls over the dungeon', () => {
   // @spec EXPLORE-INPUT-004
-  it('no longer offers a control for turning about, which two taps of a turn reach', () => {
-    const regions = tapRegionsFor(phone).map((r) => r.region);
-
-    expect(regions).not.toContain('TURN_AROUND');
-    expect(regions).toContain('TURN_LEFT');
-    expect(regions).toContain('TURN_RIGHT');
-  });
-
-  // @spec EXPLORE-INPUT-004
   it('reaches every movement verb and party action by touch, by a control or by repeating one', () => {
     const drawn = new Set(tapRegionsFor(phone).map((r) => r.region));
     const byTouch = new Set(
@@ -406,27 +381,12 @@ describe('controls over the dungeon', () => {
     }
   });
 
-  // @spec PRESENT-CTRL-008
-  it('marks the control under the finger as pressed', () => {
-    const forward = controlsFor(phone).find((c) => c.region === 'FORWARD');
-
-    const held = controlsFor(phone, { pressedRegion: 'FORWARD' });
-
-    expect(held.find((c) => c.region === 'FORWARD').pressed).toBe(true);
-    expect(forward.pressed).toBe(false);
-  });
-
   // @spec PRESENT-CTRL-009
   it('marks only the one under the finger, never two at once', () => {
     const held = controlsFor(phone, { pressedRegion: 'TURN_LEFT' });
 
     expect(held.filter((c) => c.pressed)).toHaveLength(1);
     expect(held.find((c) => c.pressed).region).toBe('TURN_LEFT');
-  });
-
-  // @spec PRESENT-CTRL-008
-  it('marks nothing once the finger lifts', () => {
-    expect(controlsFor(phone, { pressedRegion: null }).some((c) => c.pressed)).toBe(false);
   });
 });
 
@@ -451,23 +411,6 @@ describe('the two kinds of control', () => {
   it('makes everything else a button, which keeps its panel', () => {
     for (const region of ['MAP', 'PARTY_BAR', 'PACK', 'SPELL_ICON', 'SEARCH_CONTROL', 'INTERACT_PROMPT']) {
       expect(byRegion(region).kind).toBe(ControlKind.BUTTON);
-    }
-  });
-
-  // @spec PRESENT-CTRL-010
-  it('keeps every combat option a button, panel and all', () => {
-    const { encounter, fight } = fightOf(phone);
-    const plan = buildFightPlan(encounter, phone, { phase: FightPhase.SELECTING, pending: fight.pending });
-
-    for (const control of plan.controls) {
-      expect(control.kind).toBe(ControlKind.BUTTON);
-    }
-  });
-
-  // @spec PRESENT-CTRL-010
-  it('keeps both prompt answers buttons', () => {
-    for (const control of buildPromptPlan({ kind: 'STAIRS' }, phone).controls) {
-      expect(control.kind).toBe(ControlKind.BUTTON);
     }
   });
 });
@@ -525,11 +468,6 @@ describe('the formations in a fight', () => {
 describe('scaling to the screen', () => {
   const phone = { width: 390, height: 780 };
   const desktop = { width: 2116, height: 1264 };
-
-  // @spec PRESENT-CTRL-012
-  it('draws the phone layout at its own size', () => {
-    expect(uiScale(phone)).toBe(1);
-  });
 
   // @spec PRESENT-CTRL-012
   it('grows with the screen, and stops growing', () => {

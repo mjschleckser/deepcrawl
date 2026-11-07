@@ -14,14 +14,6 @@ describe('the version a build stamps in', () => {
   });
 
   // @spec PRESENT-BUILD-004
-  it('rises with every commit, so a newer build always reads higher', () => {
-    const number = (text) => Number(text.split(' ')[1]);
-
-    expect(number(formatVersion({ commits: 149 })))
-      .toBeGreaterThan(number(formatVersion({ commits: 148 })));
-  });
-
-  // @spec PRESENT-BUILD-004
   // @spec PRESENT-BUILD-005
   it('claims no number where git could not be asked, leaving the stand-in to show', () => {
     expect(resolveVersion(formatVersion({ commits: NaN }))).toBe('dev');

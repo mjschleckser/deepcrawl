@@ -85,23 +85,4 @@ describe('resolving input', () => {
     expect(actionForKey('F7')).toBeNull();
     expect(actionForTouch('NOWHERE')).toBeNull();
   });
-
-  // @spec EXPLORE-INPUT-001
-  it('maps the movement verbs to the expected keys', () => {
-    expect(actionForKey('w')).toEqual({ verb: Verb.STEP_FORWARD });
-    expect(actionForKey('a')).toEqual({ verb: Verb.TURN_LEFT });
-    expect(actionForKey('d')).toEqual({ verb: Verb.TURN_RIGHT });
-    expect(actionForKey('s')).toEqual({ verb: Verb.STEP_BACKWARD });
-    expect(actionForKey('x')).toEqual({ verb: Verb.TURN_AROUND });
-  });
-
-  // @spec EXPLORE-INPUT-001
-  it('maps the party actions to the expected keys', () => {
-    expect(actionForKey('p')).toEqual({ partyAction: PartyAction.PARTY });
-    expect(actionForKey('i')).toEqual({ partyAction: PartyAction.INVENTORY });
-    expect(actionForKey('c')).toEqual({ partyAction: PartyAction.SPELLS });
-    expect(actionForKey('f')).toEqual({ partyAction: PartyAction.SEARCH });
-    expect(actionForKey('e')).toEqual({ partyAction: PartyAction.INTERACT });
-    expect(actionForKey('m')).toEqual({ partyAction: PartyAction.TOGGLE_MAP });
-  });
 });

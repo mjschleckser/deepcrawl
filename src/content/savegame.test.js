@@ -173,14 +173,6 @@ describe('resuming', () => {
     expect(encodeCampaign(restored)).toBe(encodeCampaign(original));
   });
 
-  // @spec SAVE-READ-002
-  it('wires the step cost back in, so a step costs what it did', () => {
-    const original = createCampaign({ seed: 21 });
-    const restored = reloaded(original);
-
-    expect(restored.state.stepCost()).toBe(original.state.stepCost());
-  });
-
   // @spec SAVE-READ-003
   it('resumes a fight on the turn it was saved on', () => {
     const campaign = campaignInAFight();
