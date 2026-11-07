@@ -139,9 +139,9 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 ## Prompts
 
 - [x] **PRESENT-PROMPT-001**: While the simulation holds a pending confirmation, the system shall draw a prompt describing it.
-- [x] **PRESENT-PROMPT-002**: While the simulation holds no pending confirmation, the system shall draw no prompt.
+- [x] **PRESENT-PROMPT-002**: While the simulation holds no pending confirmation and the party screen is asking nothing, the system shall draw no prompt.
 - [x] **PRESENT-PROMPT-003**: While a prompt is drawn, the system shall accept only the prompt's own confirm and decline inputs, discarding every movement verb and party action.
-- [x] **PRESENT-PROMPT-004**: When the player confirms or declines a prompt, the system shall pass the answer to the simulation and redraw.
+- [x] **PRESENT-PROMPT-004**: When the player confirms or declines a prompt drawn from a pending confirmation, the system shall pass the answer to the simulation and redraw.
 - [x] **PRESENT-PROMPT-005**: The system shall bind confirm to Enter and to the affirmative on-screen control, and decline to Escape and to the negative on-screen control.
 
 ## Combat
@@ -188,7 +188,8 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-FIGHT-013**: The system shall resolve a numbered key and a tap on the same option or menu entry to the same choice, carrying no record of which was used.
 - [x] **PRESENT-FIGHT-014**: When an encounter ends, the system shall draw a banner naming the outcome and, on a victory, what it was worth.
 - [x] **PRESENT-FIGHT-017**: The system shall give every combat option and menu entry on offer a drawn control with its own hit region, so that a fight can be played by touch alone.
-- [x] **PRESENT-FIGHT-015**: When the player dismisses the outcome banner, the system shall return to drawing the corridor and accept exploration input again.
+- [x] **PRESENT-FIGHT-015**: When the player dismisses the outcome banner after a victory or an escape, the system shall return to drawing the corridor and accept exploration input again.
+- [x] **PRESENT-FIGHT-049**: When an encounter ends in defeat, the system shall label the banner's control Begin again, and when the player presses it, shall begin a new campaign.
 
 ## The party screen
 
@@ -211,6 +212,16 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-PARTY-017**: The system shall mark on a character's page every skill their class cannot train as no longer advancing.
 - [x] **PRESENT-PARTY-018**: The system shall draw on a character's page every equipment slot the items segment defines, with the name of the item in it or a mark that it is empty.
 - [x] **PRESENT-PARTY-019**: The system shall offer on the party screen no control that changes a character.
+- [x] **PRESENT-PARTY-020**: The system shall draw on the party screen a New campaign control, apart from the character's page.
+- [x] **PRESENT-PARTY-021**: When the player presses New campaign, the system shall ask for confirmation with a control to confirm and a control to decline, and shall change nothing until it is answered.
+- [x] **PRESENT-PARTY-022**: While that confirmation stands, when the player declines it, presses `Escape`, or closes the party screen, the system shall dismiss it and change nothing.
+- [x] **PRESENT-PARTY-023**: When the player confirms that question, the system shall begin a new campaign and close the party screen.
+
+## The save note
+
+- [x] **PRESENT-SAVE-001**: While the simulation reports that the campaign is not being saved, the system shall draw a short note saying so beside the build stamp.
+- [x] **PRESENT-SAVE-002**: When the game opened on a save it set aside, the system shall draw a short note saying so beside the build stamp.
+- [x] **PRESENT-SAVE-003**: While neither applies, the system shall draw no note.
 
 ## Deferred
 

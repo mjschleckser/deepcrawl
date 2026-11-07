@@ -22,6 +22,13 @@ export function makeRng(seed) {
 
   return {
     next,
+    /**
+     * Where the stream has reached. A generator is a closure and cannot be written
+     * down, but `makeRng(position)` picks the stream up from exactly here.
+     *
+     * @spec SAVE-HOLD-003
+     */
+    position: () => state,
     /** Inclusive on both ends, which is how ranges read in an archetype. */
     int: (min, max) => min + Math.floor(next() * (max - min + 1)),
     chance: (probability) => next() < probability,

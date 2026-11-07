@@ -12,7 +12,9 @@ import { Slot } from '../sim/items.js';
 import { MIN_TAP_PX, uiScale, contentColumn } from './geometry.js';
 
 /** What a control on the page does. None of them changes a character. */
-export const PartyControl = { PREVIOUS: 'PREVIOUS', NEXT: 'NEXT', CLOSE: 'CLOSE' };
+export const PartyControl = {
+  PREVIOUS: 'PREVIOUS', NEXT: 'NEXT', CLOSE: 'CLOSE', NEW_CAMPAIGN: 'NEW_CAMPAIGN',
+};
 
 /** A name as a player reads it: `HEAVY_ARMOUR` is Heavy Armour. */
 const titled = (key) => key.toLowerCase().split('_')
@@ -178,6 +180,17 @@ export function buildPartyPlan(party, viewport, { page = 0 } = {}) {
     item: c.equipment[s]?.name ?? null,
     box: { x: inner.x, y: y + i * line, width: inner.width, height: line },
   }));
+
+  // At the foot of the screen, apart from the page: it is about the campaign rather
+  // than anybody on it, and it should never be pressed on the way to something else.
+  // @spec PRESENT-PARTY-020
+  controls.push({
+    kind: 'BUTTON', role: PartyControl.NEW_CAMPAIGN, label: 'New campaign',
+    x: inner.x,
+    y: bounds.y + bounds.height - pad - tap,
+    width: Math.max(MIN_TAP_PX, 150 * scale),
+    height: tap,
+  });
 
   return {
     characterId: c.id,

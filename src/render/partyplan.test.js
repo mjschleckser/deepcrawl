@@ -162,11 +162,11 @@ describe('the party screen page', () => {
   // @spec PRESENT-PARTY-009
   // @spec PRESENT-PARTY-010
   // @spec PRESENT-PARTY-019
-  it('offers previous, next and close, every one thumb-sized, and nothing that changes anybody', () => {
+  it('offers paging, closing and a new campaign, every one thumb-sized, and nothing that changes anybody', () => {
     const plan = buildPartyPlan(fourOf(), phone, { page: 0 });
 
     expect(plan.controls.map((c) => c.role).sort()).toEqual(
-      [PartyControl.CLOSE, PartyControl.NEXT, PartyControl.PREVIOUS].sort(),
+      [PartyControl.CLOSE, PartyControl.NEW_CAMPAIGN, PartyControl.NEXT, PartyControl.PREVIOUS].sort(),
     );
     for (const c of plan.controls) {
       expect(c.width).toBeGreaterThanOrEqual(MIN_TAP_PX);

@@ -10,6 +10,7 @@ import { MIN_TAP_PX, ControlKind } from './geometry.js';
 
 const PROMPTS = {
   STAIRS: { text: 'A staircase leads down.', confirm: 'Descend', decline: 'Stay' },
+  NEW_CAMPAIGN: { text: 'Abandon this campaign?', confirm: 'Abandon', decline: 'Keep playing' },
 };
 
 const DEFAULT_PROMPT = { text: 'Are you sure?', confirm: 'Yes', decline: 'No' };

@@ -11,6 +11,7 @@ import {
   Attribute, Condition, DEFAULT_ATTRIBUTES, applyDamage, character, roster,
 } from './party.js';
 import { accuracyWith, armourOf, baseDamageWith, defenceOf } from './items.js';
+import { makeRng } from './rng.js';
 
 export const Band = { MISS: 'MISS', GRAZE: 'GRAZE', HIT: 'HIT', CRIT: 'CRIT' };
 
@@ -352,6 +353,46 @@ function findTarget(state, targetId) {
   if (enemy) return enemyStanding(enemy) ? enemy : null;
   const ally = character(state.party, targetId);
   return ally && ally.condition === Condition.OK ? ally : null;
+}
+
+/**
+ * A fight, written down. Characters are not in it: they are saved once, in the party,
+ * and a restored fight is handed that party rather than a second copy of it. Its log
+ * and any open menu are the screen's, and are not here to be saved.
+ *
+ * @spec SAVE-HOLD-004
+ * @spec SAVE-HOLD-005
+ * @spec SAVE-HOLD-006
+ * @spec SAVE-HOLD-008
+ */
+export function serializeEncounter(state) {
+  return {
+    enemies: state.enemies,
+    origin: state.origin,
+    rng: state.rng.position(),
+    readiness: [...state.readiness],
+    beats: state.beats,
+    skillsUsed: [...state.skillsUsed],
+    skillsByActor: [...state.skillsByActor].map(([id, skills]) => [id, [...skills]]),
+    escaped: state.escaped,
+    potBanked: state.potBanked,
+    roamerId: state.roamerId ?? null,
+  };
+}
+
+/**
+ * @spec SAVE-READ-003
+ * @spec SAVE-READ-004
+ */
+export function restoreEncounter(saved, party) {
+  return {
+    ...saved,
+    party,
+    rng: makeRng(saved.rng),
+    readiness: new Map(saved.readiness),
+    skillsUsed: new Set(saved.skillsUsed),
+    skillsByActor: new Map(saved.skillsByActor.map(([id, skills]) => [id, new Set(skills)])),
+  };
 }
 
 /**

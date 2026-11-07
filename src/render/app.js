@@ -250,6 +250,25 @@ function drawHud(container, plan) {
     label.alpha = 0.85;
     container.addChild(label);
   }
+  // Only there when something is wrong with the save, so it can afford to stand out.
+  // @spec PRESENT-SAVE-001
+  // @spec PRESENT-SAVE-002
+  if (plan.note) {
+    const { x, y, size, text } = plan.note;
+    const warning = new Text({
+      text,
+      style: { fill: 0xd8a33a, fontSize: size, fontFamily: 'monospace' },
+    });
+    const inset = Math.round(size * 0.4);
+    const plate = new Graphics();
+    plate
+      .roundRect(x - inset, y - inset * 0.6, warning.width + inset * 2, size + inset * 1.4, 3)
+      .fill({ color: 0x0b0906, alpha: 0.75 });
+    container.addChild(plate);
+    warning.x = x;
+    warning.y = y;
+    container.addChild(warning);
+  }
   // A button hides almost nothing, so it can afford to be solid — and needs to be, or
   // it washes out over a brightly lit floor. A zone ignores this and draws no panel.
   for (const control of plan.controls ?? []) drawControl(container, control, { alpha: 0.88, scale });

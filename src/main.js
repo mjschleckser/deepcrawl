@@ -1,31 +1,90 @@
 import './style.css';
 import { createCampaign } from './content/campaign.js';
+import { createAutosave, openCampaign } from './content/savegame.js';
 import { computeSight } from './sim/exploration.js';
 import { createRenderer } from './render/app.js';
 import { playableViewport } from './render/viewport.js';
 import {
-  createController, pressKey, pressPointer, releasePointer, resize, layers, tick, isPlaying,
-  scrollFightLog,
+  createController, pressKey, pressPointer, releasePointer, replaceCampaign, resize, layers,
+  setSaveNote, tick, isPlaying, scrollFightLog,
 } from './render/controller.js';
+
+/** Local storage can refuse even to be looked at, in a private window for one. */
+function browserStorage() {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
 
 async function bootstrap() {
   const mount = document.querySelector('#app');
-  const campaign = createCampaign();
-  const state = campaign.state;
+  const storage = browserStorage();
+  const { campaign, setAside, canWrite } = openCampaign(storage);
   // Exposed for driving the game from a browser smoke test. Development only.
   if (import.meta.env.DEV) window.__campaign = campaign;
-  // Record what the party can see from where it starts, before anything is drawn.
-  computeSight(state);
+  // Record what the party can see from where it stands, before anything is drawn.
+  computeSight(campaign.state);
 
   let controller;
+  let autosave;
+  let saving = true;
   const renderer = await createRenderer(mount);
 
+  const showSaveNote = () => {
+    if (!controller) return;
+    const note = !saving ? 'Not saving' : setAside ? 'Old save set aside' : null;
+    setSaveNote(controller, note);
+  };
+
+  /**
+   * Replace the campaign, and its save with it, at once: the old one is gone by the
+   * player's own choice, and nothing should bring it back on a reload.
+   *
+   * @spec SAVE-NEW-001
+   */
+  const beginAgain = () => {
+    const fresh = createCampaign();
+    computeSight(fresh.state);
+    if (import.meta.env.DEV) window.__campaign = fresh;
+    replaceCampaign(controller, fresh);
+    autosave.flush();
+  };
+
+  // A redraw is the one thing every change to the campaign has in common, a fight's
+  // blows included, and a redraw that changed nothing writes nothing.
+  // @spec SAVE-WRITE-001
+  // @spec SAVE-WRITE-003
   controller = createController({
-    state,
+    state: campaign.state,
     campaign,
     viewport: renderer.viewport(),
-    onDraw: renderer.draw,
+    onDraw: (drawn) => {
+      renderer.draw(drawn);
+      autosave?.touch();
+    },
+    onBeginAgain: beginAgain,
   });
+
+  autosave = createAutosave({
+    storage,
+    canWrite,
+    read: () => controller.campaign,
+    onStatus: (ok) => {
+      saving = ok;
+      showSaveNote();
+    },
+  });
+  autosave.flush();
+  showSaveNote();
+
+  // Hiding is the last moment that can be relied on: a phone may never say it closed.
+  // @spec SAVE-WRITE-002
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') autosave.flush();
+  });
+  window.addEventListener('pagehide', () => autosave.flush());
 
   if (import.meta.env.DEV) {
     controller.__layers = () => layers(controller);

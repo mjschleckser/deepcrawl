@@ -8,17 +8,19 @@
 
 import { makeRng } from '../sim/rng.js';
 import {
-  createExploration, generateFloor, generatePlan, resolveArrival,
+  createExploration, deserialize, generateFloor, generatePlan, resolveArrival, serialize,
   setCombatActive,
 } from '../sim/exploration.js';
 import {
   Attribute, createParty, addCharacter, awardEncounter, partyStepCost,
+  restoreParty, serializeParty,
 } from '../sim/party.js';
 import {
   createRoamer, giveTicks, giveGround, forgetParty, occupantsFor,
 } from '../sim/enemies.js';
 import {
   beginEncounter, createEnemy, createEnemyGroup, encounterOutcome, attemptFlee, Outcome,
+  restoreEncounter, serializeEncounter,
 } from '../sim/combat.js';
 import { startingCharacters } from './combatants.js';
 
@@ -46,12 +48,22 @@ function toEnemyGroup(band) {
   );
 }
 
-export function createCampaign({ seed = Date.now() >>> 0 } = {}) {
-  const plan = generatePlan({ seed });
+/**
+ * A new campaign from a seed, or a saved one picked up where it stopped. Either way the
+ * wiring below is the same: a restored campaign is connected to its neighbours exactly as
+ * a new one is, because hooks are functions and a save cannot hold them.
+ *
+ * @spec SAVE-HOLD-002
+ * @spec SAVE-READ-002
+ */
+export function createCampaign({ seed = Date.now() >>> 0, saved = null } = {}) {
+  // The plan is read back rather than regenerated, so a later build generating plans
+  // differently cannot disagree with the floors already in the save.
+  const plan = saved ? saved.plan : generatePlan({ seed });
   const descriptors = new Map(plan.floors.map((f) => [f.id, f]));
-  const rng = makeRng((seed ^ 0x9e3779b9) >>> 0);
+  const rng = makeRng(saved ? saved.rng : (seed ^ 0x9e3779b9) >>> 0);
 
-  const party = createStartingParty();
+  const party = saved ? restoreParty(saved.party) : createStartingParty();
   const campaign = { plan, party, state: null, encounter: null };
 
   function stockFloor(floor, count = BANDS_PER_FLOOR) {
@@ -178,16 +190,8 @@ export function createCampaign({ seed = Date.now() >>> 0 } = {}) {
     ];
   }
 
-  const entrance = floorProvider(plan.entrance.floorId);
-  const startingRoamers = entrance.pendingRoamers ?? [];
-  delete entrance.pendingRoamers;
-
-  const state = createExploration({
-    floors: [entrance],
+  const wiring = {
     floorProvider,
-    floorId: entrance.id,
-    tile: { x: 0, y: 0 },
-    roamers: startingRoamers,
     stepCost: () => partyStepCost(party),
     hooks: {
       onRoamersMove,
@@ -195,17 +199,42 @@ export function createCampaign({ seed = Date.now() >>> 0 } = {}) {
       isTileOccupied,
       onRestock: ({ floorId, elapsed }) => restockFloor(floorId, elapsed),
     },
-  });
+  };
+
+  /** A campaign's first moment: the entrance built and stocked, the party at its door. */
+  function enterDungeon() {
+    const entrance = floorProvider(plan.entrance.floorId);
+    const startingRoamers = entrance.pendingRoamers ?? [];
+    delete entrance.pendingRoamers;
+
+    const opening = createExploration({
+      ...wiring,
+      floors: [entrance],
+      floorId: entrance.id,
+      tile: { x: 0, y: 0 },
+      roamers: startingRoamers,
+    });
+    campaign.state = opening;
+
+    const start = resolveArrival(opening, plan.entrance);
+    opening.party.tile = { x: start.x, y: start.y };
+    // The entrance was stocked before anyone knew where the party would come in, so
+    // anything standing on the arrival tile steps aside now rather than being fought on
+    // the first move.
+    opening.roamers = opening.roamers.map((r) =>
+      r.floorId === entrance.id ? giveGround(r, entrance, opening.party.tile) : r,
+    );
+    return opening;
+  }
+
+  const state = saved ? deserialize(saved.exploration, wiring) : enterDungeon();
   campaign.state = state;
 
-  const start = resolveArrival(state, plan.entrance);
-  state.party.tile = { x: start.x, y: start.y };
-  // The entrance was stocked before anyone knew where the party would come in, so
-  // anything standing on the arrival tile steps aside now rather than being fought on
-  // the first move.
-  state.roamers = state.roamers.map((r) =>
-    r.floorId === entrance.id ? giveGround(r, entrance, state.party.tile) : r,
-  );
+  // @spec SAVE-READ-003
+  if (saved?.encounter) {
+    campaign.encounter = restoreEncounter(saved.encounter, party);
+    setCombatActive(state, true);
+  }
 
   /**
    * Bank what a won fight taught, and take the warband off the floor.
@@ -253,6 +282,20 @@ export function createCampaign({ seed = Date.now() >>> 0 } = {}) {
     setCombatActive(state, false);
     return result;
   };
+
+  /**
+   * Everything a save holds, ready to be written down.
+   *
+   * @spec SAVE-HOLD-001
+   * @spec SAVE-HOLD-004
+   */
+  campaign.snapshot = () => ({
+    plan,
+    rng: rng.position(),
+    exploration: serialize(state),
+    party: serializeParty(party),
+    encounter: campaign.encounter ? serializeEncounter(campaign.encounter) : null,
+  });
 
   campaign.restockFloor = restockFloor;
   campaign.floorProvider = floorProvider;

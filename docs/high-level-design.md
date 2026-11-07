@@ -226,7 +226,8 @@ themselves, each in a file of its own under `src/game-data`. Data, not code, and
 separate from the code that reads it: a goblin is edited without opening a module.
 
 **Persistence.** One save file in browser storage, holding the full campaign
-state. The schema is versioned; an app update must not orphan an existing save.
+state and written automatically, so there is no save button and nothing to remember.
+The schema is versioned; an app update must not orphan an existing save.
 
 **Input.** Keyboard and touch both produce the same action vocabulary; the
 simulation cannot tell which was used.

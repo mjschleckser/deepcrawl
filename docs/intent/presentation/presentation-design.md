@@ -564,15 +564,17 @@ and that is what an option with no tap target amounts to on a phone.
 ### Ending
 
 An outcome is drawn as a banner over the fight: what happened, and what it was worth.
-The player dismisses it, and combat gives way to the corridor again — or, on a defeat,
-to whatever the campaign does with a party that did not come back.
+The player dismisses it, and combat gives way to the corridor again — or, on a defeat, to
+a new campaign.
 
 ## The Party Screen
 
 The party screen is where the player reads their characters: who they are, how hurt,
 what they are good at, how close they are to getting better, and what they are
 carrying. It is the systems player's screen — the place to find out why a fight went
-the way it did — and it is read-only: nothing on it changes a character.
+the way it did — and it is read-only: nothing on it changes a character. The one control
+that does anything is about the campaign rather than the characters; see *Beginning
+Again*.
 
 ### Opening and closing
 
@@ -672,6 +674,27 @@ and the normal mapping resumes.
 
 A prompt is drawn from the pending confirmation the simulation is holding, so a prompt
 can never be shown for a confirmation that is not actually pending.
+
+## Beginning Again
+
+The party screen carries a **New campaign** control, drawn apart from the character page
+because it is about the campaign rather than about anybody on it. Pressing it does nothing
+yet: it turns into a question, *Abandon this campaign?*, with the answer on two controls
+of its own. A single save has no undo, so the one press that ends a campaign is never the
+first press. Declining, closing the screen, or `Escape` leave everything as it was. The
+question is view state like the screen itself, and the simulation is told only the answer.
+
+A defeat has nothing left to carry on with, so its banner says **Begin again** where the
+others say *Onward*. The banner is itself the confirmation: a wiped party has no other
+course, and the question would only ask the player to agree with what has happened.
+
+## The Save Note
+
+A line beside the build stamp says when something has gone wrong with the save, and is not
+there otherwise: *Not saving* while writes are failing, and *Old save set aside* when the
+game opened on a save it could not read. It is small because play carries on, and it is
+there at all because a player who is losing progress should find out while they can do
+something about it.
 
 ## The Build Stamp
 

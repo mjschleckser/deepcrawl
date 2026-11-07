@@ -18,6 +18,7 @@ import {
 } from '../sim/exploration.js';
 import { roster } from '../sim/party.js';
 import { buildPartyPlan, pageFor, PartyControl } from './partyplan.js';
+import { Outcome } from '../sim/combat.js';
 import { hitTest, controlsFor, uiScale, versionStamp } from './geometry.js';
 import { APP_VERSION } from '../version.js';
 import { buildPromptPlan } from './promptplan.js';
@@ -55,10 +56,12 @@ function stateSignature(state) {
 }
 
 /** @spec PRESENT-SCENE-007 */
-export function createController({ state, viewport, onDraw, campaign = null }) {
+export function createController({ state, viewport, onDraw, campaign = null, onBeginAgain = () => {} }) {
   const controller = {
-    state, viewport, onDraw, campaign,
+    state, viewport, onDraw, campaign, onBeginAgain,
     expanded: false, fight: null,
+    // Anything worth saying about the save, beside the stamp.
+    saveNote: null,
     // The party screen, when open: which character's page is showing. A view of the
     // party like the expanded map is a view of the floor, so it lives here.
     partyScreen: null,
@@ -68,6 +71,38 @@ export function createController({ state, viewport, onDraw, campaign = null }) {
   syncFight(controller);
   onDraw(layers(controller));
   return controller;
+}
+
+/**
+ * Put a new campaign in the old one's place, along with everything that was a view of it.
+ *
+ * @spec SAVE-NEW-001
+ */
+export function replaceCampaign(controller, campaign) {
+  controller.campaign = campaign;
+  controller.state = campaign.state;
+  controller.fight = null;
+  controller.partyScreen = null;
+  controller.expanded = false;
+  syncFight(controller);
+  redraw(controller);
+}
+
+/**
+ * @spec PRESENT-SAVE-001
+ * @spec PRESENT-SAVE-002
+ * @spec PRESENT-SAVE-003
+ */
+export function setSaveNote(controller, text) {
+  if (controller.saveNote === text) return;
+  controller.saveNote = text;
+  redraw(controller);
+}
+
+/** Placed just above the stamp, so it moves with it and never lands on a control. */
+function noteFor(controller, stamp) {
+  if (!controller.saveNote) return null;
+  return { x: stamp.x, y: stamp.y - stamp.size * 2, size: stamp.size, text: controller.saveNote };
 }
 
 /**
@@ -123,6 +158,9 @@ export function layers(controller) {
       shake: fight.shake,
       logScroll: fight.logScroll,
     });
+    // The fight's own panel is what stands in the corner during a fight, and a tall
+    // menu can rise past it.
+    const stamp = stampFor(viewport, [fightPlan.bounds, fightPlan.menu?.box].filter(Boolean));
     return [
       { name: 'view', plan: buildViewPlan(corridorAhead(state), viewport) },
       { name: 'map', plan: null },
@@ -135,9 +173,8 @@ export function layers(controller) {
           viewport,
           scale: uiScale(viewport),
           controls: [],
-          // The fight's own panel is what stands in the corner during a fight, and a
-          // tall menu can rise past it.
-          stamp: stampFor(viewport, [fightPlan.bounds, fightPlan.menu?.box].filter(Boolean)),
+          stamp,
+          note: noteFor(controller, stamp),
         },
       },
     ];
@@ -149,6 +186,12 @@ export function layers(controller) {
   const controls = state.pendingConfirmation || sheet
     ? []
     : controlsFor(viewport, { pressedRegion: controller.pressedRegion });
+  const stamp = stampFor(viewport, sheet ? [sheet.bounds] : controls);
+  // A question asked by the party screen is the view's own, about ending the campaign;
+  // anything else on screen is the simulation's pending confirmation.
+  const asking = controller.partyScreen?.confirming
+    ? { kind: 'NEW_CAMPAIGN' }
+    : state.pendingConfirmation ?? null;
 
   return [
     { name: 'view', plan: buildViewPlan(corridorAhead(state), viewport) },
@@ -160,12 +203,13 @@ export function layers(controller) {
     {
       name: 'hud',
       plan: {
-        prompt: buildPromptPlan(state.pendingConfirmation ?? null, viewport),
+        prompt: buildPromptPlan(asking, viewport),
         viewport,
         // @spec PRESENT-CTRL-013
         scale: uiScale(viewport),
         controls,
-        stamp: stampFor(viewport, sheet ? [sheet.bounds] : controls),
+        stamp,
+        note: noteFor(controller, stamp),
       },
     },
   ];
@@ -237,6 +281,24 @@ function showPage(controller, page) {
 }
 
 /**
+ * The answer to *Abandon this campaign?*. Declining leaves the screen as it was.
+ *
+ * @spec PRESENT-PARTY-022
+ * @spec PRESENT-PARTY-023
+ * @spec SAVE-NEW-002
+ */
+function answerNewCampaign(controller, accepted) {
+  if (!accepted) {
+    controller.partyScreen.confirming = false;
+    redraw(controller);
+    return true;
+  }
+  closePartyScreen(controller);
+  controller.onBeginAgain();
+  return true;
+}
+
+/**
  * While the party screen is up it owns the keyboard: paging, closing, and nothing else.
  *
  * @spec PRESENT-PARTY-002
@@ -244,9 +306,16 @@ function showPage(controller, page) {
  * @spec PRESENT-PARTY-009
  * @spec PRESENT-PARTY-010
  * @spec PRESENT-PARTY-011
+ * @spec PRESENT-PARTY-022
  */
 function pressKeyOnPartyScreen(controller, key) {
-  const { page } = controller.partyScreen;
+  const { page, confirming } = controller.partyScreen;
+  if (confirming) {
+    if (CONFIRM_KEYS.includes(key)) return answerNewCampaign(controller, true);
+    if (DECLINE_KEYS.includes(key)) return answerNewCampaign(controller, false);
+    if (key === 'p' || key === 'P') return closePartyScreen(controller);
+    return false;
+  }
   if (key === 'Escape' || key === 'p' || key === 'P') return closePartyScreen(controller);
   if (key === 'ArrowRight' || key === 'd' || key === 'D') return showPage(controller, page + 1);
   if (key === 'ArrowLeft' || key === 'a' || key === 'A') return showPage(controller, page - 1);
@@ -258,11 +327,26 @@ function pressKeyOnPartyScreen(controller, key) {
   return false;
 }
 
-/** A press on the open screen: its own controls, and nothing beneath it. */
+/**
+ * A press on the open screen: its own controls, and nothing beneath it.
+ *
+ * @spec PRESENT-PARTY-021
+ */
 function pressPointerOnPartyScreen(controller, px, py) {
+  if (controller.partyScreen.confirming) {
+    const prompt = buildPromptPlan({ kind: 'NEW_CAMPAIGN' }, controller.viewport);
+    const answer = hit(prompt.controls, px, py);
+    return answer ? answerNewCampaign(controller, answer.accepted) : false;
+  }
+
   const control = hit(partyPlan(controller)?.controls, px, py);
   if (!control) return false;
   const { page } = controller.partyScreen;
+  if (control.role === PartyControl.NEW_CAMPAIGN) {
+    controller.partyScreen.confirming = true;
+    redraw(controller);
+    return true;
+  }
   if (control.role === PartyControl.CLOSE) return closePartyScreen(controller);
   if (control.role === PartyControl.NEXT) return showPage(controller, page + 1);
   if (control.role === PartyControl.PREVIOUS) return showPage(controller, page - 1);
@@ -345,6 +429,14 @@ function pressKeyInFight(controller, key) {
   const fight = controller.fight;
 
   if (fight.phase === FightPhase.ENDED) {
+    // A wiped party begins again, which ends the campaign, so a stray Escape does not
+    // count as the answer.
+    // @spec PRESENT-FIGHT-049
+    if (fight.outcome?.outcome === Outcome.DEFEAT) {
+      if (key !== 'Enter' && key !== ' ') return false;
+      controller.onBeginAgain();
+      return true;
+    }
     if (key !== 'Enter' && key !== ' ' && key !== 'Escape') return false;
     dismissOutcome(fight);
     // Concluding banks the pot and puts the party back in the corridor.

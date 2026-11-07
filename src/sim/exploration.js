@@ -197,8 +197,8 @@ export function serialize(state) {
 /**
  * @spec EXPLORE-SAVE-002
  */
-export function deserialize(saved, { floorProvider = null } = {}) {
-  return restore(saved, createExploration, floorProvider);
+export function deserialize(saved, { floorProvider = null, hooks = {}, stepCost } = {}) {
+  return restore(saved, createExploration, { floorProvider, hooks, stepCost });
 }
 
 export function tickCount(state) {

@@ -7,6 +7,7 @@
  */
 
 import { createFloor } from './floor.js';
+import { makeRng } from './rng.js';
 
 export const SAVE_VERSION = 1;
 
@@ -59,6 +60,8 @@ export function serialize(state) {
       verticalEdges: floor.verticalEdges,
       tiles: floor.tiles,
       rooms: floor.rooms ?? null,
+      traps: floor.traps ?? null,
+      secretEdges: floor.secretEdges ?? null,
       seed: floor.seed ?? null,
     });
     discovery[id] = packDiscovery(
@@ -81,8 +84,14 @@ export function serialize(state) {
     // Secret doors the party has found, and the edges sight has recorded.
     discoveredEdges: [...state.discoveredEdges],
     departedAt: Object.fromEntries(state.departedAt),
-    roamers: state.roamers.map((roamer) => ({ ...roamer })),
+    // A roamer's generator is a closure, so where it has reached is what is written.
+    // @spec SAVE-HOLD-004
+    roamers: state.roamers.map(({ rng, ...roamer }) => ({ ...roamer, rngPosition: rng?.position() })),
     restockMinElapsedTicks: state.restockMinElapsedTicks,
+    // A prompt left standing and a pit not yet fallen into both outlive a reload.
+    // @spec SAVE-HOLD-007
+    pendingConfirmation: state.pendingConfirmation,
+    pendingFall: state.pendingFall,
   };
 }
 
@@ -97,7 +106,7 @@ export function serialize(state) {
  * @spec EXPLORE-SAVE-002
  * @spec EXPLORE-SAVE-007
  */
-export function restore(saved, createExploration, floorProvider = null) {
+export function restore(saved, createExploration, { floorProvider = null, hooks = {}, stepCost } = {}) {
   const floors = saved.floors.map((data) => {
     const floor = createFloor({
       id: data.id,
@@ -109,6 +118,8 @@ export function restore(saved, createExploration, floorProvider = null) {
     floor.verticalEdges = data.verticalEdges.map((edge) => ({ ...edge }));
     floor.tiles = data.tiles.map(({ intrinsicLight, ...tile }) => tile);
     if (data.rooms) floor.rooms = data.rooms;
+    if (data.traps) floor.traps = data.traps;
+    if (data.secretEdges) floor.secretEdges = data.secretEdges;
     if (data.seed !== null && data.seed !== undefined) floor.seed = data.seed;
     return floor;
   });
@@ -116,14 +127,22 @@ export function restore(saved, createExploration, floorProvider = null) {
   const state = createExploration({
     floors,
     floorProvider,
+    hooks,
+    ...(stepCost ? { stepCost } : {}),
     floorId: saved.party.floorId,
     tile: saved.party.tile,
     facing: saved.party.facing,
     keys: saved.keys,
-    roamers: saved.roamers,
+    roamers: saved.roamers.map(({ rngPosition, ...roamer }) => (
+      rngPosition === undefined || rngPosition === null
+        ? roamer
+        : { ...roamer, rng: makeRng(rngPosition) }
+    )),
     restockMinElapsedTicks: saved.restockMinElapsedTicks,
   });
 
+  state.pendingConfirmation = saved.pendingConfirmation ?? null;
+  state.pendingFall = saved.pendingFall ?? null;
   state._advanceTicks(saved.ticks);
   state.discoveredEdges = new Set(saved.discoveredEdges);
   state.departedAt = new Map(Object.entries(saved.departedAt));

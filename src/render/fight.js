@@ -564,7 +564,12 @@ function fightControls({ bounds, pending, banner, metrics, top, ceiling, scale }
     return {
       menu: null,
       controls: [{
-        kind: ControlKind.BUTTON, role: 'DISMISS', label: 'Onward', hint: 'Enter',
+        // A wiped party has nothing to go onward with.
+        // @spec PRESENT-FIGHT-049
+        kind: ControlKind.BUTTON,
+        role: 'DISMISS',
+        label: banner.outcome === Outcome.DEFEAT ? 'Begin again' : 'Onward',
+        hint: 'Enter',
         x: banner.bounds.x + (banner.bounds.width - bannerWidth) / 2,
         y: banner.bounds.y + banner.bounds.height - buttonHeight - gap,
         width: bannerWidth, height: buttonHeight,
