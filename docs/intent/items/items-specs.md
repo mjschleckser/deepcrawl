@@ -46,11 +46,21 @@ are assembled into the three the fight resolves, and who may hold it.
 - [x] **ITEM-WIELD-002**: The system shall report an item as wieldable by a class when the item names that class, or when the item names no classes at all.
 - [x] **ITEM-WIELD-003**: The system shall decide what a class may hold from the item alone, and not from the skills that class can train.
 
+## The pack
+
+- [x] **ITEM-PACK-001**: The system shall hold, for the party as a whole, the items the party carries and no character has equipped.
+- [x] **ITEM-PACK-002**: When an item is equipped from the pack, the system shall remove it from the pack and shall put any item it displaces from that slot into the pack, as one change.
+- [x] **ITEM-PACK-003**: When an item is taken off, the system shall put it into the pack.
+- [x] **ITEM-PACK-004**: If an item from the pack does not fit the slot or may not be wielded by the character, then the system shall refuse the change and leave the pack and every slot as they were.
+- [x] **ITEM-PACK-007**: When an item is stowed, the system shall add it to the end of the pack.
+- [x] **ITEM-PACK-005**: The system shall permit equipment to be changed on a character whatever their condition.
+
 ## Deferred
 
 - [D] **ITEM-LOOT-001**: The system shall generate an item from a loot table, within the affix rules that table allows.
 - [D] **ITEM-LOOT-002**: The system shall award items from a defeated enemy group and from containers on a floor.
-- [D] **ITEM-PACK-001**: The system shall hold items the party carries but has not equipped, and shall offer those usable in a fight.
+- [D] **ITEM-PACK-006**: The system shall limit how much the pack can hold.
+- [D] **ITEM-USE-001**: The system shall let a character use up an item from the pack, in a fight or out of one.
 - [D] **ITEM-DEF-009**: The system shall let a weapon claim the off hand as well as the main hand, and shall refuse an off-hand item while one does.
 - [D] **ITEM-DEF-010**: The system shall carry on a weapon the reach and exposure it grants, which combat reads in place of the rows it removed.
 - [D] **ITEM-DEF-011**: The system shall give every item a weight, and shall slow a party carrying more than it can bear.

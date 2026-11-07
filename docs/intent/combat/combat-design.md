@@ -262,6 +262,7 @@ made.
 | Attack | a full bar | the weapon in hand, or the attack the combatant was authored with if they hold none; what it trains is that weapon's skill |
 | Cast | a full bar, and a spell slot of that rank | |
 | Use ability | a full bar | unlocked by a skill rank |
+| Change equipment | a full bar | one item put on from the pack, through the party's own operation, whatever it displaces going to the pack; a refused change costs nothing. Taking something off without putting anything on is not offered in a fight, gaining nothing for a turn |
 | Flee | a full bar, of the character who attempts it | resolved for the whole party; see below |
 
 A combatant acts when their bar is full and not otherwise, so how often anyone acts is

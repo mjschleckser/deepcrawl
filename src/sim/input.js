@@ -15,7 +15,7 @@ export const TouchRegion = {
   TURN_RIGHT: 'TURN_RIGHT',
   TURN_AROUND: 'TURN_AROUND',
   PARTY_BAR: 'PARTY_BAR',
-  PACK: 'PACK',
+  ITEMS: 'ITEMS',
   SPELL_ICON: 'SPELL_ICON',
   SEARCH_CONTROL: 'SEARCH_CONTROL',
   INTERACT_PROMPT: 'INTERACT_PROMPT',
@@ -37,7 +37,7 @@ const BINDINGS = [
   // repeating another, so it keeps a key of its own and no control.
   { action: Verb.TURN_AROUND, keys: ['x'], region: TouchRegion.TURN_AROUND },
   { action: PartyAction.PARTY, keys: ['p'], region: TouchRegion.PARTY_BAR },
-  { action: PartyAction.INVENTORY, keys: ['i'], region: TouchRegion.PACK },
+  { action: PartyAction.ITEMS, keys: ['i'], region: TouchRegion.ITEMS },
   { action: PartyAction.SPELLS, keys: ['c'], region: TouchRegion.SPELL_ICON },
   { action: PartyAction.SEARCH, keys: ['f'], region: TouchRegion.SEARCH_CONTROL },
   { action: PartyAction.INTERACT, keys: ['e'], region: TouchRegion.INTERACT_PROMPT },

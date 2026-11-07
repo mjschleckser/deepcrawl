@@ -439,7 +439,7 @@ describe('the two kinds of control', () => {
 
   // @spec PRESENT-CTRL-010
   it('makes everything else a button, which keeps its panel', () => {
-    for (const region of ['MAP', 'PARTY_BAR', 'PACK', 'SPELL_ICON', 'SEARCH_CONTROL', 'INTERACT_PROMPT']) {
+    for (const region of ['MAP', 'PARTY_BAR', 'ITEMS', 'SPELL_ICON', 'SEARCH_CONTROL', 'INTERACT_PROMPT']) {
       expect(byRegion(region).kind).toBe(ControlKind.BUTTON);
     }
   });

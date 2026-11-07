@@ -86,15 +86,26 @@ describe('the clock', () => {
   });
 
   // @spec EXPLORE-CLOCK-008
-  it('does not advance while the automap, inventory, or a menu is open', () => {
+  it('does not advance while the automap, the Items screen, or a menu is open', () => {
     const state = explorationAt();
     setMenuOpen(state, true);
 
     perform(state, { partyAction: PartyAction.TOGGLE_MAP });
-    perform(state, { partyAction: PartyAction.INVENTORY });
+    perform(state, { partyAction: PartyAction.ITEMS });
     perform(state, { partyAction: PartyAction.PARTY });
 
     expect(tickCount(state)).toBe(0);
+  });
+
+  // @spec EXPLORE-CLOCK-008
+  // @spec EXPLORE-ACTION-003
+  it('charges an action committed from inside an open menu', () => {
+    const state = explorationAt();
+    setMenuOpen(state, true);
+
+    perform(state, { partyAction: PartyAction.ITEMS, commit: true });
+
+    expect(tickCount(state)).toBe(1);
   });
 
   // @spec EXPLORE-CLOCK-009
@@ -128,7 +139,7 @@ describe('party actions and the clock', () => {
   it('charges nothing for opening a party action', () => {
     const state = explorationAt();
 
-    perform(state, { partyAction: PartyAction.INVENTORY });
+    perform(state, { partyAction: PartyAction.ITEMS });
     perform(state, { partyAction: PartyAction.PARTY });
     perform(state, { partyAction: PartyAction.SPELLS });
 
@@ -139,7 +150,7 @@ describe('party actions and the clock', () => {
   it('charges one tick for committing to a party action', () => {
     const state = explorationAt();
 
-    perform(state, { partyAction: PartyAction.INVENTORY, commit: true });
+    perform(state, { partyAction: PartyAction.ITEMS, commit: true });
 
     expect(tickCount(state)).toBe(1);
   });
@@ -157,7 +168,7 @@ describe('party actions and the clock', () => {
   // @spec EXPLORE-ACTION-001
   it('accepts exactly the six defined party actions', () => {
     expect(Object.values(PartyAction).sort()).toEqual(
-      ['PARTY', 'INVENTORY', 'SPELLS', 'SEARCH', 'INTERACT', 'TOGGLE_MAP'].sort(),
+      ['PARTY', 'ITEMS', 'SPELLS', 'SEARCH', 'INTERACT', 'TOGGLE_MAP'].sort(),
     );
   });
 

@@ -29,6 +29,9 @@ import {
   experienceForRank,
   RANK_CAP,
   equip,
+  takeOff,
+  stow,
+  packOf,
   skillProgress,
   SKILL_GROUPS,
   SkillGroup,
@@ -692,11 +695,11 @@ describe('what total level decides', () => {
 });
 
 describe('putting something in a slot', () => {
-  const sword = createItem({
+  const sword = () => createItem({
     id: 'sword', name: 'Sword', kind: ItemKind.WEAPON, slot: Slot.MAIN_HAND,
     skill: Skill.BLADE, damage: 10, accuracy: 20, governs: Attribute.MIGHT,
   });
-  const plate = createItem({
+  const plate = () => createItem({
     id: 'plate', name: 'Plate', kind: ItemKind.ARMOUR, slot: Slot.BODY,
     skill: Skill.HEAVY_ARMOUR, armour: 6, classes: [CharacterClass.FIGHTER],
   });
@@ -704,79 +707,152 @@ describe('putting something in a slot', () => {
   const partyWith = (characterClass) => partyOf(createCharacter({
     id: 'x', name: 'X', characterClass,
   }));
+  /** A party carrying these, ready to be put on. */
+  const carrying = (characterClass, ...items) => {
+    const party = partyWith(characterClass);
+    for (const item of items) stow(party, item);
+    return party;
+  };
+
+  // @spec ITEM-PACK-001
+  it('begins a party carrying nothing', () => {
+    expect(packOf(createParty())).toEqual([]);
+  });
+
+  // @spec ITEM-PACK-007
+  it('stows an item at the end of the pack', () => {
+    const party = carrying(CharacterClass.FIGHTER, sword(), plate());
+
+    expect(packOf(party).map((i) => i.id)).toEqual(['sword', 'plate']);
+  });
 
   // @spec PARTY-OP-003
   // @spec PARTY-CHAR-003
-  it('puts an item in the slot it names', () => {
+  // @spec ITEM-PACK-002
+  it('puts an item from the pack in the slot it names, and out of the pack', () => {
+    const blade = sword();
+    const party = carrying(CharacterClass.FIGHTER, blade);
+
+    expect(equip(party, 'x', blade)).toBe(true);
+
+    expect(character(party, 'x').equipment[Slot.MAIN_HAND]).toBe(blade);
+    expect(packOf(party)).toEqual([]);
+  });
+
+  // @spec PARTY-OP-005
+  it('refuses an item that is not in the pack', () => {
     const party = partyWith(CharacterClass.FIGHTER);
 
-    expect(equip(party, 'x', sword)).toBe(true);
-
-    expect(character(party, 'x').equipment[Slot.MAIN_HAND]).toMatchObject({ id: 'sword' });
+    expect(equip(party, 'x', sword())).toBe(false);
+    expect(character(party, 'x').equipment[Slot.MAIN_HAND]).toBeUndefined();
   });
 
   // @spec PARTY-OP-003
+  // @spec ITEM-PACK-004
   it('refuses a class the item does not admit, and changes nothing', () => {
-    const party = partyWith(CharacterClass.MAGE);
+    const armour = plate();
+    const party = carrying(CharacterClass.MAGE, armour);
 
-    expect(equip(party, 'x', plate)).toBe(false);
+    expect(equip(party, 'x', armour)).toBe(false);
 
     // Told no before anything moved, rather than discovered by its consequences.
     expect(character(party, 'x').equipment[Slot.BODY]).toBeUndefined();
+    expect(packOf(party)).toEqual([armour]);
   });
 
   // @spec PARTY-OP-003
+  // @spec ITEM-PACK-004
   it('refuses a slot the item does not fit, and changes nothing', () => {
-    const party = partyWith(CharacterClass.FIGHTER);
+    const blade = sword();
+    const party = carrying(CharacterClass.FIGHTER, blade);
 
-    expect(equip(party, 'x', sword, Slot.BODY)).toBe(false);
+    expect(equip(party, 'x', blade, Slot.BODY)).toBe(false);
 
     expect(character(party, 'x').equipment[Slot.BODY]).toBeUndefined();
     expect(character(party, 'x').equipment[Slot.MAIN_HAND]).toBeUndefined();
+    expect(packOf(party)).toEqual([blade]);
   });
 
   // @spec PARTY-OP-003
   it('admits the class the item does name', () => {
-    const party = partyWith(CharacterClass.FIGHTER);
+    const armour = plate();
+    const party = carrying(CharacterClass.FIGHTER, armour);
 
-    expect(equip(party, 'x', plate)).toBe(true);
+    expect(equip(party, 'x', armour)).toBe(true);
     expect(character(party, 'x').equipment[Slot.BODY]).toMatchObject({ id: 'plate' });
   });
 
-  // @spec PARTY-OP-003
-  it('replaces whatever held the slot before', () => {
-    const party = partyWith(CharacterClass.FIGHTER);
+  // @spec ITEM-PACK-002
+  it('sends whatever held the slot to the pack, in the same change', () => {
+    const blade = sword();
     const axe = createItem({
       id: 'axe', name: 'Axe', kind: ItemKind.WEAPON, slot: Slot.MAIN_HAND,
       skill: Skill.BLUNT, damage: 12, accuracy: 16, governs: Attribute.MIGHT,
     });
+    const party = carrying(CharacterClass.FIGHTER, blade, axe);
+    equip(party, 'x', blade);
 
-    equip(party, 'x', sword);
-    equip(party, 'x', axe);
+    expect(equip(party, 'x', axe)).toBe(true);
 
-    expect(character(party, 'x').equipment[Slot.MAIN_HAND].id).toBe('axe');
+    expect(character(party, 'x').equipment[Slot.MAIN_HAND]).toBe(axe);
+    expect(packOf(party)).toEqual([blade]);
   });
 
+  // @spec ITEM-PACK-003
   // @spec PARTY-CHAR-003
-  it('empties a slot when handed nothing', () => {
-    const party = partyWith(CharacterClass.FIGHTER);
-    equip(party, 'x', sword);
+  it('takes an item off into the pack', () => {
+    const blade = sword();
+    const party = carrying(CharacterClass.FIGHTER, blade);
+    equip(party, 'x', blade);
 
-    expect(equip(party, 'x', null, Slot.MAIN_HAND)).toBe(true);
+    expect(takeOff(party, 'x', Slot.MAIN_HAND)).toBe(true);
 
     expect(character(party, 'x').equipment[Slot.MAIN_HAND]).toBeUndefined();
+    expect(packOf(party)).toEqual([blade]);
+  });
+
+  // @spec ITEM-PACK-003
+  it('takes nothing off an empty slot', () => {
+    const party = partyWith(CharacterClass.FIGHTER);
+
+    expect(takeOff(party, 'x', Slot.BODY)).toBe(false);
+    expect(packOf(party)).toEqual([]);
+  });
+
+  // @spec ITEM-PACK-005
+  it('changes the equipment of a character who is down', () => {
+    const blade = sword();
+    const party = carrying(CharacterClass.FIGHTER, blade);
+    applyDamage(party, 'x', 10_000);
+    expect(character(party, 'x').condition).not.toBe(Condition.OK);
+
+    expect(equip(party, 'x', blade)).toBe(true);
+    expect(takeOff(party, 'x', Slot.MAIN_HAND)).toBe(true);
   });
 
   // @spec PARTY-SAVE-001
   it('carries what is held through a save and back', () => {
-    const party = partyWith(CharacterClass.FIGHTER);
-    equip(party, 'x', sword);
-    equip(party, 'x', plate);
+    const blade = sword();
+    const armour = plate();
+    const party = carrying(CharacterClass.FIGHTER, blade, armour);
+    equip(party, 'x', blade);
+    equip(party, 'x', armour);
 
-    const back = restoreParty(serializeParty(party));
+    const back = restoreParty(JSON.parse(JSON.stringify(serializeParty(party))));
 
     expect(character(back, 'x').equipment[Slot.MAIN_HAND]).toMatchObject({ id: 'sword', damage: 10 });
     expect(character(back, 'x').equipment[Slot.BODY]).toMatchObject({ id: 'plate', armour: 6 });
+  });
+
+  // @spec PARTY-SAVE-003
+  it('carries the pack through a save and back, in order', () => {
+    const party = carrying(CharacterClass.FIGHTER, sword(), plate());
+
+    const back = restoreParty(JSON.parse(JSON.stringify(serializeParty(party))));
+
+    expect(packOf(back).map((i) => i.id)).toEqual(['sword', 'plate']);
+    // What comes back can be put on, like anything else in the pack.
+    expect(equip(back, 'x', packOf(back)[0])).toBe(true);
   });
 });
 

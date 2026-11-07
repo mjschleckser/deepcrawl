@@ -167,7 +167,8 @@ const CONTROL_LABELS = {
   TURN_LEFT: { label: 'Left', hint: 'A', kind: ControlKind.ZONE },
   TURN_RIGHT: { label: 'Right', hint: 'D', kind: ControlKind.ZONE },
   PARTY_BAR: { label: 'Party', hint: 'P', kind: ControlKind.BUTTON },
-  PACK: { label: 'Pack', hint: 'I', kind: ControlKind.BUTTON },
+  // @spec PRESENT-ITEMS-020
+  ITEMS: { label: 'Items', hint: 'I', kind: ControlKind.BUTTON },
   SPELL_ICON: { label: 'Spells', hint: 'C', kind: ControlKind.BUTTON },
   SEARCH_CONTROL: { label: 'Search', hint: 'F', kind: ControlKind.BUTTON },
   INTERACT_PROMPT: { label: 'Use', hint: 'E', kind: ControlKind.BUTTON },
@@ -191,7 +192,7 @@ export const Anchor = { VIEWPORT: 'VIEWPORT', COLUMN: 'COLUMN' };
 export const TouchLayout = [
   { region: 'MAP', fx: 0.78, fy: 0.02, fw: 0.2, fh: 0.2, anchor: Anchor.VIEWPORT },
   { region: 'PARTY_BAR', fx: 0.02, fy: 0.86, fw: 0.18, fh: 0.12, anchor: Anchor.COLUMN },
-  { region: 'PACK', fx: 0.22, fy: 0.86, fw: 0.18, fh: 0.12, anchor: Anchor.COLUMN },
+  { region: 'ITEMS', fx: 0.22, fy: 0.86, fw: 0.18, fh: 0.12, anchor: Anchor.COLUMN },
   { region: 'SPELL_ICON', fx: 0.42, fy: 0.86, fw: 0.18, fh: 0.12, anchor: Anchor.COLUMN },
   { region: 'SEARCH_CONTROL', fx: 0.62, fy: 0.86, fw: 0.16, fh: 0.12, anchor: Anchor.COLUMN },
   { region: 'INTERACT_PROMPT', fx: 0.8, fy: 0.86, fw: 0.18, fh: 0.12, anchor: Anchor.COLUMN },

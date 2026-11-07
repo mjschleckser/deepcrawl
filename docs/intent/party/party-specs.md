@@ -71,10 +71,12 @@ are fed into, never the numbers.
 
 - [x] **PARTY-OP-001**: When combat or exploration applies damage, the system shall apply it through the party's own operation, enforcing the floor at zero and the condition chain.
 - [x] **PARTY-OP-003**: When equipment is changed, the system shall refuse a slot the item does not fit and a class that may not wield it.
+- [x] **PARTY-OP-005**: The system shall move items between a character's slots and the pack only through the party's `equip`, `takeOff` and `stow` operations, and shall refuse to equip an item that is not in the pack.
 
 ## Persistence
 
 - [x] **PARTY-SAVE-001**: The system shall save every character's attributes, class, skill ranks, accumulated skill experience, condition, hit points, and equipment.
+- [x] **PARTY-SAVE-003**: The system shall save the pack and every item in it, and shall restore it in the same order.
 - [x] **PARTY-SAVE-002**: The system shall restore a party from a save with every character in the condition they were saved in.
 
 ## Authored combatants

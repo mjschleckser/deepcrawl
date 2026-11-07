@@ -51,7 +51,7 @@ describe('resolving input', () => {
     expect(actionForKey('ArrowUp')).toEqual(actionForTouch(TouchRegion.FORWARD));
     expect(actionForKey('s')).toEqual(actionForTouch(TouchRegion.BACKWARD));
     expect(actionForKey('m')).toEqual(actionForTouch(TouchRegion.MAP));
-    expect(actionForKey('i')).toEqual(actionForTouch(TouchRegion.PACK));
+    expect(actionForKey('i')).toEqual(actionForTouch(TouchRegion.ITEMS));
   });
 
   // @spec EXPLORE-INPUT-002

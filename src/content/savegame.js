@@ -12,7 +12,7 @@ import { TileFeature } from '../sim/floor.js';
 export const SAVE_KEY = 'deepcrawl.save';
 
 /** The schema a save is written in. Raise it, and add a migration, when the shape changes. */
-export const SAVE_FORMAT = 2;
+export const SAVE_FORMAT = 3;
 
 /** How long a change waits, so a run of steps becomes one write. */
 export const WRITE_DELAY_MS = 1000;
@@ -59,8 +59,18 @@ function addWaysBack(save) {
   };
 }
 
+/**
+ * Version 2 had no pack. The party carried nothing it was not wearing, so it begins
+ * carrying nothing.
+ *
+ * @spec PARTY-SAVE-003
+ */
+function addPack(save) {
+  return { ...save, party: { ...save.party, pack: save.party.pack ?? [] } };
+}
+
 /** Each step takes a save from the version it is keyed by to the next. */
-const MIGRATIONS = { 1: addWaysBack };
+const MIGRATIONS = { 1: addWaysBack, 2: addPack };
 
 /** @spec SAVE-READ-005 */
 export function migrate(save, migrations = MIGRATIONS, current = SAVE_FORMAT) {

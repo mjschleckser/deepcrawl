@@ -167,7 +167,7 @@ viewport, not pixels, so they hold their proportions on any screen:
 │left│   step back   │ right      │
 │    └───────────────┘            │
 │  ┌────┬────┬────┬────┬────┐     │
-│  │part│pack│spel│srch│ use│     │ ← party action bar
+│  │part│item│spel│srch│ use│     │ ← party action bar
 │  └────┴────┴────┴────┴────┘     │
 └─────────────────────────────────┘
 ```
@@ -202,7 +202,7 @@ game, so a zone draws only its name; its outline appears under the finger and go
 the finger lifts. The player learns where the zones are by using them, and then gets
 their dungeon back.
 
-A **button** — the map, the pack, a spell, a search, an option in a fight — is small and
+A **button** — the map, the Items screen, a spell, a search, an option in a fight — is small and
 discrete, and covers almost nothing. Buttons keep their panel and their frame, because
 a button that is only a word is hard to read as something you may press, and hiding
 almost nothing buys almost nothing.
@@ -238,7 +238,7 @@ top of it.
 │ Tam crits Goblin for 14. Goblin falls.                            │
 ├───────────────────────────────────────────────────────────────────┤
 │ Bram is ready to act!                                             │ ← who is up
-│  [1] Attack   [2] Magic   [3] Inventory   [4] Flee                │ ← the controls
+│  [1] Attack   [2] Magic   [3] Items       [4] Flee                │ ← the controls
 └───────────────────────────────────────────────────────────────────┘
 ```
 
@@ -420,7 +420,7 @@ the panel is only ever offering one combatant's options.
 |---|---|---|
 | **Attack** | swing what this combatant carries | they carry no attack, or nothing is standing to swing at |
 | **Magic** | cast from what this character knows | they know no spell they can still pay for |
-| **Inventory** | use something from the party's pack | the pack holds nothing usable in a fight |
+| **Items** | open the Items screen on this character, to put something on from the pack | the pack holds nothing this character may wield |
 | **Flee** | take the whole party out of the encounter | escape is certain to fail — something present forbids it, or the party cannot outrun what is chasing it |
 
 **An option that cannot be taken is drawn anyway, greyed and inert.** It keeps its
@@ -442,10 +442,11 @@ place every turn, changing only its words.
 The reason takes the slot the key hint occupies on an available control. A greyed
 control's key does nothing, so the number is worth less there than the sentence is.
 
-**Magic and Inventory are greyed in every fight today**, there being no spell a
-character knows and no pack to take an item from. They are drawn regardless, because
-the row's shape is not a function of which systems happen to exist yet, and they will
-light up when those systems arrive without the row being redesigned around them.
+**Magic is greyed in every fight today**, there being no spell a character knows, and
+Items is greyed whenever the pack holds nothing the character may wield. Both are drawn
+regardless, because the row's shape is not a function of which systems happen to exist
+yet, and Magic will light up when spells arrive without the row being redesigned around
+it.
 
 This is the whole reason for a fixed four. The alternative — offering only what is
 legal — gives a menu that is a different shape on every turn: *Flee* moves under the
@@ -469,7 +470,7 @@ buttons rather than in place of them, and it is the only thing that can be press
 Taking it spends the turn and resolves nothing.
 
 The four stay visible underneath because they are the explanation: the player can read
-that Attack, Magic, Inventory and Flee were each considered and each refused, and why.
+that Attack, Magic, Items and Flee were each considered and each refused, and why.
 A row replaced by one button would say only that something had gone wrong. The overlay
 says *here is everything you could have done, and here is the only thing left*.
 
@@ -498,7 +499,7 @@ on the press.
 │  │ Goblin      7 ⚔  9/9 │                                         │
 │  │ Goblin      7 ⚔  4/9 │                                         │
 │  └──┬───────────────────┘                                         │
-│  [[Attack]]  [Magic]   [Inventory]   [Flee]                       │
+│  [[Attack]]  [Magic]   [Items]       [Flee]                       │
 ```
 
 The controls sit at the foot of the screen, so the menu rises from the button's top edge
@@ -532,9 +533,11 @@ first nine entries in the order they are listed, and an entry does not print its
 it would be a third figure on a line whose two figures are the point of it, and a phone
 player has no use for it.
 
-Magic and Inventory will open their menus the same way, off their own buttons, once there
-are spells and items to list. An entry that needs a further answer, such as a spell that
-needs a target, will replace the menu's entries with the next question.
+Magic will open its menu the same way, off its own button, once there are spells to
+list. An entry that needs a further answer, such as a spell that needs a target, will
+replace the menu's entries with the next question. Items does not open a menu: it opens
+the Items screen, the same one exploration opens, because equipment is one subject
+whether or not a fight is on, and two drawings of the same pack would drift apart.
 
 **Backing out closes the menu**, which is as far back as there is to go. A turn resolves
 the instant it is taken, so there is no earlier decision left standing to reconsider.
@@ -669,6 +672,80 @@ like any other would promise progress that will never come.
 Ashes, Lost — in words and in place of nothing, because a hit-point bar at zero cannot
 tell an unconscious character from a dead one, and that difference is the whole of what
 the player needs to know about them.
+
+## The Items Screen
+
+The Items screen is where equipment changes hands: what each character wears and wields,
+and the pack the party carries everything else in. It is the one place an item moves, and
+it is the same screen in a fight and out of one. Its name is the same everywhere it is
+reached from — the Items button on the action bar, the Items option in a fight, and the
+`ITEMS` action behind both.
+
+### Opening and closing
+
+Out of a fight, `ITEMS` opens it — the `I` key, or the Items button. The same action
+closes it, and so do `Escape` and a drawn Close control. Like the party screen it holds
+the input while it is open, draws no walking zones and no action bar, cannot be opened
+over a prompt, and tells the simulation only that a menu is up. Browsing it costs
+nothing.
+
+In a fight, the Items option opens it, on the character whose turn it is and on nobody
+else: it is their turn being spent, and nobody else is being asked. `I`, `Escape` and
+Close return to the fight with the turn still waiting.
+
+### A page per character
+
+The screen shows **one character at a time**, as the party screen does, and pages the same
+way out of a fight: arrows either side of the name, the arrow keys and `A` and `D`,
+wrapping round, opening on the first character. In a fight there is one page and no
+arrows.
+
+```
+┌──── ◀  Bram  1 / 4  ▶ ──────── Close ┐
+│ Wearing                               │
+│ Main hand  Shortsword                 │
+│            Blade · damage 9 · acc 22  │
+│ Off hand   Round shield               │
+│ Body       Chainmail                  │
+│ Pack                                  │
+│ Dagger                                │
+│   Main hand · Blade · damage 6 · ...  │
+│ Robe                       (greyed)   │
+│   Body · Mage only                    │
+└──────────────────────────────────────┘
+```
+
+**Wearing** lists every slot the items segment defines, with what is in it or a mark that
+it is empty. **Pack** lists everything the party carries, in the pack's own order, or says
+that it is empty. Every item, worn or carried, shows its name and beneath it the numbers
+it carries — its slot, its skill, and what it adds — so two items can be compared without
+equipping either.
+
+### Changing equipment
+
+**Pressing an item in the pack puts it on the character whose page is open**, in the slot
+the item names, and whatever was there goes into the pack. **Pressing a worn item takes it
+off** into the pack. Each is one press and one change, and the page redraws at once with
+the result.
+
+**An item the character may not wield is drawn greyed, with the reason in place of its
+numbers** — *Fighter, Cleric only* — and pressing it does nothing, by the same rule as a
+greyed option in a fight. An empty slot is drawn but presses as nothing.
+
+**Out of a fight, each change costs one tick**, committed as an `ITEMS` action, and the
+screen stays open for the next. **In a fight, a change spends the character's turn**: the
+screen closes and the fight goes on. Taking something off is not offered in a fight —
+worn items are drawn as they are out of one, but inert — because a turn spent emptying a
+hand gains nothing.
+
+### The keyboard
+
+A highlighted row moves with `W` and `S` or the up and down arrows, through the worn items
+and then the pack, and `Enter` or `Space` presses it. The number keys turn to that
+character's page, as they do on the party screen, rather than addressing pack items: the
+pack is not a short fixed list, and a key that meant a different item each time the pack
+changed would be a key nobody could press from memory. A pack longer than the page keeps
+the highlighted row in view by scrolling the list.
 
 ## Prompts
 
@@ -833,12 +910,16 @@ screen the player can see but the game cannot have.
 | A turn with no legal action | A Pass turn control drawn over the four greyed options, which must be pressed | Passing the character automatically; replacing the row with one button; leaving the turn pending | Passing automatically would be the only turn in the game taken unattended, and it would land on the rarest and most confusing turn there is. Keeping the four visible underneath makes the overlay an explanation rather than an error: the player reads that each was considered and refused, and why. Replacing the row would say only that something had gone wrong. |
 | When Flee greys | Whenever escape is certain to fail, by the rule that resolves an attempt | Only when an enemy forbids escape, leaving a hopeless run to cost a turn; never greying, so every attempt is paid for | A menu that warns about one impossibility and charges a turn to discover the other teaches that greying cannot be trusted. Reading the same rule that resolves the attempt keeps one source of truth, so the button and the outcome can never disagree. The cost is that the party learns something about enemy speed from the button; the reason text says so plainly rather than leaving it to be inferred. |
 | Backing out | Closes the open menu | Stepping back to the previous character's turn; a Back button drawn in the row | A turn resolves the instant it is taken, so there is no earlier decision still standing to return to. What is undone is a menu left open. Pressing the same button or outside the menu is where a thumb already is, so a Back button would be a control spent on something free. |
-| What a turn offers | A fixed four: Attack, Magic, Inventory, Flee | A row built from whatever is legal this turn; a nested menu under one Act button | Four slots in a fixed order can be learned once and pressed thereafter without reading, and they fix the number keys too — Attack is always 1. A menu assembled per turn makes every press a fresh reading. Nesting everything under one button would cost a press on every turn. |
+| What a turn offers | A fixed four: Attack, Magic, Items, Flee | A row built from whatever is legal this turn; a nested menu under one Act button | Four slots in a fixed order can be learned once and pressed thereafter without reading, and they fix the number keys too — Attack is always 1. A menu assembled per turn makes every press a fresh reading. Nesting everything under one button would cost a press on every turn. |
 | Where a column sits vertically | Centred in the formation region, each side on its own count | Pinned to the top edge; both sides aligned on a shared top | Two goblins facing four characters read as a side that is outnumbered when they sit level with the middle of the party, and as a list that ran out when they hang from the top edge with empty panel beneath. Centring is fixed at the start of the encounter and cannot creep, because the fallen keep their places and a side's count never changes. |
 | The fallen | Drawn in place, spent and dimmed | Removing them from the column | The shape of a side that has lost its middle is information, and a column that closed its gaps would move everything below the gap while the player was looking at it. |
 | Where the party screen's open state lives | The controller, as view state, with the simulation told only that a menu is open | A flag in exploration state; a party action that commits and costs a tick | Opening a character sheet changes nothing that is true, which is the test the expanded map already passes. Exploration still owns the clock rule, so it is told a menu is up and nothing more. Charging a tick to read a sheet would make looking cost something, which pushes the systems player to look less. |
 | Party screen layout | One character a page, paged with wrap-around, opening on the first | Four compact rows with the selected character's sheet beneath; all four sheets in one scrolling column | Four sheets do not fit a phone held upright at a readable size, and a roster-and-detail split spends a third of the screen repeating what the sheet already says. A scrolling column moves under the thumb. A page each gives every sheet the whole column, and with four characters wrap-around paging puts any one within two presses. |
 | Paging keys | The arrow keys, `A` and `D`, and `1` to `4` | Arrow keys alone; a dedicated pair of keys | `A` and `D` are the turn keys and free while the screen holds the input, so a keyboard player pages without moving their hand. The number keys match how fights already address a slot by number. |
+| Where equipment changes | One Items screen, reached from the action bar and from a fight's Items option alike | A fight menu of pack items off the Items button; editing equipment on the party screen | A menu off the button has room for a list of names but not for what each item does or what it would replace, which is the whole question. Two drawings of one pack would drift apart. The party screen is for reading a character; putting the controls there would make every look at a sheet a chance to change it by accident. |
+| The screen's name | Items, everywhere it is reached | Inventory in a fight and Pack on the action bar | One thing under two names reads as two things. *Items* is short enough for a button on a phone and names what is on the screen rather than a container. |
+| What a press on an item does | Acts at once: equips from the pack, or takes off | Selecting first and confirming with a second press | Every change is reversible by the same screen, so a confirmation would make the common case cost twice to guard the rare one. A fight's target menu already acts on a single press. |
+| Keyboard on the Items screen | A highlighted row moved by `W`/`S` and the arrows, pressed by `Enter` | Number keys for the nth entry, as a fight menu has | A fight menu's entries are few and fixed for the turn; a pack is neither. A highlight reaches any row however long the pack grows. |
 | Skill progress | A bar of experience toward the next rank under every rank | The rank alone | Progression is spread across skills by a pot split equally, and a bare rank hides which skills a fight is about to pay off. The share is the party segment's to compute, so the screen cannot drift from the rule it shows. |
 | Skills a class cannot train | Drawn, marked as no longer advancing | Hidden; drawn like any other | Hiding them understates a character who changed class, and drawing them plainly promises progress that will never come. |
 | The build stamp | Drawn in the corner of the running game, as a build number taken from the commit count | A version on an about screen; no version at all; a build date; a version and commit hash, `MAJOR.MINOR.PATCH+SHA` | "It does not work" and "you are looking at a cached build" are the same report without it, and a service worker makes the second common. Taking the number from the commit count means nobody has to remember to raise it, and it orders correctly by construction. A hash names the exact source but cannot be read as newer or older, and it buries the one digit that changes. |
@@ -872,19 +953,21 @@ screen the player can see but the game cannot have.
 23. ✅ **An attack shakes its attacker's card**, which is the only motion in a fight.
 24. ✅ **One character is asked at a time**, when their turn comes; a further choice opens as a menu off the pressed button, and backing out closes it rather than stepping back to anybody.
 25. ✅ **Every action is taken by a press**, and nothing in a fight is ever taken unattended.
-26. ✅ **A turn offers a fixed four — Attack, Magic, Inventory, Flee — with whatever cannot be taken drawn greyed and inert** in its own place, keeping its number.
+26. ✅ **A turn offers a fixed four — Attack, Magic, Items, Flee — with whatever cannot be taken drawn greyed and inert** in its own place, keeping its number.
 27. ✅ **The prompt names who is ready to act**, and is absent while nothing waits on the player.
 28. ✅ **Prompts are drawn from the simulation's pending confirmation**, never from the renderer's own flag.
 29. ✅ **The build number is drawn in the bottom-left corner**, taken from the commit count and fixed at build time.
 30. ✅ **The party screen is one character a page**, read-only, opened and closed by `PARTY`, holding the input and stopping the clock while open.
 31. ✅ **A skill on the party screen shows its rank and its progress toward the next**, the share computed by the party segment.
+32. ✅ **One Items screen, in a fight and out of one**, a page per character, where a press on a pack item equips it and a press on a worn item takes it off.
 
 ### Deferred
 
 1. **Animation in a fight.** An action lands in one frame, and the only motion is the attacker's judder. Real animation — a blow that travels, a spell that reads as a spell — is unbuilt, and would want the ticker running throughout a fight rather than only between actions. The pause, the shake, and the ticker's bounds are settled; everything past them is not.
 2. **Art.** Everything is flat-shaded polygons. Textures, sprites for doors and stairs, and any sense of material are unaddressed.
 3. **Animation between steps.** A step currently cuts from one position to the next. Whether it should slide, and how that squares with a stopped ticker, is open — an animation is the one thing in this segment that would need time.
-4. **The pack and spell screens.** `INVENTORY` and `SPELLS` are drawn on the action bar but open nothing: they route to inventory and an ability set that are unbuilt. Changing anything about a character — equipping, using an item — waits on the same work, which is why the party screen is read-only. `SEARCH` is drawn the same way and does nothing yet, waiting on the traps and secret doors it would find.
+4. **The spell screen.** `SPELLS` is drawn on the action bar but opens nothing: it routes to an ability set that is unbuilt. `SEARCH` is drawn the same way and does nothing yet, waiting on the traps and secret doors it would find.
+9. **Scrolling the pack by touch.** The keyboard's highlight keeps a long pack's rows in reach; a finger has no way to scroll it yet. Nothing can make the pack longer than what the party takes off until loot exists, which is when this is wanted.
 5. **Expanded-map interaction.** Panning and zooming an expanded map, and whether tapping a tile does anything, are unspecified. Auto-travel is already deferred in exploration.
 6. **Wide-screen framing.** On a very wide desktop window the corridor frames may want letterboxing rather than stretching; untested.
 7. **Accessibility.** Keyboard focus, screen-reader description of the map, and colour-blind-safe stroke distinctions are unaddressed.

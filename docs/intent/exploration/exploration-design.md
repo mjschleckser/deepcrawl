@@ -153,7 +153,8 @@ authored against that scale.
 
 - Turning, in any direction
 - Attempting to step into a blocked edge
-- Opening or reading the automap, inventory, or any menu
+- Opening or reading the automap, the Items screen, or any menu — though an action
+  committed from within one, such as equipping an item, costs its tick like any other
 - Combat, in its entirety
 
 Combat standing outside the clock is deliberate: a long fight should not also
@@ -495,7 +496,7 @@ every action stays *achievable* by touch, not that each has a button of its own.
 | Party action | Keyboard | Touch | Owned by |
 |---|---|---|---|
 | `PARTY` — roster, statuses | `P` | party bar | party |
-| `INVENTORY` — use and equip items | `I` | pack icon | loot and items |
+| `ITEMS` — equip and use items | `I` | Items button | loot and items |
 | `SPELLS` — out-of-combat magic | `C` | spell icon | abilities |
 | `SEARCH` — look for traps and secret doors | `F` | search control | traps |
 | `INTERACT` — dungeon features on the current tile | `E` | use control | varies by feature; a staircase is exploration's own |
@@ -503,7 +504,7 @@ every action stays *achievable* by touch, not that each has a button of its own.
 
 Exploration owns none of these but `TOGGLE_MAP`: it routes each to the segment that
 owns it and charges the clock. **Opening a party action costs nothing; committing to
-one costs a tick.** Reading the roster, browsing the pack, and reading the map are
+one costs a tick.** Reading the roster, browsing the Items screen, and reading the map are
 free, because a game that charges for looking punishes the player for playing
 carefully. Equipping the armour, drinking the potion, casting the spell, searching
 the tile, and working the lever each cost a tick.

@@ -312,12 +312,13 @@ export async function createRenderer(mount) {
     map: new Container(),
     fight: new Container(),
     party: new Container(),
+    items: new Container(),
     hud: new Container(),
   };
   // Added in order, so the view sits beneath everything and the HUD above it.
   app.stage.addChild(
     layerContainers.view, layerContainers.map, layerContainers.fight,
-    layerContainers.party, layerContainers.hud,
+    layerContainers.party, layerContainers.items, layerContainers.hud,
   );
 
   const draw = (layers) => {
@@ -330,6 +331,7 @@ export async function createRenderer(mount) {
       if (name === 'map') drawMap(container, plan);
       if (name === 'fight') drawFight(container, plan);
       if (name === 'party') drawParty(container, plan);
+      if (name === 'items') drawItems(container, plan);
       if (name === 'hud') drawHud(container, plan);
     }
     app.render();
@@ -812,4 +814,91 @@ function drawParty(container, plan) {
   }
 
   for (const control of plan.controls) drawControl(container, control, { alpha: 0.85, scale });
+}
+
+/**
+ * Draw the Items screen. Every box was placed by the plan; this only paints into them.
+ *
+ * @spec PRESENT-ITEMS-005
+ * @spec PRESENT-ITEMS-006
+ * @spec PRESENT-ITEMS-007
+ * @spec PRESENT-ITEMS-008
+ * @spec PRESENT-ITEMS-012
+ */
+function drawItems(container, plan) {
+  const scale = plan.scale ?? 1;
+  const text = Math.round(13 * scale);
+  const small = Math.round(11 * scale);
+  const { bounds } = plan;
+  const graphics = new Graphics();
+  graphics.roundRect(bounds.x, bounds.y, bounds.width, bounds.height, 6 * scale)
+    .fill({ color: FIGHT_COLOURS.panel, alpha: 0.96 });
+  graphics.roundRect(bounds.x, bounds.y, bounds.width, bounds.height, 6 * scale)
+    .stroke({ width: 2, color: FIGHT_COLOURS.frame });
+  container.addChild(graphics);
+
+  // The name, and where this page sits, or that it is this character's turn.
+  const { title } = plan;
+  const name = label(title.name, Math.round(17 * scale), FIGHT_COLOURS.banner);
+  fitWithin(name, title.box.width);
+  name.x = title.box.x + (title.box.width - name.width) / 2;
+  name.y = title.box.y + title.box.height / 2 - name.height + 2 * scale;
+  container.addChild(name);
+  const place = label(title.position, small, FIGHT_COLOURS.dim);
+  place.x = title.box.x + (title.box.width - place.width) / 2;
+  place.y = title.box.y + title.box.height / 2 + 2 * scale;
+  container.addChild(place);
+
+  const inset = 8 * scale;
+  for (const entry of plan.entries) {
+    const { box } = entry;
+    if (entry.kind === 'HEADING') {
+      const t = label(entry.text, small, FIGHT_COLOURS.banner);
+      t.x = box.x;
+      t.y = box.y + (box.height - t.height) / 2;
+      container.addChild(t);
+      continue;
+    }
+    if (entry.kind === 'NOTE') {
+      const t = label(entry.text, text, FIGHT_COLOURS.dim);
+      t.x = box.x + inset;
+      t.y = box.y + (box.height - t.height) / 2;
+      container.addChild(t);
+      continue;
+    }
+
+    // A row: a quiet panel, outlined when it is the highlighted one.
+    graphics.roundRect(box.x, box.y + 1, box.width, box.height - 2, 4 * scale)
+      .fill({ color: entry.selected ? FIGHT_COLOURS.ally : 0x000000, alpha: entry.selected ? 0.9 : 0.35 });
+    if (entry.selected) {
+      graphics.roundRect(box.x, box.y + 1, box.width, box.height - 2, 4 * scale)
+        .stroke({ width: 1.5, color: FIGHT_COLOURS.banner });
+    }
+
+    const tone = entry.greyed ? FIGHT_COLOURS.dim : FIGHT_COLOURS.text;
+    const nameLeft = entry.label ? box.x + box.width * 0.3 : box.x + inset;
+    if (entry.label) {
+      const slot = label(entry.label, text, FIGHT_COLOURS.dim);
+      fitWithin(slot, nameLeft - box.x - inset * 2);
+      slot.x = box.x + inset;
+      slot.y = box.y + 4 * scale;
+      container.addChild(slot);
+    }
+    const itemName = label(entry.name ?? '—', text, entry.name ? tone : FIGHT_COLOURS.dim);
+    fitWithin(itemName, box.x + box.width - inset - nameLeft);
+    itemName.x = nameLeft;
+    itemName.y = box.y + 4 * scale;
+    container.addChild(itemName);
+    if (entry.detail) {
+      const detail = label(entry.detail, small, entry.greyed ? FIGHT_COLOURS.critical : FIGHT_COLOURS.dim);
+      fitWithin(detail, box.x + box.width - inset - nameLeft);
+      detail.x = nameLeft;
+      detail.y = box.y + box.height - detail.height - 5 * scale;
+      container.addChild(detail);
+    }
+  }
+
+  for (const control of plan.controls) {
+    if (control.kind === 'BUTTON') drawControl(container, control, { alpha: 0.85, scale });
+  }
 }

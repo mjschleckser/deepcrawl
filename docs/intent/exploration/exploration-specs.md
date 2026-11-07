@@ -31,7 +31,7 @@ tuning the game does not rewrite its specs.
 - [x] **EXPLORE-CLOCK-005**: While combat is active, the system shall not advance the clock for any reason.
 - [x] **EXPLORE-CLOCK-006**: When the party turns in any direction, the system shall not advance the clock.
 - [x] **EXPLORE-CLOCK-007**: If a step is blocked, then the system shall not advance the clock.
-- [x] **EXPLORE-CLOCK-008**: While the inventory or any menu is open, the system shall not advance the clock, and opening, expanding or reading the automap shall not advance it either.
+- [x] **EXPLORE-CLOCK-008**: While the Items screen or any menu is open, the system shall not advance the clock except for a party action committed from within it, and opening, expanding or reading the automap shall not advance it either.
 - [x] **EXPLORE-CLOCK-009**: The system shall permit only the exploration segment to write the tick counter, including when the camp segment requests an advance.
 
 ## Movement
@@ -124,7 +124,7 @@ tuning the game does not rewrite its specs.
 
 ## Party actions
 
-- [x] **EXPLORE-ACTION-001**: The system shall accept six party actions during exploration: `PARTY`, `INVENTORY`, `SPELLS`, `SEARCH`, `INTERACT`, and `TOGGLE_MAP`.
+- [x] **EXPLORE-ACTION-001**: The system shall accept six party actions during exploration: `PARTY`, `ITEMS`, `SPELLS`, `SEARCH`, `INTERACT`, and `TOGGLE_MAP`.
 - [x] **EXPLORE-ACTION-002**: When the player opens a party action, the system shall not advance the clock.
 - [x] **EXPLORE-ACTION-003**: When the player commits to a party action — equipping or using an item, casting a spell, searching a tile, or working a dungeon feature — the system shall advance the clock by one tick.
 - [x] **EXPLORE-ACTION-004**: The system shall not advance the clock for `TOGGLE_MAP` under any circumstance.
@@ -133,7 +133,7 @@ tuning the game does not rewrite its specs.
 
 ## Input
 
-- [x] **EXPLORE-INPUT-001**: The system shall give every movement verb and every party action — `STEP_FORWARD`, `STEP_BACKWARD`, `TURN_LEFT`, `TURN_RIGHT`, `TURN_AROUND`, `PARTY`, `INVENTORY`, `SPELLS`, `SEARCH`, `INTERACT`, `TOGGLE_MAP` — a keyboard path.
+- [x] **EXPLORE-INPUT-001**: The system shall give every movement verb and every party action — `STEP_FORWARD`, `STEP_BACKWARD`, `TURN_LEFT`, `TURN_RIGHT`, `TURN_AROUND`, `PARTY`, `ITEMS`, `SPELLS`, `SEARCH`, `INTERACT`, `TOGGLE_MAP` — a keyboard path.
 - [x] **EXPLORE-INPUT-004**: The system shall leave every movement verb and party action achievable by touch, whether through a control of its own or through repeating another.
 - [x] **EXPLORE-INPUT-002**: The system shall produce an identical action for a given verb whether it originated from keyboard or from touch.
 - [x] **EXPLORE-INPUT-003**: The system shall not expose to the simulation which input device produced an action.
@@ -151,4 +151,4 @@ tuning the game does not rewrite its specs.
 - [x] **EXPLORE-BOUND-006**: When the clock advances, the system shall notify the hunger segment of the number of ticks elapsed.
 - [x] **EXPLORE-BOUND-007**: When the party searches its current tile, the system shall fire the trap detection hook with that tile and the party.
 - [x] **EXPLORE-BOUND-008**: When sight is recomputed, the system shall fire the trap detection hook for the tiles it reached, with the party.
-- [x] **EXPLORE-BOUND-009**: The system shall route each party action to the segment that owns it and shall hold no rules of its own for `PARTY`, `INVENTORY`, `SPELLS`, `SEARCH`, or `INTERACT`.
+- [x] **EXPLORE-BOUND-009**: The system shall route each party action to the segment that owns it and shall hold no rules of its own for `PARTY`, `ITEMS`, `SPELLS`, `SEARCH`, or `INTERACT`.

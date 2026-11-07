@@ -3,7 +3,7 @@ import { makeRng } from '../sim/rng.js';
 import { actionForKey } from '../sim/input.js';
 import { perform, resolveConfirmation } from '../sim/exploration.js';
 import { TileFeature } from '../sim/floor.js';
-import { character, roster } from '../sim/party.js';
+import { character, packOf, roster, takeOff } from '../sim/party.js';
 import { readinessOf } from '../sim/combat.js';
 import {
   chooseOption, createFightController, playEnemyTurn, FightPhase,
@@ -267,6 +267,33 @@ describe('resuming', () => {
     };
 
     expect(migrate(saved).exploration.pendingConfirmation).toBeNull();
+  });
+
+  // @spec SAVE-READ-005
+  // @spec PARTY-SAVE-003
+  it('gives a version 2 save an empty pack, and resumes it', () => {
+    const saved = JSON.parse(encodeCampaign(createCampaign({ seed: 5 })));
+    saved.version = 2;
+    delete saved.party.pack;
+
+    const migrated = migrate(saved);
+    const resumed = createCampaign({ saved: migrated });
+
+    expect(migrated.version).toBe(SAVE_FORMAT);
+    expect(migrated.party.pack).toEqual([]);
+    expect(packOf(resumed.party)).toEqual([]);
+  });
+
+  // @spec PARTY-SAVE-003
+  it('keeps what the pack holds through a save', () => {
+    const campaign = createCampaign({ seed: 5 });
+    const bram = roster(campaign.party)[0];
+    takeOff(campaign.party, bram.id, 'MAIN_HAND');
+
+    const resumed = createCampaign({ saved: JSON.parse(encodeCampaign(campaign)) });
+
+    expect(packOf(resumed.party).map((i) => i.id)).toEqual(packOf(campaign.party).map((i) => i.id));
+    expect(packOf(resumed.party)).toHaveLength(1);
   });
 
   // @spec SAVE-READ-006

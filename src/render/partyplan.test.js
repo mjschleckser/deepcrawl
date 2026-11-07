@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   createParty, createCharacter, addCharacter, applyDamage, changeClass, equip, character,
-  trainSkill, totalLevel, CharacterClass, Skill, Condition, RANK_CAP,
+  trainSkill, totalLevel, CharacterClass, Skill, Condition, RANK_CAP, stow,
 } from '../sim/party.js';
 import { ItemKind, Slot, createItem } from '../sim/items.js';
 import { MIN_TAP_PX, contentColumn, uiScale, versionStamp } from './geometry.js';
@@ -24,6 +24,7 @@ function fourOf() {
   addCharacter(party, createCharacter({ id: 'tam', name: 'Tam', characterClass: CharacterClass.THIEF }));
   addCharacter(party, createCharacter({ id: 'isolde', name: 'Isolde', characterClass: CharacterClass.MAGE }));
   addCharacter(party, createCharacter({ id: 'wren', name: 'Wren', characterClass: CharacterClass.CLERIC }));
+  stow(party, sword);
   equip(party, 'bram', sword);
   return party;
 }

@@ -16,8 +16,11 @@ import {
   setMenuOpen,
   PartyAction,
 } from '../sim/exploration.js';
-import { roster } from '../sim/party.js';
+import { character, equip, roster, takeOff } from '../sim/party.js';
 import { buildPartyPlan, pageFor, PartyControl } from './partyplan.js';
+import {
+  buildItemsPlan, clampRow, itemRows, rowActs, ItemsControl,
+} from './itemsplan.js';
 import { Outcome } from '../sim/combat.js';
 import { hitTest, controlsFor, uiScale, versionStamp } from './geometry.js';
 import { APP_VERSION } from '../version.js';
@@ -26,7 +29,7 @@ import { buildViewPlan } from './viewplan.js';
 import { buildMapPlan } from './mapplan.js';
 import {
   buildFightPlan, createFightController, chooseOption, pressOption, goBack, dismissOutcome,
-  passTurn,
+  passTurn, equipInFight, closeItems,
   advanceClock, fightIsPlaying, scrollLog, FightPhase,
 } from './fight.js';
 
@@ -55,6 +58,9 @@ function stateSignature(state) {
   ].join('|');
 }
 
+/** A key, whatever its case. */
+const keyIs = (key, ...names) => names.includes(key) || names.includes(key.toLowerCase());
+
 /** @spec PRESENT-SCENE-007 */
 export function createController({ state, viewport, onDraw, campaign = null, onBeginAgain = () => {} }) {
   const controller = {
@@ -65,6 +71,11 @@ export function createController({ state, viewport, onDraw, campaign = null, onB
     // The party screen, when open: which character's page is showing. A view of the
     // party like the expanded map is a view of the floor, so it lives here.
     partyScreen: null,
+    // The Items screen, when open out of a fight: which page, and which row is
+    // highlighted. In a fight the fight says whether it is open; the highlight is still
+    // kept here.
+    // @spec PRESENT-ITEMS-003
+    itemsScreen: null,
     // Which control the finger is currently on, so it can be outlined while held.
     pressedRegion: null,
   };
@@ -83,6 +94,7 @@ export function replaceCampaign(controller, campaign) {
   controller.state = campaign.state;
   controller.fight = null;
   controller.partyScreen = null;
+  controller.itemsScreen = null;
   controller.expanded = false;
   syncFight(controller);
   redraw(controller);
@@ -111,6 +123,10 @@ function noteFor(controller, stamp) {
  * @spec PRESENT-FIGHT-001
  */
 function syncFight(controller) {
+  // The highlight a fight's Items screen kept goes with the screen.
+  if (controller.itemsScreen?.fromFight && !controller.fight?.pending?.items) {
+    controller.itemsScreen = null;
+  }
   const encounter = controller.campaign?.encounter ?? null;
   if (!encounter) {
     controller.fight = null;
@@ -158,14 +174,19 @@ export function layers(controller) {
       shake: fight.shake,
       logScroll: fight.logScroll,
     });
+    const itemsOverFight = itemsPlan(controller);
     // The fight's own panel is what stands in the corner during a fight, and a tall
     // menu can rise past it.
-    const stamp = stampFor(viewport, [fightPlan.bounds, fightPlan.menu?.box].filter(Boolean));
+    const stamp = stampFor(
+      viewport,
+      [fightPlan.bounds, fightPlan.menu?.box, itemsOverFight?.bounds].filter(Boolean),
+    );
     return [
       { name: 'view', plan: buildViewPlan(corridorAhead(state), viewport) },
       { name: 'map', plan: null },
       { name: 'fight', plan: fightPlan },
       { name: 'party', plan: null },
+      { name: 'items', plan: itemsOverFight },
       {
         name: 'hud',
         plan: {
@@ -180,13 +201,16 @@ export function layers(controller) {
     ];
   }
   const sheet = partyPlan(controller);
-  // Nothing to walk toward while a prompt stands or the party screen is up, so the
-  // walking controls and the action bar go.
+  const items = itemsPlan(controller);
+  const screen = sheet ?? items;
+  // Nothing to walk toward while a prompt stands or a screen is up, so the walking
+  // controls and the action bar go.
   // @spec PRESENT-PARTY-006
-  const controls = state.pendingConfirmation || sheet
+  // @spec PRESENT-ITEMS-004
+  const controls = state.pendingConfirmation || screen
     ? []
     : controlsFor(viewport, { pressedRegion: controller.pressedRegion });
-  const stamp = stampFor(viewport, sheet ? [sheet.bounds] : controls);
+  const stamp = stampFor(viewport, screen ? [screen.bounds] : controls);
   // A question asked by the party screen is the view's own, about ending the campaign;
   // anything else on screen is the simulation's pending confirmation.
   const asking = controller.partyScreen?.confirming
@@ -198,6 +222,7 @@ export function layers(controller) {
     { name: 'map', plan: buildMapPlan(automapView(state), viewport, { expanded }) },
     { name: 'fight', plan: null },
     { name: 'party', plan: sheet },
+    { name: 'items', plan: items },
     // The prompt is read from the simulation's pending confirmation, so one can never
     // be shown for a confirmation that is not actually pending.
     {
@@ -353,6 +378,177 @@ function pressPointerOnPartyScreen(controller, px, py) {
   return false;
 }
 
+/** Whether the fight has its Items screen open. */
+const itemsInFight = (controller) => Boolean(controller.fight?.pending?.items);
+
+/** Whose page the Items screen is on, whichever way it was opened. */
+function itemsCharacter(controller) {
+  if (itemsInFight(controller)) return controller.fight.pending.characterId;
+  const party = partyOf(controller);
+  if (!controller.itemsScreen || !party) return null;
+  return roster(party)[pageFor(party, controller.itemsScreen.page)]?.id ?? null;
+}
+
+/** The open page, or nothing while the screen is shut. */
+function itemsPlan(controller) {
+  const party = partyOf(controller);
+  const characterId = itemsCharacter(controller);
+  if (!party || !characterId) return null;
+  const inFight = itemsInFight(controller);
+  return buildItemsPlan(party, controller.viewport, {
+    characterId,
+    page: controller.itemsScreen?.page ?? 0,
+    selected: controller.itemsScreen?.selected ?? 0,
+    inFight,
+  });
+}
+
+/**
+ * Open the Items screen on the first character. Like the party screen it changes
+ * nothing that is true, so the simulation is told only that a menu is up.
+ *
+ * @spec PRESENT-ITEMS-001
+ * @spec PRESENT-ITEMS-003
+ */
+function openItemsScreen(controller) {
+  const party = partyOf(controller);
+  if (controller.fight || controller.state.pendingConfirmation) return false;
+  if (!party || roster(party).length === 0) return false;
+  controller.itemsScreen = { page: 0, selected: 0 };
+  setMenuOpen(controller.state, true);
+  redraw(controller);
+  return true;
+}
+
+/**
+ * @spec PRESENT-ITEMS-002
+ * @spec PRESENT-ITEMS-014
+ */
+function closeItemsScreen(controller) {
+  if (itemsInFight(controller)) {
+    closeItems(controller.fight);
+    controller.itemsScreen = null;
+    redraw(controller);
+    return true;
+  }
+  controller.itemsScreen = null;
+  setMenuOpen(controller.state, false);
+  redraw(controller);
+  return true;
+}
+
+/**
+ * Turn to another character's page, wrapping at either end. The highlight stays where it
+ * was, kept within the rows the new page has.
+ *
+ * @spec PRESENT-ITEMS-005
+ * @spec PRESENT-ITEMS-021
+ */
+function showItemsPage(controller, page) {
+  if (itemsInFight(controller)) return false;
+  const party = partyOf(controller);
+  const count = roster(party).length;
+  controller.itemsScreen.page = pageFor(party, ((page % count) + count) % count);
+  const rows = itemRows(party, itemsCharacter(controller));
+  controller.itemsScreen.selected = clampRow(rows, controller.itemsScreen.selected);
+  redraw(controller);
+  return true;
+}
+
+/** @spec PRESENT-ITEMS-017 */
+function moveHighlight(controller, by) {
+  const rows = itemRows(partyOf(controller), itemsCharacter(controller));
+  const screen = controller.itemsScreen
+    ?? (controller.itemsScreen = { page: 0, selected: 0, fromFight: itemsInFight(controller) });
+  const next = clampRow(rows, (screen.selected ?? 0) + by);
+  if (next === screen.selected) return false;
+  screen.selected = next;
+  redraw(controller);
+  return true;
+}
+
+/**
+ * Press a row: put a pack item on, or take a worn one off. Out of a fight the change is
+ * a committed `ITEMS` action and the screen stays up; in a fight it is the turn, and the
+ * fight takes it from there.
+ *
+ * @spec PRESENT-ITEMS-008
+ * @spec PRESENT-ITEMS-009
+ * @spec PRESENT-ITEMS-010
+ * @spec PRESENT-ITEMS-011
+ * @spec PRESENT-ITEMS-012
+ * @spec PRESENT-ITEMS-015
+ * @spec PRESENT-ITEMS-016
+ * @spec PRESENT-ITEMS-021
+ */
+function pressItemRow(controller, index) {
+  const party = partyOf(controller);
+  const characterId = itemsCharacter(controller);
+  const row = itemRows(party, characterId)[index];
+  const inFight = itemsInFight(controller);
+  if (!row || !rowActs(row, character(party, characterId), { inFight })) return false;
+
+  const screen = controller.itemsScreen
+    ?? (controller.itemsScreen = { page: 0, selected: 0, fromFight: itemsInFight(controller) });
+  screen.selected = index;
+
+  if (inFight) {
+    if (!equipInFight(controller.fight, row.item)) return false;
+    controller.itemsScreen = null;
+    redraw(controller);
+    return true;
+  }
+
+  const changed = row.role === ItemsControl.PACK
+    ? equip(party, characterId, row.item)
+    : takeOff(party, characterId, row.slot);
+  if (!changed) return false;
+  perform(controller.state, { partyAction: PartyAction.ITEMS, commit: true });
+  screen.selected = clampRow(itemRows(party, characterId), screen.selected);
+  redraw(controller);
+  return true;
+}
+
+/**
+ * While the Items screen is up it owns the keyboard.
+ *
+ * @spec PRESENT-ITEMS-002
+ * @spec PRESENT-ITEMS-004
+ * @spec PRESENT-ITEMS-005
+ * @spec PRESENT-ITEMS-014
+ * @spec PRESENT-ITEMS-017
+ * @spec PRESENT-ITEMS-018
+ */
+function pressKeyOnItemsScreen(controller, key) {
+  if (keyIs(key, 'Escape', 'i')) return closeItemsScreen(controller);
+  if (keyIs(key, 'ArrowUp', 'w')) return moveHighlight(controller, -1);
+  if (keyIs(key, 'ArrowDown', 's')) return moveHighlight(controller, 1);
+  if (key === 'Enter' || key === ' ') {
+    const rows = itemRows(partyOf(controller), itemsCharacter(controller));
+    return pressItemRow(controller, clampRow(rows, controller.itemsScreen?.selected ?? 0));
+  }
+  if (itemsInFight(controller)) return false;
+
+  const { page } = controller.itemsScreen;
+  if (keyIs(key, 'ArrowRight', 'd')) return showItemsPage(controller, page + 1);
+  if (keyIs(key, 'ArrowLeft', 'a')) return showItemsPage(controller, page - 1);
+  const number = Number.parseInt(key, 10);
+  if (String(number) === key && number >= 1 && number <= roster(partyOf(controller)).length) {
+    return showItemsPage(controller, number - 1);
+  }
+  return false;
+}
+
+/** A press on the open screen: its own controls, and nothing beneath it. */
+function pressPointerOnItemsScreen(controller, px, py) {
+  const control = hit(itemsPlan(controller)?.controls, px, py);
+  if (!control) return false;
+  if (control.role === ItemsControl.CLOSE) return closeItemsScreen(controller);
+  if (control.role === ItemsControl.NEXT) return showItemsPage(controller, controller.itemsScreen.page + 1);
+  if (control.role === ItemsControl.PREVIOUS) return showItemsPage(controller, controller.itemsScreen.page - 1);
+  return pressItemRow(controller, control.index);
+}
+
 /**
  * Run an action and redraw only if it moved the world.
  *
@@ -372,6 +568,7 @@ function applyAction(controller, action) {
   }
   // So is the party screen: reading a character changes nothing about them.
   if (action.partyAction === PartyAction.PARTY) return openPartyScreen(controller);
+  if (action.partyAction === PartyAction.ITEMS) return openItemsScreen(controller);
 
   const before = stateSignature(controller.state);
   perform(controller.state, action);
@@ -420,6 +617,7 @@ function settleChoice(controller) {
  */
 function pressKeyInFight(controller, key) {
   const fight = controller.fight;
+  if (itemsInFight(controller)) return pressKeyOnItemsScreen(controller, key);
 
   if (fight.phase === FightPhase.ENDED) {
     // A wiped party begins again, which ends the campaign, so a stray Escape does not
@@ -478,6 +676,7 @@ export function pressKey(controller, key) {
     return false;
   }
   if (controller.partyScreen) return pressKeyOnPartyScreen(controller, key);
+  if (controller.itemsScreen) return pressKeyOnItemsScreen(controller, key);
   return applyAction(controller, actionForKey(key));
 }
 
@@ -507,6 +706,10 @@ function hit(controls, px, py) {
  */
 export function pressPointer(controller, px, py) {
   syncFight(controller);
+
+  if (controller.fight && itemsInFight(controller)) {
+    return pressPointerOnItemsScreen(controller, px, py);
+  }
 
   if (controller.fight) {
     const plan = layers(controller).find((l) => l.name === 'fight').plan;
@@ -552,6 +755,7 @@ export function pressPointer(controller, px, py) {
 
   // A tap outside the page lands on nothing: a stray thumb must not dismiss it.
   if (controller.partyScreen) return pressPointerOnPartyScreen(controller, px, py);
+  if (controller.itemsScreen) return pressPointerOnItemsScreen(controller, px, py);
 
   const region = hitTest(controller.viewport, px, py);
   if (!region) return false;

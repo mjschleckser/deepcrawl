@@ -9,7 +9,7 @@
  * it is the fight as the player perceives it, built from what each turn reported.
  */
 
-import { Condition, Skill, character, roster, totalLevel } from '../sim/party.js';
+import { Condition, Skill, character, packOf, roster, totalLevel } from '../sim/party.js';
 import { MIN_TAP_PX, ControlKind, uiScale, contentColumn } from './geometry.js';
 import {
   Action, Band, Outcome, attackTargets,
@@ -17,7 +17,7 @@ import {
   fleeCertainToFail, turnOrder, hitDamage,
 } from '../sim/combat.js';
 import { selectEnemyTarget } from '../sim/enemies.js';
-import { weaponOf } from '../sim/items.js';
+import { weaponOf, wieldableBy } from '../sim/items.js';
 
 export const FightPhase = { ACTING: 'ACTING', ENDED: 'ENDED' };
 
@@ -53,7 +53,7 @@ export const SHAKE_PIXELS = 5;
 export const FightAction = {
   ATTACK: 'ATTACK',
   MAGIC: 'MAGIC',
-  INVENTORY: 'INVENTORY',
+  ITEMS: 'ITEMS',
   FLEE: 'FLEE',
   PASS: 'PASS',
 };
@@ -69,7 +69,8 @@ export const FightAction = {
 export const OPTION_SLOTS = [
   { action: FightAction.ATTACK, label: 'Attack' },
   { action: FightAction.MAGIC, label: 'Magic' },
-  { action: FightAction.INVENTORY, label: 'Inventory' },
+  // @spec PRESENT-ITEMS-020
+  { action: FightAction.ITEMS, label: 'Items' },
   { action: FightAction.FLEE, label: 'Flee' },
 ];
 
@@ -656,10 +657,10 @@ function optionsFor(encounter, characterId) {
     [FightAction.ATTACK]: armed
       ? (standingFoes ? null : 'Nothing standing')
       : 'Nothing to swing',
-    // Spells and the pack wait on segments that do not exist. Both are drawn anyway:
-    // the row's shape is not a function of which systems happen to have landed.
+    // Spells wait on a segment that does not exist. Drawn anyway: the row's shape is
+    // not a function of which systems happen to have landed.
     [FightAction.MAGIC]: 'No spells',
-    [FightAction.INVENTORY]: 'Pack is empty',
+    [FightAction.ITEMS]: itemsReason(encounter, characterId),
     // Read from the same rule that resolves an attempt, so the button and the outcome
     // can never disagree about whether the way out is shut.
     // @spec COMBAT-TURN-005
@@ -674,6 +675,19 @@ function optionsFor(encounter, characterId) {
     const reason = availability[action] ?? null;
     return { action, label, available: reason === null, reason };
   });
+}
+
+/**
+ * Why this character has nothing to do on the Items screen, or null if they have. In a
+ * fight the screen only puts things on, so it is the pack that decides.
+ *
+ * @spec PRESENT-FIGHT-036
+ */
+function itemsReason(encounter, characterId) {
+  const pack = packOf(encounter.party);
+  if (pack.length === 0) return 'Pack is empty';
+  const who = character(encounter.party, characterId);
+  return pack.some((item) => wieldableBy(item, who?.characterClass)) ? null : 'Nothing to wield';
 }
 
 /**
@@ -800,6 +814,11 @@ function writeLog(fight, line) {
  */
 function resolveOne(fight, actorId, action) {
   const event = takeAction(fight.encounter, actorId, action);
+  // A change the party refused was never taken, and the turn is still waiting.
+  if (!event) return null;
+  if (event.action === Action.EQUIP) {
+    writeLog(fight, `${names(fight)[actorId]} takes up the ${action.item.name}.`);
+  }
   if (event && event.action === Action.ATTACK && event.targetId) {
     writeLog(fight, describeEvent(event, names(fight), event.targetId, event.felled === true));
     // The card that moves is the card that swung: nothing else in a fight moves, so a
@@ -934,6 +953,8 @@ export function advanceClock(fight, ms) {
  */
 export function chooseOption(fight, index) {
   if (fight.phase !== FightPhase.ACTING || !fight.pending) return false;
+  // The Items screen holds the input while it is up.
+  if (fight.pending.items) return false;
 
   const characterId = fight.pending.characterId;
 
@@ -967,6 +988,14 @@ export function chooseOption(fight, index) {
     return true;
   }
 
+  // Items opens the Items screen over the fight, on this character alone; nothing is
+  // spent until something is put on.
+  // @spec PRESENT-ITEMS-013
+  if (option.action === FightAction.ITEMS) {
+    fight.pending = { ...fight.pending, items: true, openedBy: index };
+    return true;
+  }
+
   const targets = targetsFor(fight.encounter, characterId, option.action);
   // Asked however few there are, so a press on Attack means the same thing on every turn.
   if (targets?.length > 0) {
@@ -989,7 +1018,7 @@ export function chooseOption(fight, index) {
  * @spec PRESENT-MENU-011
  */
 export function pressOption(fight, index) {
-  if (fight.phase !== FightPhase.ACTING || !fight.pending) return false;
+  if (fight.phase !== FightPhase.ACTING || !fight.pending || fight.pending.items) return false;
   if (!fight.pending.targets) return chooseOption(fight, index);
 
   if (!fight.pending.options[index]?.available) return false;
@@ -1013,6 +1042,30 @@ export function goBack(fight) {
     return true;
   }
   return false;
+}
+
+/**
+ * Put an item on from the Items screen, as this character's turn. A refused change
+ * leaves the screen open and the turn waiting.
+ *
+ * @spec PRESENT-ITEMS-015
+ * @spec COMBAT-ACTION-011
+ */
+export function equipInFight(fight, item) {
+  if (fight.phase !== FightPhase.ACTING || !fight.pending?.items) return false;
+  const event = resolveOne(fight, fight.pending.characterId, { kind: Action.EQUIP, item });
+  return Boolean(event);
+}
+
+/**
+ * Leave the Items screen with nothing spent.
+ *
+ * @spec PRESENT-ITEMS-014
+ */
+export function closeItems(fight) {
+  if (fight.phase !== FightPhase.ACTING || !fight.pending?.items) return false;
+  fight.pending = { ...fight.pending, items: false, openedBy: null };
+  return true;
 }
 
 /** @spec PRESENT-FIGHT-015 */

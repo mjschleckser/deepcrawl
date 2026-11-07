@@ -8,7 +8,7 @@
  */
 
 import {
-  Attribute, Condition, DEFAULT_ATTRIBUTES, applyDamage, character, roster,
+  Attribute, Condition, DEFAULT_ATTRIBUTES, applyDamage, character, equip, roster,
 } from './party.js';
 import { accuracyWith, armourOf, baseDamageWith, defenceOf } from './items.js';
 import { makeRng } from './rng.js';
@@ -17,7 +17,7 @@ export const Band = { MISS: 'MISS', GRAZE: 'GRAZE', HIT: 'HIT', CRIT: 'CRIT' };
 
 export const Action = {
   ATTACK: 'ATTACK', CAST: 'CAST', ABILITY: 'ABILITY',
-  SWAP: 'SWAP', PASS: 'PASS',
+  EQUIP: 'EQUIP', PASS: 'PASS',
 };
 
 export const Outcome = {
@@ -425,6 +425,15 @@ export function hitDamage(state, actorId, targetId) {
 export function takeAction(state, actorId, action) {
   const actor = combatants(state).find((c) => c.id === actorId);
   if (!actor) return null;
+
+  // Putting something on is the party's own operation, asked before the bar is touched:
+  // a change the party refuses was never an action, and costs nothing.
+  // @spec COMBAT-ACTION-011
+  // @spec COMBAT-ACTION-012
+  if (action.kind === Action.EQUIP) {
+    if (!character(state.party, actorId)) return null;
+    if (!equip(state.party, actorId, action.item, action.slot)) return null;
+  }
 
   state.readiness.set(actorId, readinessOf(state, actorId) - actionCost(action));
 

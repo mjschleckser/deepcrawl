@@ -2,8 +2,9 @@ import { describe, it, expect } from 'vitest';
 import { makeRng } from './rng.js';
 import {
   createParty, createCharacter, addCharacter, applyDamage, character,
-  Condition, CharacterClass, Skill, roster,
+  Condition, CharacterClass, Skill, roster, stow, packOf,
 } from './party.js';
+import { ItemKind, Slot, createItem } from './items.js';
 import {
   beginEncounter, takeAction, nextActor, attackBand, damageFor, actingOrder, readinessOf,
   attackTargets, allyTargets, attemptFlee, fleeCertainToFail, createEnemy,
@@ -516,6 +517,41 @@ describe('passing a turn', () => {
     // Nothing was struck, healed or otherwise touched.
     expect(state.enemies.members.find((e) => e.id === 'o1').hitPoints).toBe(foe);
     expect(character(state.party, 'a').hitPoints).toBe(character(state.party, 'a').maxHitPoints);
+  });
+});
+
+describe('changing equipment in a fight', () => {
+  const dagger = () => createItem({
+    id: 'dagger', name: 'Dagger', kind: ItemKind.WEAPON, slot: Slot.MAIN_HAND,
+    skill: Skill.BLADE, damage: 6, accuracy: 26,
+  });
+
+  // @spec COMBAT-ACTION-011
+  it('puts an item on from the pack through the party, and spends a full bar', () => {
+    const state = encounter({ members: [hero('a')], enemies: [orc('o1')] });
+    const blade = dagger();
+    stow(state.party, blade);
+    readyUp(state, 'a');
+
+    const event = takeAction(state, 'a', { kind: Action.EQUIP, item: blade });
+
+    expect(event.action).toBe(Action.EQUIP);
+    expect(character(state.party, 'a').equipment[Slot.MAIN_HAND]).toBe(blade);
+    expect(packOf(state.party)).toEqual([]);
+    expect(readinessOf(state, 'a')).toBe(0);
+  });
+
+  // @spec COMBAT-ACTION-012
+  it('spends nothing on a change the party refuses', () => {
+    const state = encounter({ members: [hero('a')], enemies: [orc('o1')] });
+    readyUp(state, 'a');
+
+    // Not in the pack, so not the party's to hand over.
+    const event = takeAction(state, 'a', { kind: Action.EQUIP, item: dagger() });
+
+    expect(event).toBeNull();
+    expect(readinessOf(state, 'a')).toBe(FULL_BAR);
+    expect(character(state.party, 'a').equipment[Slot.MAIN_HAND]).toBeUndefined();
   });
 });
 

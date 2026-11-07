@@ -170,10 +170,10 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-FIGHT-003**: The system shall draw a combatant who is down in the place they occupied in their column, rather than removing them from it.
 - [x] **PRESENT-FIGHT-004**: The system shall draw each combatant's remaining and maximum hit points.
 - [x] **PRESENT-FIGHT-005**: The system shall ask exactly one character for an action — the one whose readiness has filled — and shall ask nobody in advance of that.
-- [x] **PRESENT-FIGHT-006**: The system shall offer every character the same four options in the same order on every turn: Attack, Magic, Inventory, then Flee.
+- [x] **PRESENT-FIGHT-006**: The system shall offer every character the same four options in the same order on every turn: Attack, Magic, Items, then Flee.
 - [x] **PRESENT-FIGHT-034**: The system shall draw an option the acting character cannot take in its own place, marked unavailable, rather than omitting it or reordering the options around it.
 - [x] **PRESENT-FIGHT-035**: When the player presses an option marked unavailable, the system shall do nothing and shall report nothing.
-- [x] **PRESENT-FIGHT-036**: The system shall mark Attack unavailable when the character carries no attack or no combatant is standing to attack, Magic unavailable when the character can cast no spell, Inventory unavailable when no item can be used in a fight, and Flee unavailable when the simulation reports a flee attempt as certain to fail.
+- [x] **PRESENT-FIGHT-036**: The system shall mark Attack unavailable when the character carries no attack or no combatant is standing to attack, Magic unavailable when the character can cast no spell, Items unavailable when the pack holds no item that character may wield, and Flee unavailable when the simulation reports a flee attempt as certain to fail.
 - [x] **PRESENT-FIGHT-040**: The system shall draw on each unavailable option, beneath its name and in smaller text, a reason naming why it cannot be taken.
 - [x] **PRESENT-FIGHT-041**: The system shall draw an unavailable option's reason in the place an available option draws its key hint, and shall draw no key hint on an unavailable option.
 - [x] **PRESENT-FIGHT-042**: While every option is unavailable, the system shall draw a Pass turn control over the four, shall accept a press on it alone, and shall keep the four drawn beneath it.
@@ -218,6 +218,30 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-PARTY-022**: While that confirmation stands, when the player declines it, presses `Escape`, or closes the party screen, the system shall dismiss it and change nothing.
 - [x] **PRESENT-PARTY-023**: When the player confirms that question, the system shall begin a new campaign and close the party screen.
 
+## The Items screen
+
+- [x] **PRESENT-ITEMS-001**: When the player performs `ITEMS` during exploration while no prompt is pending and no screen is open, the system shall open the Items screen on the first character in the party's order.
+- [x] **PRESENT-ITEMS-002**: While the Items screen is open out of a fight, when the player performs `ITEMS`, presses `Escape`, or presses the screen's Close control, the system shall close it.
+- [x] **PRESENT-ITEMS-003**: The system shall hold whether the Items screen is open, which page it shows, and which row is highlighted as view state in the presentation layer, and shall mark exploration's menu open while it is open out of a fight.
+- [x] **PRESENT-ITEMS-004**: While the Items screen is open, the system shall discard every movement verb and every party action other than `ITEMS`, and shall draw neither the navigation zones nor the party action bar.
+- [x] **PRESENT-ITEMS-005**: The system shall draw the Items screen as one character's page at a time within the centred column, and out of a fight shall page it by the same controls and keys, with the same wrap-around, as the party screen.
+- [x] **PRESENT-ITEMS-006**: The system shall draw on an Items page the character's name, every equipment slot the items segment defines with the item in it or a mark that it is empty, and every item in the pack in the pack's order or a mark that the pack is empty.
+- [x] **PRESENT-ITEMS-007**: The system shall draw beneath every item on the Items screen its slot and the numbers it carries: a weapon's skill, damage and accuracy; an armour's skill and armour; a shield's defence.
+- [x] **PRESENT-ITEMS-008**: The system shall draw greyed, with the classes that may wield it in place of its numbers, every pack item the character on the page may not wield, and a press on it shall do nothing.
+- [x] **PRESENT-ITEMS-009**: When the player presses a pack item the character on the page may wield, the system shall equip it on that character through the party segment.
+- [x] **PRESENT-ITEMS-010**: Out of a fight, when the player presses a worn item, the system shall take it off that character into the pack through the party segment.
+- [x] **PRESENT-ITEMS-011**: Out of a fight, when an item is equipped or taken off on the Items screen, the system shall commit an `ITEMS` action to exploration and shall leave the screen open showing the result.
+- [x] **PRESENT-ITEMS-012**: The system shall draw an empty slot as a row that a press does nothing to.
+- [x] **PRESENT-ITEMS-013**: When the player presses Items in a fight while it is available, the system shall open the Items screen on the acting character's page alone, with no paging controls, over the fight.
+- [x] **PRESENT-ITEMS-014**: While the Items screen is open in a fight, when the player presses `I`, `Escape`, or the Close control, the system shall close it and return to the same character's turn having spent nothing.
+- [x] **PRESENT-ITEMS-015**: While the Items screen is open in a fight, when the player equips an item, the system shall take that change as the character's action, close the screen, and go on with the fight.
+- [x] **PRESENT-ITEMS-016**: While the Items screen is open in a fight, the system shall draw worn items as rows a press does nothing to.
+- [x] **PRESENT-ITEMS-017**: While the Items screen is open, when the player presses `W`, `S`, or the up or down arrow key, the system shall move the highlight to the previous or next row of worn items and pack items, stopping at either end.
+- [x] **PRESENT-ITEMS-018**: While the Items screen is open, when the player presses `Enter` or `Space`, the system shall press the highlighted row.
+- [x] **PRESENT-ITEMS-019**: While the Items screen is open, if the highlighted row would fall outside the page, then the system shall scroll the list of rows to bring it into view.
+- [x] **PRESENT-ITEMS-020**: The system shall name the screen, the action bar's control and the fight's option Items.
+- [x] **PRESENT-ITEMS-021**: When the Items screen shows a different page or the pack changes, the system shall keep the highlight within the rows there are.
+
 ## The save note
 
 - [x] **PRESENT-SAVE-001**: While the simulation reports that the campaign is not being saved, the system shall draw a short note saying so beside the build stamp.
@@ -230,5 +254,6 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [D] **PRESENT-VIEW-011**: The system shall draw walls, floors, and features with textures rather than flat fill.
 - [D] **PRESENT-INPUT-007**: When a step is blocked, the system shall give the player feedback that the way is barred.
 - [D] **PRESENT-FIGHT-016**: The system shall animate a resolving action rather than landing its effect in a single frame.
-- [D] **PRESENT-MENU-012**: When the player presses Magic or Inventory with something to choose from, the system shall offer the spells or items as a fight menu off that option's button, by the same rules as a menu of targets.
+- [D] **PRESENT-MENU-012**: When the player presses Magic with something to choose from, the system shall offer the spells as a fight menu off that option's button, by the same rules as a menu of targets.
+- [D] **PRESENT-ITEMS-022**: While the Items screen is open, the system shall let the player scroll a pack longer than the page by touch.
 - [D] **PRESENT-MENU-013**: When a chosen fight menu entry needs a further answer, the system shall replace the menu's entries with the next question rather than opening a second menu.

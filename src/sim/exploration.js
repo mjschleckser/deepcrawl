@@ -54,7 +54,7 @@ export const Verb = {
 
 export const PartyAction = {
   PARTY: 'PARTY',
-  INVENTORY: 'INVENTORY',
+  ITEMS: 'ITEMS',
   SPELLS: 'SPELLS',
   SEARCH: 'SEARCH',
   INTERACT: 'INTERACT',
@@ -318,8 +318,10 @@ function visiblePortal(state, floor, x, y, direction) {
  * @spec EXPLORE-CLOCK-009
  * @spec EXPLORE-BOUND-006
  */
-function advance(state, n) {
-  if (state.combatActive || state.menuOpen || n <= 0) return 0;
+function advance(state, n, { committed = false } = {}) {
+  // A menu stops the clock for looking, not for doing: what is committed from inside
+  // one, such as putting on armour, costs its tick like anything else.
+  if (state.combatActive || (state.menuOpen && !committed) || n <= 0) return 0;
   state._advanceTicks(n);
   state.hooks.onTick(n);
   return n;
@@ -640,7 +642,7 @@ function partyAction(state, action, commit) {
       };
       return { targets, events: [], confirmationRequired: state.pendingConfirmation };
     }
-    if (commit) advance(state, 1);
+    if (commit) advance(state, 1, { committed: true });
     return { targets, events: [] };
   }
 
@@ -656,7 +658,7 @@ function partyAction(state, action, commit) {
   }
 
   // The map has nothing to commit to, so it never costs a tick.
-  if (commit && action !== PartyAction.TOGGLE_MAP) advance(state, 1);
+  if (commit && action !== PartyAction.TOGGLE_MAP) advance(state, 1, { committed: true });
 
   return { events: [] };
 }

@@ -255,8 +255,20 @@ export function createCharacter({
   };
 }
 
+/** @spec ITEM-PACK-001 */
 export function createParty() {
-  return { members: [] };
+  return { members: [], pack: [] };
+}
+
+/**
+ * What the party carries and nobody is wearing, in the order it went in. A party built
+ * before the pack existed simply carries nothing.
+ *
+ * @spec ITEM-PACK-001
+ */
+export function packOf(party) {
+  party.pack ??= [];
+  return party.pack;
 }
 
 export function roster(party) {
@@ -477,38 +489,87 @@ export function changeClass(party, id, characterClass, { meetsRequirements }) {
 }
 
 /**
- * Put something in a character's slot, or empty one.
+ * Put something from the pack into a character's slot. Whatever held that slot goes into
+ * the pack in the same change, so an item is always somewhere and a swap is one decision.
  *
- * The party owns what sits where; the item owns whether it may. A refused equip
- * changes nothing at all, so the player is told no before anything moves rather than
- * discovering a mage in plate by its consequences.
+ * The party owns what sits where; the item owns whether it may. A refused equip changes
+ * nothing at all, so the player is told no before anything moves rather than
+ * discovering a mage in plate by its consequences. Condition is not asked: a body that
+ * cannot fight still carries a sword someone else can use.
  *
  * @spec PARTY-OP-003
+ * @spec PARTY-OP-005
  * @spec PARTY-CHAR-003
+ * @spec ITEM-PACK-002
+ * @spec ITEM-PACK-004
+ * @spec ITEM-PACK-005
  */
 export function equip(party, id, item, slot = item?.slot) {
   const c = character(party, id);
-  if (!c || !slot) return false;
+  if (!c || !item || !slot) return false;
 
-  // Handed nothing: the slot is emptied, which is always allowed.
-  if (!item) {
-    delete c.equipment[slot];
-    return true;
-  }
-
+  const pack = packOf(party);
+  const at = pack.indexOf(item);
+  if (at < 0) return false;
   if (!fitsSlot(item, slot)) return false;
   if (!wieldableBy(item, c.characterClass)) return false;
 
+  pack.splice(at, 1);
+  const displaced = c.equipment[slot];
+  if (displaced) pack.push(displaced);
   c.equipment[slot] = item;
   return true;
 }
 
-/** @spec PARTY-SAVE-001 */
-export function serializeParty(party) {
-  return { members: party.members.map((c) => ({ ...c, attributes: { ...c.attributes }, ranks: { ...c.ranks }, skillExperience: { ...c.skillExperience }, equipment: { ...c.equipment }, trainable: [...c.trainable] })) };
+/**
+ * Take what is in a slot off, into the pack.
+ *
+ * @spec PARTY-OP-005
+ * @spec PARTY-CHAR-003
+ * @spec ITEM-PACK-003
+ * @spec ITEM-PACK-005
+ */
+export function takeOff(party, id, slot) {
+  const c = character(party, id);
+  const item = c?.equipment[slot];
+  if (!item) return false;
+
+  delete c.equipment[slot];
+  packOf(party).push(item);
+  return true;
 }
 
-/** @spec PARTY-SAVE-002 */
+/**
+ * Put an item into the pack. How loot will reach the party, and how a test hands it
+ * something to equip.
+ *
+ * @spec PARTY-OP-005
+ * @spec ITEM-PACK-007
+ */
+export function stow(party, item) {
+  if (!item) return false;
+  packOf(party).push(item);
+  return true;
+}
+
+/**
+ * @spec PARTY-SAVE-001
+ * @spec PARTY-SAVE-003
+ */
+export function serializeParty(party) {
+  return {
+    members: party.members.map((c) => ({ ...c, attributes: { ...c.attributes }, ranks: { ...c.ranks }, skillExperience: { ...c.skillExperience }, equipment: { ...c.equipment }, trainable: [...c.trainable] })),
+    pack: packOf(party).map((item) => ({ ...item })),
+  };
+}
+
+/**
+ * @spec PARTY-SAVE-002
+ * @spec PARTY-SAVE-003
+ */
 export function restoreParty(saved) {
-  return { members: saved.members.map((c) => ({ ...c })) };
+  return {
+    members: saved.members.map((c) => ({ ...c })),
+    pack: (saved.pack ?? []).map((item) => ({ ...item })),
+  };
 }

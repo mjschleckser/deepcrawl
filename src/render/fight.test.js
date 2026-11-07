@@ -542,7 +542,7 @@ describe('the four a turn offers', () => {
       untilAsked(fight);
       if (!fight.pending) break;
       expect(fight.pending.options.map((o) => o.action)).toEqual([
-        FightAction.ATTACK, FightAction.MAGIC, FightAction.INVENTORY, FightAction.FLEE,
+        FightAction.ATTACK, FightAction.MAGIC, FightAction.ITEMS, FightAction.FLEE,
       ]);
       defend(fight);
     }
@@ -567,12 +567,12 @@ describe('the four a turn offers', () => {
   });
 
   // @spec PRESENT-FIGHT-036
-  it('greys Magic and Inventory, there being no spell and no pack yet', () => {
+  it('greys Magic, there being no spell, and Items while the pack is empty', () => {
     const fight = controller();
     untilAsked(fight);
 
     expect(slot(fight, FightAction.MAGIC).available).toBe(false);
-    expect(slot(fight, FightAction.INVENTORY).available).toBe(false);
+    expect(slot(fight, FightAction.ITEMS).available).toBe(false);
   });
 
   // @spec PRESENT-FIGHT-036

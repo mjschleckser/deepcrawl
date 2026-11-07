@@ -38,11 +38,13 @@ to flow if content is to be addable.
 | Slots | which slots exist, and what each admits | the party records what occupies them |
 | Wielding rules | whether this class may hold this item in this slot | the party's `equip` enforces the answer |
 | Derived combat numbers | how accuracy, defence and base damage are assembled | combat resolves the roll they feed |
+| The pack | what it holds, and what moving an item in or out of it means | the party holds it, beside the slots |
 | Loot, drops, affixes | — | a later segment; nothing here generates an item |
 
 Items are read by the party and by combat and read nothing back. The segment has no
-state of its own: a definition is a value, and the only mutable thing in play is which
-definition a character's slot points at, which belongs to the party.
+state of its own: a definition is a value, and the only mutable things in play are which
+definition a character's slot points at and what the pack holds, which belong to the
+party.
 
 ## What an Item Is
 
@@ -139,6 +141,38 @@ if the breastplate's file says thieves may; nothing infers permission from a cla
 skill table, because the skills a class *can train* and the gear it *may hold* are
 different questions and conflating them makes one unchangeable without the other.
 
+## The Pack
+
+**The pack is everything the party carries that nobody is wearing or wielding.** It
+belongs to the party as a whole rather than to any one character, so handing a sword from
+one character to another is taking it off one and putting it on the other, with the pack
+between them. Nobody's bag is full while somebody else's is empty, and nobody has to
+remember who is carrying what.
+
+**An item is always somewhere.** It sits in a character's slot or in the pack, and
+nothing moves it out of one without putting it in the other:
+
+| Change | What moves |
+|---|---|
+| Equip from the pack | the item leaves the pack for the slot it names; whatever was in that slot goes into the pack |
+| Take off | the item leaves the slot for the pack |
+
+A swap is one change, not two. Putting a mace in a hand that holds a sword is one decision
+and costs what one change costs, and the sword is in the pack afterwards rather than gone.
+
+**The pack refuses nothing on its own account.** Whether an item may go into a slot is
+the wielding rules below, asked of the item and the character exactly as they are for
+equipping anything; the pack adds no rule of its own. A dead or unconscious character's
+gear can be taken off and handed on, because a body that cannot fight still carries a
+sword someone else can use.
+
+**The pack has no limit yet.** While nothing generates an item, the most it can hold is
+what four characters can take off. A limit is a question about how much loot there is,
+and is decided with loot.
+
+**The pack holds the resolved item**, as a slot does, for the same reason: no registry
+to consult, and nothing that fails to resolve far from where it was written.
+
 ## Authoring
 
 Items are one file each under `src/game-data/items`, beside the combatants and read by
@@ -160,6 +194,9 @@ by name, as a combatant file is. A typo in content should fail where it was type
 | A missing weapon | The combatant's authored attack stands in | A bare-hands item every combatant silently equips; refusing to fight unarmed | An authored goblin has no armoury and should not need one; its attack *is* its natural weapon. A phantom item would have to be authored, owned and saved for every combatant alive. Refusing to fight unarmed turns a disarm into a softlock. |
 | Slots | Main hand, off hand, body | A fuller set with rings, cloak, head, feet; a weight-limited bag with no slots at all | A slot with nothing to put in it is empty space on a screen nobody has designed. A shield in the off hand is what makes a shield and a second weapon one decision. Slots can be added without moving anything, and will be when there is gear for them. |
 | Who may wield what | The item names its classes | The class names what it may hold; skill ranks implying permission | Content has to flow one way: adding a weapon must not mean editing four classes. Inferring permission from the skill table conflates what a class may *train* with what it may *hold*, and makes neither changeable alone. |
+| Where unequipped items go | One pack, shared by the party | A bag per character; items simply discarded when taken off | A bag per character turns handing over a sword into a bookkeeping errand and makes the player track who carries what. Discarding gear makes every swap irreversible, which punishes trying something. |
+| What a swap costs | One change: the displaced item goes to the pack | Taking off and putting on as two changes | Replacing one item with another is a single decision, and charging twice for it would make experimenting with gear cost double. |
+| A pack limit | None until loot exists | A slot count now | With nothing generated, the pack can only hold what the party already wears. A number chosen now answers a question nobody can yet ask. |
 | Where loot comes from | Nowhere yet: items are authored and held, never generated | Drop tables and affixes in this pass | Affixes are a balance design, and there is nothing tuned to balance them against while enemy damage is flat and the armour curve is unbuilt. Numbers invented before the thing they answer to are numbers invented twice. |
 
 ## Open Questions & Future Decisions
@@ -176,16 +213,19 @@ by name, as a combatant file is. A typo in content should fail where it was type
 8. ✅ **A character holds the resolved item**, not an identifier resolved later.
 9. ✅ **The three formulas live here**, and combat and the party both read them.
 10. ✅ **Nothing here generates an item**; loot, drops and affixes are a later segment.
+11. ✅ **One pack, shared by the party**, holds everything carried and not equipped.
+12. ✅ **An item is always in a slot or in the pack**, and a swap sends the displaced item to the pack as one change.
 
 ### Deferred
 
 1. **Loot, drops and affixes.** The HLD's items segment names generation within loot tables and affix rules. None of it exists: items are authored and given, never found. It wants floors tuned to drop against, which is a balance question and not a structural one.
 2. **More slots.** Rings, cloak, head and feet are slots with nothing to put in them. Adding one moves nothing already built.
-3. **Consumables and the pack.** A potion drunk mid-fight, and the party's shared bag, are what light the fight's *Inventory* option. They want a pack model, which nothing in the game holds yet.
+3. **Consumables.** A potion drunk mid-fight needs a kind of item that is used up rather than worn. The pack will hold it when it exists.
 4. **Two-handed weapons.** A weapon that claims the off hand as well as the main hand has nowhere to say so yet.
 5. **Weapon reach and exposure.** Combat removed rows on the promise that reach returns as a property of weapons and abilities. The property has no field here yet.
 6. **Encumbrance.** Nothing weighs anything, and nothing is slowed by what it carries.
 7. **Repair, durability and curses.** No item degrades, breaks, or refuses to be taken off.
+8. **A pack limit.** How much the party can carry is decided alongside loot, which is what would fill it.
 
 ## References
 

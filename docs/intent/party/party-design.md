@@ -34,7 +34,7 @@ action worth taking.
 | | Owned by the party | Owned elsewhere |
 |---|---|---|
 | Characters | attributes, skills, condition, class, total level | — |
-| Equipment | which item sits in which slot | items define what an item *is* |
+| Equipment | which item sits in which slot, and the pack the party carries the rest in | items define what an item *is*, and what moving one in or out of the pack means |
 | Skills | ranks, advancement, what is unlocked | combat resolves what an ability does |
 | Condition | the state machine and its transitions | combat and exploration cause transitions |
 | Attributes | the six scores | weapons decide which score they draw on |
@@ -269,7 +269,9 @@ segment writes a character field. The operations are few on purpose.
 | `applyDamage` | combat, traps | the floor at zero, and the slide into unconsciousness or death |
 | `applyHealing` | combat, exploration | the ceiling at maximum, and waking the unconscious |
 | `attemptRevival` | camp, town, a hired cleric, a consumed scroll | the condition chain, and degrading on failure |
-| `equip` | the player | slot rules, and what a class may wield |
+| `equip` | the player | slot rules, and what a class may wield; the item comes from the pack and whatever it displaces goes there |
+| `takeOff` | the player | the item goes to the pack |
+| `stow` | loot, and the authoring of a starting pack | the item goes to the pack |
 | `awardEncounter` | combat | the pot divided equally among skills used |
 | `trainSkill` | camp | the clock's cost, and what a class may train |
 | `changeClass` | town | requirements met, ranks kept |
