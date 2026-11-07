@@ -1,7 +1,6 @@
 import { fitsSlot, wieldableBy } from './items.js';
 /**
- * The party: characters, where they stand, what they can do, and what has happened to
- * them.
+ * The party: characters, what they can do, and what has happened to them.
  *
  * Both combat and exploration change character state, so neither writes it. Every
  * change comes through an operation here, which is what keeps the floor at zero, the
@@ -477,7 +476,6 @@ export function changeClass(party, id, characterClass, { meetsRequirements }) {
   return true;
 }
 
-/** @spec PARTY-SAVE-001 */
 /**
  * Put something in a character's slot, or empty one.
  *
@@ -505,6 +503,7 @@ export function equip(party, id, item, slot = item?.slot) {
   return true;
 }
 
+/** @spec PARTY-SAVE-001 */
 export function serializeParty(party) {
   return { members: party.members.map((c) => ({ ...c, attributes: { ...c.attributes }, ranks: { ...c.ranks }, skillExperience: { ...c.skillExperience }, equipment: { ...c.equipment }, trainable: [...c.trainable] })) };
 }

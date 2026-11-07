@@ -165,6 +165,18 @@ describe('prompt controls', () => {
     }
   });
 
+  // @spec PRESENT-PROMPT-006
+  it('says which way a staircase leads', () => {
+    const labels = (plan) => plan.controls.map((c) => c.label);
+    const up = buildPromptPlan({ kind: 'STAIRS', feature: 'STAIRS_UP' }, phone);
+    const down = buildPromptPlan({ kind: 'STAIRS', feature: 'STAIRS_DOWN' }, phone);
+
+    expect(up.text).toMatch(/up/);
+    expect(labels(up)).toContain('Climb');
+    expect(down.text).toMatch(/down/);
+    expect(labels(down)).toContain('Descend');
+  });
+
   // @spec PRESENT-PROMPT-002
   it('draws nothing at all when no confirmation is pending', () => {
     expect(buildPromptPlan(null, phone)).toBeNull();
@@ -202,12 +214,13 @@ describe('the outcome banner', () => {
 });
 
 describe('tapping a drawn control', () => {
-  function fightController(foes) {
+  function fightController(foes, prepare = () => {}) {
     const floor = createFloor({ id: 'f1', width: 7, height: 7 });
     const state = createExploration({
       floors: [floor], floorId: 'f1', tile: { x: 3, y: 3 }, facing: Direction.NORTH,
     });
     const { encounter } = fightOf(phone, foes);
+    prepare(encounter);
     const campaign = { encounter, state, concludeEncounter: () => { campaign.encounter = null; }, fleeEncounter: () => {} };
     const controller = createController({ state, campaign, viewport: phone, onDraw: vi.fn() });
     // These tests are about the controls that appear once somebody is being asked.
@@ -229,6 +242,23 @@ describe('tapping a drawn control', () => {
     expect(handled).toBe(true);
     // Choosing Attack moves on to asking whom.
     expect(controller.fight.pending.targets).not.toBeNull();
+  });
+
+  // @spec PRESENT-FIGHT-042
+  // @spec PRESENT-FIGHT-043
+  it('takes a press on Pass turn rather than on the greyed option beneath it', () => {
+    const { controller } = fightController(1, (encounter) => {
+      for (const c of encounter.party.members) c.attack = null;
+      for (const e of encounter.enemies.members) e.forbidsEscape = true;
+    });
+    const pass = layers(controller).find((l) => l.name === 'fight').plan.controls
+      .find((c) => c.role === 'PASS');
+    const taken = controller.fight.turnsTaken;
+
+    const handled = pressPointer(controller, pass.x + 10, pass.y + pass.height / 2);
+
+    expect(handled).toBe(true);
+    expect(controller.fight.turnsTaken).toBe(taken + 1);
   });
 
   // @spec PRESENT-FIGHT-033

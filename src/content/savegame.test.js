@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { makeRng } from '../sim/rng.js';
 import { actionForKey } from '../sim/input.js';
 import { perform, resolveConfirmation } from '../sim/exploration.js';
+import { TileFeature } from '../sim/floor.js';
 import { character, roster } from '../sim/party.js';
 import { readinessOf } from '../sim/combat.js';
 import {
@@ -226,6 +227,46 @@ describe('resuming', () => {
 
     expect(seen).toEqual([1, 2]);
     expect(migrated).toEqual({ version: 3, one: true, two: true });
+  });
+
+  /** A save as version 1 wrote it: a floor below the entrance built, no way back up. */
+  function versionOneSave() {
+    const campaign = createCampaign({ seed: 5 });
+    campaign.state.getFloor(campaign.plan.floors[1].id);
+    const saved = JSON.parse(encodeCampaign(campaign));
+    saved.version = 1;
+    for (const floor of saved.plan.floors) delete floor.up;
+    for (const floor of saved.exploration.floors) {
+      for (const tile of floor.tiles) {
+        if (tile.feature === TileFeature.STAIRS_UP) delete tile.target;
+      }
+    }
+    return saved;
+  }
+
+  const upstairs = (floor) => floor.tiles.find((t) => t.feature === TileFeature.STAIRS_UP);
+
+  // @spec SAVE-READ-005
+  // @spec GEN-PLAN-009
+  it('gives a version 1 save its ways back up, on built floors and on those still to come', () => {
+    const resumed = createCampaign({ saved: migrate(versionOneSave()) });
+    const [first, second, third] = resumed.plan.floors;
+
+    expect(upstairs(resumed.state.getFloor(first.id)).target).toBeUndefined();
+    expect(upstairs(resumed.state.getFloor(second.id)).target)
+      .toEqual({ floorId: first.id, arriveAt: 'STAIRS_DOWN' });
+    expect(upstairs(resumed.state.getFloor(third.id)).target)
+      .toEqual({ floorId: second.id, arriveAt: 'STAIRS_DOWN' });
+  });
+
+  // @spec SAVE-READ-005
+  it('drops a version 1 prompt over a staircase that still leads nowhere', () => {
+    const saved = versionOneSave();
+    saved.exploration.pendingConfirmation = {
+      kind: 'STAIRS', feature: TileFeature.STAIRS_UP, tile: { x: 1, y: 1 },
+    };
+
+    expect(migrate(saved).exploration.pendingConfirmation).toBeNull();
   });
 
   // @spec SAVE-READ-006

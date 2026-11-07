@@ -7,9 +7,9 @@ prefix: PARTY
 
 ## Context and Design Philosophy
 
-The party is the thing the player actually owns. Characters, what they can do, where
-they stand, and what has happened to them all live here — and because both combat and
-exploration change them, this segment is the only writer.
+The party is the thing the player actually owns. Characters, what they can do, and what
+has happened to them all live here — and because both combat and exploration change
+them, this segment is the only writer.
 
 Three principles shape the design.
 
@@ -292,8 +292,9 @@ luck. The rest are what stop a bad run becoming an unrecoverable spiral.
 
 The combatants a campaign starts with are **one JSON file each**, under
 `src/game-data/players`, beside the enemies in `src/game-data/enemies`. A file holds
-what a character is — name, class, attributes, ranks, hit points, attack — and nothing
-about where they came from.
+what a character is — name, class, attributes, ranks, attack, portrait, what they carry —
+and nothing about where they came from. Hit points are not in it: a classed character
+derives them from class and Constitution.
 
 This segment defines the shape; the files are content and belong to nobody's code. A
 party member and a goblin are authored the same way and read by the same loader, which
@@ -363,9 +364,8 @@ show what it cost.
 3. **Enemy pot values.** What an enemy is worth belongs with enemies, which authors it per roster entry. Only the first floor's roster is written.
 4. **Character creation.** How attributes are set at the start — rolled, allocated, or fixed by class — is unspecified.
 5. **The pot ceiling.** That the pot stops growing past a handful of distinct skills is settled; where the ceiling sits is content data and untuned.
-6. **Equipment slots.** Which slots exist, and what a class may wield, waits on the items segment.
-7. **Trainers and towns.** Class change and training need a place to happen; no town segment exists.
-8. **Carrying the dead.** A dead character is carried, but whether that costs the party anything — weight, speed, morale — is unaddressed.
+6. **Trainers and towns.** Class change and training need a place to happen; no town segment exists.
+7. **Carrying the dead.** A dead character is carried, but whether that costs the party anything — weight, speed, morale — is unaddressed.
 
 ## References
 

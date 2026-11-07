@@ -28,7 +28,8 @@ state, never two models that must be kept in step, so they cannot drift apart.
 **Nothing is real-time, so nothing redraws on a clock.** The world advances only when
 the player acts. A renderer looping at sixty frames a second would burn a phone
 battery redrawing an unchanged corridor. Presentation redraws when an action changes
-the state, and otherwise does nothing at all.
+the state, and otherwise does nothing at all, the one exception being a fight playing
+out a pause or a judder.
 
 **The simulation cannot tell who is playing.** Keyboard and touch resolve to the same
 action vocabulary before anything reaches the simulation. No code below this layer
@@ -50,13 +51,15 @@ Anything that would survive a change of renderer belongs on the left.
 
 ## Scene Structure
 
-One PixiJS application, three layers, drawn in order:
+One PixiJS application, five layers, drawn in order:
 
 ```
 stage
 ├── viewLayer    the first-person corridor, filling the screen
 ├── mapLayer     the automap widget, a corner overlay, expandable
-└── hudLayer     prompts and touch controls
+├── fightLayer   the fight panel and the turn strip, while an encounter runs
+├── partyLayer   the party screen, while it is open
+└── hudLayer     prompts, touch controls, the build stamp and the save note
 ```
 
 Each layer is rebuilt from state by its own draw function. No layer keeps a retained
@@ -128,16 +131,17 @@ shown and nothing else.
 - Walls, doors, and secret doors the party has found are distinguished by stroke, and
   a door shows whether it stands open: closed, it bars the edge; open, it leaves the
   gap the party walked through between its two posts.
-- Known traps carry a mark; stairs and pits carry their own.
+- Known traps carry a mark; stairs carry a square and pits a ring.
 - The party is a triangle pointing the way it faces.
 - Enemies appear only where exploration reports them, which is only where the party
   can presently see them, and are drawn as a creature mark rather than a dot, so one is
   not read as a trap or as the party. Every enemy shares that mark; telling a goblin
   from a mage on the map is authoring nobody has done.
 
-Tapping or pressing the map key expands the widget to fill the screen; the same input
-collapses it. Expanded, it is the same drawing at a larger scale — not a different
-map with different rules.
+The widget sits in the top-left corner and its Map control in the top-right, so the
+control's panel hides none of the map. Tapping the control or pressing the map key
+expands the widget to fill the screen; the same input collapses it. Expanded, it is the
+same drawing at a larger scale — not a different map with different rules.
 
 ## Input
 
@@ -155,12 +159,13 @@ viewport, not pixels, so they hold their proportions on any screen:
 
 ```
 ┌─────────────────────────────────┐
-│ ◀    ┌───────────────┐    ▶  ┌─┐│ ← automap widget
-│ turn │  step forward │ turn  │▓││
-│ left │               │ right └─┘│
-│      ├───────────────┤          │
-│      │   step back   │          │
-│      └───────────────┘          │
+│┌─┐                         [Map]│ ← automap widget, and its control
+││▓│ ┌───────────────┐            │
+│└─┘ │  step forward │            │
+│ ◀  │               │  ▶         │
+│turn├───────────────┤ turn       │
+│left│   step back   │ right      │
+│    └───────────────┘            │
 │  ┌────┬────┬────┬────┬────┐     │
 │  │part│pack│spel│srch│ use│     │ ← party action bar
 │  └────┴────┴────┴────┴────┘     │
@@ -216,19 +221,19 @@ top of it.
 
 ```
 ┌───────────────────────────────────────────────────────────────────┐
-│  [[B]] [A] [R] [B] [I] [C] [A] [T]                                │ ← the turn order
+│  [[B]] [T] [G] [I] [B] [G] [T] [W]                                │ ← the turn order
 │                  ╔═════════════════════╗                          │ ← the corridor,
 │                  ║                     ║                          │   still there
 ├───────────────────────────────────────────────────────────────────┤
 │  ┌──┐ Goblin      Lv 6     ┌──┐ Bram         Lv 41                │
 │  └──┘ ████████ 9/9         └──┘ █████░░░ 14/20                    │
-│  ┌──┐ Goblin      Lv 6     ┌──┐ Rook         Lv 38                │
+│  ┌──┐ Goblin      Lv 6     ┌──┐ Tam          Lv 38                │
 │  └──┘ ████░░░░ 4/9         └──┘ ████████ 20/20                    │
 │  ┌──┐ Goblin      down     ┌──┐ Isolde       Lv 33                │
 │  └──┘ ░░░░░░░░ 0/9         └──┘ ████████ 20/20                    │
 │         ↑ enemies, left            ↑ the party, right             │
 ├───────────────────────────────────────────────────────────────────┤
-│ Rook grazes Goblin for 3.                                         │
+│ Wren grazes Goblin for 3.                                         │
 │ Goblin hits Bram for 6.                                           │ ← the log
 │ Tam crits Goblin for 14. Goblin falls.                            │
 ├───────────────────────────────────────────────────────────────────┤
@@ -323,9 +328,8 @@ or below the thumb pages back and forward.
 
 **It follows the fight until the player takes it back.** New lines keep the view at the
 bottom, so a player who is not scrolling always sees the newest line; once they scroll
-up, it stays where they put it until they return to the bottom, because a log that
-yanked itself back to the newest line mid-read would be unreadable exactly when it was
-wanted.
+up, the same lines stay in view until they return to the bottom, because a log that
+moved under them mid-read would be unreadable exactly when it was wanted.
 
 Somebody who is down keeps their place in the column, drawn spent and dimmed. The shape
 of a side that has lost its middle is information, and a column that closed its gaps
@@ -563,9 +567,10 @@ and that is what an option with no tap target amounts to on a phone.
 
 ### Ending
 
-An outcome is drawn as a banner over the fight: what happened, and what it was worth.
-The player dismisses it, and combat gives way to the corridor again — or, on a defeat, to
-a new campaign.
+A victory or a defeat is drawn as a banner over the fight: what happened, and what it was
+worth. The player dismisses it, and combat gives way to the corridor again — or, on a
+defeat, to a new campaign. An escape has nothing to report and nothing to dismiss, so the
+corridor comes back the moment it succeeds.
 
 ## The Party Screen
 
@@ -673,7 +678,8 @@ the normal input mapping until it is answered; the answer goes back to the simul
 and the normal mapping resumes.
 
 A prompt is drawn from the pending confirmation the simulation is holding, so a prompt
-can never be shown for a confirmation that is not actually pending.
+can never be shown for a confirmation that is not actually pending. A staircase's prompt
+says which way it leads: *Descend* on the way down, *Climb* on the way up.
 
 ## Beginning Again
 
@@ -718,12 +724,13 @@ drawing.
 
 The stamp never sits on top of a control. Where the controls reach that corner it moves
 above them, because it is information for the player who goes looking for it and
-furniture for everyone else.
+furniture for everyone else. The party screen, which would otherwise fill the screen,
+stops short of the foot of it to leave the stamp its corner.
 
 ## Redraw Discipline
 
-The Pixi ticker is stopped. Presentation renders once at startup and thereafter only
-when something has changed:
+The Pixi ticker is stopped outside a fight that is playing. Presentation renders once at
+startup and thereafter only when something has changed:
 
 - an action was performed
 - a prompt was answered
@@ -777,13 +784,6 @@ changes, because the chrome slides in and out as the player scrolls or taps. Dev
 safe areas — a notch, a home indicator — are excluded on the same principle: they are
 screen the player can see but the game cannot have.
 
-## The Starter Floor
-
-Dungeon generation does not exist yet, so the app boots onto a hand-authored floor
-held as data — a small layout with corridors, a room, a door, a secret door, and a
-staircase, enough to exercise every drawing path. It is scaffolding with a known
-expiry: when generation lands, the starter floor is deleted rather than migrated.
-
 ## Decisions & Alternatives
 
 | Decision | Chosen | Alternatives Considered | Rationale |
@@ -809,7 +809,7 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 | Turning about | A key, but no control of its own | A movement zone of its own, beside the step and turn zones | Two taps of a turn the player already uses reach it. A control earns its place by being the only way to do something or by being worth the room; this is neither. |
 | Labels | Name the action, with any key hint as secondary text | Naming the key that triggers it | "[Enter] Descend" instructs a phone player to press a key they do not have. One drawing has to serve both without telling either to use the other's device. |
 | Hit regions | Computed in the plan, beside the drawing they belong to | Registered as handlers on the drawn objects | Keeping them together means what is drawn and what is tapped cannot drift apart, and it keeps hit-testing in the pure layer where it can be tested. |
-| Combat over the corridor | Drawn on top of the first-person view, which stays visible | Replacing the view with a combat screen | The party is still standing in the passage they were caught in, and seeing it is part of knowing how bad this is. A separate screen would also throw away the light and the place. |
+| Combat over the corridor | Drawn on top of the first-person view, which stays visible | Replacing the view with a combat screen | The party is still standing in the passage they were caught in, and seeing it is part of knowing how bad this is. A separate screen would also throw away the place. |
 | How a side is arranged | Enemies in one column on the left, the party in one on the right | Two ranks a side, as the rows once were; one combined list ordered by readiness | A column is the honest shape of a side with no positions in it, and it holds two combatants or twelve without changing shape. Facing columns keep *us* and *them* answerable without reading a single name. A list ordered by readiness would reorder itself under the player's eye on every beat, which is the one thing a display being read under pressure must not do. |
 | What a combatant is drawn as | A portrait, then two stacked bars: identity, hit points | Three bars with readiness on top; a single card whose fill is readiness | Two filled bars side by side on one card are easy to mistake for one another on a phone, and hit points are the one that must never be misread. With the order of acting drawn once at the top, a card has only two questions left to answer. |
 | How the order of acting is drawn | A strip of the next turns along the top of the screen, one tile per turn | A readiness bar on each card; a list inside the fight panel | A strip answers *who is next* in one look, in one place, instead of asking the player to compare a bar on every card. The top of the screen is free during a fight, so the strip costs the panel nothing. Fixing its length keeps it the same shape all fight. |
@@ -842,7 +842,6 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 | Skill progress | A bar of experience toward the next rank under every rank | The rank alone | Progression is spread across skills by a pot split equally, and a bare rank hides which skills a fight is about to pay off. The share is the party segment's to compute, so the screen cannot drift from the rule it shows. |
 | Skills a class cannot train | Drawn, marked as no longer advancing | Hidden; drawn like any other | Hiding them understates a character who changed class, and drawing them plainly promises progress that will never come. |
 | The build stamp | Drawn in the corner of the running game, as a build number taken from the commit count | A version on an about screen; no version at all; a build date; a version and commit hash, `MAJOR.MINOR.PATCH+SHA` | "It does not work" and "you are looking at a cached build" are the same report without it, and a service worker makes the second common. Taking the number from the commit count means nobody has to remember to raise it, and it orders correctly by construction. A hash names the exact source but cannot be read as newer or older, and it buries the one digit that changes. |
-| Starter floor | Hand-authored data, deleted when generation lands | Waiting for dungeon generation; generating a floor here | The segment cannot be seen to work without a floor to walk, and building a generator inside the presentation segment would put it in the wrong place permanently. |
 
 ## Open Questions & Future Decisions
 
@@ -877,16 +876,15 @@ expiry: when generation lands, the starter floor is deleted rather than migrated
 27. ✅ **The prompt names who is ready to act**, and is absent while nothing waits on the player.
 28. ✅ **Prompts are drawn from the simulation's pending confirmation**, never from the renderer's own flag.
 29. ✅ **The build number is drawn in the bottom-left corner**, taken from the commit count and fixed at build time.
-30. ✅ **A hand-authored starter floor** stands in until dungeon generation exists.
-31. ✅ **The party screen is one character a page**, read-only, opened and closed by `PARTY`, holding the input and stopping the clock while open.
-32. ✅ **A skill on the party screen shows its rank and its progress toward the next**, the share computed by the party segment.
+30. ✅ **The party screen is one character a page**, read-only, opened and closed by `PARTY`, holding the input and stopping the clock while open.
+31. ✅ **A skill on the party screen shows its rank and its progress toward the next**, the share computed by the party segment.
 
 ### Deferred
 
 1. **Animation in a fight.** An action lands in one frame, and the only motion is the attacker's judder. Real animation — a blow that travels, a spell that reads as a spell — is unbuilt, and would want the ticker running throughout a fight rather than only between actions. The pause, the shake, and the ticker's bounds are settled; everything past them is not.
 2. **Art.** Everything is flat-shaded polygons. Textures, sprites for doors and stairs, and any sense of material are unaddressed.
 3. **Animation between steps.** A step currently cuts from one position to the next. Whether it should slide, and how that squares with a stopped ticker, is open — an animation is the one thing in this segment that would need time.
-4. **The pack and spell screens.** `INVENTORY` and `SPELLS` are drawn on the action bar but open nothing: they route to inventory and an ability set that are unbuilt. Changing anything about a character — equipping, using an item — waits on the same work, which is why the party screen is read-only.
+4. **The pack and spell screens.** `INVENTORY` and `SPELLS` are drawn on the action bar but open nothing: they route to inventory and an ability set that are unbuilt. Changing anything about a character — equipping, using an item — waits on the same work, which is why the party screen is read-only. `SEARCH` is drawn the same way and does nothing yet, waiting on the traps and secret doors it would find.
 5. **Expanded-map interaction.** Panning and zooming an expanded map, and whether tapping a tile does anything, are unspecified. Auto-travel is already deferred in exploration.
 6. **Wide-screen framing.** On a very wide desktop window the corridor frames may want letterboxing rather than stretching; untested.
 7. **Accessibility.** Keyboard focus, screen-reader description of the map, and colour-blind-safe stroke distinctions are unaddressed.

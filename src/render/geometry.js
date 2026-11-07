@@ -86,6 +86,16 @@ const STAMP_SIZE = 9;
 const STAMP_CHAR_RATIO = 0.62;
 
 /**
+ * How much of the foot of the screen the stamp needs, for anything that would otherwise
+ * fill the screen and leave it nowhere to stand.
+ *
+ * @spec PRESENT-BUILD-002
+ */
+export function stampRoom(scale) {
+  return (STAMP_PAD * 2 + STAMP_SIZE) * scale;
+}
+
+/**
  * Where the build's version sits: the bottom-left corner, unless something is already
  * there. The stamp is what moves, because everything else in that corner is something
  * the player is trying to press.

@@ -372,25 +372,38 @@ describe('walking back through the log', () => {
   });
 
   // @spec PRESENT-FIGHT-031
-  it('goes back no further than the fight goes, and no further forward than now', () => {
-    const fight = logged(6);
+  it('goes back no further than a full window of the oldest lines, and no further forward than now', () => {
+    const fight = logged(8);
 
     scrollLog(fight, 500);
-    expect(fight.logScroll).toBe(5);
+    const oldest = buildFightPlan(fight.encounter, viewport, {
+      phase: fight.phase, log: fight.log, logScroll: fight.logScroll,
+    }).log;
+    expect(oldest[0]).toBe('line 1');
+    // Nothing is left to unwind: the first turn back moves what is on the screen.
+    expect(scrollLog(fight, -1)).toBe(true);
+    expect(buildFightPlan(fight.encounter, viewport, {
+      phase: fight.phase, log: fight.log, logScroll: fight.logScroll,
+    }).log[0]).toBe('line 2');
 
     scrollLog(fight, -500);
     expect(fight.logScroll).toBe(0);
   });
 
-  // @spec PRESENT-FIGHT-032
-  it('holds where the player left it as the fight goes on', () => {
+  // @spec PRESENT-FIGHT-031
+  it('holds the lines in view where the player left them as the fight goes on', () => {
     const fight = logged(30);
     scrollLog(fight, 6);
+    const inView = () => buildFightPlan(fight.encounter, viewport, {
+      phase: fight.phase, log: fight.log, logScroll: fight.logScroll,
+    }).log;
+    const before = inView();
 
     untilAsked(fight);
     defend(fight);
 
-    expect(fight.logScroll).toBe(6);
+    expect(fight.log.length).toBeGreaterThan(30);
+    expect(inView()).toEqual(before);
   });
 
   // @spec PRESENT-FIGHT-032
@@ -712,6 +725,20 @@ describe('a turn with nothing in it', () => {
     untilAsked(fight);
     return fight;
   }
+
+  // @spec PRESENT-FIGHT-036
+  // @spec ITEM-HOLD-001
+  it('offers Attack to a character holding a weapon, whatever they were authored with', () => {
+    const encounter = fightState();
+    for (const c of roster(encounter.party)) {
+      c.attack = null;
+      c.equipment.MAIN_HAND = mace;
+    }
+    const fight = createFightController({ encounter, viewport, onDraw: vi.fn() });
+    untilAsked(fight);
+
+    expect(slot(fight, FightAction.ATTACK).available).toBe(true);
+  });
 
   // @spec PRESENT-FIGHT-042
   it('offers Pass turn when every option is unavailable', () => {
@@ -1614,6 +1641,25 @@ describe('the pace of a fight', () => {
     advanceClock(fight, BEAT_MS - 1);
 
     expect(fight.encounter.beats).toBe(beats);
+  });
+
+  // @spec PRESENT-READY-018
+  // @spec PRESENT-SCENE-011
+  it('finishes the judder of the blow that ended the fight, under its banner', () => {
+    const fight = controller({
+      enemies: [createEnemy({ id: 'g1', name: 'Goblin', maxHitPoints: 1, potValue: 14 })],
+    });
+    for (let i = 0; i < 100 && fight.phase === FightPhase.ACTING; i++) {
+      untilAsked(fight);
+      if (fight.pending) defend(fight);
+    }
+    expect(fight.phase).toBe(FightPhase.ENDED);
+
+    expect(fightIsPlaying(fight)).toBe(true);
+    advanceClock(fight, BEAT_MS);
+
+    expect(fight.shakingId).toBeNull();
+    expect(fightIsPlaying(fight)).toBe(false);
   });
 
   // @spec PRESENT-READY-018

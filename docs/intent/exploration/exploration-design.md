@@ -59,8 +59,8 @@ Edge kinds:
 - `lockedDoor` — a door that cannot be opened without the matching key
 - `secretDoor` — indistinguishable from `wall` until discovered; a door thereafter
 
-Doors carry an **open** flag alongside their kind. Generation may open some doors at
-creation; otherwise a door opens when the party steps through it. An open door stays
+Doors carry an **open** flag alongside their kind. Every door starts closed and opens
+when the party steps through it. An open door stays
 open while the party is on the floor, but the re-stocking applied on a return visit may
 have closed it again (see *Returning to a Floor*). A closed door blocks sight as well
 as movement, so the party cannot map a room before entering it.
@@ -95,9 +95,9 @@ this segment computes depth by arithmetic on a floor id.
 
 A connector names its destination floor and an **arrival rule** rather than a
 destination tile, because the floor it points at may not have been built yet. Stairs
-down arrive at the destination's upward staircase, so a descent can be retraced; a pit
-drops the party into a room chosen on the destination, with no way back from where they
-land.
+down arrive at the destination's upward staircase, and that staircase leads back to the
+one that was descended, so a descent can be retraced; a pit drops the party into a room
+chosen on the destination, with no way back from where they land.
 
 Connectors are directional and paired only when both directions exist: a `pit`
 drops the party to a target floor with no return connector at the landing tile.
@@ -107,13 +107,20 @@ tile, with no say in the matter. Stairs ask: attempting to step onto a staircase
 raises a confirmation. Confirming takes the connector; **declining completes the step
 onto the staircase's own tile**, costing the tick that step costs and resolving its
 effects like any other. A staircase is therefore a tile like any other to walk over,
-and never a connector taken by accident.
+and never a connector taken by accident. A door standing in the way opens before the
+question is asked, because the step is already under way whichever answer comes.
 
 Declining has to leave the party *on* the staircase rather than in front of it,
 because a staircase that cannot be crossed is a wall with a prompt on it: a floor that
 puts one in a corridor seals off everything beyond it. A party standing on a
-staircase — having declined it, or having been dropped there by a pit, which does not
-chain — is simply standing on it, and takes it with an `INTERACT`.
+staircase — having declined it, having arrived on it, or having been dropped there by a
+pit, which does not chain — is simply standing on it, and takes it with an `INTERACT`,
+which asks the same question. Declining that one changes nothing, there being no step
+left to finish.
+
+**A staircase with nowhere to go asks nothing.** The stairs up on the entrance lead out
+of the dungeon, and nothing lies out there yet, so they name no destination and are
+walked like any other tile.
 
 ## The Clock
 
@@ -491,8 +498,8 @@ every action stays *achievable* by touch, not that each has a button of its own.
 | `INVENTORY` — use and equip items | `I` | pack icon | loot and items |
 | `SPELLS` — out-of-combat magic | `C` | spell icon | abilities |
 | `SEARCH` — look for traps and secret doors | `F` | search control | traps |
-| `INTERACT` — dungeon features on the current tile | `E` | prompt on the view | varies by feature |
-| `TOGGLE_MAP` — open the automap | `M` | automap widget | exploration |
+| `INTERACT` — dungeon features on the current tile | `E` | use control | varies by feature; a staircase is exploration's own |
+| `TOGGLE_MAP` — open the automap | `M` | map control | exploration |
 
 Exploration owns none of these but `TOGGLE_MAP`: it routes each to the segment that
 owns it and charges the clock. **Opening a party action costs nothing; committing to
@@ -505,17 +512,19 @@ the tile, and working the lever each cost a tick.
 
 ```
 ┌─────────────────────────────────┐
-│ ◀    ┌───────────────┐    ▶  ┌─┐│ ← automap widget
-│ turn │  step forward │ turn  │▓││   (tap to expand)
-│ left │               │ right └─┘│
-│      ├───────────────┤          │
-│      │   step back   │          │
-│      └───────────────┘          │
+│┌─┐                         [Map]│ ← automap, and the control
+││▓│ ┌───────────────┐            │   that expands it
+│└─┘ │  step forward │            │
+│ ◀  │               │  ▶         │
+│turn├───────────────┤ turn       │
+│left│   step back   │ right      │
+│    └───────────────┘            │
 └─────────────────────────────────┘
 ```
 
-Tap regions overlay the first-person view and are sized for thumbs; the automap
-widget occupies a corner and expands to full screen on tap.
+Tap regions overlay the first-person view and are sized for thumbs. The automap
+occupies one top corner and its control the other, so the control hides none of the
+map; tapping the control expands the map to full screen.
 
 ## Decisions & Alternatives
 
@@ -536,7 +545,7 @@ widget occupies a corner and expands to full screen on tap.
 | Lines through a corner point | Blocked only when both ways around the corner are blocked | Blocked when either way is blocked | A solid corner is blocked both ways and stays hidden. Blocking on either side would throw spurious shadows across open rooms, where a player can plainly see past the edge of a pillar. |
 | Sight shape | Forward-quadrant cast, 45° either side of facing | Straight-line corridor cast; full 360° radius | A straight line maps open rooms one file at a time and looks broken. A full circle would show what the party is not looking at. |
 | Discovery trigger | Sight reaches the tile | Standing on the tile | Mapping a room by walking every tile in it is tedious, and the first-person view already shows what sight-based discovery records. |
-| Doors and sight | A closed door is opaque and impassable; it opens by being stepped through, and some start open | Doors transparent when closed; opening as its own action costing a tick | Seeing through closed doors would let the party map a room without entering it. Charging a tick to open would make every doorway a toll. |
+| Doors and sight | A closed door is opaque and impassable; it opens by being stepped through | Doors transparent when closed; opening as its own action costing a tick | Seeing through closed doors would let the party map a room without entering it. Charging a tick to open would make every doorway a toll. |
 | Combat and time | Combat advances no ticks | Combat ticking per round | A long fight already costs resources. Charging time as well would punish the same encounter twice. |
 | Roamers on the automap | Shown within the sight distance where nothing opaque stands between | Distance alone; last-known position; always shown | A persistent marker would give away where a warband is without the party having looked. Distance alone is not sight either: it ignores walls, so it would show a goblin on the far side of solid stone. |
 | Sight distance | A fixed four tiles, seeing everything within it | Carried light that burns down and sets the range; a range that differs by tile; sight stopped only by walls | A burning light asks the player to manage a timer whose only answer is carrying more torches, and dim tiles decide whether the dungeon is visible at all rather than posing a choice. Four is the distance a roamer notices the party from, so neither side outsees the other. Unbounded sight would map a room in one look and leave nothing to walk for. |
@@ -570,7 +579,7 @@ widget occupies a corner and expands to full screen on tap.
 10. ✅ **Party actions open free and commit for a tick.** Exploration routes them and charges the clock; the owning segments hold the rules.
 11. ✅ **Sight is a true 90° cone** — 45° either side of facing.
 12. ✅ **Visibility is a traced line** from the party to each candidate tile; sight does not go round corners.
-13. ✅ **Closed doors are opaque**, so a room cannot be mapped before it is entered. Some doors start open; the rest open by being stepped through.
+13. ✅ **Closed doors are opaque**, so a room cannot be mapped before it is entered. Every door starts closed and opens by being stepped through.
 14. ✅ **Sight never reveals an undiscovered secret door** — that is the search mechanic's job alone.
 15. ✅ **Discovery is by sight**, cast into the forward quadrant out to four tiles.
 16. ✅ **Roamers appear within the sight distance where nothing opaque stands between them and the party**, whether or not they fall inside the sight cast.
@@ -588,12 +597,12 @@ widget occupies a corner and expands to full screen on tap.
 
 ### Deferred
 
-1. **Re-stocking magnitude.** How far enemies move, which rooms refill, and how many ticks of absence separate a slight rearrangement from a thorough one are all untuned. The trigger and the inputs are settled; the curve is not.
+1. **Re-stocking magnitude.** How far enemies move, which rooms refill, and how many ticks of absence separate a slight rearrangement from a thorough one are all untuned. The trigger and the inputs are settled; the curve is not. A re-stocking replaces a floor's roamers today and does not yet open or close its doors.
 2. **Skill-dependent sight.** The party sees four tiles, and enemies within it. Party skill was raised as a future modifier on that range; the mechanism is unspecified.
 3. **Auto-travel** — tap a discovered automap tile and walk there. Must interrupt on encounter or trap. Not in v1.
 4. **Player map annotations** — Etrian-style notes and icons. Out of scope.
 5. **Hunger stages and effects** — this segment supplies the tick only; thresholds and consequences belong to the hunger segment.
-6. **Keys and locked doors** — `lockedDoor` names a matching key, but whether keys are per-door ids, a keyring, or a generic unlock is the items segment's decision.
+6. **Keys and locked doors** — `lockedDoor` names a matching key, but whether keys are per-door ids, a keyring, or a generic unlock is the items segment's decision. No key exists yet, so a generated locked door names none and opens like any other door.
 7. **Spinners and teleporters** — tile features that defeat mapping. Deferred; the edge and feature model accommodates them unchanged.
 8. **Other adventuring parties** in the dungeon. Noted as a future inhabitant of the same floor model.
 9. **Standing still is free and safe.** Because roamers move only on party ticks, a stationary party is never approached. Whether idling should carry a cost is an open design question.

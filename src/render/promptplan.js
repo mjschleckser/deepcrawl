@@ -10,6 +10,7 @@ import { MIN_TAP_PX, ControlKind } from './geometry.js';
 
 const PROMPTS = {
   STAIRS: { text: 'A staircase leads down.', confirm: 'Descend', decline: 'Stay' },
+  STAIRS_UP: { text: 'A staircase leads up.', confirm: 'Climb', decline: 'Stay' },
   NEW_CAMPAIGN: { text: 'Abandon this campaign?', confirm: 'Abandon', decline: 'Keep playing' },
 };
 
@@ -19,6 +20,7 @@ const DEFAULT_PROMPT = { text: 'Are you sure?', confirm: 'Yes', decline: 'No' };
  * @spec PRESENT-PROMPT-001
  * @spec PRESENT-PROMPT-002
  * @spec PRESENT-PROMPT-005
+ * @spec PRESENT-PROMPT-006
  * @spec PRESENT-CTRL-002
  * @spec PRESENT-CTRL-003
  * @spec PRESENT-CTRL-004
@@ -26,7 +28,7 @@ const DEFAULT_PROMPT = { text: 'Are you sure?', confirm: 'Yes', decline: 'No' };
 export function buildPromptPlan(pending, viewport) {
   if (!pending) return null;
 
-  const wording = PROMPTS[pending.kind] ?? DEFAULT_PROMPT;
+  const wording = PROMPTS[pending.feature] ?? PROMPTS[pending.kind] ?? DEFAULT_PROMPT;
   const width = Math.min(viewport.width * 0.88, 440);
   const height = 150;
   const x = (viewport.width - width) / 2;

@@ -503,6 +503,75 @@ describe('stairs', () => {
     expect(partyPosition(state).tile).toEqual({ x: 1, y: 0 });
   });
 
+  // @spec EXPLORE-MOVE-007
+  it('opens a door between the party and a staircase, whichever way the prompt is answered', () => {
+    for (const accepted of [true, false]) {
+      const { upper, lower } = stairSetup();
+      setEdge(upper, 1, 1, Direction.NORTH, EdgeKind.DOOR);
+      const state = exploration([upper, lower]);
+
+      perform(state, { verb: Verb.STEP_FORWARD });
+      expect(isEdgeOpen(upper, 1, 1, Direction.NORTH)).toBe(true);
+
+      resolveConfirmation(state, accepted);
+      expect(isEdgeOpen(upper, 1, 1, Direction.NORTH)).toBe(true);
+    }
+  });
+
+  // @spec EXPLORE-MOVE-022
+  it('walks onto a staircase that leads nowhere without asking', () => {
+    const floor = openFloor();
+    setTileFeature(floor, 1, 0, TileFeature.STAIRS_UP);
+    const state = exploration([floor]);
+    const before = tickCount(state);
+
+    const result = perform(state, { verb: Verb.STEP_FORWARD });
+
+    expect(result.confirmationRequired).toBeUndefined();
+    expect(state.pendingConfirmation).toBeNull();
+    expect(partyPosition(state).tile).toEqual({ x: 1, y: 0 });
+    expect(tickCount(state)).toBeGreaterThan(before);
+  });
+
+  // @spec EXPLORE-MOVE-023
+  it('asks before taking the staircase underfoot, and takes it on a yes', () => {
+    const { upper, lower } = stairSetup();
+    const state = exploration([upper, lower], { tile: { x: 1, y: 0 } });
+
+    const result = perform(state, { partyAction: PartyAction.INTERACT });
+    expect(result.confirmationRequired).toEqual(expect.objectContaining({ kind: 'STAIRS' }));
+    expect(partyPosition(state).floorId).toBe('upper');
+
+    resolveConfirmation(state, true);
+    expect(partyPosition(state).floorId).toBe('lower');
+  });
+
+  // @spec EXPLORE-MOVE-023
+  it('leaves the party as it was when the staircase underfoot is declined', () => {
+    const { upper, lower } = stairSetup();
+    const state = exploration([upper, lower], { tile: { x: 1, y: 0 } });
+    const before = tickCount(state);
+
+    perform(state, { partyAction: PartyAction.INTERACT });
+    const result = resolveConfirmation(state, false);
+
+    expect(result.events).toEqual([]);
+    expect(state.pendingConfirmation).toBeNull();
+    expect(partyPosition(state).tile).toEqual({ x: 1, y: 0 });
+    expect(tickCount(state)).toBe(before);
+  });
+
+  // @spec EXPLORE-MOVE-023
+  it('has nothing to ask of a staircase underfoot that leads nowhere', () => {
+    const floor = openFloor();
+    setTileFeature(floor, 1, 1, TileFeature.STAIRS_UP);
+    const state = exploration([floor]);
+
+    perform(state, { partyAction: PartyAction.INTERACT });
+
+    expect(state.pendingConfirmation).toBeNull();
+  });
+
   // @spec EXPLORE-MOVE-018
   it('offers the staircase it is standing on after declining it', () => {
     const { upper, lower } = stairSetup();

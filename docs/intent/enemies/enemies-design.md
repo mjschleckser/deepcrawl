@@ -51,8 +51,7 @@ status — can be given to a monster without new machinery.
 | `attributes` | the same six a character has |
 | `ranks` | skill ranks, which are also what its total level is summed from |
 | `maxHitPoints` | authored rather than derived from a class |
-| `attack` | base damage and accuracy, until weapons exist to carry them |
-| `defence` | what it takes to land a blow on it |
+| `attack` | its natural weapon: the skill it trains, base damage and accuracy |
 | `armour` | what a landed blow is reduced by |
 | `potValue` | what defeating it is worth in skill experience |
 | `forbidsEscape` | whether a party can flee from it |
@@ -98,10 +97,11 @@ than of arithmetic. Every one of them can be reached at any time, so which to sp
 turn on is the whole decision: the mage is the danger, the bodies are the damage, and
 nothing protects either.
 
-An enemy carries **defence** and **armour** as separate numbers, exactly as a character
-does: defence decides whether a blow lands, armour decides what it is worth. A goblin
-is easy to hit and lightly protected; something in plate later will be the reverse of
-one and not the other.
+An enemy has **defence** and **armour** as separate numbers, exactly as a character
+does: defence decides whether a blow lands, armour decides what it is worth. Defence is
+assembled from its Dexterity by the formula a character's is, so it is not authored;
+armour is. A goblin is easy to hit and lightly protected; something in plate later will
+be the reverse of one and not the other.
 
 ### What an enemy is worth
 

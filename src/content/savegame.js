@@ -6,17 +6,61 @@
  */
 
 import { createCampaign } from './campaign.js';
+import { ArrivalRule } from '../sim/generation.js';
+import { TileFeature } from '../sim/floor.js';
 
 export const SAVE_KEY = 'deepcrawl.save';
 
 /** The schema a save is written in. Raise it, and add a migration, when the shape changes. */
-export const SAVE_FORMAT = 1;
+export const SAVE_FORMAT = 2;
 
 /** How long a change waits, so a run of steps becomes one write. */
 export const WRITE_DELAY_MS = 1000;
 
+/**
+ * Version 1 laid stairs up that named no destination. Each is pointed back at the floor
+ * whose stairs lead down to it, in the plan and on every floor already built. A prompt
+ * left standing over one that still leads nowhere has nothing left to ask.
+ */
+function addWaysBack(save) {
+  const above = new Map();
+  for (const floor of save.plan.floors) {
+    for (const link of floor.links) {
+      if (link.via === TileFeature.STAIRS_DOWN) above.set(link.toFloorId, floor.id);
+    }
+  }
+  const upFrom = (id) => (above.has(id)
+    ? { toFloorId: above.get(id), arriveAt: ArrivalRule.STAIRS_DOWN }
+    : null);
+  const targetFrom = (id) => {
+    const up = upFrom(id);
+    return up ? { floorId: up.toFloorId, arriveAt: up.arriveAt } : undefined;
+  };
+
+  const { exploration } = save;
+  const pending = exploration.pendingConfirmation;
+  const destination = pending?.target ?? targetFrom(exploration.party.floorId);
+
+  return {
+    ...save,
+    plan: { ...save.plan, floors: save.plan.floors.map((f) => ({ ...f, up: upFrom(f.id) })) },
+    exploration: {
+      ...exploration,
+      pendingConfirmation: pending && destination ? { ...pending, target: destination } : null,
+      floors: exploration.floors.map((floor) => ({
+        ...floor,
+        tiles: floor.tiles.map((tile) => (
+          tile.feature === TileFeature.STAIRS_UP && !tile.target && above.has(floor.id)
+            ? { ...tile, target: targetFrom(floor.id) }
+            : tile
+        )),
+      })),
+    },
+  };
+}
+
 /** Each step takes a save from the version it is keyed by to the next. */
-const MIGRATIONS = {};
+const MIGRATIONS = { 1: addWaysBack };
 
 /** @spec SAVE-READ-005 */
 export function migrate(save, migrations = MIGRATIONS, current = SAVE_FORMAT) {

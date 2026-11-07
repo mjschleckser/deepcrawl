@@ -383,13 +383,6 @@ function applyAction(controller, action) {
   return true;
 }
 
-/**
- * @spec PRESENT-INPUT-001
- * @spec PRESENT-INPUT-003
- * @spec PRESENT-PROMPT-003
- * @spec PRESENT-PROMPT-004
- * @spec PRESENT-PROMPT-005
- */
 const within = (box, px, py) =>
   px >= box.x && px <= box.x + box.width && py >= box.y && py <= box.y + box.height;
 
@@ -466,6 +459,13 @@ function pressKeyInFight(controller, key) {
   return settleChoice(controller);
 }
 
+/**
+ * @spec PRESENT-INPUT-001
+ * @spec PRESENT-INPUT-003
+ * @spec PRESENT-PROMPT-003
+ * @spec PRESENT-PROMPT-004
+ * @spec PRESENT-PROMPT-005
+ */
 export function pressKey(controller, key) {
   syncFight(controller);
   if (controller.fight) return pressKeyInFight(controller, key);
@@ -482,13 +482,18 @@ export function pressKey(controller, key) {
 }
 
 /**
+ * The control a press landed on. Later controls are drawn over earlier ones, so the
+ * last one under the finger is the one it touched: a Pass turn control covers the four
+ * greyed options beneath it, and they must not answer in its place.
+ *
  * @spec PRESENT-INPUT-002
  * @spec PRESENT-INPUT-003
  * @spec PRESENT-INPUT-006
  * @spec PRESENT-PROMPT-003
+ * @spec PRESENT-FIGHT-042
  */
 function hit(controls, px, py) {
-  return (controls ?? []).find(
+  return [...(controls ?? [])].reverse().find(
     (c) => px >= c.x && px <= c.x + c.width && py >= c.y && py <= c.y + c.height,
   ) ?? null;
 }

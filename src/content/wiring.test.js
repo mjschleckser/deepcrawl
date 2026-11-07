@@ -302,12 +302,10 @@ describe('re-stocking a floor', () => {
     }
   });
 
-  // @spec EXPLORE-RETURN-004
   // @spec EXPLORE-RETURN-005
   // @spec EXPLORE-RETURN-006
   // @spec EXPLORE-RETURN-009
   // @spec GEN-STOCK-001
-  // @spec GEN-STOCK-002
   it('refills the occupants while leaving the map and its traps alone', () => {
     const campaign = booted();
     const state = campaign.state;

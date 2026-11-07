@@ -16,9 +16,9 @@ are fed into, never the numbers.
 ## Character state
 
 - [x] **PARTY-CHAR-001**: The system shall give every character the six attributes: Might, Constitution, Dexterity, Intellect, Perception, and Resolve.
-- [ ] **PARTY-CHAR-003**: The system shall change a character's hit points, condition, class, equipment, or skill ranks only through a party operation, whichever segment asked.
+- [x] **PARTY-CHAR-003**: The system shall change a character's hit points, condition, class, equipment, or skill ranks only through a party operation, whichever segment asked.
 - [x] **PARTY-CHAR-004**: The system shall give every character a class, and shall record their equipment as the item occupying each slot.
-- [x] **PARTY-CHAR-006**: The system shall set a classed character's maximum hit points from their class's base multiplied by one twentieth of their Constitution above ten, and shall not change it as they advance.
+- [x] **PARTY-CHAR-006**: The system shall set a classed character's maximum hit points from their class's base, moved one twentieth for each point of Constitution above or below ten, and shall not change it as they advance.
 - [x] **PARTY-CHAR-009**: The system shall report a character's total level as the sum of their skill ranks.
 - [x] **PARTY-CHAR-010**: The system shall derive total level whenever it is asked for rather than storing it, so that it changes exactly when a rank changes.
 - [x] **PARTY-CHAR-011**: The system shall report the total level of anything holding skill ranks by the same summation, whether it belongs to the party or to an enemy group.

@@ -61,8 +61,7 @@ export function noticeRange() {
 }
 
 /**
- * Build a group from a template, placing each member in its preferred row while there
- * is space.
+ * Build a group from a template: a count drawn for each entry, up to the limit.
  *
  * @spec ENEMY-BAND-001
  * @spec ENEMY-BAND-002

@@ -2,8 +2,8 @@
  * Wiring a campaign.
  *
  * This is the composition root: the one place that knows generation, exploration,
- * enemies, combat, and the party all exist. Every segment reaches its neighbours
- * through a hook handed to it here, and none of them import each other.
+ * enemies, combat, and the party all exist. What exploration sets off is answered by
+ * hooks handed to it here, so it never reaches into the segments that live off its clock.
  */
 
 import { makeRng } from '../sim/rng.js';
@@ -94,6 +94,7 @@ export function createCampaign({ seed = Date.now() >>> 0, saved = null } = {}) {
       archetype: descriptor.archetype,
       depthLabel: descriptor.depthLabel,
       links: descriptor.links,
+      up: descriptor.up,
     });
     const stocked = stockFloor(floor);
     if (campaign.state) campaign.state.roamers.push(...stocked);
@@ -171,12 +172,10 @@ export function createCampaign({ seed = Date.now() >>> 0, saved = null } = {}) {
    * Re-stocking answers with occupants and nothing else: no edge, no feature, no trap,
    * and never a word about what the party has discovered.
    *
-   * @spec EXPLORE-RETURN-004
    * @spec EXPLORE-RETURN-005
    * @spec EXPLORE-RETURN-006
    * @spec EXPLORE-RETURN-009
    * @spec GEN-STOCK-001
-   * @spec GEN-STOCK-002
    */
   function restockFloor(floorId, elapsed) {
     const state = campaign.state;

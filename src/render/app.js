@@ -103,7 +103,14 @@ function drawMap(container, plan) {
     if (cell.trapKnown) {
       graphics.circle(cell.px + size / 2, cell.py + size / 2, size * 0.18).fill(PALETTE.map.trap);
     }
-    if (cell.feature !== TileFeature.NONE) {
+    // A staircase is something to walk to and a pit is something to walk round, so
+    // they are not one mark: a square for the one, a ring for the other.
+    // @spec PRESENT-MAP-008
+    if (cell.feature === TileFeature.PIT) {
+      graphics
+        .circle(cell.px + size / 2, cell.py + size / 2, size * 0.3)
+        .stroke({ width: Math.max(1, size * 0.14), color: PALETTE.map.door });
+    } else if (cell.feature !== TileFeature.NONE) {
       graphics
         .rect(cell.px + size * 0.3, cell.py + size * 0.3, size * 0.4, size * 0.4)
         .fill(PALETTE.map.door);
@@ -799,7 +806,7 @@ function drawParty(container, plan) {
     const slot = put(e.label, text, FIGHT_COLOURS.dim, e.box.x, e.box.y);
     slot.y = middle(e.box, slot);
     const item = label(e.item ?? '—', text, e.item ? FIGHT_COLOURS.text : FIGHT_COLOURS.dim);
-    item.x = e.box.x + e.box.width * 0.4;
+    item.x = e.box.x + e.box.width * 0.28;
     item.y = middle(e.box, item);
     container.addChild(item);
   }

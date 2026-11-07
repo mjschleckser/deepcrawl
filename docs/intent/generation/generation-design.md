@@ -78,20 +78,20 @@ Each room is a rectangle of tiles whose interior edges are opened.
 
 ### 3. Corridors
 
-Sibling regions are joined by carving a corridor between their rooms. Because the
-split is a tree and every sibling pair is joined, the result is connected by
-construction — there is no pass that checks connectivity and repairs it, because there
-is no way for the floor to come out disconnected.
+Each room is joined to the next by carving a corridor between them. Because the rooms
+form one chain, the result is connected by construction — there is no pass that checks
+connectivity and repairs it, because there is no way for the floor to come out
+disconnected.
 
 A corridor runs in two straight legs, turning once. Which leg comes first is drawn from
 the seed, so corridors do not all elbow the same way.
 
 ### 4. Loops
 
-A tree of corridors means exactly one route between any two points, which makes a floor
+A chain of corridors means exactly one route between any two points, which makes a floor
 tedious to navigate and trivial to map. A number of extra connections drawn from the
-archetype are carved between regions that are near each other but not siblings, giving
-the floor loops and alternative routes.
+archetype are carved between rooms chosen from the seed, giving the floor loops and
+alternative routes.
 
 ### 5. Doors
 
@@ -110,8 +110,8 @@ is the sole way into somewhere is not a secret, it is a wall the party never get
 
 ### 6. Connectors and traps
 
-Stairs and pits are placed on floor tiles away from doorways, so a connector is never
-the tile a party is forced to cross.
+Stairs and pits are placed on room tiles away from doorways, on neither side of one, so
+a connector is never the tile a party is forced to cross.
 
 **No two ways down share a room.** A floor may hold several descents — that is what
 makes the dungeon a graph rather than a stack — but finding one has to be worth
@@ -124,7 +124,7 @@ The way back up is not bound by this. It is a fixed point every floor must have 
 arrival to resolve, and a landing that also holds a way onward is a legitimate room
 rather than a degenerate one.
 
-Traps are laid within the archetype's budget, weighted toward corridors and doorways.
+Traps are laid within the archetype's budget, on room tiles nothing else has claimed.
 
 ## Archetypes
 
@@ -148,7 +148,8 @@ needed hand-placed detail to produce a good floor would have failed at its job.
 
 Floors form a graph, so something has to decide the graph before any floor is built.
 The plan is generated first: a set of floor descriptors, each with an id, an archetype,
-a depth label, and the ids of the floors its connectors lead to.
+a depth label, the ids of the floors its connectors lead to, and the floor its stairs up
+lead back to. The entrance has no floor above it, so its stairs up name no destination.
 
 The plan is generated from the campaign seed and is small enough to hold entirely.
 Floors themselves are built lazily — a floor is generated the first time the party
@@ -178,11 +179,13 @@ exists:
 | Rule | Arrives at | Used by |
 |---|---|---|
 | `STAIRS_UP` | the destination's matching upward staircase | stairs down |
+| `STAIRS_DOWN` | the destination's downward staircase to the floor being left | stairs up |
 | `RANDOM_ROOM` | a tile drawn from any room on the destination | pits, and later teleports |
 
-Descending a staircase therefore lands the party on the staircase back up, which is
-what makes a descent retraceable. Falling down a pit lands them somewhere unknown
-with no way back, which is what makes a pit a hazard rather than a shortcut.
+Descending a staircase therefore lands the party on the staircase back up, and climbing
+it lands them on the staircase they came down, which is what makes a descent
+retraceable. Falling down a pit lands them somewhere unknown with no way back, which is
+what makes a pit a hazard rather than a shortcut.
 
 Every floor holds at least one upward staircase, so `STAIRS_UP` can always be resolved.
 
@@ -206,7 +209,7 @@ not converge on one arrangement.
 | Two ways down | Each descent claims a room of its own | Any free room tile, several descents per room allowed; one descent per floor | Several ways down is what makes the dungeon a graph, but two of them in one room collapses the choice into a tile the player picks without exploring for it. Restricting to one per floor would throw away the branching instead of protecting it. |
 | Randomness | A seeded generator passed explicitly into every call | A module-level generator; `Math.random` | The HLD makes reproducibility a falsification signal. An explicit generator also lets a test assert a property across a thousand seeds, which is the only way a generator can be meaningfully tested. |
 | Room placement | Recursive splitting, one room per leaf region | Scattering rooms and rejecting overlaps; cellular automata caves | A split cannot overlap, so there is no rejection loop that can fail or run long on an unlucky seed. Caves suit a different genre; this one wants rooms and corridors. |
-| Connectivity | Guaranteed by construction, joining sibling regions | Generating freely, then detecting and repairing disconnection | A repair pass is a second generator with its own failure modes. A floor that cannot come out disconnected needs no check. |
+| Connectivity | Guaranteed by construction, joining the rooms in one chain | Generating freely, then detecting and repairing disconnection | A repair pass is a second generator with its own failure modes. A floor that cannot come out disconnected needs no check. |
 | Loops | Extra connections drawn from the archetype | Leaving the corridor tree as-is | One route between any two points makes a floor tedious and trivially mapped. Loops are what make a map worth drawing. |
 | Secret doors | Only on loop connections, and never the last open route into a region | Anywhere; loop connections without the further check | Restricting to loops is not enough on its own — two loops into the same region could both turn secret and seal it again. The invariant is that every region keeps a route in that is neither secret nor locked. |
 | Room count | A target the generator approaches, not a contract | Failing when an archetype cannot be satisfied | An archetype asking for more rooms than a floor can hold should give a smaller floor, not an error. Generation has no good way to refuse. |
@@ -238,7 +241,7 @@ not converge on one arrangement.
 1. **Themed floors.** Archetypes currently bound quantities, not character — no crypts that differ from caverns in anything but numbers.
 2. **Set pieces.** A hand-authored room dropped into a generated floor — a boss chamber, a vault — has no mechanism.
 3. **Loot placement.** Generation places traps and connectors but nothing worth carrying; the loot segment does not exist.
-4. **Re-stocking density.** Generation asks the enemies segment which bands refill a room and reports them with their positions. How many a room is worth, and how that scales with the floor's tier, is untuned.
+4. **Re-stocking density.** Generation asks the enemies segment which bands refill a room and reports them with their positions. How many a room is worth, and how that scales with the floor's tier, is untuned. A re-stocking draws from the campaign's own generator today; deriving it from the floor's seed and a counter is not built.
 5. **Archetype progression.** Nothing decides which archetype a floor at a given depth should use, or how a campaign escalates.
 6. **Floor size versus drawn depth.** A long straight corridor beyond the maximum drawn depth is invisible past its limit; whether archetypes should avoid sightlines that long is untested.
 

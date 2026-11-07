@@ -381,6 +381,34 @@ describe('placement', () => {
     }
   });
 
+  // @spec GEN-PLACE-002
+  it('keeps every connector off both tiles of a doorway, and still places them all', () => {
+    const step = {
+      [Direction.NORTH]: [0, -1], [Direction.EAST]: [1, 0],
+      [Direction.SOUTH]: [0, 1], [Direction.WEST]: [-1, 0],
+    };
+    const inRoom = (floor, x, y) => floor.rooms.some(
+      (r) => x >= r.x && x < r.x + r.width && y >= r.y && y < r.y + r.height,
+    );
+
+    for (const seed of seeds(60)) {
+      for (const d of generatePlan({ seed }).floors) {
+        const floor = generateFloor({ id: d.id, seed: d.seed, archetype: ARCH, links: d.links });
+        expect(waysDown(floor).length).toBe(d.links.length);
+
+        for (let y = 0; y < floor.height; y++) {
+          for (let x = 0; x < floor.width; x++) {
+            if (getTile(floor, x, y).feature === TileFeature.NONE) continue;
+            for (const [direction, [dx, dy]] of Object.entries(step)) {
+              if (getEdge(floor, x, y, direction) === EdgeKind.WALL) continue;
+              expect(inRoom(floor, x + dx, y + dy)).toBe(inRoom(floor, x, y));
+            }
+          }
+        }
+      }
+    }
+  });
+
   // @spec GEN-PLACE-003
   it('lays traps within the archetype budget', () => {
     for (const seed of seeds(20)) {
@@ -395,6 +423,22 @@ describe('the dungeon plan', () => {
   // @spec GEN-SEED-004
   it('produces an identical plan for the same campaign seed', () => {
     expect(generatePlan({ seed: 808 })).toEqual(generatePlan({ seed: 808 }));
+  });
+
+  // @spec GEN-PLAN-009
+  it('leads every floor but the entrance back up the way the party came', () => {
+    const plan = generatePlan({ seed: 808 });
+    const upstairs = (d) => generateFloor({ id: d.id, seed: d.seed, links: d.links, up: d.up })
+      .tiles.find((t) => t.feature === TileFeature.STAIRS_UP);
+
+    expect(plan.floors[0].up).toBeNull();
+    expect(upstairs(plan.floors[0]).target).toBeUndefined();
+
+    for (let i = 1; i < plan.floors.length; i++) {
+      expect(upstairs(plan.floors[i]).target).toEqual({
+        floorId: plan.floors[i - 1].id, arriveAt: ArrivalRule.STAIRS_DOWN,
+      });
+    }
   });
 
   // @spec GEN-PLAN-001

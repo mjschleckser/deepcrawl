@@ -4,7 +4,7 @@ import {
   trainSkill, totalLevel, CharacterClass, Skill, Condition, RANK_CAP,
 } from '../sim/party.js';
 import { ItemKind, Slot, createItem } from '../sim/items.js';
-import { MIN_TAP_PX, contentColumn } from './geometry.js';
+import { MIN_TAP_PX, contentColumn, uiScale, versionStamp } from './geometry.js';
 import { buildPartyPlan, PartyControl } from './partyplan.js';
 
 const phone = { width: 390, height: 780 };
@@ -34,6 +34,30 @@ const inside = (inner, outer) =>
   && inner.y + inner.height <= outer.y + outer.height + 0.5;
 
 describe('the party screen page', () => {
+  // @spec PRESENT-BUILD-002
+  it('leaves the foot of the screen to the build stamp', () => {
+    for (const viewport of [phone, desktop]) {
+      const { bounds } = buildPartyPlan(fourOf(), viewport, { page: 0 });
+
+      const stamp = versionStamp({
+        viewport, controls: [bounds], text: 'Build 999', scale: uiScale(viewport),
+      });
+
+      expect(stamp.y).toBeGreaterThanOrEqual(bounds.y + bounds.height);
+      expect(stamp.y + stamp.size).toBeLessThanOrEqual(viewport.height);
+    }
+  });
+
+  // @spec PRESENT-PARTY-020
+  it('keeps New campaign to the side the equipment rows leave empty', () => {
+    const short = { width: 390, height: 560 };
+    const plan = buildPartyPlan(fourOf(), short, { page: 0 });
+    const control = plan.controls.find((c) => c.role === PartyControl.NEW_CAMPAIGN);
+
+    expect(control.x).toBeGreaterThan(plan.bounds.x + plan.bounds.width / 2);
+    expect(inside(control, plan.bounds)).toBe(true);
+  });
+
   // @spec PRESENT-PARTY-007
   it('draws one character at a time, within the centred column', () => {
     for (const viewport of [phone, desktop]) {

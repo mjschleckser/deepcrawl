@@ -85,13 +85,13 @@ past that. **It does not advance at all while anybody is being asked what to do.
 in a fight is a way of ordering actions; it is not something the player races.
 
 **Ties are settled, not rolled.** Combatants who come ready on the same beat act in
-descending Dexterity; a tie there goes to the party; a tie within the party is settled
-by a fixed order of position.
+descending Dexterity; a tie there goes to the party; a tie within a side is settled by
+the order it is listed in.
 
 **An action's cost belongs to the action.** Every action costs one full bar today, and
 the cost is carried on the action rather than assumed by the resolver — so a dagger's
 flick and a two-handed wind-up can come to differ without the structure moving. They do
-not differ yet, because there is no weapon table for them to differ in.
+not differ yet, because no weapon names a cost of its own.
 
 **Nothing accrues for waiting.** No hit point, no spell slot, and no other resource
 recovers because a beat has passed. A bar that fills with time is exactly the mechanism
@@ -201,7 +201,7 @@ Damage is **practice and force**, and the attribute is the weapon's to name:
 ```
 base damage = weapon.damage × (1 + 0.10 × weapon skill rank)
                             × (1 + 0.04 × (governing attribute − 10))
-dealt        = round(base damage × band multiplier) − target armour
+dealt        = round(base damage × band multiplier − target armour)
 ```
 
 Might governs by default; a weapon with the *finesse* property names Dexterity
@@ -218,21 +218,26 @@ differ by the band. Asking rolls nothing and changes nothing.
 
 ### What the numbers come out at
 
-The calibration anchor is a fresh party against a floor-one goblin. Everything above is
-tuned so an ordinary goblin takes two solid hits and a fresh fighter falls in five.
+The calibration anchor is a fresh party against a floor-one goblin, as the game's own
+files author them.
 
-| | Value |
-|---|---|
-| Fresh fighter, sword (acc 20, dmg 8), Blade 2, Perception 10 | accuracy 30, base damage 10 |
-| Same fighter, Heavy Armour 2, Dexterity 10 | defence 26 |
-| Goblin | defence 17, armour 2, accuracy 24 |
+| | Accuracy | Defence | Base damage | Armour | Hit points |
+|---|---|---|---|---|---|
+| Bram: shortsword, shield, chainmail | 32 | 37 | 10.8 | 5 | 30 |
+| Isolde: quarterstaff, robe | 21 | 27 | 7 | 0 | 18 |
+| Goblin | 22 | 14 | 4.6 | 2 | 9 |
 
-A level-appropriate attacker therefore sits at about **+10** over what it is attacking,
-which on the band thresholds gives 4% miss, 35% graze, 50% hit, 11% crit. Missing is
-rare, as it should be; crits are frequent enough to hope for and far too rare to plan
-around; and guaranteeing them would take an advantage of +99, which no campaign
-casually produces. Each rank is worth +5 accuracy and +10% damage, so enemy defence has
-to climb by about five per floor tier for parity to hold.
+A plain hit from Bram finishes a goblin, and one from Isolde takes two. A goblin's hit
+is worth 1 against Bram's armour and 5 against Isolde's robe, so a goblin's danger falls
+on whoever wears the least.
+
+An attacker sitting **+10** over what it is attacking gets 4% miss, 35% graze, 50% hit,
+11% crit on the band thresholds. Missing is rare, as it should be; crits are frequent
+enough to hope for and far too rare to plan around; and guaranteeing them would take an
+advantage of +99, which no campaign casually produces. Floor one is gentler than that on
+the party: Bram sits +18 over a goblin and never misses it, and a goblin sits −15 under
+him and misses 29% of the time. Each rank is worth +5 accuracy and +10% damage, so enemy
+defence has to climb by about five per floor tier for parity to hold.
 
 ## Targeting
 
@@ -429,14 +434,14 @@ trouble. One character calls the retreat; the whole party leaves or nobody does.
 
 ### Deferred
 
-1. **Per-action costs.** Every action costs one full bar. The cost lives on the action so that a heavy weapon can cost more later, but no action differs from another yet and no weapon exists to make one. When costs differ, the turn order will have to assume a cost for turns not yet chosen.
+1. **Per-action costs.** Every action costs one full bar. The cost lives on the action so that a heavy weapon can cost more later, but no action differs from another yet and no weapon names a cost. When costs differ, the turn order will have to assume a cost for turns not yet chosen.
 2. **Automating a repetitive turn.** Every turn is composed by hand. Some way for a party to say once what it usually does is worth having again, but it wants a vocabulary that can talk about status effects, enemy kinds and remaining resources — none of which exist — and it must not become a fight that plays itself.
 3. **Ability definitions.** Skill ranks unlock abilities, but what each one does is unauthored content. This includes any item or skill that moves its carrier's opening readiness off the draw.
 4. **Enemy rosters and their pot values.** What any enemy is, and what it is worth, belongs with the enemies segment.
 5. **Enemy behaviour beyond choosing a legal target.** Focus fire, retreat, protecting casters — all later.
 6. **Status effects.** Poison, fear, paralysis and the rest have no model here.
 7. **Recovering a fallen party.** That a wiped party stays where it fell and can be recovered by a fresh one is settled; a stranded roster, bodies on a floor, and hiring at a tavern all need segments that do not exist.
-8. **The numbers.** Band thresholds, graze and crit multipliers, and how accuracy and defence are assembled from skill, attribute and equipment are all content data with no content yet.
+8. **The numbers.** Band thresholds and the graze and crit multipliers are placeholders in code, waiting to move to content data and be tuned against more than one floor.
 
 ## References
 

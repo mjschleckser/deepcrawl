@@ -20,6 +20,7 @@ import { makeRng, deriveRng } from './rng.js';
 
 export const ArrivalRule = {
   STAIRS_UP: 'STAIRS_UP',
+  STAIRS_DOWN: 'STAIRS_DOWN',
   RANDOM_ROOM: 'RANDOM_ROOM',
 };
 
@@ -264,7 +265,9 @@ function placeDoors(floor, carved, rng, rooms, junctions, loopEdges, archetype) 
  * @spec GEN-PLACE-009
  * @spec GEN-PLACE-003
  */
-export function generateFloor({ id, seed, archetype = DEFAULT_ARCHETYPE, depthLabel = null, links = [] }) {
+export function generateFloor({
+  id, seed, archetype = DEFAULT_ARCHETYPE, depthLabel = null, links = [], up = null,
+}) {
   const rng = makeRng(seed);
   const width = rng.int(archetype.size.minWidth, archetype.size.maxWidth);
   const height = rng.int(archetype.size.minHeight, archetype.size.maxHeight);
@@ -329,10 +332,23 @@ export function generateFloor({ id, seed, archetype = DEFAULT_ARCHETYPE, depthLa
     return null;
   };
 
+  // Both tiles of every doorway, whether or not a door was hung in it. A connector on
+  // one is a tile nobody can pass the doorway without crossing, which for a pit means
+  // a way through the floor that cannot be taken without falling.
+  // @spec GEN-PLACE-002
+  const thresholds = new Set(
+    junctions.flatMap(({ from, to }) => [key(from.x, from.y), key(to.x, to.y)]),
+  );
+  const clearOfDoorways = (t) => !thresholds.has(key(t.x, t.y));
+
   // Every floor holds a way back up, so an arrival by stairs always resolves. The way
   // up claims no room: a landing that also holds a way onward is a legitimate room.
-  const stairsUp = take();
-  setTileFeature(floor, stairsUp.x, stairsUp.y, TileFeature.STAIRS_UP);
+  // It leads back the way the party came, and on the entrance it leads nowhere yet.
+  // @spec GEN-PLAN-009
+  const stairsUp = take(clearOfDoorways) ?? take();
+  setTileFeature(floor, stairsUp.x, stairsUp.y, TileFeature.STAIRS_UP, {
+    target: up ? { floorId: up.toFloorId, arriveAt: up.arriveAt } : undefined,
+  });
 
   // Each way down claims a room of its own. Several descents are what make the dungeon
   // a graph, but two in one room turn a choice of route into a choice of tile.
@@ -340,7 +356,7 @@ export function generateFloor({ id, seed, archetype = DEFAULT_ARCHETYPE, depthLa
   for (const link of links) {
     const spot = take((t) => {
       const room = roomIndexAt(rooms, t.x, t.y);
-      return room === -1 || !claimedRooms.has(room);
+      return clearOfDoorways(t) && (room === -1 || !claimedRooms.has(room));
     });
     // A floor with more descents than rooms places as many as it has rooms for.
     if (!spot) break;
@@ -378,6 +394,7 @@ export function generateFloor({ id, seed, archetype = DEFAULT_ARCHETYPE, depthLa
  * @spec GEN-PLAN-002
  * @spec GEN-PLAN-003
  * @spec GEN-PLAN-004
+ * @spec GEN-PLAN-009
  */
 export function generatePlan({ seed, depth = 4, archetype = DEFAULT_ARCHETYPE }) {
   const rng = makeRng(seed);
@@ -390,16 +407,19 @@ export function generatePlan({ seed, depth = 4, archetype = DEFAULT_ARCHETYPE })
       depthLabel: `B${i + 1}`,
       seed: rng.int(1, 0x7fffffff),
       links: [],
+      up: null,
     });
   }
 
-  // A spine down through every floor, so the whole plan is reachable from the entrance.
+  // A spine down through every floor, so the whole plan is reachable from the entrance,
+  // and every step of it retraceable. The entrance has nothing above it to lead back to.
   for (let i = 0; i < floors.length - 1; i++) {
     floors[i].links.push({
       toFloorId: floors[i + 1].id,
       arriveAt: ArrivalRule.STAIRS_UP,
       via: TileFeature.STAIRS_DOWN,
     });
+    floors[i + 1].up = { toFloorId: floors[i].id, arriveAt: ArrivalRule.STAIRS_DOWN };
   }
 
   // Shortcuts that skip a floor, so a dungeon is a graph rather than a stack. A pit

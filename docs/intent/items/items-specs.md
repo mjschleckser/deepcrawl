@@ -33,9 +33,9 @@ are assembled into the three the fight resolves, and who may hold it.
 
 ## The numbers
 
-- [x] **ITEM-NUM-001**: The system shall assemble a combatant's accuracy from their weapon's accuracy, five per rank of that weapon's skill, and two per point of Perception above ten.
-- [x] **ITEM-NUM-002**: The system shall assemble a combatant's defence from a base of twenty, two per point of Dexterity above ten, three per rank of the skill their worn armour is used under, and the defence of any shield they hold.
-- [x] **ITEM-NUM-003**: The system shall assemble a combatant's base damage from their weapon's damage, a tenth more per rank of that weapon's skill, and four hundredths more per point of the weapon's governing attribute above ten.
+- [x] **ITEM-NUM-001**: The system shall assemble a combatant's accuracy from their weapon's accuracy, five per rank of that weapon's skill, and two per point of Perception above or below ten.
+- [x] **ITEM-NUM-002**: The system shall assemble a combatant's defence from a base of twenty, two per point of Dexterity above or below ten, three per rank of the skill their worn armour is used under, and the defence of any shield they hold.
+- [x] **ITEM-NUM-003**: The system shall assemble a combatant's base damage from their weapon's damage, a tenth more per rank of that weapon's skill, and four hundredths more or less per point of the weapon's governing attribute above or below ten.
 - [x] **ITEM-NUM-004**: The system shall draw accuracy from Perception whatever attribute a weapon's damage draws on.
 - [x] **ITEM-NUM-005**: The system shall let no armour raise a combatant's defence, and no shield reduce the damage a combatant takes.
 - [x] **ITEM-NUM-006**: The system shall assemble each of the three numbers for a combatant holding nothing in any slot, contributing nothing for each empty slot rather than failing.

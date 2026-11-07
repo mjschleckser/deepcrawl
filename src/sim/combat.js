@@ -489,15 +489,6 @@ export function takeAction(state, actorId, action) {
 }
 
 /**
- * One attempt for the whole party: a party does not leave anyone behind.
- *
- * @spec COMBAT-FLEE-001
- * @spec COMBAT-FLEE-002
- * @spec COMBAT-FLEE-003
- * @spec COMBAT-FLEE-004
- * @spec COMBAT-FLEE-005
- */
-/**
  * Whether an escape is already lost, by the same rules that resolve one.
  *
  * Asked before a turn is spent, so the option can be greyed rather than offered and
@@ -519,6 +510,15 @@ export function fleeCertainToFail(state) {
   return fastest > hindmost * FLEE_SPEED_RATIO;
 }
 
+/**
+ * One attempt for the whole party: a party does not leave anyone behind.
+ *
+ * @spec COMBAT-FLEE-001
+ * @spec COMBAT-FLEE-002
+ * @spec COMBAT-FLEE-003
+ * @spec COMBAT-FLEE-004
+ * @spec COMBAT-FLEE-005
+ */
 export function attemptFlee(state, actorId = null) {
   // A failed attempt costs the bar of whoever called the retreat and nothing else. A
   // party that keeps trying is a party spending its actions on the door rather than on

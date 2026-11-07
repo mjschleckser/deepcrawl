@@ -9,7 +9,7 @@ import {
   Attribute, Condition, SKILL_GROUPS, roster, skillProgress, skillRank, totalLevel, RANK_CAP,
 } from '../sim/party.js';
 import { Slot } from '../sim/items.js';
-import { MIN_TAP_PX, uiScale, contentColumn } from './geometry.js';
+import { MIN_TAP_PX, uiScale, contentColumn, stampRoom } from './geometry.js';
 
 /** What a control on the page does. None of them changes a character. */
 export const PartyControl = {
@@ -65,7 +65,8 @@ export function buildPartyPlan(party, viewport, { page = 0 } = {}) {
     x: column.x + margin,
     y: margin,
     width: column.width - margin * 2,
-    height: viewport.height - margin * 2,
+    // Short of the foot of the screen, which is the build stamp's.
+    height: viewport.height - margin - stampRoom(scale),
   };
   const inner = { x: bounds.x + pad, width: bounds.width - pad * 2 };
   let y = bounds.y + pad;
@@ -183,12 +184,15 @@ export function buildPartyPlan(party, viewport, { page = 0 } = {}) {
 
   // At the foot of the screen, apart from the page: it is about the campaign rather
   // than anybody on it, and it should never be pressed on the way to something else.
+  // To the right, because on a short screen the equipment reaches the foot as well, and
+  // that side of the rows is empty.
   // @spec PRESENT-PARTY-020
+  const campaignWidth = Math.max(MIN_TAP_PX, 120 * scale);
   controls.push({
     kind: 'BUTTON', role: PartyControl.NEW_CAMPAIGN, label: 'New campaign',
-    x: inner.x,
+    x: inner.x + inner.width - campaignWidth,
     y: bounds.y + bounds.height - pad - tap,
-    width: Math.max(MIN_TAP_PX, 150 * scale),
+    width: campaignWidth,
     height: tap,
   });
 

@@ -234,6 +234,7 @@ export function currentFloor(state) {
  * @spec EXPLORE-FLOOR-008
  * @spec GEN-PLAN-005
  * @spec GEN-PLAN-006
+ * @spec GEN-PLAN-010
  */
 export function resolveArrival(state, target) {
   const floor = state.getFloor(target.floorId);
@@ -249,6 +250,13 @@ export function resolveArrival(state, target) {
 
   if (target.arriveAt === ArrivalRule.STAIRS_UP) {
     const stairs = tiles.find((t) => t.tile.feature === TileFeature.STAIRS_UP);
+    if (stairs) return { floorId: target.floorId, x: stairs.x, y: stairs.y };
+  }
+
+  // Climbing back arrives at the staircase that was descended, not merely at one.
+  if (target.arriveAt === ArrivalRule.STAIRS_DOWN) {
+    const down = tiles.filter((t) => t.tile.feature === TileFeature.STAIRS_DOWN);
+    const stairs = down.find((t) => t.tile.target?.floorId === state.party.floorId) ?? down[0];
     if (stairs) return { floorId: target.floorId, x: stairs.x, y: stairs.y };
   }
 
@@ -329,6 +337,19 @@ export function advanceForCamp(state, ticks) {
 /** An edge a step opens on its way through, as against one it cannot pass at all. */
 const isDoorway = (kind) =>
   kind === EdgeKind.DOOR || kind === EdgeKind.LOCKED_DOOR || kind === EdgeKind.SECRET_DOOR;
+
+/** A staircase the party may take, as against one that leads nowhere yet. */
+const leadsSomewhere = (tile) => isStairs(tile.feature) && Boolean(tile.target);
+
+/**
+ * Push open whatever door stands in the way of a step that is about to stop short of
+ * its far tile, and look through it: what happens next is drawn over that passage.
+ */
+function openAndLook(state, floor, from, heading) {
+  if (!isDoorway(getEdge(floor, from.x, from.y, heading))) return;
+  openEdge(floor, from.x, from.y, heading);
+  computeSight(state);
+}
 
 /**
  * Why a step cannot be taken, or null if it can. Every blocked reason presents
@@ -509,10 +530,7 @@ function takeStep(state, heading) {
     // is resolved: a fight through a shut door is one nobody can see, fought against
     // a warband the party is counted unaware of while standing face to face with it.
     // @spec EXPLORE-BOUND-012
-    if (isDoorway(getEdge(floor, from.x, from.y, heading))) {
-      openEdge(floor, from.x, from.y, heading);
-      computeSight(state);
-    }
+    openAndLook(state, floor, from, heading);
     state.hooks.onContactCheck({
       floorId: state.party.floorId,
       tile: { ...from },
@@ -521,9 +539,13 @@ function takeStep(state, heading) {
     return { blocked: false, events: [StepEvent.CONTACT_CHECKED] };
   }
 
-  // Stairs ask before they take the party anywhere, and a declined staircase is not
-  // walked onto at all — so a staircase is never crossed by accident.
-  if (isStairs(targetTile.feature)) {
+  // Stairs ask before they take the party anywhere, so a connector is never taken by
+  // accident. One that leads nowhere has nothing to ask, and is walked like any tile.
+  // The door opens first: the step is already under way whichever answer comes.
+  // @spec EXPLORE-MOVE-007
+  // @spec EXPLORE-MOVE-022
+  if (leadsSomewhere(targetTile)) {
+    openAndLook(state, floor, from, heading);
     state.pendingConfirmation = {
       kind: 'STAIRS',
       feature: targetTile.feature,
@@ -555,6 +577,7 @@ function takeStep(state, heading) {
  * @spec EXPLORE-MOVE-016
  * @spec EXPLORE-MOVE-017
  * @spec EXPLORE-MOVE-013
+ * @spec EXPLORE-MOVE-023
  */
 export function resolveConfirmation(state, accepted) {
   const pending = state.pendingConfirmation;
@@ -562,6 +585,8 @@ export function resolveConfirmation(state, accepted) {
   state.pendingConfirmation = null;
 
   const events = [];
+  // Asked of a party already on the staircase, so no step is waiting to be finished.
+  if (!accepted && pending.standing) return { blocked: false, events, declined: true };
   if (!accepted) {
     // The staircase is under their feet now and is taken with an INTERACT, so the
     // step resolves like any other and the prompt does not come round again.
@@ -602,6 +627,19 @@ function partyAction(state, action, commit) {
         ? []
         : [{ feature: tile.feature, target: tile.target, tile: { ...state.party.tile } }];
     state.hooks.onPartyAction({ action, committed: Boolean(commit), targets });
+    // A staircase is exploration's own connector, so this one is answered here, by the
+    // same question stepping onto it asks.
+    // @spec EXPLORE-MOVE-023
+    if (!commit && leadsSomewhere(tile)) {
+      state.pendingConfirmation = {
+        kind: 'STAIRS',
+        feature: tile.feature,
+        target: tile.target,
+        tile: { ...state.party.tile },
+        standing: true,
+      };
+      return { targets, events: [], confirmationRequired: state.pendingConfirmation };
+    }
     if (commit) advance(state, 1);
     return { targets, events: [] };
   }

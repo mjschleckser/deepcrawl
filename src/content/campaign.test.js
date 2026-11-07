@@ -1,11 +1,13 @@
 import { describe, it, expect, vi } from 'vitest';
-import { TileFeature, getTile } from '../sim/floor.js';
+import { EdgeKind, FACINGS, TileFeature, getEdge, getTile } from '../sim/floor.js';
 import {
   computeSight,
   perform,
   partyPosition,
   automapView,
   corridorAhead,
+  resolveConfirmation,
+  PartyAction,
   Verb,
 } from '../sim/exploration.js';
 import { createController, pressKey, layers } from '../render/controller.js';
@@ -96,6 +98,45 @@ describe('descending', () => {
     }
 
     expect(upstairs.length).toBeGreaterThanOrEqual(1);
+  });
+
+  // @spec EXPLORE-MOVE-016
+  // @spec EXPLORE-MOVE-023
+  // @spec GEN-PLAN-010
+  it('climbs back to the very staircase it came down', () => {
+    const { state, plan } = booted();
+    const entrance = state.getFloor(plan.entrance.floorId);
+    const below = plan.floors[1].id;
+    state.getFloor(below);
+    state.roamers = [];
+
+    const at = entrance.tiles.findIndex((t) => t.feature === TileFeature.STAIRS_DOWN);
+    const stairs = { x: at % entrance.width, y: Math.floor(at / entrance.width) };
+    state.party.tile = { ...stairs };
+
+    perform(state, { partyAction: PartyAction.INTERACT });
+    resolveConfirmation(state, true);
+    expect(partyPosition(state).floorId).toBe(below);
+
+    perform(state, { partyAction: PartyAction.INTERACT });
+    resolveConfirmation(state, true);
+    expect(partyPosition(state).floorId).toBe(entrance.id);
+    expect(partyPosition(state).tile).toEqual(stairs);
+  });
+
+  // @spec EXPLORE-MOVE-022
+  it('walks back over the staircase the campaign began on, which leads nowhere yet', () => {
+    const { state } = booted();
+    state.roamers = [];
+    const start = partyPosition(state).tile;
+    const floor = state.getFloor(state.party.floorId);
+    state.party.facing = FACINGS.find((d) => getEdge(floor, start.x, start.y, d) !== EdgeKind.WALL);
+
+    perform(state, { verb: Verb.STEP_FORWARD });
+    perform(state, { verb: Verb.STEP_BACKWARD });
+
+    expect(state.pendingConfirmation).toBeNull();
+    expect(partyPosition(state).tile).toEqual(start);
   });
 
   // @spec GEN-PLAN-006

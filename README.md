@@ -30,10 +30,12 @@ about a minute).
 
 ## Status
 
-Exploration is playable. The dungeon is drawn first-person from the party's own
-tile and facing, with an automap filling in as you go; move with WASD or the arrow
-keys, or by tapping the screen. `M` expands the map.
+A party of four can be walked through generated floors and fought with. The dungeon is
+drawn first-person from the party's own tile and facing, with an automap filling in as
+you go; move with WASD or the arrow keys, or by tapping the screen. `M` expands the map,
+`P` opens the party screen, and `E` uses a staircase underfoot.
 
-The floor you walk is hand-authored scaffolding — dungeon generation, combat, and
-the party itself are still to come. Design lives under `docs/`, following
+Fights are turn-based, with skills that advance by use, and the campaign saves itself in
+the browser. Loot, the pack, spells, traps, camp, hunger and the town are still to come.
+Design lives under `docs/`, following
 [Linked-Intent Development](https://linked-intent.dev).

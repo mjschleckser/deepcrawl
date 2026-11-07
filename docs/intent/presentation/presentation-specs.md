@@ -8,7 +8,7 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 
 ## Scene
 
-- [x] **PRESENT-SCENE-001**: The system shall draw three layers in order: the first-person view, the automap, then the HUD.
+- [x] **PRESENT-SCENE-001**: The system shall draw five layers in order: the first-person view, the automap, the fight, the party screen, then the HUD.
 - [x] **PRESENT-SCENE-002**: The system shall keep the renderer's ticker stopped while nothing is playing out on its own, so that no redraw occurs merely because time has passed.
 - [x] **PRESENT-SCENE-011**: While a fight has a pause to wait out or a combatant still shaking, the system shall run the ticker, and shall stop it once the fight is waiting on the player with nothing left in motion.
 - [x] **PRESENT-SCENE-003**: When an action changes simulation state, the system shall redraw — including a turn, which changes facing without advancing the clock.
@@ -143,6 +143,7 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-PROMPT-003**: While a prompt is drawn, the system shall accept only the prompt's own confirm and decline inputs, discarding every movement verb and party action.
 - [x] **PRESENT-PROMPT-004**: When the player confirms or declines a prompt drawn from a pending confirmation, the system shall pass the answer to the simulation and redraw.
 - [x] **PRESENT-PROMPT-005**: The system shall bind confirm to Enter and to the affirmative on-screen control, and decline to Escape and to the negative on-screen control.
+- [x] **PRESENT-PROMPT-006**: The system shall word a staircase prompt by the way the staircase leads, up or down.
 
 ## Combat
 
@@ -186,9 +187,9 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-FIGHT-011**: The system shall name, for each resolved attack, who acted, which band the attack fell in, the damage it dealt, and whether it felled its target.
 - [x] **PRESENT-FIGHT-012**: While an encounter is running, the system shall accept no exploration movement verb or party action.
 - [x] **PRESENT-FIGHT-013**: The system shall resolve a numbered key and a tap on the same option or menu entry to the same choice, carrying no record of which was used.
-- [x] **PRESENT-FIGHT-014**: When an encounter ends, the system shall draw a banner naming the outcome and, on a victory, what it was worth.
+- [x] **PRESENT-FIGHT-014**: When an encounter ends in victory or defeat, the system shall draw a banner naming the outcome and, on a victory, what it was worth.
 - [x] **PRESENT-FIGHT-017**: The system shall give every combat option and menu entry on offer a drawn control with its own hit region, so that a fight can be played by touch alone.
-- [x] **PRESENT-FIGHT-015**: When the player dismisses the outcome banner after a victory or an escape, the system shall return to drawing the corridor and accept exploration input again.
+- [x] **PRESENT-FIGHT-015**: When the player dismisses the outcome banner after a victory, or the moment an escape succeeds, the system shall return to drawing the corridor and accept exploration input again.
 - [x] **PRESENT-FIGHT-049**: When an encounter ends in defeat, the system shall label the banner's control Begin again, and when the player presses it, shall begin a new campaign.
 
 ## The party screen

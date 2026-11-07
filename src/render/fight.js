@@ -219,8 +219,8 @@ const attackOf = (encounter, id) => ({
 const standing = (e) => e.condition === Condition.OK && e.hitPoints > 0;
 
 /**
- * What a fight looks like: both formations in their rows, the fallen still in place,
- * and a banner once it is over.
+ * What a fight looks like: both sides in their columns, the fallen still in place, and
+ * a banner once it is over.
  *
  * @spec PRESENT-FIGHT-001
  * @spec PRESENT-FIGHT-002
@@ -276,6 +276,7 @@ export function buildFightPlan(
     // Kept in place: the shape of a side that has lost its middle is information.
     down,
     ...healthOf(who),
+    // @spec PRESENT-READY-004
     acting: actor?.id === who.id,
     offsetY: offsetOf(who.id),
   });
@@ -386,7 +387,7 @@ export function buildFightPlan(
   // The log is a window on the fight, held where the player left it.
   // @spec PRESENT-FIGHT-029
   // @spec PRESENT-FIGHT-031
-  const shown = Math.max(1, Math.floor((logBox.height - pad) / lineHeight));
+  const shown = LOG_LINES;
   const scrolledBack = Math.min(Math.max(0, Math.round(logScroll)), Math.max(0, log.length - shown));
   const end = log.length - scrolledBack;
   const shownLog = log.slice(Math.max(0, end - shown), end);
@@ -648,7 +649,7 @@ export function describeEvent(event, names, targetId, felled) {
 function optionsFor(encounter, characterId) {
   // Everyone is in reach of everyone; what a character needs is something to swing.
   // @spec COMBAT-TARGET-005
-  const armed = Boolean(character(encounter.party, characterId)?.attack);
+  const armed = Boolean(weaponOf(character(encounter.party, characterId)));
   const standingFoes = attackTargets(encounter, characterId).length > 0;
 
   const availability = {
@@ -779,6 +780,18 @@ function names(fight) {
 }
 
 /**
+ * Add a line to the log. The scroll counts back from the newest line, so a view the
+ * player has taken back moves with each new one to stay on the lines they are reading.
+ *
+ * @spec PRESENT-FIGHT-031
+ * @spec PRESENT-FIGHT-032
+ */
+function writeLog(fight, line) {
+  fight.log.push(line);
+  if (fight.logScroll > 0) fight.logScroll += 1;
+}
+
+/**
  * Take one action, write down what it did, and pass the turn on.
  *
  * @spec COMBAT-TIME-009
@@ -788,7 +801,7 @@ function names(fight) {
 function resolveOne(fight, actorId, action) {
   const event = takeAction(fight.encounter, actorId, action);
   if (event && event.action === Action.ATTACK && event.targetId) {
-    fight.log.push(describeEvent(event, names(fight), event.targetId, event.felled === true));
+    writeLog(fight, describeEvent(event, names(fight), event.targetId, event.felled === true));
     // The card that moves is the card that swung: nothing else in a fight moves, so a
     // blow is otherwise a number changing on a panel of numbers.
     // @spec PRESENT-READY-018
@@ -854,7 +867,9 @@ export function passTurn(fight) {
 export function scrollLog(fight, lines) {
   if (!fight) return false;
   const was = fight.logScroll;
-  fight.logScroll = Math.max(0, Math.min(fight.log.length - 1, was + lines));
+  // No further back than the oldest lines filling the window, so turning the wheel the
+  // other way moves the view at once rather than unwinding scroll nobody can see.
+  fight.logScroll = Math.max(0, Math.min(fight.log.length - LOG_LINES, was + lines));
   return fight.logScroll !== was;
 }
 
@@ -867,10 +882,12 @@ export function scrollLog(fight, lines) {
  * @spec PRESENT-READY-010
  */
 export function fightIsPlaying(fight) {
-  if (!fight || fight.phase !== FightPhase.ACTING) return false;
+  if (!fight) return false;
+  // Before anything else, so the blow that ends a fight settles under its banner rather
+  // than leaving its attacker's card frozen part-way through the judder.
   if (fight.shakingId) return true;
   // Waiting on a press costs no frames; only the pause moves on its own.
-  return !fight.pending;
+  return fight.phase === FightPhase.ACTING && !fight.pending;
 }
 
 /**
@@ -895,7 +912,7 @@ export function advanceClock(fight, ms) {
 
   // Somebody is being asked, and nothing happens until they are answered.
   // @spec COMBAT-TURN-001
-  if (fight.pending) return true;
+  if (fight.phase !== FightPhase.ACTING || fight.pending) return true;
 
   fight.beat += ms;
   if (fight.beat < BEAT_MS) return true;
@@ -944,7 +961,7 @@ export function chooseOption(fight, index) {
       end(fight, encounterOutcome(fight.encounter));
       return true;
     }
-    fight.log.push('The way out is shut.');
+    writeLog(fight, 'The way out is shut.');
     fight.turnsTaken += 1;
     nextTurn(fight);
     return true;

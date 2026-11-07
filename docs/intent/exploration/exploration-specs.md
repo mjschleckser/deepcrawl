@@ -31,7 +31,7 @@ tuning the game does not rewrite its specs.
 - [x] **EXPLORE-CLOCK-005**: While combat is active, the system shall not advance the clock for any reason.
 - [x] **EXPLORE-CLOCK-006**: When the party turns in any direction, the system shall not advance the clock.
 - [x] **EXPLORE-CLOCK-007**: If a step is blocked, then the system shall not advance the clock.
-- [x] **EXPLORE-CLOCK-008**: While the automap, inventory, or any menu is open, the system shall not advance the clock.
+- [x] **EXPLORE-CLOCK-008**: While the inventory or any menu is open, the system shall not advance the clock, and opening, expanding or reading the automap shall not advance it either.
 - [x] **EXPLORE-CLOCK-009**: The system shall permit only the exploration segment to write the tick counter, including when the camp segment requests an advance.
 
 ## Movement
@@ -48,12 +48,14 @@ tuning the game does not rewrite its specs.
 - [x] **EXPLORE-MOVE-021**: The system shall resolve a backward step against the edge behind the party, by the same blocking rules, the same tick cost, and the same step effects in the same order as a forward step.
 - [x] **EXPLORE-MOVE-019**: When roaming enemies move, the system shall give each the ticks the step consumed to spend against its own cost to cross a tile, carrying any remainder forward.
 - [x] **EXPLORE-MOVE-009**: When the party enters a tile whose feature is `pit`, the system shall relocate the party to that connector's destination floor, at the tile its arrival rule resolves to, without asking for confirmation.
-- [x] **EXPLORE-MOVE-015**: When the party attempts to step onto a tile whose feature is `stairsUp` or `stairsDown`, the system shall raise a confirmation before moving the party.
+- [x] **EXPLORE-MOVE-015**: When the party attempts to step onto a tile whose feature is `stairsUp` or `stairsDown` and which names a destination, the system shall raise a confirmation before moving the party.
+- [x] **EXPLORE-MOVE-022**: When the party steps onto a staircase that names no destination, the system shall raise no confirmation and shall resolve the step as it would any other.
 - [x] **EXPLORE-MOVE-016**: When the player confirms a staircase prompt, the system shall relocate the party to that connector's destination floor, at the tile its arrival rule resolves to on that floor.
 - [x] **EXPLORE-MOVE-017**: If the player declines a staircase prompt, then the system shall complete the step onto the staircase's tile without taking the connector, resolving that step's effects as it would any other step's.
 - [x] **EXPLORE-MOVE-018**: While the party occupies a tile whose feature is `stairsUp` or `stairsDown`, however they came to be standing on it, the system shall offer that staircase as an `INTERACT` target.
+- [x] **EXPLORE-MOVE-023**: When the player selects `INTERACT` on a staircase that names a destination, the system shall raise the staircase's confirmation; confirming shall take the connector, and declining shall leave the party's tile and the clock unchanged.
 - [x] **EXPLORE-MOVE-010**: When a relocation occurs mid-step, the system shall resolve re-stocking, the trap trigger hook, sight, roaming enemy movement, and contact check against the floor and tile the party occupies after relocating.
-- [x] **EXPLORE-MOVE-011**: When a step relocates the party through a `pit`, the system shall advance the clock by one tick for the whole step.
+- [x] **EXPLORE-MOVE-011**: When a step relocates the party through a `pit`, the system shall charge the party's step cost once for the whole step.
 - [x] **EXPLORE-MOVE-012**: If a relocation lands the party on a tile whose feature is also a `pit`, then the system shall not resolve that pit until the party's next step, which it claims in place of a move.
 - [x] **EXPLORE-MOVE-013**: When the party moves between floors by any connector, the system shall preserve its facing.
 - [D] **EXPLORE-MOVE-014**: When the player selects a discovered tile on the automap, the system shall walk the party there, interrupting on an encounter or a trap.
@@ -103,7 +105,7 @@ tuning the game does not rewrite its specs.
 - [x] **EXPLORE-RETURN-001**: When the party leaves a floor, the system shall record the current tick against that floor.
 - [x] **EXPLORE-RETURN-002**: While the party is not on a floor, the system shall not move that floor's roaming enemies, change its door states, or restock its rooms.
 - [x] **EXPLORE-RETURN-003**: When the party arrives on a floor it has previously left, the system shall apply a re-stocking scaled to the ticks elapsed since that floor's recorded departure.
-- [x] **EXPLORE-RETURN-004**: When a re-stocking runs, the system shall reposition the floor's roaming enemies, change door open states, and refill some previously cleared rooms.
+- [ ] **EXPLORE-RETURN-004**: When a re-stocking runs, the system shall reposition the floor's roaming enemies, change door open states, and refill some previously cleared rooms.
 - [x] **EXPLORE-RETURN-005**: When a re-stocking runs, the system shall leave the floor's discovery record unchanged.
 - [x] **EXPLORE-RETURN-009**: When a re-stocking runs, the system shall leave every trap on the floor unchanged — undiscovered traps stay undiscovered, known traps stay known, and sprung traps stay sprung.
 - [ ] **EXPLORE-RETURN-010**: The system shall lay a floor's traps once, when the floor is generated, and shall never add or remove a trap thereafter.
