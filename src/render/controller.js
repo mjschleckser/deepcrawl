@@ -68,6 +68,8 @@ export function createController({ state, viewport, onDraw, campaign = null, onB
     expanded: false, fight: null,
     // Anything worth saying about the save, beside the stamp.
     saveNote: null,
+    // Whether a newer build is installed and waiting for the player to refresh.
+    newBuild: false,
     // The party screen, when open: which character's page is showing. A view of the
     // party like the expanded map is a view of the floor, so it lives here.
     partyScreen: null,
@@ -108,6 +110,22 @@ export function replaceCampaign(controller, campaign) {
 export function setSaveNote(controller, text) {
   if (controller.saveNote === text) return;
   controller.saveNote = text;
+  redraw(controller);
+}
+
+/** What the stamp says once a newer build is installed. */
+export const NEW_BUILD_NOTICE = 'NEW BUILD AVAILABLE';
+
+/**
+ * A newer build is installed. Say so on the stamp and nothing more: the refresh is the
+ * player's to make.
+ *
+ * @spec PRESENT-BUILD-008
+ * @spec PRESENT-BUILD-009
+ */
+export function setNewBuild(controller) {
+  if (controller.newBuild) return;
+  controller.newBuild = true;
   redraw(controller);
 }
 
@@ -178,7 +196,7 @@ export function layers(controller) {
     // The fight's own panel is what stands in the corner during a fight, and a tall
     // menu can rise past it.
     const stamp = stampFor(
-      viewport,
+      controller,
       [fightPlan.bounds, fightPlan.menu?.box, itemsOverFight?.bounds].filter(Boolean),
     );
     return [
@@ -210,7 +228,7 @@ export function layers(controller) {
   const controls = state.pendingConfirmation || screen
     ? []
     : controlsFor(viewport, { pressedRegion: controller.pressedRegion });
-  const stamp = stampFor(viewport, screen ? [screen.bounds] : controls);
+  const stamp = stampFor(controller, screen ? [screen.bounds] : controls);
   // A question asked by the party screen is the view's own, about ending the campaign;
   // anything else on screen is the simulation's pending confirmation.
   const asking = controller.partyScreen?.confirming
@@ -247,9 +265,14 @@ export function layers(controller) {
  * @spec PRESENT-BUILD-001
  * @spec PRESENT-BUILD-003
  * @spec PRESENT-BUILD-006
+ * @spec PRESENT-BUILD-008
  */
-function stampFor(viewport, controls) {
-  return versionStamp({ viewport, controls, text: APP_VERSION, scale: uiScale(viewport) });
+function stampFor(controller, controls) {
+  const { viewport } = controller;
+  return versionStamp({
+    viewport, controls, text: APP_VERSION, scale: uiScale(viewport),
+    notice: controller.newBuild ? NEW_BUILD_NOTICE : null,
+  });
 }
 
 function redraw(controller) {

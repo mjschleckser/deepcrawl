@@ -804,6 +804,30 @@ above them, because it is information for the player who goes looking for it and
 furniture for everyone else. The party screen, which would otherwise fill the screen,
 stops short of the foot of it to leave the stamp its corner.
 
+### A newer build
+
+The stamp tells a player which build they are running. It cannot tell them whether that
+build is the latest one, and an installed app left open, or resumed from the background,
+never finds out by itself. So the game asks: when it starts, every few minutes while it
+runs, and whenever it comes back to the foreground. The check uses the service worker,
+which fetches a newer build in the background and installs it.
+
+Once a newer build is installed, the stamp reads **`Build 64  NEW BUILD AVAILABLE`**,
+with the notice in a colour of its own. The notice waits for that moment rather than
+for a newer build to exist on the server, because only an installed build is what a
+refresh will load. A notice that a refresh does not honour teaches the player to ignore
+it.
+
+**The game never reloads itself.** It saves continuously, but a page that changes under
+the player is a surprise, and the player knows better than the game whether now is a
+good time. The notice stays until the player refreshes.
+
+A page that has just come under its first service worker is not running an old build.
+It was simply not under one before, and gets no notice for it.
+
+The notice is part of the stamp, so the stamp is placed clear of the controls at its
+full width, notice included.
+
 ## Redraw Discipline
 
 The Pixi ticker is stopped outside a fight that is playing. Presentation renders once at
@@ -923,6 +947,7 @@ screen the player can see but the game cannot have.
 | Skill progress | A bar of experience toward the next rank under every rank | The rank alone | Progression is spread across skills by a pot split equally, and a bare rank hides which skills a fight is about to pay off. The share is the party segment's to compute, so the screen cannot drift from the rule it shows. |
 | Skills a class cannot train | Drawn, marked as no longer advancing | Hidden; drawn like any other | Hiding them understates a character who changed class, and drawing them plainly promises progress that will never come. |
 | The build stamp | Drawn in the corner of the running game, as a build number taken from the commit count | A version on an about screen; no version at all; a build date; a version and commit hash, `MAJOR.MINOR.PATCH+SHA` | "It does not work" and "you are looking at a cached build" are the same report without it, and a service worker makes the second common. Taking the number from the commit count means nobody has to remember to raise it, and it orders correctly by construction. A hash names the exact source but cannot be read as newer or older, and it buries the one digit that changes. |
+| Learning that a newer build is out | Check through the service worker on start, on an interval and on return to the foreground; mark the stamp once the new build is installed; the player refreshes | Reload automatically when a new build arrives; ask the server for its latest build number and compare | A reload the player did not ask for changes the screen under them, possibly mid-decision. Comparing against the server says a newer build exists before the cache has it, so a refresh can still load the old one and the notice looks wrong. Waiting for the install makes the notice true the moment it appears. |
 
 ## Open Questions & Future Decisions
 
@@ -960,6 +985,7 @@ screen the player can see but the game cannot have.
 30. ✅ **The party screen is one character a page**, read-only, opened and closed by `PARTY`, holding the input and stopping the clock while open.
 31. ✅ **A skill on the party screen shows its rank and its progress toward the next**, the share computed by the party segment.
 32. ✅ **One Items screen, in a fight and out of one**, a page per character, where a press on a pack item equips it and a press on a worn item takes it off.
+33. ✅ **A newer build is announced beside the stamp, never applied**: `NEW BUILD AVAILABLE` appears once the new build is installed, and the player refreshes when they choose.
 
 ### Deferred
 

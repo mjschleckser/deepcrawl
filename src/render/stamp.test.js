@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { formatVersion, resolveVersion, APP_VERSION } from '../version.js';
 import { versionStamp, MIN_TAP_PX } from './geometry.js';
-import { createController, layers } from './controller.js';
+import { createController, layers, setNewBuild, NEW_BUILD_NOTICE } from './controller.js';
 import { createExploration } from '../sim/exploration.js';
 import { createFloor, Direction } from '../sim/floor.js';
 
@@ -71,6 +71,22 @@ describe('where the stamp sits', () => {
     expect(stamp.y + stamp.size).toBeLessThanOrEqual(upper.y);
   });
 
+  // @spec PRESENT-BUILD-011
+  it('counts the notice in its width, and clears a control only the notice would reach', () => {
+    const plain = versionStamp({ viewport, text: 'Build 148' });
+    const noticed = versionStamp({ viewport, text: 'Build 148', notice: 'NEW BUILD AVAILABLE' });
+    expect(noticed.width).toBeGreaterThan(plain.width);
+
+    const beyondNumber = {
+      x: plain.x + plain.width + 4, y: viewport.height - 60, width: 60, height: 60,
+    };
+    expect(versionStamp({ viewport, controls: [beyondNumber], text: 'Build 148' }).y).toBe(plain.y);
+    const moved = versionStamp({
+      viewport, controls: [beyondNumber], text: 'Build 148', notice: 'NEW BUILD AVAILABLE',
+    });
+    expect(moved.y + moved.size).toBeLessThanOrEqual(beyondNumber.y);
+  });
+
   // @spec PRESENT-CTRL-012
   it('grows with the viewport, like everything else drawn', () => {
     const small = versionStamp({ viewport, text: 'Build 148', scale: 1 });
@@ -105,6 +121,34 @@ describe('the stamp on a drawn screen', () => {
   // @spec PRESENT-BUILD-002
   it('keeps clear of the controls it shares the bottom of the screen with', () => {
     const hud = layers(exploring(phone)).find((l) => l.name === 'hud').plan;
+
+    for (const control of hud.controls) {
+      const overlaps =
+        control.x < hud.stamp.x + hud.stamp.width
+        && control.x + control.width > hud.stamp.x
+        && control.y < hud.stamp.y + hud.stamp.size
+        && control.y + control.height > hud.stamp.y;
+      expect(overlaps).toBe(false);
+    }
+  });
+
+  // @spec PRESENT-BUILD-008
+  it('carries no notice until a newer build is installed, and the notice after', () => {
+    const controller = exploring(phone);
+    expect(layers(controller).find((l) => l.name === 'hud').plan.stamp.notice).toBeFalsy();
+
+    setNewBuild(controller);
+    const { stamp } = layers(controller).find((l) => l.name === 'hud').plan;
+    expect(NEW_BUILD_NOTICE).toBe('NEW BUILD AVAILABLE');
+    expect(stamp.notice).toBe(NEW_BUILD_NOTICE);
+    expect(stamp.text).toBe(APP_VERSION);
+  });
+
+  // @spec PRESENT-BUILD-011
+  it('keeps the noticed stamp clear of the controls too', () => {
+    const controller = exploring(phone);
+    setNewBuild(controller);
+    const hud = layers(controller).find((l) => l.name === 'hud').plan;
 
     for (const control of hud.controls) {
       const overlaps =

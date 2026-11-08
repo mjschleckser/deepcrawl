@@ -84,6 +84,8 @@ export function contentColumn(viewport) {
 const STAMP_PAD = 6;
 const STAMP_SIZE = 9;
 const STAMP_CHAR_RATIO = 0.62;
+/** What separates the build number from a notice beside it. */
+export const STAMP_NOTICE_GAP = '  ';
 
 /**
  * How much of the foot of the screen the stamp needs, for anything that would otherwise
@@ -103,11 +105,15 @@ export function stampRoom(scale) {
  * @spec PRESENT-BUILD-001
  * @spec PRESENT-BUILD-002
  * @spec PRESENT-BUILD-006
+ * @spec PRESENT-BUILD-011
  */
-export function versionStamp({ viewport, controls = [], text, scale = 1 }) {
+export function versionStamp({ viewport, controls = [], text, notice = null, scale = 1 }) {
   const size = Math.round(STAMP_SIZE * scale);
   const pad = STAMP_PAD * scale;
-  const width = text.length * size * STAMP_CHAR_RATIO;
+  // A notice rides on the same line, two spaces after the number, and the stamp clears
+  // the corner at its whole width.
+  const chars = text.length + (notice ? STAMP_NOTICE_GAP.length + notice.length : 0);
+  const width = chars * size * STAMP_CHAR_RATIO;
   const x = pad;
   const floor = viewport.height - pad - size;
 
@@ -123,7 +129,7 @@ export function versionStamp({ viewport, controls = [], text, scale = 1 }) {
     y = Math.min(...inTheWay.map((c) => c.y)) - pad - size;
   }
 
-  return { x, y: Math.max(0, y), size, width, text };
+  return { x, y: Math.max(0, y), size, width, text, notice };
 }
 
 /**

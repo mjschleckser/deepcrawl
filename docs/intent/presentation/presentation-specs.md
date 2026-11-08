@@ -84,6 +84,11 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-BUILD-004**: The system shall compose the version as the word `Build` followed by a number equal to the number of commits, and shall compose no version when that number is unavailable.
 - [x] **PRESENT-BUILD-005**: If the build supplied no version, then the system shall draw a stand-in rather than nothing, so that the stamp is never silently absent.
 - [x] **PRESENT-BUILD-006**: The system shall decide the stamp's position in the draw plan rather than while drawing.
+- [x] **PRESENT-BUILD-007**: The system shall check for a newer build when it starts, at a fixed interval while it runs, and whenever the page returns to the foreground.
+- [x] **PRESENT-BUILD-008**: When a newer build has been installed, so that the next load will serve it, the system shall draw `NEW BUILD AVAILABLE` beside the build number as part of the stamp, in a colour that sets it apart from the number.
+- [x] **PRESENT-BUILD-009**: When a newer build has been installed, the system shall not reload the page, leaving the refresh to the player.
+- [x] **PRESENT-BUILD-010**: When the page comes under its first service worker, with none controlling it before, the system shall not report a newer build.
+- [x] **PRESENT-BUILD-011**: While the stamp carries the notice, the system shall place the stamp clear of every control at its full width, notice included.
 
 ## A fight's combatants and pace
 

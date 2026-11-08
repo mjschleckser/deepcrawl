@@ -6,8 +6,9 @@ import { createRenderer } from './render/app.js';
 import { playableViewport } from './render/viewport.js';
 import {
   createController, pressKey, pressPointer, releasePointer, replaceCampaign, resize, layers,
-  setSaveNote, tick, isPlaying, scrollFightLog,
+  setSaveNote, setNewBuild, tick, isPlaying, scrollFightLog,
 } from './render/controller.js';
+import { watchForUpdates } from './content/updates.js';
 
 /** Local storage can refuse even to be looked at, in a private window for one. */
 function browserStorage() {
@@ -85,6 +86,19 @@ async function bootstrap() {
     if (document.visibilityState === 'hidden') autosave.flush();
   });
   window.addEventListener('pagehide', () => autosave.flush());
+
+  // A built app is served through a service worker, and an open one has to be told when
+  // that worker has a newer build. The development server has no worker to ask.
+  // @spec PRESENT-BUILD-007
+  if (import.meta.env.PROD) {
+    watchForUpdates({
+      container: navigator.serviceWorker,
+      document,
+      onAvailable: () => setNewBuild(controller),
+      url: `${import.meta.env.BASE_URL}sw.js`,
+      scope: import.meta.env.BASE_URL,
+    });
+  }
 
   if (import.meta.env.DEV) {
     controller.__layers = () => layers(controller);

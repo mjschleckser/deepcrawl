@@ -27,6 +27,12 @@ export default defineConfig({
   plugins: [
     VitePWA({
       registerType: 'autoUpdate',
+      // The app registers the worker itself (src/content/updates.js), so that it can keep
+      // asking for newer builds and say when one is installed.
+      injectRegister: false,
+      // A new build takes over open pages as soon as it is installed. That handover is
+      // what src/content/updates.js reports, and what makes a refresh load the new build.
+      workbox: { skipWaiting: true, clientsClaim: true },
       manifest: {
         name: 'Deepcrawl',
         short_name: 'Deepcrawl',

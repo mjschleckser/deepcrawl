@@ -11,6 +11,7 @@ import { Application, Assets, Container, Graphics, Sprite, Text } from 'pixi.js'
 import { Direction, EdgeKind, TileFeature } from '../sim/floor.js';
 import { PIXI_APP_OPTIONS, PALETTE, shade } from './appconfig.js';
 import { weaponSymbol } from './symbols.js';
+import { STAMP_NOTICE_GAP } from './geometry.js';
 
 const WALL_KINDS = new Set(['leftWall', 'rightWall', 'frontWall']);
 
@@ -240,22 +241,38 @@ function drawHud(container, plan) {
   // happens to be, and a stamp nobody can read answers nothing.
   // @spec PRESENT-BUILD-001
   if (plan.stamp) {
-    const { x, y, size, text } = plan.stamp;
+    const { x, y, size, text, notice } = plan.stamp;
     const label = new Text({
       text,
       style: { fill: 0xe8d9a8, fontSize: size, fontFamily: 'monospace' },
     });
+    // A newer build waiting for a refresh, on the same line in a colour of its own, so
+    // it reads as news rather than as part of the number.
+    // @spec PRESENT-BUILD-008
+    const news = notice
+      ? new Text({
+        text: notice,
+        style: { fill: 0x8fd16a, fontSize: size, fontFamily: 'monospace', fontWeight: 'bold' },
+      })
+      : null;
+    const gap = news ? label.width / Math.max(1, text.length) * STAMP_NOTICE_GAP.length : 0;
     const inset = Math.round(size * 0.4);
+    const width = label.width + (news ? gap + news.width : 0);
     const plate = new Graphics();
     plate
-      .roundRect(x - inset, y - inset * 0.6, label.width + inset * 2, size + inset * 1.4, 3)
-      .fill({ color: 0x0b0906, alpha: 0.62 });
+      .roundRect(x - inset, y - inset * 0.6, width + inset * 2, size + inset * 1.4, 3)
+      .fill({ color: 0x0b0906, alpha: news ? 0.8 : 0.62 });
     container.addChild(plate);
 
     label.x = x;
     label.y = y;
     label.alpha = 0.85;
     container.addChild(label);
+    if (news) {
+      news.x = x + label.width + gap;
+      news.y = y;
+      container.addChild(news);
+    }
   }
   // Only there when something is wrong with the save, so it can afford to stand out.
   // @spec PRESENT-SAVE-001
