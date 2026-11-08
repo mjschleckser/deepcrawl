@@ -189,8 +189,9 @@ character at full health, and on one who is unconscious, dead, in ashes or lost.
 is used up and nothing is spent. Raising the dead is revival, and a potion is not a
 revival.
 
-An unconscious character therefore can't be woken by a potion. Nothing wakes one until
-healing spells or camp exist, so a character knocked out stays down after the fight.
+An unconscious character therefore can't be woken by a potion. Neither Heal nor camping
+wakes one either; waking the fallen is Restoration's work, so until that spell exists a
+character knocked out stays down after the fight.
 
 ## What Changes Elsewhere
 

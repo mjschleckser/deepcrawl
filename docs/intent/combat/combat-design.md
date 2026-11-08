@@ -221,7 +221,7 @@ made.
 | Action | Costs | Notes |
 |---|---|---|
 | Attack | a full bar | the weapon in hand, or the attack the combatant was authored with if they hold none; what it trains is that weapon's skill |
-| Cast | a full bar, and a spell slot of that rank | |
+| Cast | a full bar, and a spell slot of that rank | a spell the character knows and may cast in a fight, resolved by the magic segment against a target chosen now; what it trains is the spell's school; a refused cast costs nothing |
 | Use ability | a full bar | unlocked by a skill rank |
 | Use an item | a full bar | a consumable from the pack, drunk by the acting character, through the party's `useItem`; a refused use costs nothing |
 | Change equipment | a full bar | one item put on from the pack, through the party's own operation, whatever it displaces going to the pack; a refused change costs nothing. Taking something off without putting anything on is not offered in a fight, gaining nothing for a turn |
@@ -235,8 +235,9 @@ content.
 ### Spell slots
 
 A caster holds a number of slots at each spell rank. Casting spends one of that rank,
-and slots are restored only by sleeping at camp — which costs ticks, and ticks cost
-food.
+and slots are restored only by camping, which costs ticks and clears food buffs. What
+a spell is, who knows it and what it does belong to the magic segment; combat decides
+when it is cast and resolves it as the caster's turn.
 
 This is what makes magic an attrition resource rather than a rotation. The question a
 caster faces on the fourth floor is not which spell is optimal but whether this is the

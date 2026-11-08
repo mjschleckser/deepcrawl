@@ -164,6 +164,8 @@ flowchart TB
         explore["Exploration — tile and facing, stepping, discovery, encounters"]
         dungeon["Dungeon generation — floors from archetypes"]
         loot["Loot and items — generation, inventory, equipment"]
+        magic["Magic — spells, spell slots, casting"]
+        camp["Camp — resting, and what it restores"]
     end
 
     content["Content definitions — authored data: archetypes, tables, rules"]
@@ -184,6 +186,12 @@ flowchart TB
     content --> loot
     dungeon --> loot
     loot --> party
+    combat --> magic
+    explore --> magic
+    explore --> camp
+    camp --> magic
+    magic --> party
+    content --> magic
     sim <--> save
 ```
 
@@ -229,8 +237,19 @@ which is worn, and consumables, which are used up from the pack in a fight or ou
 one. Affix rules, which vary an item within its kind, come later, once there are
 enemy numbers to balance them against.
 
+**Magic.** What a spell is and what casting one does, in a fight or out of one. Spells
+are authored data. A character knows the spells their class may cast in a school they
+hold a rank in, and pays for each cast with a spell slot of the spell's rank; slots are
+an attrition resource, spent across fights and restored only by camping. What a spell
+does is fixed, never rolled, so its preview is its result.
+
+**Camp.** Where the party stops to recover. Camping restores spent spell slots, and is
+where food is prepared: cooking gives buffs, and camping clears whatever buffs are still
+running, so each camp is a decision to give up what was cooked last. Camping is refused
+with an enemy in sight and costs time, so roaming enemies move while the party rests.
+
 **Content definitions.** The authored guidelines generation runs inside — floor
-archetypes, encounter budgets, loot tables, ability definitions — and the combatants
+archetypes, encounter budgets, loot tables, spells, ability definitions — and the combatants
 themselves, each in a file of its own under `src/game-data`. Data, not code, and
 separate from the code that reads it: a goblin is edited without opening a module.
 

@@ -1,0 +1,44 @@
+# Magic — EARS Specs
+
+Specs for the magic segment. Design: `magic-design.md`.
+
+A particular spell's base number, and how many slots Intellect buys, are content data
+and tunable values, not requirements. These specs fix what a spell is, who knows it, how
+it is paid for, and what a cast does.
+
+## What a spell is
+
+- [ ] **MAGIC-SPELL-001**: The system shall give every spell an identifier, a name, a school, a rank, the classes that may cast it, a target of enemy or ally, an effect, and where it may be cast.
+- [ ] **MAGIC-SPELL-002**: The system shall read each spell from a file of its own under the authored spell data.
+- [ ] **MAGIC-SPELL-003**: When an authored spell names a school, class, target, effect or place to cast that does not exist, the system shall reject that file by name and the value it could not read.
+- [ ] **MAGIC-SPELL-004**: The system shall hold Magic Missile, an Evocation spell of rank 1 for mages, aimed at an enemy, dealing damage that ignores armour, cast only in a fight.
+- [ ] **MAGIC-SPELL-005**: The system shall hold Heal, a Healing spell of rank 1 for clerics, aimed at an ally, restoring hit points, cast in a fight or while exploring.
+
+## Who knows a spell
+
+- [ ] **MAGIC-KNOW-001**: The system shall treat a character as knowing a spell when the spell names the character's class and the character's rank in the spell's school is at least the spell's rank.
+
+## Spell slots
+
+- [ ] **MAGIC-SLOT-001**: The system shall give a character who knows a rank-1 spell three rank-1 slots and one more for every two points of Intellect above ten, and shall give a character no slots at a rank they know no spell of.
+- [ ] **MAGIC-SLOT-002**: When a character casts a spell, the system shall spend one of their slots of that spell's rank.
+- [ ] **MAGIC-SLOT-003**: If a character has no slot of a spell's rank left, then the system shall refuse the cast and spend nothing.
+- [ ] **MAGIC-SLOT-004**: When the camp segment restores a character's slots, the system shall return every slot they have spent.
+- [ ] **MAGIC-SLOT-005**: The system shall restore no slot except when the camp segment asks.
+- [ ] **MAGIC-SLOT-006**: The system shall keep a character's spent slots in the party's save.
+
+## What a cast does
+
+- [ ] **MAGIC-CAST-001**: The system shall set a spell's magnitude to its base grown by a tenth per rank in its school and by four hundredths per point of Intellect above or below ten, rounded to a whole number and never below one.
+- [ ] **MAGIC-CAST-002**: When a spell that deals damage ignoring armour is cast on an enemy, the system shall deal its whole magnitude, unreduced by the target's armour.
+- [ ] **MAGIC-CAST-003**: When a healing spell is cast on a conscious ally, the system shall restore its magnitude in hit points through the party's operation, never past the ally's maximum.
+- [ ] **MAGIC-CAST-004**: If a healing spell is aimed at an ally who is not conscious or is already at full hit points, then the system shall refuse the cast and spend nothing.
+- [ ] **MAGIC-CAST-005**: The system shall report what a cast on a given target would do, by the calculation the cast uses, without spending anything or changing anything.
+- [ ] **MAGIC-CAST-006**: The system shall offer a spell only where the spell names it may be cast, and shall refuse a cast anywhere else.
+- [ ] **MAGIC-CAST-007**: When a character casts a spell out of a fight, the system shall train the spell's school through the party's operation for a skill used outside combat.
+
+## Deferred
+
+- [D] **MAGIC-SLOT-007**: The system shall give characters slots at ranks above 1, by a rule set when spells of those ranks exist.
+- [D] **MAGIC-SPELL-006**: The system shall hold a Restoration spell that wakes an unconscious ally.
+- [D] **MAGIC-CAST-008**: The system shall let an enemy cast the spells it knows, by the same rules a character casts by.

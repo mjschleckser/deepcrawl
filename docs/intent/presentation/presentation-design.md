@@ -187,9 +187,9 @@ viewport, not pixels, so they hold their proportions on any screen:
 │turn│               │ turn       │
 │left│               │ right      │
 │    └───────────────┘            │
-│  ┌──────┬──────┬──────┬──────┐  │
-│  │party │items │spells│ use  │  │ ← party action bar
-│  └──────┴──────┴──────┴──────┘  │
+│ ┌─────┬─────┬──────┬────┬────┐  │
+│ │party│items│spells│camp│use │  │ ← party action bar
+│ └─────┴─────┴──────┴────┴────┘  │
 └─────────────────────────────────┘
 ```
 
@@ -443,7 +443,7 @@ the panel is only ever offering one combatant's options.
 | Option | What it does | Unavailable when |
 |---|---|---|
 | **Attack** | swing what this combatant carries | they carry no attack, or nothing is standing to swing at |
-| **Magic** | cast from what this character knows | they know no spell they can still pay for |
+| **Magic** | cast from what this character knows | they know no spell that may be cast in a fight, or have no slot left to pay for one |
 | **Items** | open the Items screen on this character, to put something on from the pack | the pack holds nothing this character may wield |
 | **Flee** | take the whole party out of the encounter | escape is certain to fail — something present forbids it, or the party cannot outrun what is chasing it |
 
@@ -466,11 +466,10 @@ place every turn, changing only its words.
 The reason takes the slot the key hint occupies on an available control. A greyed
 control's key does nothing, so the number is worth less there than the sentence is.
 
-**Magic is greyed in every fight today**, there being no spell a character knows, and
-Items is greyed whenever the pack holds nothing the character may wield. Both are drawn
-regardless, because the row's shape is not a function of which systems happen to exist
-yet, and Magic will light up when spells arrive without the row being redesigned around
-it.
+**Magic is greyed for everyone who casts nothing in a fight** — *No spells* for a fighter
+or thief, *No slots* for a caster who has spent them all — and Items is greyed whenever the
+pack holds nothing the character may wield. Both are drawn regardless, because the row's
+shape is not a function of who happens to be acting.
 
 This is the whole reason for a fixed four. The alternative — offering only what is
 legal — gives a menu that is a different shape on every turn: *Flee* moves under the
@@ -556,9 +555,14 @@ first nine entries in the order they are listed, and an entry does not print its
 it would be a third figure on a line whose two figures are the point of it, and a phone
 player has no use for it.
 
-Magic will open its menu the same way, off its own button, once there are spells to
-list. An entry that needs a further answer, such as a spell that needs a target, will
-replace the menu's entries with the next question. Items does not open a menu: it opens
+**Magic opens its menu the same way, off its own button.** It lists the spells the
+character knows that may be cast in a fight, each with the slots left at its rank;
+a spell with no slot left is drawn greyed and inert, as a greyed option is. Choosing a
+spell replaces the menu's entries with the next question, *whom*, asked the way Attack
+asks it: the legal targets of that spell — the enemies standing for Magic Missile, the
+conscious party for Heal — each with what the cast will do to them and their hit points.
+A Heal entry for someone already whole is greyed, saying *Unhurt*. Backing out of the
+second question returns to the list of spells. Items does not open a menu: it opens
 the Items screen, the same one exploration opens, because equipment is one subject
 whether or not a fight is on, and two drawings of the same pack would drift apart.
 
@@ -795,6 +799,35 @@ pack is not a short fixed list, and a key that meant a different item each time 
 changed would be a key nobody could press from memory. A pack longer than the page keeps
 the highlighted row in view by scrolling the list.
 
+## The Spells Screen
+
+`SPELLS` opens it out of a fight — the `C` key, or the Spells button. It is drawn and
+paged exactly as the Items screen is: one character a page, the name across the head,
+previous, Close and next along the foot, the arrow keys and `A` and `D`, `Escape` and
+`C` to close. It holds the input and tells the simulation a menu is up, so browsing it
+costs nothing. It opens on the first character in the party's order who knows a spell
+that may be cast out of a fight, and on the first character if nobody does.
+
+A page lists every spell the character knows, each with what it does — *Heals 10*,
+*7 damage, ignores armour* — and the slots left at its rank. A spell that may not be cast
+here is drawn greyed with the reason in place of its effect: *In a fight only* for Magic
+Missile, *No slots left* when the rank is spent. A character who knows no spell says so.
+
+Pressing a spell that can be cast asks *whom*: the page's rows become the party, each
+with their hit points and what the cast will do to them, a target the spell cannot help
+greyed with the reason — *Unhurt*, *Unconscious*. Choosing one casts it, for a tick and a
+slot, and the page returns to the list of spells with the slot spent. Close, `Escape` or
+`C` while choosing a target goes back to the list rather than closing the screen.
+
+## Camping
+
+The action bar carries **Camp**, between Spells and Use, and `R` does the same. Camping
+is a commitment, not a screen: pressing it camps at once. What happened is reported over
+the view, the way a chest's find is: *The party rests. Spell slots are restored.*, or
+*An enemy is in sight. The party cannot camp here.* Either report holds the input until
+it is dismissed by `Enter`, `Escape`, `R` or a press anywhere. A camp broken by an enemy
+needs no report of its own: the fight that begins is the report.
+
 ## Opening a Chest
 
 Standing on an unopened chest offers it as an `INTERACT`, the same control that offers
@@ -1007,6 +1040,8 @@ screen the player can see but the game cannot have.
 | The fallen | Drawn in place, spent and dimmed | Removing them from the column | The shape of a side that has lost its middle is information, and a column that closed its gaps would move everything below the gap while the player was looking at it. |
 | Where the party screen's open state lives | The controller, as view state, with the simulation told only that a menu is open | A flag in exploration state; a party action that commits and costs a tick | Opening a character sheet changes nothing that is true, which is the test the expanded map already passes. Exploration still owns the clock rule, so it is told a menu is up and nothing more. Charging a tick to read a sheet would make looking cost something, which pushes the systems player to look less. |
 | How the map is shown | Three states stepped through by one control — expanded, minimap, hidden — and back to expanded | Two states, expanded and collapsed; a separate control for each state | A minimap is worth keeping in view while walking, and a corridor with nothing over it is worth having too, so two states force a choice that three do not. One control stepping smaller and then back to full keeps every state one or two presses away without spending room on more buttons. |
+| Casting out of a fight | A Spells screen paged like the Items screen, asking *whom* on its own rows | A menu off the Spells button; casting from the party screen | A screen paged by character reads the same as the two screens beside it and shows slots without a separate view. Asking *whom* on the same rows keeps the choice where the thumb already is. |
+| Where Camp lives | A button of its own on the action bar | Inside the party screen; inside the Spells screen | Camp is about the whole party and about more than spells once food arrives, so it belongs beside the other party actions rather than inside a screen about one of them. |
 | Party screen layout | One character a page, paged with wrap-around, opening on the first | Four compact rows with the selected character's sheet beneath; all four sheets in one scrolling column | Four sheets do not fit a phone held upright at a readable size, and a roster-and-detail split spends a third of the screen repeating what the sheet already says. A scrolling column moves under the thumb. A page each gives every sheet the whole column, and with four characters wrap-around paging puts any one within two presses. |
 | Where a page's controls sit | Previous, Close and next in one row along the foot, the name across the head | Arrows either side of the name with Close at the top right | The top of a phone is out of a thumb's reach, and paging and closing are the most frequent presses on these screens. The name stays at the head, where reading starts and where it has the full width. |
 | Paging keys | The arrow keys, `A` and `D`, and `1` to `4` | Arrow keys alone; a dedicated pair of keys | `A` and `D` are the turn keys and free while the screen holds the input, so a keyboard player pages without moving their hand. The number keys match how fights already address a slot by number. |
@@ -1068,7 +1103,6 @@ screen the player can see but the game cannot have.
 1. **Animation in a fight.** An action lands in one frame, and the only motion is the attacker's judder. Real animation — a blow that travels, a spell that reads as a spell — is unbuilt, and would want the ticker running throughout a fight rather than only between actions. The pause, the shake, and the ticker's bounds are settled; everything past them is not.
 2. **Art.** Everything is flat-shaded polygons. Textures, sprites for doors and stairs, and any sense of material are unaddressed.
 3. **Animation between steps.** A step currently cuts from one position to the next. Whether it should slide, and how that squares with a stopped ticker, is open — an animation is the one thing in this segment that would need time.
-4. **The spell screen.** `SPELLS` is drawn on the action bar but opens nothing: it routes to an ability set that is unbuilt.
 9. **Scrolling the pack by touch.** The keyboard's highlight keeps a long pack's rows in reach; a finger has no way to scroll it yet. Nothing can make the pack longer than what the party takes off until loot exists, which is when this is wanted.
 5. **Expanded-map interaction.** Panning and zooming an expanded map, and whether tapping a tile does anything, are unspecified. Auto-travel is already deferred in exploration.
 6. **Wide-screen framing.** On a very wide desktop window the corridor frames may want letterboxing rather than stretching; untested.

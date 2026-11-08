@@ -140,7 +140,7 @@ The tick is the unit of in-game time. Exploration owns the tick counter.
 | Event | Ticks |
 |---|---|
 | Party enters a new tile | a **step cost** set by the party's average Dexterity |
-| Camp actions (sleep, eat, rest, train) | defined by the camp segment |
+| Camping | the camp's ticks, set by the camp segment |
 
 ### The step cost
 
@@ -396,7 +396,7 @@ Rules beyond that line belong to the other segment.
 | Floor re-stocking | the party arrives on a floor it has visited before | the floor and the ticks elapsed since it was last left | how far enemies move, which rooms refill |
 | Opening a chest | the player commits `INTERACT` on an unopened chest | the floor, its seed and archetype, and the chest's number | what the chest holds |
 | Encounter | the party and a roamer reach one another — either one attempting the other's tile | the encounter payload — see *The Combat Handoff* | all of combat |
-| Camp | the player enters camp | tick advance | sleep, eat, rest, train |
+| Camp | the player commits `CAMP` | the clock's advance by the camp's ticks, roaming enemies' movement on them, the contact check after, and what the party can see | whether a camp may begin, and what it restores |
 
 ## The Combat Handoff
 
@@ -493,7 +493,8 @@ for the same one step's ticks, since turns are free.
 |---|---|---|---|
 | `PARTY` — roster, statuses | `P` | party bar | party |
 | `ITEMS` — equip and use items | `I` | Items button | loot and items |
-| `SPELLS` — out-of-combat magic | `C` | spell icon | abilities |
+| `SPELLS` — cast a spell out of a fight | `C` | Spells button | magic |
+| `CAMP` — stop and rest | `R` | Camp button | camp |
 | `INTERACT` — dungeon features on the current tile | `E` | use control | varies by feature; a staircase is exploration's own |
 | `TOGGLE_MAP` — step the automap between expanded, minimap and hidden | `M` | map control | exploration |
 
@@ -502,7 +503,9 @@ owns it and charges the clock. **Opening a party action costs nothing; committin
 one costs a tick.** Reading the roster, browsing the Items screen, and reading the map are
 free, because a game that charges for looking punishes the player for playing
 carefully. Equipping the armour, drinking the potion, casting the spell, and working
-the lever each cost a tick.
+the lever each cost a tick. Camping is the one commitment that costs more: the camp's
+whole stretch of ticks, spent as walking would spend them, with roaming enemies moving
+through it and contact checked after.
 
 `TOGGLE_MAP` never costs a tick at all, having nothing to commit to.
 

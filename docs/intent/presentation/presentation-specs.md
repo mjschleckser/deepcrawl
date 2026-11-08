@@ -146,6 +146,10 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-MENU-018**: The system shall draw on an attack target's entry the symbol for the skill of the weapon the acting character is using, with a distinct symbol for each of Blade, Blunt, Polearm and Bow.
 - [x] **PRESENT-MENU-017**: The system shall list attack targets in a fight menu in the order their column lists them.
 
+- [ ] **PRESENT-MENU-012**: When the player presses Magic with something to choose from, the system shall offer the spells the character knows that may be cast in a fight as a fight menu off that option's button, by the same rules as a menu of targets, each entry naming the spell and the slots left at its rank, and greying a spell with no slot left.
+- [ ] **PRESENT-MENU-017**: When the player chooses a spell from the Magic menu, the system shall replace the menu's entries with that spell's legal targets, each with what the cast will do to them and their hit points, greying a target the spell would be refused on with the reason, and shall cast the spell on the target chosen.
+- [ ] **PRESENT-MENU-018**: While the Magic menu asks for a target, when the player backs out, the system shall return to the list of spells.
+
 ## Prompts
 
 - [x] **PRESENT-PROMPT-001**: While the simulation holds a pending confirmation, the system shall draw a prompt describing it.
@@ -184,7 +188,7 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-FIGHT-006**: The system shall offer every character the same four options in the same order on every turn: Attack, Magic, Items, then Flee.
 - [x] **PRESENT-FIGHT-034**: The system shall draw an option the acting character cannot take in its own place, marked unavailable, rather than omitting it or reordering the options around it.
 - [x] **PRESENT-FIGHT-035**: When the player presses an option marked unavailable, the system shall do nothing and shall report nothing.
-- [x] **PRESENT-FIGHT-036**: The system shall mark Attack unavailable when the character carries no attack or no combatant is standing to attack, Magic unavailable when the character can cast no spell, Items unavailable when the pack holds nothing that character may wield or drink, and Flee unavailable when the simulation reports a flee attempt as certain to fail.
+- [ ] **PRESENT-FIGHT-036**: The system shall mark Attack unavailable when the character carries no attack or no combatant is standing to attack, Magic unavailable when the character knows no spell that may be cast in a fight or has no slot left for any they know, Items unavailable when the pack holds nothing that character may wield or drink, and Flee unavailable when the simulation reports a flee attempt as certain to fail.
 - [x] **PRESENT-FIGHT-040**: The system shall draw on each unavailable option, beneath its name and in smaller text, a reason naming why it cannot be taken.
 - [x] **PRESENT-FIGHT-041**: The system shall draw an unavailable option's reason in the place an available option draws its key hint, and shall draw no key hint on an unavailable option.
 - [x] **PRESENT-FIGHT-042**: While every option is unavailable, the system shall draw a Pass turn control over the four, shall accept a press on it alone, and shall keep the four drawn beneath it.
@@ -263,6 +267,23 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-ITEMS-029**: While the Items screen is open in a fight, when the player uses a consumable, the system shall take that use as the character's action, close the screen, and go on with the fight.
 - [x] **PRESENT-ITEMS-030**: The system shall draw the Items screen's controls in one row along the foot of the page — previous at the left, Close centred, next at the right, and Close alone in a fight — with the list of rows ending above that row and the character's name across the head of the page.
 
+## The Spells screen
+
+- [ ] **PRESENT-SPELLS-001**: When the player performs `SPELLS` during exploration while no prompt is pending and no screen is open, the system shall open the Spells screen on the first character in the party's order who knows a spell that may be cast out of a fight, or on the first character if none does.
+- [ ] **PRESENT-SPELLS-002**: The system shall draw and page the Spells screen as it does the Items screen, one character a page, with the same controls along the foot, the same keys, and the same wrap-around, and shall close it on `SPELLS`, `Escape` or Close.
+- [ ] **PRESENT-SPELLS-003**: The system shall hold whether the Spells screen is open, its page and any spell awaiting a target as view state in the presentation layer, and shall mark exploration's menu open while it is open.
+- [ ] **PRESENT-SPELLS-004**: The system shall draw on a Spells page every spell the character knows, each with what it does and the slots left at its rank, or a mark that the character knows none.
+- [ ] **PRESENT-SPELLS-005**: The system shall draw greyed, with the reason in place of its effect, every spell on a Spells page that may not be cast out of a fight or has no slot left, and a press on it shall do nothing.
+- [ ] **PRESENT-SPELLS-006**: When the player presses a spell that can be cast, the system shall replace the page's rows with the party, each with their hit points and what the cast will do to them, greying with the reason every one the spell would be refused on.
+- [ ] **PRESENT-SPELLS-007**: When the player presses a target that can be chosen, the system shall cast the spell on that target through the magic segment as a committed party action, and return the page to its list of spells.
+- [ ] **PRESENT-SPELLS-008**: While a spell awaits a target, when the player presses Close, `Escape` or `SPELLS`, the system shall return the page to its list of spells and cast nothing.
+
+## Camping
+
+- [ ] **PRESENT-CAMP-001**: The system shall draw a Camp control on the action bar, between Spells and Use, that performs `CAMP`.
+- [ ] **PRESENT-CAMP-002**: When a camp ends rested, or is refused with an enemy in sight, the system shall draw over the view a report saying which.
+- [ ] **PRESENT-CAMP-003**: While a camp report is drawn, the system shall discard every movement verb and party action, and when the player presses `Enter`, `Escape` or `R`, or presses anywhere, shall dismiss it and change nothing.
+
 ## Opening a chest
 
 - [x] **PRESENT-CHEST-001**: When a chest is opened, the system shall draw over the view a report naming the gold the chest held when there is any, and every item it held, each named in its rarity's colour and identical items named once with their count, or saying that it held nothing.
@@ -286,6 +307,5 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [D] **PRESENT-VIEW-011**: The system shall draw walls, floors, and features with textures rather than flat fill.
 - [D] **PRESENT-INPUT-007**: When a step is blocked, the system shall give the player feedback that the way is barred.
 - [D] **PRESENT-FIGHT-016**: The system shall animate a resolving action rather than landing its effect in a single frame.
-- [D] **PRESENT-MENU-012**: When the player presses Magic with something to choose from, the system shall offer the spells as a fight menu off that option's button, by the same rules as a menu of targets.
 - [D] **PRESENT-ITEMS-022**: While the Items screen is open, the system shall let the player scroll a pack longer than the page by touch.
 - [D] **PRESENT-MENU-013**: When a chosen fight menu entry needs a further answer, the system shall replace the menu's entries with the next question rather than opening a second menu.
