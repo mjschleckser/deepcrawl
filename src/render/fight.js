@@ -151,12 +151,15 @@ function layOutStrip(encounter, phase, metrics, scale) {
 
   const tiles = turns.map(({ id, side }, i) => {
     const hero = roster(encounter.party).find((c) => c.id === id);
-    const who = hero ?? encounter.enemies.members.find((e) => e.id === id);
+    // An enemy's place in its column, from the top: the fallen keep theirs, so a number
+    // never moves to another card mid-fight.
+    const place = encounter.enemies.members.findIndex((e) => e.id === id);
+    const who = hero ?? encounter.enemies.members[place];
     const size = i === 0 ? current : tile;
     const drawn = {
       id, side,
       portrait: who.portrait ?? null,
-      mark: hero ? hero.name.charAt(0).toUpperCase() : null,
+      mark: hero ? hero.name.charAt(0).toUpperCase() : String(place + 1),
       current: i === 0,
       x,
       y: box.y + (box.height - size) / 2,

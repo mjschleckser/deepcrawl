@@ -113,8 +113,8 @@ export function forgetParty(roamer) {
 }
 
 /**
- * Whether a roamer can see the party. A roamer knows no secret doors, so a party that
- * ducks behind one is genuinely hidden.
+ * Whether a roamer can see the party, by the same opacity rules the party's own sight
+ * uses: a wall or a closed door between them hides the party.
  *
  * @spec ENEMY-AWARE-006
  */
@@ -125,14 +125,13 @@ export function roamerSees(roamer, floor, party) {
 const chebyshev = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
 
 /**
- * What stops a roamer. It knows no secret doors, so a party that ducks behind one is
- * genuinely hidden rather than merely inconvenienced.
+ * What stops a roamer: a wall, or a door that stands closed.
  *
  * @spec ENEMY-MOVE-007
  */
 function blocksRoamer(floor, x, y, direction) {
   const kind = getEdge(floor, x, y, direction);
-  if (kind === EdgeKind.WALL || kind === EdgeKind.SECRET_DOOR) return true;
+  if (kind === EdgeKind.WALL) return true;
   if (kind === EdgeKind.DOOR || kind === EdgeKind.LOCKED_DOOR) {
     return !isEdgeOpen(floor, x, y, direction);
   }

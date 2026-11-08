@@ -144,8 +144,7 @@ first sight of one round a corner may be of something already coming.
 
 **Awareness decays with time, but never while the party is in sight.** A roamer that
 can see the party stays certain of where they are, however long the chase runs. Once
-the party breaks line of sight — around a corner, through a closed door, behind a
-secret one — the roamer's certainty runs down over ticks, and when it is spent the
+the party breaks line of sight — around a corner or through a closed door — the roamer's certainty runs down over ticks, and when it is spent the
 roamer goes back to drifting.
 
 Breaking line of sight is therefore the thing that ends a chase, and it is a skill
@@ -214,7 +213,7 @@ other first. Who acts first is decided by combat's own opening draw.
 When exploration re-stocks a floor, it asks generation what refills the rooms, and
 generation asks here. What comes back is a set of bands and where they stand.
 
-A re-stocking never touches the floor's construction or its traps, so this segment
+A re-stocking never touches the floor's construction, so this segment
 answers only with occupants.
 
 Nothing is ever placed on the tile the party occupies: a floor that re-stocks around a
@@ -251,7 +250,7 @@ abilities are all later, and all want a reason more interesting than list order.
 | Pursuit speed | Each side pays its own tick cost to cross a tile | Aware roamers matching the party's pace exactly | Paying separately makes outrunning something a real possibility decided by who the party brought, rather than a chase nobody can ever win. It also makes Dexterity matter in a corridor and not only in a fight. |
 | Awareness decay | Runs down over ticks, and never while the party is in sight | Permanent once gained; decaying on a timer regardless of sight | Permanent awareness means a single goblin band pursues forever. Decaying while visible would let a party escape by walking backwards down a lit corridor. Breaking line of sight is the skill worth rewarding. |
 | Unaware movement | Drifting | Standing still; patrolling a route | A motionless roamer is furniture, and a patrol route is authored detail a generated floor cannot provide. Drifting gives a floor that changes without anyone designing its traffic. |
-| Sight for a roamer | The same opacity rules the party uses, with no secret doors known | Monsters knowing their own dungeon's secrets | A party that ducks behind a secret door and is still seen through it would make the discovery worthless. |
+| Sight for a roamer | The same opacity rules the party uses | Roamers seeing through closed doors | Breaking line of sight is how a party sheds pursuit, and a door it just shut must count for something. |
 | Fight behaviour | Choose a legal target, drawn from every standing character | Focus fire and target selection by threat | The rule that matters now is that an enemy never picks an illegal target. Cleverness added before that is solid would be cleverness built on sand. |
 
 ## Open Questions & Future Decisions

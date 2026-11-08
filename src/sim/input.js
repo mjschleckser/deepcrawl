@@ -17,7 +17,6 @@ export const TouchRegion = {
   PARTY_BAR: 'PARTY_BAR',
   ITEMS: 'ITEMS',
   SPELL_ICON: 'SPELL_ICON',
-  SEARCH_CONTROL: 'SEARCH_CONTROL',
   INTERACT_PROMPT: 'INTERACT_PROMPT',
   MAP: 'MAP',
 };
@@ -39,7 +38,6 @@ const BINDINGS = [
   { action: PartyAction.PARTY, keys: ['p'], region: TouchRegion.PARTY_BAR },
   { action: PartyAction.ITEMS, keys: ['i'], region: TouchRegion.ITEMS },
   { action: PartyAction.SPELLS, keys: ['c'], region: TouchRegion.SPELL_ICON },
-  { action: PartyAction.SEARCH, keys: ['f'], region: TouchRegion.SEARCH_CONTROL },
   { action: PartyAction.INTERACT, keys: ['e'], region: TouchRegion.INTERACT_PROMPT },
   { action: PartyAction.TOGGLE_MAP, keys: ['m'], region: TouchRegion.MAP },
 ];

@@ -42,12 +42,13 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-MAP-003**: When the player toggles the map, the system shall expand a collapsed automap to fill the viewport, and collapse an expanded one.
 - [x] **PRESENT-MAP-004**: The system shall draw the same content expanded as collapsed, differing only in scale.
 - [x] **PRESENT-MAP-005**: While the simulation reports a party position on the automap, the system shall draw a marker showing the party's tile and the direction it faces.
-- [x] **PRESENT-MAP-007**: The system shall draw walls, doors, and found secret doors with distinguishable strokes.
-- [x] **PRESENT-MAP-008**: The system shall mark tiles the simulation reports as holding a known trap, and mark stairs and pits distinguishably from one another.
+- [x] **PRESENT-MAP-007**: The system shall draw walls and doors with distinguishable strokes.
+- [x] **PRESENT-MAP-008**: The system shall mark stairs and pits distinguishably from one another.
 - [x] **PRESENT-MAP-009**: The system shall draw an enemy marker for each enemy the simulation reports, and for no other position.
 - [x] **PRESENT-MAP-010**: The system shall draw a door the simulation reports as open distinguishably from one it reports as closed.
-- [x] **PRESENT-MAP-011**: The system shall draw every enemy with one shared creature marker, distinguishable in shape from the party marker and from a trap mark.
-- [x] **PRESENT-MAP-012**: The system shall mark tiles holding a discovered chest, an unopened chest distinguishably from an opened one, and both distinguishably from stairs, pits and traps.
+- [x] **PRESENT-MAP-011**: The system shall draw every enemy with one shared creature marker, distinguishable in shape from the party marker.
+- [x] **PRESENT-MAP-012**: The system shall mark tiles holding a discovered chest, an unopened chest distinguishably from an opened one, and both distinguishably from stairs and pits.
+- [x] **PRESENT-MAP-013**: When exploration is first drawn, and when a new campaign replaces the old one, the system shall draw the automap expanded.
 
 ## Input
 
@@ -118,7 +119,7 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-STRIP-002**: The system shall draw the same fixed number of tiles in the turn strip throughout an encounter, asking the simulation for that many turns.
 - [x] **PRESENT-STRIP-003**: The system shall draw the first tile of the turn strip larger than the others and highlighted.
 - [x] **PRESENT-STRIP-004**: The system shall draw each tile of the turn strip with the combatant's portrait inside a frame coloured by their side.
-- [x] **PRESENT-STRIP-005**: The system shall mark a character's tile in the turn strip with their initial, and shall draw no mark on an enemy's tile.
+- [x] **PRESENT-STRIP-005**: The system shall mark a character's tile in the turn strip with their initial, and an enemy's tile with its place in the enemy column counted from the top from one, in the same format, the fallen keeping their places.
 - [x] **PRESENT-STRIP-006**: If a combatant's portrait is missing, then the system shall still draw that combatant's tile in the turn strip, with its frame and any mark it carries.
 - [x] **PRESENT-STRIP-007**: The system shall take the order of the turn strip from the simulation's report and from no reckoning of its own.
 - [x] **PRESENT-STRIP-008**: The system shall give the turn strip no hit region, so that a press on it does nothing.
@@ -271,7 +272,7 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 
 ## The save note
 
-- [x] **PRESENT-SAVE-001**: While the simulation reports that the campaign is not being saved, the system shall draw a short note saying so beside the build stamp.
+- [x] **PRESENT-SAVE-001**: While the simulation reports that the campaign is not being saved, the system shall draw a short note saying so on the build stamp's line, after the number, placing the stamp clear of every control at the width of both.
 - [x] **PRESENT-SAVE-002**: When the game opened on a save it set aside, the system shall draw a short note saying so beside the build stamp.
 - [x] **PRESENT-SAVE-003**: While neither applies, the system shall draw no note.
 

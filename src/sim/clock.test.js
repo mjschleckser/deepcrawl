@@ -34,15 +34,6 @@ describe('the clock', () => {
     expect(tickCount(state)).toBe(before + 1);
   });
 
-  // @spec EXPLORE-CLOCK-002
-  it('advances one tick when the party searches its current tile', () => {
-    const state = explorationAt();
-
-    perform(state, { partyAction: PartyAction.SEARCH, commit: true });
-
-    expect(tickCount(state)).toBe(1);
-  });
-
   // @spec EXPLORE-CLOCK-004
   it('advances by the number of ticks the camp segment specifies', () => {
     const state = explorationAt();
@@ -58,7 +49,7 @@ describe('the clock', () => {
     setCombatActive(state, true);
 
     perform(state, { verb: Verb.STEP_FORWARD });
-    perform(state, { partyAction: PartyAction.SEARCH, commit: true });
+    perform(state, { partyAction: PartyAction.INTERACT, commit: true });
 
     expect(tickCount(state)).toBe(0);
   });
@@ -166,9 +157,9 @@ describe('party actions and the clock', () => {
   });
 
   // @spec EXPLORE-ACTION-001
-  it('accepts exactly the six defined party actions', () => {
+  it('accepts exactly the five defined party actions', () => {
     expect(Object.values(PartyAction).sort()).toEqual(
-      ['PARTY', 'ITEMS', 'SPELLS', 'SEARCH', 'INTERACT', 'TOGGLE_MAP'].sort(),
+      ['PARTY', 'ITEMS', 'SPELLS', 'INTERACT', 'TOGGLE_MAP'].sort(),
     );
   });
 
@@ -178,7 +169,7 @@ describe('party actions and the clock', () => {
     setCombatActive(state, true);
 
     expect(perform(state, { verb: Verb.STEP_FORWARD }).rejected).toBe(true);
-    expect(perform(state, { partyAction: PartyAction.SEARCH }).rejected).toBe(true);
+    expect(perform(state, { partyAction: PartyAction.INTERACT }).rejected).toBe(true);
   });
 
   // @spec EXPLORE-BOUND-009

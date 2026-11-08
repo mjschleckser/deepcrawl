@@ -177,12 +177,11 @@ export function createCampaign({ seed = Date.now() >>> 0, saved = null } = {}) {
   }
 
   /**
-   * Re-stocking answers with occupants and nothing else: no edge, no feature, no trap,
+   * Re-stocking answers with occupants and nothing else: no edge, no feature,
    * and never a word about what the party has discovered.
    *
    * @spec EXPLORE-RETURN-005
    * @spec EXPLORE-RETURN-006
-   * @spec EXPLORE-RETURN-009
    * @spec GEN-STOCK-001
    */
   function restockFloor(floorId, elapsed) {

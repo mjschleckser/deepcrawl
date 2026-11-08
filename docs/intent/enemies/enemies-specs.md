@@ -35,7 +35,7 @@ are fed into.
 - [x] **ENEMY-AWARE-003**: While the party stands in a roamer's line of sight, the system shall hold that roamer's awareness at full rather than letting it decay.
 - [x] **ENEMY-AWARE-004**: While the party is out of a roamer's line of sight, the system shall decay that roamer's awareness by the ticks that pass.
 - [x] **ENEMY-AWARE-005**: When a roamer's awareness has fully decayed, the system shall return it to unaware.
-- [x] **ENEMY-AWARE-006**: The system shall treat a wall, a closed door, and an undiscovered secret door as blocking a roamer's line of sight.
+- [x] **ENEMY-AWARE-006**: The system shall treat a wall and a closed door as blocking a roamer's line of sight.
 - [x] **ENEMY-AWARE-007**: When the party escapes an encounter, the system shall return the roamer it escaped from to unaware.
 
 ## Movement
@@ -46,7 +46,7 @@ are fed into.
 - [x] **ENEMY-MOVE-004**: When a roamer has accumulated at least its crossing cost, the system shall move it one tile and deduct that cost, repeating while it can still afford to move.
 - [x] **ENEMY-MOVE-005**: While a roamer is aware, the system shall move it one tile toward the party.
 - [x] **ENEMY-MOVE-006**: While a roamer is unaware, the system shall move it one tile in a direction it can travel, chosen from the seed.
-- [x] **ENEMY-MOVE-007**: The system shall not move a roamer through a wall, a closed door, or an undiscovered secret door.
+- [x] **ENEMY-MOVE-007**: The system shall not move a roamer through a wall or a closed door.
 - [x] **ENEMY-MOVE-008**: The system shall let a party whose step cost is lower than a pursuing roamer's crossing cost increase its distance from that roamer over successive steps.
 
 ## Contact
@@ -65,7 +65,7 @@ are fed into.
 ## Re-stocking
 
 - [x] **ENEMY-STOCK-001**: When generation asks for a floor's occupants, the system shall return bands and the tiles they stand on.
-- [x] **ENEMY-STOCK-002**: The system shall return no change to any floor's edges, tile features, or traps when asked for occupants.
+- [x] **ENEMY-STOCK-002**: The system shall return no change to any floor's edges or tile features when asked for occupants.
 
 ## Deferred
 

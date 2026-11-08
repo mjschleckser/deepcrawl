@@ -14,9 +14,7 @@ import {
   createExploration,
   computeSight,
   perform,
-  recordTrapDetected,
   isTileDiscovered,
-  isTrapKnown,
   tickCount,
   partyPosition,
   serialize,
@@ -41,7 +39,6 @@ function campaign() {
     facing: Direction.NORTH,
   });
   computeSight(state);
-  recordTrapDetected(state, 'upper', 3, 2);
   return state;
 }
 
@@ -79,14 +76,13 @@ describe('saving exploration state', () => {
   });
 
   // @spec EXPLORE-SAVE-003
-  it('saves the discovery record and the traps the party knows about', () => {
+  it('saves the discovery record', () => {
     const original = campaign();
     const restored = roundTrip(original);
 
     expect(isTileDiscovered(restored, 'upper', 3, 3)).toBe(true);
     expect(isTileDiscovered(restored, 'upper', 3, 1)).toBe(true);
     expect(isTileDiscovered(restored, 'upper', 6, 4)).toBe(false);
-    expect(isTrapKnown(restored, 'upper', 3, 2)).toBe(true);
   });
 
   // @spec EXPLORE-SAVE-003

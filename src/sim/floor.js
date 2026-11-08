@@ -11,7 +11,6 @@ export const EdgeKind = {
   WALL: 'WALL',
   DOOR: 'DOOR',
   LOCKED_DOOR: 'LOCKED_DOOR',
-  SECRET_DOOR: 'SECRET_DOOR',
 };
 
 export const TileFeature = {
@@ -78,7 +77,7 @@ function edgeSlot(floor, x, y, direction) {
 
 /**
  * A stable identity for an edge, the same from either side. Used to record which
- * secret doors the party has discovered without duplicating the record per tile.
+ * edges the party has discovered without duplicating the record per tile.
  *
  * @spec EXPLORE-FLOOR-002
  */

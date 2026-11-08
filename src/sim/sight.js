@@ -10,7 +10,6 @@ import {
   Direction,
   EdgeKind,
   contains,
-  edgeDetail,
   edgeKey,
   getEdge,
   getTile,
@@ -40,8 +39,7 @@ const NEIGHBOUR = {
 
 /**
  * Whether an edge stops sight. A closed door is as opaque as a wall, so a room cannot
- * be mapped before it is entered, and an undiscovered secret door is indistinguishable
- * from the wall it imitates.
+ * be mapped before it is entered.
  *
  * @spec EXPLORE-SIGHT-002
  */
@@ -50,9 +48,6 @@ export function isOpaque(discoveredEdges, floor, x, y, direction) {
   if (kind === EdgeKind.WALL) return true;
   if (kind === EdgeKind.DOOR || kind === EdgeKind.LOCKED_DOOR) {
     return !isEdgeOpen(floor, x, y, direction);
-  }
-  if (kind === EdgeKind.SECRET_DOOR) {
-    return !discoveredEdges.has(edgeKey(floor, x, y, direction));
   }
   return false;
 }
@@ -187,11 +182,8 @@ function discoverTile(state, floor, x, y) {
   tiles.add(`${x},${y}`);
   state.discoveredTiles.set(floor.id, tiles);
 
-  // Discovering a tile discovers its edges — except a secret door, which stays hidden
-  // until the search mechanics find it. Without that carve-out, merely looking at a
-  // tile would give up its secrets and searching would never be worth an action.
+  // Discovering a tile discovers its edges with it.
   for (const dir of ALL_DIRECTIONS) {
-    if (edgeDetail(floor, x, y, dir).kind === EdgeKind.SECRET_DOOR) continue;
     state.discoveredEdges.add(edgeKey(floor, x, y, dir));
   }
 }
@@ -203,22 +195,6 @@ export function isTileDiscovered(state, floorId, x, y) {
 export function isEdgeKnown(state, floorId, x, y, direction) {
   const floor = state.getFloor(floorId);
   return state.discoveredEdges.has(edgeKey(floor, x, y, direction));
-}
-
-/**
- * Traps live in their own segment, but whether the party *knows* about one is part of
- * what the party has discovered, so it is recorded here with the rest of the map.
- *
- * @spec EXPLORE-SIGHT-010
- */
-export function recordTrapDetected(state, floorId, x, y) {
-  const traps = state.knownTraps.get(floorId) ?? new Set();
-  traps.add(`${x},${y}`);
-  state.knownTraps.set(floorId, traps);
-}
-
-export function isTrapKnown(state, floorId, x, y) {
-  return state.knownTraps.get(floorId)?.has(`${x},${y}`) ?? false;
 }
 
 /**
@@ -239,15 +215,12 @@ export function canSee(state, floor, x, y) {
 }
 
 /**
- * Work out what the party sees from where it stands, record it, and offer the result
- * to the trap segment for detection.
+ * Work out what the party sees from where it stands, and record it.
  *
  * @spec EXPLORE-SIGHT-001
  * @spec EXPLORE-SIGHT-003
  * @spec EXPLORE-SIGHT-004
- * @spec EXPLORE-SIGHT-005
  * @spec EXPLORE-SIGHT-009
- * @spec EXPLORE-BOUND-008
  */
 export function computeSight(state) {
   const floor = state.getFloor(state.party.floorId);
@@ -266,8 +239,6 @@ export function computeSight(state) {
   for (const tile of visibleTiles(state, floor, origin, state.party.facing, SIGHT_RANGE)) {
     record(tile.x, tile.y);
   }
-
-  state.hooks.onTrapDetect({ floorId: floor.id, tiles, deliberate: false });
 
   return { floorId: floor.id, tiles };
 }

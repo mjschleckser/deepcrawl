@@ -7,29 +7,21 @@
  */
 
 import {
-  Direction, EdgeKind, chestOpenedIn, edgeDetail, edgeKey, getTile, isEdgeOpen,
+  Direction, chestOpenedIn, edgeDetail, getTile, isEdgeOpen,
 } from './floor.js';
 
 const ALL_DIRECTIONS = Object.values(Direction);
 
 /**
- * What a discovered edge looks like on the map. An undiscovered secret door is
- * reported as the wall it imitates — the map gives nothing away that the party has
- * not actually found.
+ * What a discovered edge looks like on the map. A door also reports whether it stands
+ * open, because a doorway already walked through and one still shut are different
+ * things to a party reading its own map.
  *
- * A door also reports whether it stands open, because a doorway already walked through
- * and one still shut are different things to a party reading its own map.
- *
- * @spec EXPLORE-MAP-003
  * @spec EXPLORE-MAP-011
  */
-function drawnEdge(state, floor, x, y, direction) {
+function drawnEdge(floor, x, y, direction) {
   const { kind } = edgeDetail(floor, x, y, direction);
-  const open = isEdgeOpen(floor, x, y, direction);
-  if (kind !== EdgeKind.SECRET_DOOR) return { kind, open };
-  return state.discoveredEdges.has(edgeKey(floor, x, y, direction))
-    ? { kind: EdgeKind.SECRET_DOOR, open }
-    : { kind: EdgeKind.WALL, open: false };
+  return { kind, open: isEdgeOpen(floor, x, y, direction) };
 }
 
 /**
@@ -39,7 +31,6 @@ function drawnEdge(state, floor, x, y, direction) {
  * everything it has seen.
  *
  * @spec EXPLORE-MAP-001
- * @spec EXPLORE-MAP-002
  * @spec EXPLORE-MAP-004
  * @spec EXPLORE-MAP-005
  * @spec EXPLORE-MAP-008
@@ -54,19 +45,17 @@ export function buildAutomapView(
 ) {
   const floor = state.getFloor(state.party.floorId);
   const discovered = state.discoveredTiles.get(floor.id) ?? new Set();
-  const traps = state.knownTraps.get(floor.id) ?? new Set();
 
   const tiles = [];
   for (const key of discovered) {
     const [x, y] = key.split(',').map(Number);
     const edges = {};
-    for (const dir of ALL_DIRECTIONS) edges[dir] = drawnEdge(state, floor, x, y, dir);
+    for (const dir of ALL_DIRECTIONS) edges[dir] = drawnEdge(floor, x, y, dir);
     tiles.push({
       x,
       y,
       feature: getTile(floor, x, y).feature,
       chestOpened: chestOpenedIn(state.openedChests, floor.id, getTile(floor, x, y)),
-      trapKnown: traps.has(key),
       edges,
     });
   }

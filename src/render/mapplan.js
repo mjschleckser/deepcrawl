@@ -106,7 +106,6 @@ export function buildMapPlan(view, viewport, { expanded = false } = {}) {
     ...place(tile.x, tile.y),
     feature: tile.feature,
     mark: markFor(tile),
-    trapKnown: tile.trapKnown,
   }));
 
   // An open edge is nothing to draw; only something that stands there gets a stroke.

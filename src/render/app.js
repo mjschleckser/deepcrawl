@@ -167,9 +167,6 @@ function drawMap(container, plan) {
 
   for (const cell of plan.cells) {
     graphics.rect(cell.px, cell.py, size, size).fill(PALETTE.map.cell);
-    if (cell.trapKnown) {
-      graphics.circle(cell.px + size / 2, cell.py + size / 2, size * 0.18).fill(PALETTE.map.trap);
-    }
     // A staircase is something to walk to and a pit is something to walk round, so
     // they are not one mark: a square for the one, a ring for the other. A chest is a
     // low box of its own colour, solid until opened and hollow after.
@@ -192,12 +189,7 @@ function drawMap(container, plan) {
 
   for (const edge of plan.edges) {
     const door = edge.kind === EdgeKind.DOOR || edge.kind === EdgeKind.LOCKED_DOOR;
-    const colour =
-      edge.kind === EdgeKind.SECRET_DOOR
-        ? PALETTE.map.secret
-        : door
-          ? PALETTE.map.door
-          : PALETTE.map.wall;
+    const colour = door ? PALETTE.map.door : PALETTE.map.wall;
     // The plan decided where the strokes go; an open door is already two of them.
     for (const [x1, y1, x2, y2] of edge.segments) {
       graphics.moveTo(x1, y1).lineTo(x2, y2).stroke({ width: door ? 3 : 2, color: colour });

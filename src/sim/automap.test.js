@@ -12,8 +12,6 @@ import {
   createExploration,
   computeSight,
   automapView,
-  recordTrapDetected,
-  discoverEdge,
   partyPosition,
 } from './exploration.js';
 
@@ -81,37 +79,6 @@ describe('what the automap draws', () => {
     computeSight(state);
 
     expect(tileAt(automapView(state), 3, 1).feature).toBe(TileFeature.STAIRS_DOWN);
-  });
-
-  // @spec EXPLORE-MAP-002
-  it('draws a trap the party has found', () => {
-    const { state } = scene();
-    computeSight(state);
-    recordTrapDetected(state, 'f1', 3, 2);
-
-    const view = automapView(state);
-
-    expect(tileAt(view, 3, 2).trapKnown).toBe(true);
-    expect(tileAt(view, 3, 3).trapKnown).toBe(false);
-  });
-
-  // @spec EXPLORE-MAP-003
-  it('shows an undiscovered secret door as plain wall, giving nothing away', () => {
-    const { floor, state } = scene();
-    setEdge(floor, 3, 3, Direction.EAST, EdgeKind.SECRET_DOOR);
-    computeSight(state);
-
-    expect(tileAt(automapView(state), 3, 3).edges[Direction.EAST].kind).toBe(EdgeKind.WALL);
-  });
-
-  // @spec EXPLORE-MAP-003
-  it('shows a secret door once the search mechanics have found it', () => {
-    const { floor, state } = scene();
-    setEdge(floor, 3, 3, Direction.EAST, EdgeKind.SECRET_DOOR);
-    discoverEdge(state, 'f1', 3, 3, Direction.EAST);
-    computeSight(state);
-
-    expect(tileAt(automapView(state), 3, 3).edges[Direction.EAST].kind).toBe(EdgeKind.SECRET_DOOR);
   });
 
   // @spec EXPLORE-MAP-011

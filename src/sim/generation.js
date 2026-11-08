@@ -1,8 +1,8 @@
 /**
  * Dungeon generation: a seed and an archetype in, a floor out.
  *
- * Structure is authored once and frozen. Walls, doors, stairs and traps are laid here
- * and never touched again, because the party's map has to stay true and a trap they
+ * Structure is authored once and frozen. Walls, doors, stairs and chests are laid here
+ * and never touched again, because the party's map has to stay true and a door they
  * disarmed must not reappear. Only room contents are ever refilled.
  */
 
@@ -37,8 +37,6 @@ export const DEFAULT_ARCHETYPE = {
   loops: { min: 2, max: 4 },
   doorChance: 0.7,
   lockedChance: 0.12,
-  secretChance: 0.45,
-  traps: { min: 3, max: 7 },
   // @spec GEN-PLACE-013
   chests: { min: 1, max: 3 },
   chestTable: 'chest',
@@ -203,54 +201,33 @@ function flood(floor, carved, start, blocked) {
 }
 
 /**
- * Turn junctions into doors, and some loop connections into secrets.
+ * Turn junctions into doors, and some of those doors into locked ones.
  *
- * A secret is only ever taken if the floor stays fully walkable without it. A secret
- * that is the sole way into somewhere is not a secret, it is a wall the party never
- * gets past.
+ * A lock is only ever kept if the floor stays fully walkable without it. A lock that is
+ * the sole way into somewhere is a wall until a key exists.
  *
  * @spec GEN-DOOR-001
  * @spec GEN-DOOR-002
- * @spec GEN-DOOR-003
  * @spec GEN-DOOR-004
- * @spec GEN-DOOR-005
  */
-function placeDoors(floor, carved, rng, rooms, junctions, loopEdges, archetype) {
-  const secretEdges = [];
-  const loopSet = new Set(loopEdges.map((e) => `${e.from.x},${e.from.y},${e.dir}`));
-
+function placeDoors(floor, carved, rng, junctions, archetype) {
   for (const junction of junctions) {
     const { from, dir } = junction;
     if (getEdge(floor, from.x, from.y, dir) !== EdgeKind.OPEN) continue;
     if (!rng.chance(archetype.doorChance)) continue;
 
-    const fromLoop = loopSet.has(`${from.x},${from.y},${dir}`);
-    const wanted =
-      fromLoop && rng.chance(archetype.secretChance)
-        ? EdgeKind.SECRET_DOOR
-        : rng.chance(archetype.lockedChance)
-          ? EdgeKind.LOCKED_DOOR
-          : EdgeKind.DOOR;
-
-    if (wanted === EdgeKind.DOOR) {
+    if (!rng.chance(archetype.lockedChance)) {
       setEdge(floor, from.x, from.y, dir, EdgeKind.DOOR);
       continue;
     }
 
     // Try it, and put it back if it would strand anything.
-    setEdge(floor, from.x, from.y, dir, wanted);
+    setEdge(floor, from.x, from.y, dir, EdgeKind.LOCKED_DOOR);
     const start = { x: Number(carved.values().next().value.split(',')[0]),
                     y: Number(carved.values().next().value.split(',')[1]) };
-    const openOnly = flood(floor, carved, start, new Set([EdgeKind.SECRET_DOOR, EdgeKind.LOCKED_DOOR]));
-    if (openOnly.size !== carved.size) {
-      setEdge(floor, from.x, from.y, dir, EdgeKind.DOOR);
-      continue;
-    }
-    if (wanted === EdgeKind.SECRET_DOOR) {
-      secretEdges.push({ x: from.x, y: from.y, direction: dir, fromLoop });
-    }
+    const openOnly = flood(floor, carved, start, new Set([EdgeKind.LOCKED_DOOR]));
+    if (openOnly.size !== carved.size) setEdge(floor, from.x, from.y, dir, EdgeKind.DOOR);
   }
-  return secretEdges;
 }
 
 /**
@@ -267,7 +244,6 @@ function placeDoors(floor, carved, rng, rooms, junctions, loopEdges, archetype) 
  * @spec GEN-PLACE-002
  * @spec GEN-PLACE-008
  * @spec GEN-PLACE-009
- * @spec GEN-PLACE-003
  */
 export function generateFloor({
   id, seed, archetype = DEFAULT_ARCHETYPE, depthLabel = null, links = [], up = null,
@@ -313,7 +289,7 @@ export function generateFloor({
     ({ from, to }) =>
       inAnyRoom(rooms, from.x, from.y) !== inAnyRoom(rooms, to.x, to.y),
   );
-  const secretEdges = placeDoors(floor, carved, deriveRng(rng), rooms, junctions, loopEdges, archetype);
+  placeDoors(floor, carved, deriveRng(rng), junctions, archetype);
 
   const placeRng = deriveRng(rng);
   const carvedList = [...carved].map((k) => {
@@ -374,22 +350,12 @@ export function generateFloor({
     });
   }
 
-  const trapCount = placeRng.int(archetype.traps.min, archetype.traps.max);
-  const traps = [];
-  for (let i = 0; i < trapCount; i++) {
-    const spot = take();
-    if (!spot) break;
-    traps.push({ x: spot.x, y: spot.y });
-  }
-
   // Chests last, from a generator of their own taken after everything else, so how
   // many a floor gets changes nothing generated before them.
   // @spec GEN-PLACE-010
   placeChests(floor, deriveRng(rng), { rooms, taken, thresholds, archetype });
 
   floor.rooms = rooms;
-  floor.traps = traps;
-  floor.secretEdges = secretEdges;
   floor.seed = seed;
   return floor;
 }

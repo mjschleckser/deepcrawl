@@ -42,7 +42,7 @@ likely to blur.
 
 | | Owned by exploration | Owned by presentation |
 |---|---|---|
-| Automap | which tiles, edges, traps, and enemies may be shown | how they are drawn, where the widget sits, how it expands |
+| Automap | which tiles, edges, and enemies may be shown | how they are drawn, where the widget sits, how it expands |
 | First-person view | what stands ahead, and to what depth | the perspective, the geometry, the colours |
 | Input | the action vocabulary and both of its paths | reading the keyboard, hit-testing taps, drawing the controls |
 
@@ -131,22 +131,27 @@ A corner widget over the first-person view, drawn from what exploration says may
 shown and nothing else.
 
 - Discovered tiles are cells; discovered edges are strokes along the cell boundary.
-- Walls, doors, and secret doors the party has found are distinguished by stroke, and
+- Walls and doors are distinguished by stroke, and
   a door shows whether it stands open: closed, it bars the edge; open, it leaves the
   gap the party walked through between its two posts.
-- Known traps carry a mark; stairs carry a square and pits a ring.
+- Stairs carry a square and pits a ring.
 - A chest carries a small filled box while unopened and an outlined one once opened,
   so the map shows which rooms still hold something.
 - The party is a triangle pointing the way it faces.
 - Enemies appear only where exploration reports them, which is only where the party
   can presently see them, and are drawn as a creature mark rather than a dot, so one is
-  not read as a trap or as the party. Every enemy shares that mark; telling a goblin
+  not read as the party. Every enemy shares that mark; telling a goblin
   from a mage on the map is authoring nobody has done.
 
 The widget sits in the top-left corner and its Map control in the top-right, so the
-control's panel hides none of the map. Tapping the control or pressing the map key
-expands the widget to fill the screen; the same input collapses it. Expanded, it is the
-same drawing at a larger scale — not a different map with different rules.
+control's panel hides none of the map. The control is a short button, about as tall as it
+is wide on a phone, so it covers little of the corridor's ceiling.
+
+**The map opens expanded.** A game starts with the map drawn large over the middle of
+the view, translucent enough that the corridor still reads behind it, because the map is
+what a player is building and the reason to keep walking. Tapping the control or pressing
+the map key collapses it into its corner; the same input expands it again. Expanded, it is
+the same drawing at a larger scale — not a different map with different rules.
 
 ## Input
 
@@ -207,7 +212,7 @@ game, so a zone draws only its name; its outline appears under the finger and go
 the finger lifts. The player learns where the zones are by using them, and then gets
 their dungeon back.
 
-A **button** — the map, the Items screen, a spell, a search, an option in a fight — is small and
+A **button** — the map, the Items screen, a spell, an option in a fight — is small and
 discrete, and covers almost nothing. Buttons keep their panel and their frame, because
 a button that is only a word is hard to read as something you may press, and hiding
 almost nothing buys almost nothing.
@@ -256,14 +261,17 @@ tiles. It is read and never pressed. The automap is not drawn during a fight, so
 of the screen is free.
 
 **A tile says who, and whose side, without being read.** It carries the combatant's
-portrait inside a frame coloured by side, and a character also carries their initial. If
-the portrait is missing, the frame still says whose side the turn belongs to.
+portrait inside a frame coloured by side, and a mark in the same small format on both
+sides: a character's initial, and an enemy's place in its column, counted from the top
+from 1. If the portrait is missing, the frame and the mark still say whose turn it is.
 
 **Enemies of one name are told apart by position.** Every enemy is called by its own name
 alone. A column lists a side in a fixed order and the fallen keep their places, and a menu
 of targets lists whoever is standing in that same order, so the first entry is always the
-highest standing card. The strip and the log do not say which of several goblins they
-mean; when one acts, the highlight on its card does.
+highest standing card. The strip says which by number — the third goblin down its column
+is 3, and keeps that number when the goblins above it fall — so the order of the coming
+turns can be read against the cards. The log does not say which; when one acts, the
+highlight on its card does.
 
 **Enemies on the left, the party on the right**, each side a single column of
 combatants however many there are. There are no ranks to draw, because there are none
@@ -809,9 +817,11 @@ course, and the question would only ask the player to agree with what has happen
 
 ## The Save Note
 
-A line beside the build stamp says when something has gone wrong with the save, and is not
-there otherwise: *Not saving* while writes are failing, and *Old save set aside* when the
-game opened on a save it could not read. It is small because play carries on, and it is
+A note on the build stamp's own line, after the number, says when the campaign is not
+being kept, and is not there otherwise: *Not saving* while writes are failing or saving is
+switched off, and *Old save set aside* when the game opened on a save it could not read.
+It shares the stamp's line, and the stamp clears the corner at the width of both, so the
+note never lands on a control. It is small because play carries on, and it is
 there at all because a player who is losing progress should find out while they can do
 something about it.
 
@@ -940,7 +950,7 @@ screen the player can see but the game cannot have.
 | Stepping back | A zone of its own, under the forward zone | Reaching it by turning about, stepping, and turning back | A withdrawal that needs three taps is not a withdrawal. Splitting the centre of the view gives the verb a home without taking a thumb's width from any other control. |
 | A door in the view | Drawn on the frame the corridor stops at, with an open one drawn as its frame alone | Drawn as a floor marking, like stairs and pits | A door is in the way rather than underfoot, and drawn on the floor it would say nothing about whether the corridor goes on. Drawing the open ones too costs a frame and buys the landmark a player navigates by. |
 | Enemies in the corridor | A figure at the depth the report puts it, sharing the map mark's horned head | Drawing none, leaving the map to show them; a card or banner announcing one | A monster the map shows and the corridor does not makes the player watch the corner of the screen instead of the dungeon. Sharing the head is what makes the mark and the figure read as the same creature. |
-| The enemy mark | One creature mark for every enemy | A dot; a different mark per roster entry | A dot beside the trap mark and the party triangle is three dots. Per-enemy marks are authoring that the roster does not yet justify, and they would leak what the party has not fought. |
+| The enemy mark | One creature mark for every enemy | A dot; a different mark per roster entry | A dot beside the party triangle and the stair marks reads as one more marking rather than a creature. Per-enemy marks are authoring that the roster does not yet justify, and they would leak what the party has not fought. |
 | Buttons | Keep their panel and frame | Bare labels, like the zones | A button covers almost nothing, so hiding it buys almost nothing — and a button that is only a word is hard to read as something you may press. |
 | Which kind a control is | Carried in the plan | Inferred from its name while drawing | The rule then lives in one place and can be checked, rather than being re-derived by whatever happens to be drawing. |
 | Turning about | A key, but no control of its own | A movement zone of its own, beside the step and turn zones | Two taps of a turn the player already uses reach it. A control earns its place by being the only way to do something or by being worth the room; this is neither. |
@@ -950,7 +960,7 @@ screen the player can see but the game cannot have.
 | How a side is arranged | Enemies in one column on the left, the party in one on the right | Two ranks a side, as the rows once were; one combined list ordered by readiness | A column is the honest shape of a side with no positions in it, and it holds two combatants or twelve without changing shape. Facing columns keep *us* and *them* answerable without reading a single name. A list ordered by readiness would reorder itself under the player's eye on every beat, which is the one thing a display being read under pressure must not do. |
 | What a combatant is drawn as | A portrait, then two stacked bars: identity, hit points | Three bars with readiness on top; a single card whose fill is readiness | Two filled bars side by side on one card are easy to mistake for one another on a phone, and hit points are the one that must never be misread. With the order of acting drawn once at the top, a card has only two questions left to answer. |
 | How the order of acting is drawn | A strip of the next turns along the top of the screen, one tile per turn | A readiness bar on each card; a list inside the fight panel | A strip answers *who is next* in one look, in one place, instead of asking the player to compare a bar on every card. The top of the screen is free during a fight, so the strip costs the panel nothing. Fixing its length keeps it the same shape all fight. |
-| Telling enemies of one name apart | By position: a menu lists targets in column order | A letter after the name, wherever the fight names them | Fights are small enough that order settles which is which, and a letter is one more thing on every card, tile and log line for the player to read past. The cost is that the strip and the log cannot say which of several goblins they mean. A letter is the answer if larger groups make that matter. |
+| Telling enemies of one name apart | By position: a menu lists targets in column order, and the strip numbers each enemy's tile by its place in the column | A letter after the name, wherever the fight names them; no mark on an enemy's tile | Fights are small enough that order settles which is which, and a letter is one more thing on every card and log line for the player to read past. The strip is the one place order alone cannot settle it, since it lists turns rather than cards, so a tile carries the number of the card it belongs to, in the same small mark a character's initial uses. The log still cannot say which goblin it means. |
 | How an entry is laid out | Name, damage, weapon symbol, hit points, with no key number | Labelling the figures (`6 dmg`, `9/9 HP`); hit points before damage; printing each entry's key | A symbol between two figures says which is which without a word of label, which keeps a phone-width line short and quick to scan. A printed key is a third figure competing with the two that decide the choice, and it serves only the keyboard, where counting down a short list is easy. |
 | Weapon symbols | Drawn in code, one per weapon skill | Emoji or font glyphs; an image file per weapon | Glyphs for weapons vary by device or are missing from a monospace font, so the same entry would read differently from phone to phone. Four small shapes need no art pipeline, and the map's marks already work this way. |
 | What a target's entry shows | The damage the attack will deal, armour taken off | No prediction; a range or an average | One number is what a phone-width entry can carry and what a player can compare at a glance, and since an attack deals exactly what it previews, the number is the result rather than a guess at it. |
@@ -1034,7 +1044,7 @@ screen the player can see but the game cannot have.
 1. **Animation in a fight.** An action lands in one frame, and the only motion is the attacker's judder. Real animation — a blow that travels, a spell that reads as a spell — is unbuilt, and would want the ticker running throughout a fight rather than only between actions. The pause, the shake, and the ticker's bounds are settled; everything past them is not.
 2. **Art.** Everything is flat-shaded polygons. Textures, sprites for doors and stairs, and any sense of material are unaddressed.
 3. **Animation between steps.** A step currently cuts from one position to the next. Whether it should slide, and how that squares with a stopped ticker, is open — an animation is the one thing in this segment that would need time.
-4. **The spell screen.** `SPELLS` is drawn on the action bar but opens nothing: it routes to an ability set that is unbuilt. `SEARCH` is drawn the same way and does nothing yet, waiting on the traps and secret doors it would find.
+4. **The spell screen.** `SPELLS` is drawn on the action bar but opens nothing: it routes to an ability set that is unbuilt.
 9. **Scrolling the pack by touch.** The keyboard's highlight keeps a long pack's rows in reach; a finger has no way to scroll it yet. Nothing can make the pack longer than what the party takes off until loot exists, which is when this is wanted.
 5. **Expanded-map interaction.** Panning and zooming an expanded map, and whether tapping a tile does anything, are unspecified. Auto-travel is already deferred in exploration.
 6. **Wide-screen framing.** On a very wide desktop window the corridor frames may want letterboxing rather than stretching; untested.

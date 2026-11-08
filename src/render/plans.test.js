@@ -254,8 +254,8 @@ describe('the automap draw plan', () => {
     width: 5,
     height: 5,
     tiles: [
-      { x: 1, y: 1, feature: TileFeature.NONE, trapKnown: false, edges: { NORTH: { kind: EdgeKind.WALL, open: false }, EAST: { kind: EdgeKind.OPEN, open: false }, SOUTH: { kind: EdgeKind.DOOR, open: false }, WEST: { kind: EdgeKind.DOOR, open: true } } },
-      { x: 2, y: 1, feature: TileFeature.STAIRS_DOWN, trapKnown: true, edges: { NORTH: { kind: EdgeKind.WALL, open: false }, EAST: { kind: EdgeKind.WALL, open: false }, SOUTH: { kind: EdgeKind.OPEN, open: false }, WEST: { kind: EdgeKind.OPEN, open: false } } },
+      { x: 1, y: 1, feature: TileFeature.NONE, edges: { NORTH: { kind: EdgeKind.WALL, open: false }, EAST: { kind: EdgeKind.OPEN, open: false }, SOUTH: { kind: EdgeKind.DOOR, open: false }, WEST: { kind: EdgeKind.DOOR, open: true } } },
+      { x: 2, y: 1, feature: TileFeature.STAIRS_DOWN, edges: { NORTH: { kind: EdgeKind.WALL, open: false }, EAST: { kind: EdgeKind.WALL, open: false }, SOUTH: { kind: EdgeKind.OPEN, open: false }, WEST: { kind: EdgeKind.OPEN, open: false } } },
     ],
     party: { x: 1, y: 1, facing: Direction.NORTH },
     enemies: [{ id: 'r1', x: 2, y: 1 }],
@@ -331,12 +331,11 @@ describe('the automap draw plan', () => {
   });
 
   // @spec PRESENT-MAP-008
-  it('marks known traps and features', () => {
+  it('marks features, and carries no trap mark', () => {
     const plan = buildMapPlan(view, viewport, { expanded: false });
 
-    expect(plan.cells.find((c) => c.x === 2).trapKnown).toBe(true);
     expect(plan.cells.find((c) => c.x === 2).feature).toBe(TileFeature.STAIRS_DOWN);
-    expect(plan.cells.find((c) => c.x === 1).trapKnown).toBe(false);
+    for (const cell of plan.cells) expect(cell).not.toHaveProperty('trapKnown');
   });
 
   // @spec PRESENT-MAP-009
@@ -355,7 +354,7 @@ describe('the automap draw plan', () => {
     const plan = buildMapPlan(two, viewport, { expanded: false });
 
     for (const enemy of plan.enemies) {
-      // A head, horns, and eyes: more than the party's triangle or a trap's dot, and
+      // A head, horns, and eyes: more than the party's triangle, and
       // every enemy gets the same one.
       expect(enemy.marker.head.radius).toBeGreaterThan(0);
       expect(enemy.marker.horns).toHaveLength(2);
@@ -418,6 +417,13 @@ describe('tap regions', () => {
 
     // Still over on the right, where the automap's opposite number belongs.
     expect(map.x + map.width).toBeGreaterThan(wide.width * 0.9);
+  });
+
+  // @spec PRESENT-CTRL-002
+  it('draws the Map control short, about as tall as it is wide on a phone', () => {
+    const phone = { width: 400, height: 800 };
+    const map = tapRegionsFor(phone).find((r) => r.region === 'MAP');
+    expect(map.height).toBeLessThanOrEqual(map.width * 1.25);
   });
 
   // @spec PRESENT-CTRL-014

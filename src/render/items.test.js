@@ -189,10 +189,10 @@ describe('the Items screen out of a fight', () => {
     const held = partyPosition(state);
     pressKey(controller, 'i');
 
-    for (const key of ['x', 'f', 'e', 'p', 'c', 'm']) pressKey(controller, key);
+    for (const key of ['x', 'e', 'p', 'c', 'm']) pressKey(controller, key);
 
     expect(partyPosition(state)).toEqual(held);
-    expect(controller.expanded).toBe(false);
+    expect(controller.expanded).toBe(true);
     expect(controller.partyScreen).toBeNull();
     expect(layers(controller).find((l) => l.name === 'hud').plan.controls).toEqual([]);
   });

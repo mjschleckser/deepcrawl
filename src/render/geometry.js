@@ -107,13 +107,16 @@ export function stampRoom(scale) {
  * @spec PRESENT-BUILD-006
  * @spec PRESENT-BUILD-011
  */
-export function versionStamp({ viewport, controls = [], text, notice = null, scale = 1 }) {
+export function versionStamp({ viewport, controls = [], text, notice = null, note = null, scale = 1 }) {
   const size = Math.round(STAMP_SIZE * scale);
   const pad = STAMP_PAD * scale;
-  // A notice rides on the same line, two spaces after the number, and the stamp clears
-  // the corner at its whole width.
-  const chars = text.length + (notice ? STAMP_NOTICE_GAP.length + notice.length : 0);
-  const width = chars * size * STAMP_CHAR_RATIO;
+  const charWidth = size * STAMP_CHAR_RATIO;
+  // A notice rides on the same line, two spaces after the number, and a save note two
+  // spaces after that; the stamp clears the corner at its whole width.
+  // @spec PRESENT-SAVE-001
+  const before = text.length + (notice ? STAMP_NOTICE_GAP.length + notice.length : 0);
+  const chars = before + (note ? STAMP_NOTICE_GAP.length + note.length : 0);
+  const width = chars * charWidth;
   const x = pad;
   const floor = viewport.height - pad - size;
 
@@ -129,7 +132,8 @@ export function versionStamp({ viewport, controls = [], text, notice = null, sca
     y = Math.min(...inTheWay.map((c) => c.y)) - pad - size;
   }
 
-  return { x, y: Math.max(0, y), size, width, text, notice };
+  const noteX = x + (before + STAMP_NOTICE_GAP.length) * charWidth;
+  return { x, y: Math.max(0, y), size, width, text, notice, noteX };
 }
 
 /**
@@ -176,7 +180,6 @@ const CONTROL_LABELS = {
   // @spec PRESENT-ITEMS-020
   ITEMS: { label: 'Items', hint: 'I', kind: ControlKind.BUTTON },
   SPELL_ICON: { label: 'Spells', hint: 'C', kind: ControlKind.BUTTON },
-  SEARCH_CONTROL: { label: 'Search', hint: 'F', kind: ControlKind.BUTTON },
   INTERACT_PROMPT: { label: 'Use', hint: 'E', kind: ControlKind.BUTTON },
   MAP: { label: 'Map', hint: 'M', kind: ControlKind.BUTTON },
 };
@@ -196,12 +199,11 @@ const CONTROL_LABELS = {
 export const Anchor = { VIEWPORT: 'VIEWPORT', COLUMN: 'COLUMN' };
 
 export const TouchLayout = [
-  { region: 'MAP', fx: 0.78, fy: 0.02, fw: 0.2, fh: 0.2, anchor: Anchor.VIEWPORT },
-  { region: 'PARTY_BAR', fx: 0.02, fy: 0.86, fw: 0.18, fh: 0.12, anchor: Anchor.COLUMN },
-  { region: 'ITEMS', fx: 0.22, fy: 0.86, fw: 0.18, fh: 0.12, anchor: Anchor.COLUMN },
-  { region: 'SPELL_ICON', fx: 0.42, fy: 0.86, fw: 0.18, fh: 0.12, anchor: Anchor.COLUMN },
-  { region: 'SEARCH_CONTROL', fx: 0.62, fy: 0.86, fw: 0.16, fh: 0.12, anchor: Anchor.COLUMN },
-  { region: 'INTERACT_PROMPT', fx: 0.8, fy: 0.86, fw: 0.18, fh: 0.12, anchor: Anchor.COLUMN },
+  { region: 'MAP', fx: 0.78, fy: 0.02, fw: 0.2, fh: 0.1, anchor: Anchor.VIEWPORT },
+  { region: 'PARTY_BAR', fx: 0.02, fy: 0.86, fw: 0.225, fh: 0.12, anchor: Anchor.COLUMN },
+  { region: 'ITEMS', fx: 0.265, fy: 0.86, fw: 0.225, fh: 0.12, anchor: Anchor.COLUMN },
+  { region: 'SPELL_ICON', fx: 0.51, fy: 0.86, fw: 0.225, fh: 0.12, anchor: Anchor.COLUMN },
+  { region: 'INTERACT_PROMPT', fx: 0.755, fy: 0.86, fw: 0.225, fh: 0.12, anchor: Anchor.COLUMN },
   { region: 'TURN_LEFT', fx: 0.0, fy: 0.18, fw: 0.26, fh: 0.66, anchor: Anchor.VIEWPORT },
   { region: 'TURN_RIGHT', fx: 0.74, fy: 0.18, fw: 0.26, fh: 0.66, anchor: Anchor.VIEWPORT },
   // The centre splits: walking on above, giving ground below. Forward takes the larger

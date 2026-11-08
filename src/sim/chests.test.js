@@ -41,7 +41,6 @@ describe('laying chests', () => {
       for (const spot of spots) {
         expect(inRoom(floor.rooms, spot)).toBe(true);
         expect(spot.tile.table).toBe(DEFAULT_ARCHETYPE.chestTable);
-        expect((floor.traps ?? []).some((t) => keyOf(t) === keyOf(spot))).toBe(false);
       }
     }
   });
@@ -55,7 +54,6 @@ describe('laying chests', () => {
       expect(chestsOn(none)).toHaveLength(0);
       expect(many.horizontalEdges).toEqual(none.horizontalEdges);
       expect(many.verticalEdges).toEqual(none.verticalEdges);
-      expect(many.traps).toEqual(none.traps);
       const others = (floor) => floor.tiles.map((t) => (t.feature === TileFeature.CHEST ? TileFeature.NONE : t.feature));
       expect(others(many)).toEqual(others(none));
     }

@@ -48,7 +48,6 @@ function unpackDiscovery(width, height, encoded) {
 export function serialize(state) {
   const floors = [];
   const discovery = {};
-  const knownTraps = {};
   // @spec EXPLORE-SAVE-008
   const openedChests = {};
 
@@ -62,8 +61,6 @@ export function serialize(state) {
       verticalEdges: floor.verticalEdges,
       tiles: floor.tiles,
       rooms: floor.rooms ?? null,
-      traps: floor.traps ?? null,
-      secretEdges: floor.secretEdges ?? null,
       seed: floor.seed ?? null,
     });
     discovery[id] = packDiscovery(
@@ -71,8 +68,6 @@ export function serialize(state) {
       floor.height,
       state.discoveredTiles.get(id) ?? new Set(),
     );
-    const traps = state.knownTraps.get(id);
-    if (traps && traps.size > 0) knownTraps[id] = [...traps];
     const opened = state.openedChests?.get(id);
     if (opened && opened.size > 0) openedChests[id] = [...opened];
   }
@@ -84,9 +79,8 @@ export function serialize(state) {
     keys: [...state.keys],
     floors,
     discovery,
-    knownTraps,
     openedChests,
-    // Secret doors the party has found, and the edges sight has recorded.
+    // The edges sight has recorded.
     discoveredEdges: [...state.discoveredEdges],
     departedAt: Object.fromEntries(state.departedAt),
     // A roamer's generator is a closure, so where it has reached is what is written.
@@ -123,8 +117,6 @@ export function restore(saved, createExploration, { floorProvider = null, hooks 
     floor.verticalEdges = data.verticalEdges.map((edge) => ({ ...edge }));
     floor.tiles = data.tiles.map(({ intrinsicLight, ...tile }) => tile);
     if (data.rooms) floor.rooms = data.rooms;
-    if (data.traps) floor.traps = data.traps;
-    if (data.secretEdges) floor.secretEdges = data.secretEdges;
     if (data.seed !== null && data.seed !== undefined) floor.seed = data.seed;
     return floor;
   });
@@ -157,9 +149,6 @@ export function restore(saved, createExploration, { floorProvider = null, hooks 
       floor.id,
       unpackDiscovery(floor.width, floor.height, saved.discovery[floor.id]),
     );
-    if (saved.knownTraps[floor.id]) {
-      state.knownTraps.set(floor.id, new Set(saved.knownTraps[floor.id]));
-    }
     // A save from before chests opens none of them.
     // @spec EXPLORE-SAVE-008
     if (saved.openedChests?.[floor.id]) {

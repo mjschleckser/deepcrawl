@@ -2,7 +2,7 @@
  * The exploration segment: where the party is, which way it faces, and the passage of
  * time. Simulation core — no renderer, no DOM.
  *
- * Adjacent segments (traps, roaming enemies, hunger, camp, combat) arrive as hooks.
+ * Adjacent segments (roaming enemies, hunger, camp, combat) arrive as hooks.
  * This module decides *when* they fire and what they may read; their rules are theirs.
  */
 
@@ -15,7 +15,6 @@ import {
   STEP_DELTA,
   contains,
   edgeDetail,
-  edgeKey,
   getEdge,
   getTile,
   isEdgeOpen,
@@ -27,8 +26,6 @@ import {
   computeSight as runSight,
   isEdgeKnown,
   isTileDiscovered,
-  isTrapKnown,
-  recordTrapDetected,
 } from './sight.js';
 
 import { makeRng } from './rng.js';
@@ -40,9 +37,7 @@ import { serialize as serializeState, restore } from './persistence.js';
 export { SAVE_VERSION } from './persistence.js';
 export { MAX_DRAWN_DEPTH } from './firstperson.js';
 export { ArrivalRule, generateFloor, generatePlan, DEFAULT_ARCHETYPE } from './generation.js';
-export {
-  isTileDiscovered, isEdgeKnown, isTrapKnown, recordTrapDetected, SIGHT_RANGE,
-} from './sight.js';
+export { isTileDiscovered, isEdgeKnown, SIGHT_RANGE } from './sight.js';
 export { partyStepCost, MIN_STEP_COST, MAX_STEP_COST } from './party.js';
 
 export const Verb = {
@@ -57,7 +52,6 @@ export const PartyAction = {
   PARTY: 'PARTY',
   ITEMS: 'ITEMS',
   SPELLS: 'SPELLS',
-  SEARCH: 'SEARCH',
   INTERACT: 'INTERACT',
   TOGGLE_MAP: 'TOGGLE_MAP',
 };
@@ -68,7 +62,6 @@ export const StepEvent = {
   FEATURE_RESOLVED: 'FEATURE_RESOLVED',
   RESTOCKED: 'RESTOCKED',
   CHEST_OPENED: 'CHEST_OPENED',
-  TRAP_TRIGGERED: 'TRAP_TRIGGERED',
   SIGHT_RECOMPUTED: 'SIGHT_RECOMPUTED',
   ROAMERS_MOVED: 'ROAMERS_MOVED',
   CONTACT_CHECKED: 'CONTACT_CHECKED',
@@ -82,8 +75,6 @@ export const DEFAULT_RESTOCK_MIN_ELAPSED_TICKS = 1;
 
 const NO_HOOKS = {
   onTick: () => {},
-  onTrapTrigger: () => {},
-  onTrapDetect: () => {},
   onRoamersMove: () => {},
   onRestock: () => {},
   onContactCheck: () => {},
@@ -118,7 +109,6 @@ export function createExploration({
     menuOpen: false,
     discoveredEdges: new Set(),
     discoveredTiles: new Map(),
-    knownTraps: new Map(),
     // floorId -> the numbers of the chests opened there. The floor never changes, so
     // this record is the only thing that does.
     // @spec EXPLORE-SAVE-008
@@ -284,34 +274,20 @@ export function resolveArrival(state, target) {
   return { floorId: target.floorId, x: fallback.x, y: fallback.y };
 }
 
-/** Mark a secret door found, so it stops behaving as a wall. */
-export function discoverEdge(state, floorId, x, y, direction) {
-  const floor = state.floors.get(floorId);
-  state.discoveredEdges.add(edgeKey(floor, x, y, direction));
-}
-
-function isEdgeDiscovered(state, floor, x, y, direction) {
-  return state.discoveredEdges.has(edgeKey(floor, x, y, direction));
-}
-
 /** The way behind, which is where a backward step goes without the party turning. */
 function reverseOf(facing) {
   return FACINGS[(FACINGS.indexOf(facing) + 2) % 4];
 }
 
 /**
- * The door standing on an edge, or null where there is none to see. A wall is not a
- * door, and a secret door nobody has found is the wall it imitates — what the party
- * has not earned by searching is never reported.
+ * The door standing on an edge, or null where there is none. A wall is not a door.
  *
  * @spec EXPLORE-VIEW-009
  * @spec EXPLORE-VIEW-010
  */
 function visiblePortal(state, floor, x, y, direction) {
   const kind = getEdge(floor, x, y, direction);
-  const secret = kind === EdgeKind.SECRET_DOOR;
-  if (kind !== EdgeKind.DOOR && kind !== EdgeKind.LOCKED_DOOR && !secret) return null;
-  if (secret && !isEdgeDiscovered(state, floor, x, y, direction)) return null;
+  if (kind !== EdgeKind.DOOR && kind !== EdgeKind.LOCKED_DOOR) return null;
   return { kind, open: isEdgeOpen(floor, x, y, direction) };
 }
 
@@ -345,8 +321,7 @@ export function advanceForCamp(state, ticks) {
 }
 
 /** An edge a step opens on its way through, as against one it cannot pass at all. */
-const isDoorway = (kind) =>
-  kind === EdgeKind.DOOR || kind === EdgeKind.LOCKED_DOOR || kind === EdgeKind.SECRET_DOOR;
+const isDoorway = (kind) => kind === EdgeKind.DOOR || kind === EdgeKind.LOCKED_DOOR;
 
 /** A staircase the party may take, as against one that leads nowhere yet. */
 const leadsSomewhere = (tile) => isStairs(tile.feature) && Boolean(tile.target);
@@ -363,11 +338,10 @@ function openAndLook(state, floor, from, heading) {
 
 /**
  * Why a step cannot be taken, or null if it can. Every blocked reason presents
- * identically to the caller, so an undiscovered secret door gives nothing away.
+ * identically to the caller.
  *
  * @spec EXPLORE-MOVE-003
  * @spec EXPLORE-MOVE-004
- * @spec EXPLORE-MOVE-005
  */
 function stepBlocked(state, floor, from, heading) {
   const { dx, dy } = STEP_DELTA[heading];
@@ -376,9 +350,6 @@ function stepBlocked(state, floor, from, heading) {
 
   const kind = getEdge(floor, from.x, from.y, heading);
   if (kind === EdgeKind.WALL) return true;
-  if (kind === EdgeKind.SECRET_DOOR && !isEdgeDiscovered(state, floor, from.x, from.y, heading)) {
-    return true;
-  }
   if (kind === EdgeKind.LOCKED_DOOR) {
     const { keyId } = edgeDetail(floor, from.x, from.y, heading);
     if (keyId !== undefined && !state.keys.includes(keyId)) return true;
@@ -404,8 +375,7 @@ function relocate(state, rawTarget) {
  * Re-stock a floor the party is returning to, in proportion to its absence.
  *
  * Floors are frozen while the party is elsewhere, so the life of the dungeon is
- * restored on arrival rather than simulated in the background. Traps are exempt: they
- * are laid once at generation and the party's knowledge of them only ever grows.
+ * restored on arrival rather than simulated in the background.
  *
  * @spec EXPLORE-RETURN-003
  * @spec EXPLORE-RETURN-007
@@ -433,7 +403,6 @@ function maybeRestock(state, events) {
  * @spec EXPLORE-MOVE-012
  * @spec EXPLORE-MOVE-019
  * @spec EXPLORE-CLOCK-001
- * @spec EXPLORE-BOUND-005
  * @spec EXPLORE-BOUND-011
  */
 function resolveStepEffects(state, events, { alreadyRelocated = false } = {}) {
@@ -464,9 +433,6 @@ function resolveStepEffects(state, events, { alreadyRelocated = false } = {}) {
 
   // Everything downstream acts on wherever the party actually ended up.
   const here = { floorId: state.party.floorId, tile: { ...state.party.tile } };
-
-  state.hooks.onTrapTrigger({ ...here, party: state.party });
-  events.push(StepEvent.TRAP_TRIGGERED);
 
   computeSight(state);
   state.hooks.onSight(here);
@@ -624,9 +590,7 @@ export function resolveConfirmation(state, accepted) {
  * @spec EXPLORE-ACTION-003
  * @spec EXPLORE-ACTION-004
  * @spec EXPLORE-ACTION-005
- * @spec EXPLORE-BOUND-007
  * @spec EXPLORE-BOUND-009
- * @spec EXPLORE-CLOCK-002
  * @spec EXPLORE-MOVE-018
  */
 function partyAction(state, action, commit) {
@@ -671,15 +635,6 @@ function partyAction(state, action, commit) {
   }
 
   state.hooks.onPartyAction({ action, committed: Boolean(commit) });
-
-  if (action === PartyAction.SEARCH && commit) {
-    const { x, y } = state.party.tile;
-    state.hooks.onTrapDetect({
-      floorId: state.party.floorId,
-      tiles: [{ x, y }],
-      deliberate: true,
-    });
-  }
 
   // The map has nothing to commit to, so it never costs a tick.
   if (commit && action !== PartyAction.TOGGLE_MAP) advance(state, 1, { committed: true });

@@ -24,8 +24,8 @@ automap draws discovery state; it does not own it. Discovery survives a save,
 survives leaving and returning to a floor, and is recorded the moment sight reaches
 a tile rather than when the party stands on it.
 
-**Adjacent mechanics get hooks, not homes.** Hunger, traps, and roaming enemies all
-tick with exploration and all trigger on movement, but none of them belong to this
+**Adjacent mechanics get hooks, not homes.** Hunger and roaming enemies both
+tick with exploration and trigger on movement, but neither belongs to this
 segment. Exploration defines when they fire and what they may read; their rules
 live in their own segments.
 
@@ -57,7 +57,8 @@ Edge kinds:
 - `wall` — impassable, opaque
 - `door` — impassable and opaque while closed; passable and transparent once open
 - `lockedDoor` — a door that cannot be opened without the matching key
-- `secretDoor` — indistinguishable from `wall` until discovered; a door thereafter
+
+Every door is visible for what it is: there are no hidden doors to find.
 
 Doors carry an **open** flag alongside their kind. Every door starts closed and opens
 when the party steps through it. An open door stays
@@ -139,7 +140,6 @@ The tick is the unit of in-game time. Exploration owns the tick counter.
 | Event | Ticks |
 |---|---|
 | Party enters a new tile | a **step cost** set by the party's average Dexterity |
-| An active search of the current tile | a fixed cost |
 | Camp actions (sleep, eat, rest, train) | defined by the camp segment |
 
 ### The step cost
@@ -196,15 +196,10 @@ left it. On return, exploration compares that against the current tick and appli
 A long absence produces a thorough re-stocking. Stepping down a staircase and straight
 back up produces none — the threshold is elapsed ticks, not the act of arriving.
 
-**Re-stocking never touches the discovery record, and never touches a trap.** The map
-the party drew stays theirs permanently; what changes is what is standing in it. A
-returning party finds its own map accurate as a map and unreliable as intelligence,
-which is the point.
-
-Traps are exempt entirely: an undiscovered trap stays undiscovered, a known one stays
-known, and a sprung one stays sprung. A floor's traps are laid once, when it is
-generated, and the party's knowledge of them only ever grows. Re-stocking rearranges
-the living contents of a floor, not its construction.
+**Re-stocking never touches the discovery record.** The map the party drew stays theirs
+permanently; what changes is what is standing in it. A returning party finds its own map
+accurate as a map and unreliable as intelligence, which is the point. Re-stocking
+rearranges the living contents of a floor, not its construction.
 
 Exploration owns the trigger, the per-floor last-left tick, and the door changes,
 since it already owns door state. Repositioning and refilling are delegated to the
@@ -237,9 +232,8 @@ arrival like any other.
 A step is attempted against the edge between the current tile and the target tile —
 the tile ahead of the party going forward, the tile behind it going back. It is
 **blocked** — no movement, no tick, no side effects — when the target is
-outside the grid, or the edge is `wall`, `lockedDoor` without the matching key, or
-an undiscovered `secretDoor`. A `door` or discovered `secretDoor` opens as part of
-the step and costs no extra tick.
+outside the grid, or the edge is `wall` or `lockedDoor` without the matching key. A
+`door` opens as part of the step and costs no extra tick.
 
 A step into a tile a roaming enemy occupies is **barred**: the encounter begins where
 that enemy stands, the party does not move, and no tick is spent. Meeting happens
@@ -262,16 +256,14 @@ On a successful step, these resolve in a fixed order:
 3. Tile features resolve: a `pit` relocates the party to the floor and tile its
    connector's arrival rule resolves to, preserving facing.
 4. If the party has arrived on a floor it previously left, that floor is re-stocked.
-5. The trap trigger hook fires for the tile the party now occupies.
-6. Sight is recomputed and discovery recorded.
-7. Roaming enemies on the party's current floor move, each spending the ticks this
+5. Sight is recomputed and discovery recorded.
+6. Roaming enemies on the party's current floor move, each spending the ticks this
    step consumed against its own cost to cross a tile — so a quick one moves more than
    once while a slow one waits several of the party's steps for its turn.
-8. Contact is checked; a roamer that reached the party begins an encounter.
+7. Contact is checked; a roamer that reached the party begins an encounter.
 
-Steps 4 through 8 act on the tile the party occupies *after* any relocation, so a pit
-can drop the party onto a trap and both resolve inside one step, and a pit onto a
-known floor lands the party in the re-stocked version of it rather than the stale
+Steps 4 through 7 act on the tile the party occupies *after* any relocation, so a pit
+onto a known floor lands the party in the re-stocked version of it rather than the stale
 one. A pit costs only the
 ticks of the step that entered it — the landing is a relocation, not a second step. Tile
 features resolve at most once per step, so landing on another pit does not chain; the
@@ -301,8 +293,7 @@ other: a party that can see a warband is one that warband can see.
 
 Sight is cast into the **forward quadrant**: tiles lying within 45° either side of
 the party's facing, a 90° cone in total, out to the sight distance, with line of sight
-blocked by any opaque edge — a `wall`, a closed `door`, or an undiscovered
-`secretDoor`. Distance is counted in steps on the grid, diagonal steps included, so
+blocked by any opaque edge — a `wall` or a closed `door`. Distance is counted in steps on the grid, diagonal steps included, so
 the cone reaches as far along a diagonal as along a corridor. The occupied tile and
 its four edges are always seen.
 
@@ -334,10 +325,7 @@ can plainly see past a pillar's edge.
 ### Discovery
 
 A tile becomes discovered the moment sight reaches it — not when the party stands on
-it. Discovering a tile also discovers its four edges and any
-feature on it, **except undiscovered secret doors**, which stay indistinguishable
-from wall until the search mechanics find them. Without that carve-out, merely
-looking at a tile would give up its secrets and the search mechanic would never fire.
+it. Discovering a tile also discovers its four edges and any feature on it.
 
 Discovery is permanent and per-floor. It survives leaving the floor, reloading the
 save, and the party's death.
@@ -347,10 +335,9 @@ save, and the party's death.
 The automap is a second view of exploration state. It owns nothing.
 
 **It draws:** discovered tiles and their edges — including whether a door on one
-stands open or closed — discovered features (stairs, pits),
-traps the party has found, and the party's own tile and facing.
+stands open or closed — discovered features (stairs, pits, chests), and the party's own tile and facing.
 
-**It does not draw:** undiscovered tiles or secret doors, and roaming enemies the
+**It does not draw:** undiscovered tiles, and roaming enemies the
 party cannot presently see.
 
 Seeing a roamer takes two things: it stands within the sight distance, and nothing
@@ -363,8 +350,7 @@ from the map until it is seen again.
 The party's own tile and facing are always drawn.
 
 The automap is always available and needs no item or spell. Items, tomes, and
-classes may later extend mapping range and trap-finding, but the baseline map is
-never gated.
+classes may later extend mapping range, but the baseline map is never gated.
 
 ## The Corridor Ahead
 
@@ -379,7 +365,7 @@ left and to the right, and what feature stands on it. The report stops at the fi
 depth whose approach is opaque, or at the maximum drawn depth, whichever comes first.
 
 The blocking rule is sight's rule, not a second one: a `wall`, a closed `door` or
-`lockedDoor`, an undiscovered `secretDoor`. A view that disagreed with sight about
+`lockedDoor`. A view that disagreed with sight about
 what is opaque would show a corridor the automap denies.
 
 **A warband standing on a tile ahead is reported with that tile.** Whether it is seen
@@ -390,9 +376,7 @@ it names is something an unobstructed look would find.
 **A door on the edge ahead is reported as a door**, open or closed alike. Closed, it is
 what separates a way on from the end of a passage, which the blocking flag by itself
 cannot say. Open, it is a landmark: a doorway already walked through is what tells one
-stretch of corridor from another. A secret door the party has not found is reported as
-the wall it imitates, exactly as sight reports it — the corridor report may never give
-away what searching has not yet earned.
+stretch of corridor from another.
 
 The maximum drawn depth is a limit on the drawing, not on the seeing, and the two are
 set separately. The view draws further than the party maps, because a corridor that
@@ -408,17 +392,11 @@ Rules beyond that line belong to the other segment.
 | Hook | Fires when | Exploration provides | Owned elsewhere |
 |---|---|---|---|
 | Hunger | every tick | the tick | stages, thresholds, effects |
-| Trap detection | sight is recomputed; the party searches | tiles in view or the searched tile, and the party | detection rules, disarm |
-| Trap triggering | the party enters a tile | the entered tile and the party | which trap fires and what it does |
 | Roaming enemies | after discovery on each step | floor and party tile | movement behavior, roster, respawn |
 | Floor re-stocking | the party arrives on a floor it has visited before | the floor and the ticks elapsed since it was last left | how far enemies move, which rooms refill |
 | Opening a chest | the player commits `INTERACT` on an unopened chest | the floor, its seed and archetype, and the chest's number | what the chest holds |
 | Encounter | the party and a roamer reach one another — either one attempting the other's tile | the encounter payload — see *The Combat Handoff* | all of combat |
 | Camp | the player enters camp | tick advance | sleep, eat, rest, train |
-
-Exploration owns one piece of trap state despite not owning traps: whether a trap
-is **known**, because that is a fact about what the party has discovered and it
-belongs with the rest of the map's discovery record.
 
 ## The Combat Handoff
 
@@ -447,7 +425,7 @@ matter which segment triggered the change.
 |---|---|---|
 | Party tile, facing, current floor | exploration | exploration |
 | Tick counter | exploration | exploration; camp calls its advance |
-| Per-tile discovery, door open flags, known traps, opened chests | exploration | exploration |
+| Per-tile discovery, door open flags, opened chests | exploration | exploration |
 | Floor layouts | dungeon generation | never mutated after creation |
 | Character hit points, status, death state | party | party operations, called by combat and exploration |
 | Party roster | party | party operations |
@@ -467,7 +445,7 @@ and dynamic state also persist, but are rewritten by the re-stocking on each ret
 Saved by this segment:
 
 - Every generated floor: id, dimensions, edge arrays, tile features
-- Per-floor discovery record (tiles, edges, features, known traps)
+- Per-floor discovery record (tiles, edges, features)
 - Per-floor door open flags
 - Per-floor record of which chests have been opened
 - Per-floor tick at which the party last left it
@@ -508,7 +486,6 @@ every action stays *achievable* by touch, not that each has a button of its own.
 | `PARTY` — roster, statuses | `P` | party bar | party |
 | `ITEMS` — equip and use items | `I` | Items button | loot and items |
 | `SPELLS` — out-of-combat magic | `C` | spell icon | abilities |
-| `SEARCH` — look for traps and secret doors | `F` | search control | traps |
 | `INTERACT` — dungeon features on the current tile | `E` | use control | varies by feature; a staircase is exploration's own |
 | `TOGGLE_MAP` — open the automap | `M` | map control | exploration |
 
@@ -516,8 +493,8 @@ Exploration owns none of these but `TOGGLE_MAP`: it routes each to the segment t
 owns it and charges the clock. **Opening a party action costs nothing; committing to
 one costs a tick.** Reading the roster, browsing the Items screen, and reading the map are
 free, because a game that charges for looking punishes the player for playing
-carefully. Equipping the armour, drinking the potion, casting the spell, searching
-the tile, and working the lever each cost a tick.
+carefully. Equipping the armour, drinking the potion, casting the spell, and working
+the lever each cost a tick.
 
 `TOGGLE_MAP` never costs a tick at all, having nothing to commit to.
 
@@ -541,11 +518,11 @@ map; tapping the control expands the map to full screen.
 
 | Decision | Chosen | Alternatives Considered | Rationale |
 |---|---|---|---|
-| Wall placement | Walls on tile edges | Walls as whole tiles | Edge walls allow doors between two floor tiles, one-way passages, and secret doors. Tile-walls make doors impossible and cannot be retrofitted. |
+| Wall placement | Walls on tile edges | Walls as whole tiles | Edge walls allow doors between two floor tiles and one-way passages. Tile-walls make doors impossible and cannot be retrofitted. |
 | Edge storage | Two shared edge arrays | A four-sided wall record per tile | Each edge exists once, so neighbouring tiles cannot disagree about the wall between them. |
 | Floor dimensions | Variable per floor | Fixed 20×20 | Lets generation shape a floor to its archetype. Costs nothing, since nothing in the model assumes a size. |
 | Floor topology | A graph of floors joined by connectors | A linear stack indexed by depth | One floor may lead to several others. Depth becomes a label rather than a computed property. |
-| Floor lifetime | Generated once, persisted forever | Regenerated from seed on revisit | Discovery, sprung traps, and looted tiles have to survive a revisit. Regeneration would undo the player's record of their own exploration. |
+| Floor lifetime | Generated once, persisted forever | Regenerated from seed on revisit | Discovery, opened doors, and opened chests have to survive a revisit. Regeneration would undo the player's record of their own exploration. |
 | Step cost | Several ticks, set by the party's average Dexterity | A flat one tick per step | Speed becomes a property of the party rather than a combat statistic, and pursuit becomes a contest a party can win or lose by who they brought rather than by how they turn. |
 | Turning | Free, never ticks | Turning costs a tick | Free turning keeps the first-person view scannable, which matters most on a phone where looking around is the primary orientation gesture. |
 | Wall bump | No movement, no tick | Bumping costs a tick | A misjudged step should not cost food. |
@@ -568,10 +545,9 @@ map; tapping the control expands the map to full screen.
 | Step resolution order | Fixed eight-step order | Resolving side effects in any order | Roamers moving after discovery is an observable behaviour that must be specified rather than emergent. |
 | Stairs versus pits | Stairs prompt on attempted entry; declining completes the step onto the tile. Pits fire on entry with no say | Declining cancels the step; stairs taken only by a verb while standing on them; stairs firing automatically like pits | A staircase that cannot be crossed is a wall with a prompt on it, and one generated in a corridor seals off the floor beyond it. Completing the step keeps the tile as passable as any other while the prompt still means no connector is ever taken by accident. Taking stairs only by a verb would leave a party no way to descend but one they have to be told about. |
 | Action classes | Movement verbs, plus party actions that open free and commit for a tick | Charging a tick to open any menu; charging nothing for any party action | Charging for looking punishes careful play, and charging for nothing removes the cost of acting. The split puts the price on the commitment. |
-| Traps and re-stocking | Traps are untouched: laid at generation, and party knowledge of them only grows | Clearing known-trap flags on refilled rooms; re-laying traps as part of re-stocking | A trap the party disarmed reappearing, or a map marking a brand-new trap as already known, are both worse than a floor whose traps are simply permanent. |
 | Corridor projection | Answered by exploration, beside the automap projection | Owned by the presentation segment that draws it | Both answer "what may be shown given what the party can see", which is sight's question. Splitting two identical concerns across two segments would put the automap's rules and the corridor's rules in different places. |
 | Maximum drawn depth | Six, a cap on the report set separately from the sight distance of four | Drawing only as deep as the party maps | A corridor that visibly continues past where the map stops invites the player to walk it. Nested frames past a handful of depths are narrower than a pixel, which is what caps the drawing. |
-| Pit relocation | Steps 4-8 act on the landing tile; one step's ticks in total; features resolve at most once per step | Charging a second step's ticks for the landing; chaining pits within one step | Acting on the landing tile lets a pit drop the party onto a trap, which is the interesting case. Resolving features once per step bounds the fall without a special rule. |
+| Pit relocation | Steps 4-7 act on the landing tile; one step's ticks in total; features resolve at most once per step | Charging a second step's ticks for the landing; chaining pits within one step | Acting on the landing tile means a pit into a known floor lands in its re-stocked state. Resolving features once per step bounds the fall without a special rule. |
 | Facing across floors | Preserved through stairs and pits | Facing set by the connector; facing randomised on arrival | Preserving facing keeps arrival predictable and costs nothing; a connector-defined facing is a detail generation would have to author for every connector. |
 
 ## Open Questions & Future Decisions
@@ -591,18 +567,18 @@ map; tapping the control expands the map to full screen.
 11. ✅ **Sight is a true 90° cone** — 45° either side of facing.
 12. ✅ **Visibility is a traced line** from the party to each candidate tile; sight does not go round corners.
 13. ✅ **Closed doors are opaque**, so a room cannot be mapped before it is entered. Every door starts closed and opens by being stepped through.
-14. ✅ **Sight never reveals an undiscovered secret door** — that is the search mechanic's job alone.
+14. ✅ **Seeing a tile discovers its edges and features with it**; nothing on a floor is hidden from a look.
 15. ✅ **Discovery is by sight**, cast into the forward quadrant out to four tiles.
 16. ✅ **Roamers appear within the sight distance where nothing opaque stands between them and the party**, whether or not they fall inside the sight cast.
 17. ✅ **The corridor projection is exploration's**, answered beside the automap projection and drawn by presentation.
 18. ✅ **Maximum drawn depth is capped independently of the sight distance.**
-19. ✅ **The corridor report names the door on the edge ahead**, open or closed, and never an undiscovered secret one.
+19. ✅ **The corridor report names the door on the edge ahead**, open or closed.
 20. ✅ **The corridor report names a warband standing on a tile ahead**, under the same rule the automap draws one by.
-21. ✅ **Trap detection and trap triggering are separate hooks.** Detection runs at sight and search; triggering runs on entry.
+21. ✅ **There are no traps, secret doors or searching.** Every edge is what it looks like, and nothing on a floor fires on entry.
 22. ✅ **Roamers move on their own tick cost**, not once per party step.
 23. ✅ **Floors the party has left are frozen**, then re-stocked on return in proportion to elapsed ticks — never actively simulated.
-24. ✅ **Re-stocking never revises discovery and never touches a trap.** Layout stays known, trap state is permanent; occupants, doors, and room contents change.
-25. ✅ **Re-stocking resolves immediately after relocation**, before the trap trigger fires.
+24. ✅ **Re-stocking never revises discovery.** Layout stays known; occupants, doors, and room contents change.
+25. ✅ **Re-stocking resolves immediately after relocation**, before sight is recomputed.
 26. ✅ **Exploration hands combat an explicit payload**; party state is owned by the party segment and changed through its operations by both.
 27. ✅ **The party sees four tiles, and everything within them** that a line of sight reaches; nothing is ever dark.
 28. ✅ **A chest is opened with `INTERACT`, once**, for a tick. Whether it is opened is exploration's record, never a change to the floor.
@@ -611,7 +587,7 @@ map; tapping the control expands the map to full screen.
 
 1. **Re-stocking magnitude.** How far enemies move, which rooms refill, and how many ticks of absence separate a slight rearrangement from a thorough one are all untuned. The trigger and the inputs are settled; the curve is not. A re-stocking replaces a floor's roamers today and does not yet open or close its doors.
 2. **Skill-dependent sight.** The party sees four tiles, and enemies within it. Party skill was raised as a future modifier on that range; the mechanism is unspecified.
-3. **Auto-travel** — tap a discovered automap tile and walk there. Must interrupt on encounter or trap. Not in v1.
+3. **Auto-travel** — tap a discovered automap tile and walk there. Must interrupt on an encounter. Not in v1.
 4. **Player map annotations** — Etrian-style notes and icons. Out of scope.
 5. **Hunger stages and effects** — this segment supplies the tick only; thresholds and consequences belong to the hunger segment.
 6. **Keys and locked doors** — `lockedDoor` names a matching key, but whether keys are per-door ids, a keyring, or a generic unlock is the items segment's decision. No key exists yet, so a generated locked door names none and opens like any other door.
@@ -619,7 +595,8 @@ map; tapping the control expands the map to full screen.
 8. **Other adventuring parties** in the dungeon. Noted as a future inhabitant of the same floor model.
 9. **Standing still is free and safe.** Because roamers move only on party ticks, a stationary party is never approached. Whether idling should carry a cost is an open design question.
 10. **Save size** — every floor is retained for the life of the campaign with a full edge model. Discovery is bitmasked; whether layouts need compaction is unmeasured.
-11. **Mapping-range and trap-finding modifiers** from items, tomes, and classes — the baseline map is never gated, but the extension mechanism is unspecified.
+11. **Mapping-range modifiers** from items, tomes, and classes — the baseline map is never gated, but the extension mechanism is unspecified.
+12. **Traps, secret doors and searching.** A floor could hide things worth a deliberate look, but nothing is hidden today: every edge is what it appears to be and no tile fires when entered. If they return, detection and triggering are hooks to another segment, and whether a trap is known belongs with the discovery record.
 
 ## References
 

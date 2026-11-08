@@ -66,6 +66,7 @@ describe('floor representation', () => {
   it('gives every edge exactly one kind drawn from the defined set', () => {
     const floor = blankFloor();
     const kinds = Object.values(EdgeKind);
+    expect(kinds.sort()).toEqual(['DOOR', 'LOCKED_DOOR', 'OPEN', 'WALL']);
 
     for (let y = 0; y < floor.height; y++) {
       for (let x = 0; x < floor.width; x++) {

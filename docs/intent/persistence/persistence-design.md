@@ -30,6 +30,19 @@ state. Reloading replays the same dice rather than rolling new ones.
 is set aside, not overwritten. An update that fails to load a campaign is a bug that can
 be fixed; an update that erases one cannot.
 
+## Saving Is Switched Off
+
+While items and their numbers are changing from one build to the next, saving is
+switched off by a single switch in front of everything below. With it off, every load
+begins a new campaign: no save is read, none is written, and none already in storage is
+touched. The game says it is not saving, by the same note a failed write raises, so a
+player knows a reload starts over.
+
+Everything this segment describes stays built and tested behind the switch. Keeping old
+saves readable across builds that rework what an item is costs a migration per change,
+which is not worth paying while those changes come daily; turning the switch back on is
+the whole of what restoring saves takes.
+
 ## What This Segment Owns
 
 | | Owned here | Owned elsewhere |
@@ -158,12 +171,14 @@ would be a permanent dead end, resumed every time the game was opened.
 4. ✅ **The plan is saved whole** rather than regenerated from its seed.
 5. ✅ **A save that cannot be read is set aside**, never overwritten.
 6. ✅ **Beginning again is a confirmed act**, offered on the party screen and on the defeat banner.
+7. ✅ **Saving is switched off while items are reworked**: every load is a new campaign, and the save machinery waits behind one switch.
 
 ### Deferred
 
 1. **Export and import.** A browser save is device-local and losable, and the HLD names export and import as the mitigation. Nothing offers them yet.
 2. **Save size.** Every floor is kept for the life of a campaign. Whether a long campaign outgrows `localStorage` is unmeasured; the failed-write line is what would reveal it.
 3. **Recovering a set-aside save.** A save moved aside is kept, but nothing in the game offers it back.
+4. **Turning saving back on.** Once items settle, the switch goes back on. A save written before it was turned off will be older than the migrations then in place may expect, and is set aside as unreadable if so.
 
 ## References
 

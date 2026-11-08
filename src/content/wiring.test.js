@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { STEP_DELTA, EdgeKind, setEdge, isEdgeOpen } from '../sim/floor.js';
 import { makeRng } from '../sim/rng.js';
 import {
-  computeSight, perform, partyPosition, tickCount, isTrapKnown, recordTrapDetected,
+  computeSight, perform, partyPosition, tickCount,
   advanceForCamp, Verb, PartyAction,
 } from '../sim/exploration.js';
 import { Condition, CharacterClass, Skill, character, roster, packOf, purseOf } from '../sim/party.js';
@@ -192,7 +192,7 @@ describe('walking into a warband', () => {
     const ticks = tickCount(campaign.state);
 
     perform(campaign.state, { verb: Verb.STEP_FORWARD });
-    perform(campaign.state, { partyAction: PartyAction.SEARCH, commit: true });
+    perform(campaign.state, { partyAction: PartyAction.INTERACT, commit: true });
     advanceForCamp(campaign.state, 5);
 
     expect(tickCount(campaign.state)).toBe(ticks);
@@ -331,17 +331,14 @@ describe('re-stocking a floor', () => {
 
   // @spec EXPLORE-RETURN-005
   // @spec EXPLORE-RETURN-006
-  // @spec EXPLORE-RETURN-009
   // @spec GEN-STOCK-001
-  it('refills the occupants while leaving the map and its traps alone', () => {
+  it('refills the occupants while leaving the map alone', () => {
     const campaign = booted();
     const state = campaign.state;
     const home = state.party.floorId;
 
-    // Learn a little of the floor and find a trap on it.
+    // Learn a little of the floor.
     computeSight(state);
-    const knownTile = [...state.discoveredTiles.get(home)][0].split(',').map(Number);
-    recordTrapDetected(state, home, knownTile[0], knownTile[1]);
     const floor = state.getFloor(home);
     const layoutBefore = JSON.stringify([floor.horizontalEdges, floor.verticalEdges, floor.tiles]);
     const discoveredBefore = state.discoveredTiles.get(home).size;
@@ -351,7 +348,6 @@ describe('re-stocking a floor', () => {
     const after = state.getFloor(home);
     expect(JSON.stringify([after.horizontalEdges, after.verticalEdges, after.tiles])).toBe(layoutBefore);
     expect(state.discoveredTiles.get(home).size).toBe(discoveredBefore);
-    expect(isTrapKnown(state, home, knownTile[0], knownTile[1])).toBe(true);
     expect(state.roamers.filter((r) => r.floorId === home).length).toBeGreaterThan(0);
   });
 });

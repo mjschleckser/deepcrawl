@@ -14,9 +14,6 @@ import {
   computeSight,
   isTileDiscovered,
   isEdgeKnown,
-  recordTrapDetected,
-  isTrapKnown,
-  discoverEdge,
   SIGHT_RANGE,
   Verb,
   PartyAction,
@@ -141,15 +138,6 @@ describe('what blocks sight', () => {
     expect(isTileDiscovered(state, 'f1', 3, 1)).toBe(true);
   });
 
-  // @spec EXPLORE-SIGHT-002
-  it('stops at an undiscovered secret door, exactly as at a wall', () => {
-    const { floor, state } = corridor();
-    setEdge(floor, 3, 2, Direction.NORTH, EdgeKind.SECRET_DOOR);
-
-    computeSight(state);
-
-    expect(isTileDiscovered(state, 'f1', 3, 1)).toBe(false);
-  });
 });
 
 describe('sight does not go round corners', () => {
@@ -268,29 +256,6 @@ describe('discovery', () => {
     expect(isTileDiscovered(state, 'f1', 3, 1)).toBe(true);
   });
 
-  // @spec EXPLORE-SIGHT-005
-  it('never gives up an undiscovered secret door, even on a tile it discovers', () => {
-    const { floor, state } = scene();
-    // A secret door on the far side of a tile the party can plainly see.
-    setEdge(floor, 3, 2, Direction.EAST, EdgeKind.SECRET_DOOR);
-
-    computeSight(state);
-
-    expect(isTileDiscovered(state, 'f1', 3, 2)).toBe(true);
-    expect(isEdgeKnown(state, 'f1', 3, 2, Direction.EAST)).toBe(false);
-  });
-
-  // @spec EXPLORE-SIGHT-005
-  it('knows a secret door once the search mechanics find it', () => {
-    const { floor, state } = scene();
-    setEdge(floor, 3, 2, Direction.EAST, EdgeKind.SECRET_DOOR);
-
-    discoverEdge(state, 'f1', 3, 2, Direction.EAST);
-    computeSight(state);
-
-    expect(isEdgeKnown(state, 'f1', 3, 2, Direction.EAST)).toBe(true);
-  });
-
   // @spec EXPLORE-SIGHT-011
   it('records what a turn reveals, though a turn costs no tick', () => {
     const { state } = scene({ facing: Direction.NORTH });
@@ -324,51 +289,3 @@ describe('discovery', () => {
   });
 });
 
-describe('the trap record', () => {
-  // @spec EXPLORE-SIGHT-010
-  it('records a trap the trap segment reports, and keeps it', () => {
-    const { state } = scene();
-
-    expect(isTrapKnown(state, 'f1', 2, 2)).toBe(false);
-    recordTrapDetected(state, 'f1', 2, 2);
-
-    expect(isTrapKnown(state, 'f1', 2, 2)).toBe(true);
-  });
-});
-
-describe('the trap detection boundary', () => {
-  // @spec EXPLORE-BOUND-008
-  it('offers each tile sight reached to the trap segment', () => {
-    const onTrapDetect = vi.fn();
-    const { state } = scene({ hooks: { onTrapDetect } });
-
-    computeSight(state);
-
-    expect(onTrapDetect).toHaveBeenCalledWith(
-      expect.objectContaining({
-        floorId: 'f1',
-        tiles: expect.arrayContaining([
-          expect.objectContaining({ x: 3, y: 2 }),
-        ]),
-        deliberate: false,
-      }),
-    );
-  });
-
-  // @spec EXPLORE-BOUND-007
-  it('offers the searched tile when the party searches, and nothing else', () => {
-    const onTrapDetect = vi.fn();
-    const { state } = scene({ hooks: { onTrapDetect } });
-    onTrapDetect.mockClear();
-
-    perform(state, { partyAction: PartyAction.SEARCH, commit: true });
-
-    expect(onTrapDetect).toHaveBeenCalledWith(
-      expect.objectContaining({
-        floorId: 'f1',
-        deliberate: true,
-        tiles: [{ x: 3, y: 3 }],
-      }),
-    );
-  });
-});

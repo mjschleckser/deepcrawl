@@ -65,8 +65,9 @@ one a weapon names. Might is the damage attribute by default, but *which* attrib
 weapon draws on for damage is a property of the weapon: a dagger with the *finesse*
 property names Dexterity, and still trains Blade.
 
-There is no attribute for noticing things. Finding traps and secret doors belongs to the
-Detection skill, which is practised and grows, rather than to a score fixed at creation.
+There is no attribute for noticing things. Should finding hidden things ever enter the
+game, it belongs to the Detection skill, which is practised and grows, rather than to a
+score fixed at creation.
 
 Attributes are fixed at creation and moved only by a trainer, rarely and at cost. They
 are what a character *is*; skills are what they have done.
@@ -115,9 +116,8 @@ passive. Skills are grouped for presentation only; nothing depends on the groupi
 
 Several of these are the missing owners of behaviour other segments already describe.
 **Restoration**
-owns resurrection, which the death chain below requires. **Detection** owns trap and
-secret-door finding, which exploration has been calling into a segment that did not
-exist. **Cartography** owns mapping range, deferred in exploration since sight was
+owns resurrection, which the death chain below requires. **Detection** would own finding
+hidden things, of which a floor holds none yet. **Cartography** owns mapping range, deferred in exploration since sight was
 built.
 
 The skill list itself is content data. Adding a skill is authoring, not designing.
@@ -167,8 +167,8 @@ enemy carries a small pot, so farming decays on its own without a rule against i
 That leaves it available to a party that is underlevelled or rebuilding after a
 disaster, which is when it should be available.
 
-Outside combat a skill advances through use, bounded by the clock: searching, cooking
-and mapping all cost ticks, and ticks cost food.
+Outside combat a skill advances through use, bounded by the clock: cooking and
+mapping both cost ticks, and ticks cost food.
 
 #### What a rank costs
 
@@ -266,7 +266,7 @@ segment writes a character field. The operations are few on purpose.
 
 | Operation | Called by | Enforces |
 |---|---|---|
-| `applyDamage` | combat, traps | the floor at zero, and the slide into unconsciousness or death |
+| `applyDamage` | combat | the floor at zero, and the slide into unconsciousness or death |
 | `applyHealing` | combat, exploration | the ceiling at maximum, and waking the unconscious |
 | `attemptRevival` | camp, town, a hired cleric, a consumed scroll | the condition chain, and degrading on failure |
 | `equip` | the player | slot rules, and what a class may wield; the item comes from the pack and whatever it displaces goes there |

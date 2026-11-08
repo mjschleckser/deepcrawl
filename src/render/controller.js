@@ -69,7 +69,9 @@ const keyIs = (key, ...names) => names.includes(key) || names.includes(key.toLow
 export function createController({ state, viewport, onDraw, campaign = null, onBeginAgain = () => {} }) {
   const controller = {
     state, viewport, onDraw, campaign, onBeginAgain,
-    expanded: false, fight: null,
+    // The map opens large: it is what the player is building.
+    // @spec PRESENT-MAP-013
+    expanded: true, fight: null,
     // Anything worth saying about the save, beside the stamp.
     saveNote: null,
     // What the chest just opened held, while its report is up.
@@ -103,7 +105,7 @@ export function replaceCampaign(controller, campaign) {
   controller.fight = null;
   controller.partyScreen = null;
   controller.itemsScreen = null;
-  controller.expanded = false;
+  controller.expanded = true;
   syncFight(controller);
   redraw(controller);
 }
@@ -164,10 +166,19 @@ function closeChestReport(controller) {
 
 const CHEST_DISMISS_KEYS = ['Enter', 'Escape', 'e', 'E', ' '];
 
-/** Placed just above the stamp, so it moves with it and never lands on a control. */
+/**
+ * On the stamp's own line, after the number: the stamp was placed at the width of both,
+ * so the note moves with it and never lands on a control.
+ *
+ * @spec PRESENT-SAVE-001
+ */
 function noteFor(controller, stamp) {
   if (!controller.saveNote) return null;
-  return { x: stamp.x, y: stamp.y - stamp.size * 2, size: stamp.size, text: controller.saveNote };
+  const text = controller.saveNote;
+  return {
+    x: stamp.noteX, y: stamp.y, size: stamp.size, text,
+    width: stamp.x + stamp.width - stamp.noteX,
+  };
 }
 
 /**
@@ -310,6 +321,7 @@ function stampFor(controller, controls) {
   return versionStamp({
     viewport, controls, text: APP_VERSION, scale: uiScale(viewport),
     notice: controller.newBuild ? NEW_BUILD_NOTICE : null,
+    note: controller.saveNote,
   });
 }
 

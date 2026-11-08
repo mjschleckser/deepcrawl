@@ -28,15 +28,13 @@ guarantees it with.
 - [x] **GEN-CONNECT-001**: The system shall carve a corridor joining each room to the next in a chain through every room, so that every room is reachable from every other by construction.
 - [x] **GEN-CONNECT-002**: The system shall carve each corridor as two straight legs meeting at a single turn, choosing which leg runs first from the seed.
 - [x] **GEN-CONNECT-003**: The system shall carve a number of additional connections drawn from the archetype's loop range, each between two rooms chosen from the seed.
-- [x] **GEN-CONNECT-004**: Every tile belonging to a room or corridor shall be reachable from every other such tile on the floor, ignoring locked and secret doors.
+- [x] **GEN-CONNECT-004**: Every tile belonging to a room or corridor shall be reachable from every other such tile on the floor, ignoring locked doors.
 
-## Doors and secrets
+## Doors
 
 - [x] **GEN-DOOR-001**: Where a carved corridor meets a room's boundary, the system shall make that edge a `door` at the archetype's door chance, and leave it open otherwise.
 - [x] **GEN-DOOR-002**: The system shall make a portion of doors `lockedDoor`, drawn at the archetype's locked chance.
-- [x] **GEN-DOOR-003**: The system shall make a `secretDoor` only from a connection carved as a loop, never from one in the chain of rooms.
-- [x] **GEN-DOOR-004**: The system shall leave every region reachable by at least one route that passes through no `secretDoor` and no `lockedDoor`.
-- [x] **GEN-DOOR-005**: If making a connection secret would leave a region reachable only through secret or locked doors, then the system shall leave that connection as it is.
+- [x] **GEN-DOOR-004**: The system shall leave every region reachable by at least one route that passes through no `lockedDoor`.
 
 ## Placement
 
@@ -44,9 +42,7 @@ guarantees it with.
 - [x] **GEN-PLACE-002**: The system shall place a connector only on a tile belonging to a room or corridor, and never on a tile the party must cross to pass through a doorway.
 - [x] **GEN-PLACE-008**: The system shall place no two ways down in the same room, counting a staircase down and a pit connector alike as a way down.
 - [x] **GEN-PLACE-009**: When a floor has more ways down than rooms, the system shall place one in each room and no more.
-- [x] **GEN-PLACE-003**: The system shall lay traps numbering within the archetype's trap range.
-- [ ] **GEN-PLACE-004**: The system shall lay every trap at generation, and shall neither add nor remove a trap on a floor thereafter.
-- [x] **GEN-PLACE-007**: The system shall lay chests numbering within the archetype's chest range, on room tiles no connector or trap has claimed and that the party need not cross to pass through a doorway, and where fewer such tiles remain than the number drawn, shall lay as many as fit.
+- [x] **GEN-PLACE-007**: The system shall lay chests numbering within the archetype's chest range, on room tiles no connector has claimed and that the party need not cross to pass through a doorway, and where fewer such tiles remain than the number drawn, shall lay as many as fit.
 - [x] **GEN-PLACE-010**: The system shall lay chests after every other placement, from a generator derived from the floor's own, so that the number of chests changes nothing else generated.
 - [x] **GEN-PLACE-011**: The system shall number each chest on a floor in the order it was laid.
 - [x] **GEN-PLACE-012**: The system shall lay every chest at generation, and shall neither add nor remove a chest on a floor thereafter, re-stocking included.
@@ -66,7 +62,7 @@ guarantees it with.
 
 ## Re-stocking
 
-- [x] **GEN-STOCK-001**: When exploration re-stocks a floor, the system shall return the room contents to place, and shall change no edge, no tile feature, and no trap.
+- [x] **GEN-STOCK-001**: When exploration re-stocks a floor, the system shall return the room contents to place, and shall change no edge and no tile feature.
 - [ ] **GEN-STOCK-002**: The system shall derive a re-stocking from the floor's own seed combined with a re-stocking counter, so the same floor re-stocked the same number of times gives the same result.
 - [ ] **GEN-STOCK-003**: The system shall produce a different arrangement for successive re-stockings of the same floor, so that a floor visited repeatedly does not settle into one layout of occupants.
 - [ ] **GEN-STOCK-004**: The system shall scale how much a re-stocking changes with the ticks the party was absent.

@@ -59,7 +59,7 @@ describe('the scene', () => {
       expect(controller).not.toHaveProperty(key);
     }
     // What it does keep is the view's own business.
-    expect(controller.expanded).toBe(false);
+    expect(controller.expanded).toBe(true);
   });
 
   // @spec PRESENT-SCENE-006
@@ -126,15 +126,22 @@ describe('when the screen redraws', () => {
 
   // @spec PRESENT-SCENE-004
   // @spec PRESENT-MAP-003
-  it('expands and collapses the map, redrawing each time', () => {
+  it('collapses and expands the map, redrawing each time', () => {
     const { controller, onDraw } = harness();
-
-    pressKey(controller, 'm');
-    expect(controller.expanded).toBe(true);
+    onDraw.mockClear();
 
     pressKey(controller, 'm');
     expect(controller.expanded).toBe(false);
+
+    pressKey(controller, 'm');
+    expect(controller.expanded).toBe(true);
     expect(onDraw).toHaveBeenCalledTimes(2);
+  });
+
+  // @spec PRESENT-MAP-013
+  it('opens with the map expanded', () => {
+    const { controller } = harness();
+    expect(controller.expanded).toBe(true);
   });
 });
 
@@ -283,11 +290,11 @@ describe('input while a fight is on', () => {
   it('accepts no party action while a fight is running', () => {
     const { controller, state } = inFight();
 
-    pressKey(controller, 'f'); // search
+    pressKey(controller, 'e'); // use
     pressKey(controller, 'm'); // the map
 
     expect(tickCount(state)).toBe(0);
-    expect(controller.expanded).toBe(false);
+    expect(controller.expanded).toBe(true);
   });
 
   // @spec PRESENT-FIGHT-001
@@ -522,11 +529,11 @@ describe('the party screen', () => {
     const held = partyPosition(state);
     pressKey(controller, 'p');
 
-    for (const key of ['w', 's', 'x', 'f', 'e', 'i', 'c', 'm']) pressKey(controller, key);
+    for (const key of ['w', 's', 'x', 'e', 'i', 'c', 'm']) pressKey(controller, key);
 
     expect(partyPosition(state)).toEqual(held);
     expect(tickCount(state)).toBe(0);
-    expect(controller.expanded).toBe(false);
+    expect(controller.expanded).toBe(true);
     expect(hud(controller).controls).toEqual([]);
     expect(sheet(controller)).not.toBeNull();
   });

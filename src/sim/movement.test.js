@@ -12,7 +12,6 @@ import {
   createExploration,
   perform,
   resolveConfirmation,
-  discoverEdge,
   tickCount,
   partyPosition,
   isTileDiscovered,
@@ -207,49 +206,12 @@ describe('blocked steps', () => {
     expect(partyPosition(state).tile).toEqual({ x: 1, y: 0 });
   });
 
-  // @spec EXPLORE-MOVE-005
-  it('blocks a step through an undiscovered secret door', () => {
-    const floor = openFloor();
-    setEdge(floor, 1, 1, Direction.NORTH, EdgeKind.SECRET_DOOR);
-    const state = exploration([floor]);
-
-    const result = perform(state, { verb: Verb.STEP_FORWARD });
-
-    expect(result.blocked).toBe(true);
-  });
-
-  // @spec EXPLORE-MOVE-005
-  it('reports a blocked secret door identically to a wall, giving nothing away', () => {
-    const secretFloor = openFloor('secret');
-    setEdge(secretFloor, 1, 1, Direction.NORTH, EdgeKind.SECRET_DOOR);
-    const wallFloor = openFloor('walled');
-    setEdge(wallFloor, 1, 1, Direction.NORTH, EdgeKind.WALL);
-
-    const secretResult = perform(exploration([secretFloor]), { verb: Verb.STEP_FORWARD });
-    const wallResult = perform(exploration([wallFloor]), { verb: Verb.STEP_FORWARD });
-
-    expect(secretResult).toEqual(wallResult);
-  });
-
-  // @spec EXPLORE-MOVE-005
-  it('allows a step through a secret door once discovered', () => {
-    const floor = openFloor();
-    setEdge(floor, 1, 1, Direction.NORTH, EdgeKind.SECRET_DOOR);
-    const state = exploration([floor]);
-    discoverEdge(state, 'f1', 1, 1, Direction.NORTH);
-
-    const result = perform(state, { verb: Verb.STEP_FORWARD });
-
-    expect(result.blocked).toBe(false);
-  });
-
   // @spec EXPLORE-MOVE-006
   it('leaves tile, clock, and every side effect untouched when a step is blocked', () => {
     const floor = openFloor();
     setEdge(floor, 1, 1, Direction.NORTH, EdgeKind.WALL);
     const hooks = {
       onTick: vi.fn(),
-      onTrapTrigger: vi.fn(),
       onRoamersMove: vi.fn(),
       onRestock: vi.fn(),
     };
@@ -304,7 +266,6 @@ describe('step resolution order', () => {
       StepEvent.MOVED,
       StepEvent.CLOCK_ADVANCED,
       StepEvent.FEATURE_RESOLVED,
-      StepEvent.TRAP_TRIGGERED,
       StepEvent.SIGHT_RECOMPUTED,
       StepEvent.ROAMERS_MOVED,
       StepEvent.CONTACT_CHECKED,
@@ -354,21 +315,6 @@ describe('pits', () => {
     expect(tickCount(state)).toBe(1);
   });
 
-  // @spec EXPLORE-MOVE-010
-  // @spec EXPLORE-BOUND-005
-  it('fires the trap trigger against the landing tile, not the pit tile', () => {
-    const { upper, lower } = pitSetup();
-    const onTrapTrigger = vi.fn();
-    const state = exploration([upper, lower], { hooks: { onTrapTrigger } });
-
-    perform(state, { verb: Verb.STEP_FORWARD });
-
-    expect(onTrapTrigger).toHaveBeenCalledTimes(1);
-    expect(onTrapTrigger).toHaveBeenCalledWith(
-      expect.objectContaining({ floorId: 'lower', tile: { x: 2, y: 2 } }),
-    );
-  });
-
   // @spec EXPLORE-MOVE-012
   it('does not chain when the landing tile is itself a connector', () => {
     const { upper, lower } = pitSetup();
@@ -403,7 +349,7 @@ describe('pits', () => {
 
   // @spec EXPLORE-MOVE-008
   // @spec EXPLORE-MOVE-010
-  it('re-stocks a revisited floor immediately after relocation, before the trap trigger', () => {
+  it('re-stocks a revisited floor immediately after relocation, before sight', () => {
     const { upper, lower } = pitSetup();
     const state = exploration([upper, lower]);
 
@@ -417,7 +363,7 @@ describe('pits', () => {
         events.indexOf(StepEvent.RESTOCKED),
       );
       expect(events.indexOf(StepEvent.RESTOCKED)).toBeLessThan(
-        events.indexOf(StepEvent.TRAP_TRIGGERED),
+        events.indexOf(StepEvent.SIGHT_RECOMPUTED),
       );
     }
   });

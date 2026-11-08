@@ -29,6 +29,12 @@ describe('the action vocabulary', () => {
     }
   });
 
+  // @spec EXPLORE-ACTION-001
+  it('offers no search, by key or by control', () => {
+    expect(actionForKey('f')).toBeNull();
+    expect(Object.keys(TouchRegion)).not.toContain('SEARCH_CONTROL');
+  });
+
   // @spec EXPLORE-INPUT-001
   it('leaves no touch region bound to two different actions', () => {
     const regions = boundActions().map((b) => b.region);

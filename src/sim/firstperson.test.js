@@ -9,7 +9,7 @@ import {
   Direction,
 } from './floor.js';
 import {
-  createExploration, corridorAhead, discoverEdge, MAX_DRAWN_DEPTH, SIGHT_RANGE,
+  createExploration, corridorAhead, MAX_DRAWN_DEPTH, SIGHT_RANGE,
 } from './exploration.js';
 
 // A north-south corridor one tile wide at x=3, party at the south end facing north.
@@ -113,14 +113,6 @@ describe('where the corridor report stops', () => {
     expect(corridorAhead(state).some((s) => s.depth > 2)).toBe(true);
   });
 
-  // @spec EXPLORE-VIEW-004
-  it('closes at an undiscovered secret door, exactly as at a wall', () => {
-    const { floor, state } = corridorScene();
-    setEdge(floor, 3, 4, Direction.NORTH, EdgeKind.SECRET_DOOR);
-
-    expect(corridorAhead(state).at(-1)).toMatchObject({ depth: 2, closedAhead: true });
-  });
-
   // @spec EXPLORE-VIEW-007
   it('reports past the sight distance, out to the maximum drawn depth of six and no further', () => {
     // A corridor running well past both.
@@ -200,29 +192,6 @@ describe('where the corridor report stops', () => {
     expect(corridorAhead(state).at(-1)).toMatchObject({
       closedAhead: true,
       portalAhead: null,
-    });
-  });
-
-  // @spec EXPLORE-VIEW-010
-  it('reports an undiscovered secret door as no door, giving nothing away', () => {
-    const { floor, state } = corridorScene();
-    setEdge(floor, 3, 5, Direction.NORTH, EdgeKind.SECRET_DOOR);
-
-    expect(corridorAhead(state).at(-1)).toMatchObject({
-      closedAhead: true,
-      portalAhead: null,
-    });
-  });
-
-  // @spec EXPLORE-VIEW-009
-  it('reports a secret door the party has found as the door it turned out to be', () => {
-    const { floor, state } = corridorScene();
-    setEdge(floor, 3, 5, Direction.NORTH, EdgeKind.SECRET_DOOR);
-    discoverEdge(state, 'f1', 3, 5, Direction.NORTH);
-
-    // Found, it stops being opaque, so the report carries on past it as a door.
-    expect(corridorAhead(state)[1]).toMatchObject({
-      portalAhead: { kind: EdgeKind.SECRET_DOOR, open: false },
     });
   });
 

@@ -28,7 +28,7 @@ function carvedTiles(floor) {
   return out;
 }
 
-// Flood the floor, treating every non-wall edge as passable. Locked and secret doors
+// Flood the floor, treating every non-wall edge as passable. Locked doors
 // count as passable here: connectivity is about whether a route exists at all.
 function reachableFrom(floor, start) {
   const seen = new Set([`${start.x},${start.y}`]);
@@ -245,15 +245,15 @@ describe('connectivity', () => {
   });
 });
 
-describe('doors and secrets', () => {
+describe('doors', () => {
   // @spec GEN-DOOR-004
   // @spec GEN-DOOR-005
-  it('never seals a region behind secret or locked doors alone, across many seeds', () => {
+  it('never seals a region behind locked doors alone, across many seeds', () => {
     for (const seed of seeds(40)) {
       const floor = generateFloor({ id: 'f', seed, archetype: ARCH });
       const carved = carvedTiles(floor);
 
-      // Flood using only plainly passable edges: no secret, no locked.
+      // Flood using only plainly passable edges: nothing locked.
       const seen = new Set([`${carved[0].x},${carved[0].y}`]);
       const queue = [carved[0]];
       const step = {
@@ -264,7 +264,7 @@ describe('doors and secrets', () => {
         const t = queue.pop();
         for (const [dir, { dx, dy }] of Object.entries(step)) {
           const kind = getEdge(floor, t.x, t.y, dir);
-          if (kind === EdgeKind.WALL || kind === EdgeKind.SECRET_DOOR || kind === EdgeKind.LOCKED_DOOR) continue;
+          if (kind === EdgeKind.WALL || kind === EdgeKind.LOCKED_DOOR) continue;
           const nx = t.x + dx, ny = t.y + dy;
           if (!contains(floor, nx, ny)) continue;
           const key = `${nx},${ny}`;
@@ -274,16 +274,6 @@ describe('doors and secrets', () => {
       }
 
       expect(seen.size).toBe(carved.length);
-    }
-  });
-
-  // @spec GEN-DOOR-003
-  it('places a secret door only where a loop was carved', () => {
-    for (const seed of seeds(15)) {
-      const floor = generateFloor({ id: 'f', seed, archetype: ARCH });
-      for (const secret of floor.secretEdges ?? []) {
-        expect(secret.fromLoop).toBe(true);
-      }
     }
   });
 
@@ -409,12 +399,14 @@ describe('placement', () => {
     }
   });
 
-  // @spec GEN-PLACE-003
-  it('lays traps within the archetype budget', () => {
+  // @spec GEN-DOOR-001
+  it('lays no traps and no secret doors', () => {
+    expect(ARCH).not.toHaveProperty('traps');
+    expect(ARCH).not.toHaveProperty('secretChance');
     for (const seed of seeds(20)) {
       const floor = generateFloor({ id: 'f', seed, archetype: ARCH });
-      expect(floor.traps.length).toBeGreaterThanOrEqual(ARCH.traps.min);
-      expect(floor.traps.length).toBeLessThanOrEqual(ARCH.traps.max);
+      expect(floor).not.toHaveProperty('traps');
+      expect(floor).not.toHaveProperty('secretEdges');
     }
   });
 });
@@ -546,7 +538,7 @@ describe('corridor shape and locked doors', () => {
     }
 
     const anyLocked = seeds(10).some((seed) =>
-      lockedIn(generateFloor({ id: 'f', seed, archetype: { ...ARCH, lockedChance: 1, secretChance: 0 } })) > 0,
+      lockedIn(generateFloor({ id: 'f', seed, archetype: { ...ARCH, lockedChance: 1 } })) > 0,
     );
     expect(anyLocked).toBe(true);
   });

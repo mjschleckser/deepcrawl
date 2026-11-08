@@ -13,9 +13,8 @@ the party ever sets foot on it, and it never runs over that floor again.
 Three principles shape the design.
 
 **Structure is authored once and frozen; contents are not.** A floor's walls, doors,
-stairs, and traps are laid down at generation and never change for the life of the
-campaign — the party's map has to stay true, and a trap they disarmed must not
-reappear. What lives *in* the floor is a different matter: monsters and the contents
+stairs, and chests are laid down at generation and never change for the life of the
+campaign — the party's map has to stay true. What lives *in* the floor is a different matter: monsters and the contents
 of rooms are refilled when the party returns after a long enough absence. Generation
 therefore does two separable jobs, and confusing them would either freeze the dungeon
 into a museum or make the player's map a lie.
@@ -27,7 +26,7 @@ generator testable at all: a property like "every floor is fully connected" can 
 asserted across a thousand seeds in a second.
 
 **Authored data bounds the generator, and code does not.** How large a floor runs, how
-many rooms it holds, how often a door is locked or a passage secret — all of it lives
+many rooms it holds, how often a door is locked — all of it lives
 in archetypes as data. The generator is the machinery that satisfies an archetype; it
 holds no opinion about what a dungeon should feel like. Changing the feel of the
 dungeon should not mean changing the generator.
@@ -36,9 +35,8 @@ dungeon should not mean changing the generator.
 
 | | Owned by generation | Owned elsewhere |
 |---|---|---|
-| Floor layout | walls, doors, secret doors, room shapes | nothing — frozen after creation |
+| Floor layout | walls, doors, room shapes | nothing — frozen after creation |
 | Connectors | where stairs and pits sit, and what they point at | exploration decides what taking one does |
-| Traps | where they are laid, once | the trap segment owns detection, disarming, effects |
 | Chests | where they are laid, once, and which table they roll on | loot decides what a chest holds; exploration records whether it was opened |
 | Room contents | what refills a room, and when it is worth refilling | the enemies segment owns the bands it answers with, and everything they do once placed |
 
@@ -100,16 +98,14 @@ Where a corridor meets a room's boundary, the opened edge becomes a `door` at th
 archetype's door chance, and stays an open archway otherwise. Not every threshold is a
 door: a closed door is opaque, so a floor that put one on every room boundary would be
 a floor the party can see into nowhere until they are standing in it. A portion of the
-doors that do appear become `lockedDoor`; a portion of the *loop* connections become
-`secretDoor`.
+doors that do appear become `lockedDoor`.
 
-Secrets are bounded by an invariant the generator enforces rather than hopes for:
-**every region keeps at least one route in that is neither secret nor locked.** Only
-loop connections are eligible to become secret, and a loop is passed over if making it
-secret would leave the region it serves reachable only through secrets. A secret that
-is the sole way into somewhere is not a secret, it is a wall the party never gets past.
+Locks are bounded by an invariant the generator enforces rather than hopes for:
+**every region keeps at least one route in that is not locked.** A door is left unlocked
+if locking it would leave the region it serves reachable only through locks. A lock
+that is the sole way into somewhere is a wall until a key exists.
 
-### 6. Connectors and traps
+### 6. Connectors
 
 Stairs and pits are placed on room tiles away from doorways, on neither side of one, so
 a connector is never the tile a party is forced to cross.
@@ -125,14 +121,11 @@ The way back up is not bound by this. It is a fixed point every floor must have 
 arrival to resolve, and a landing that also holds a way onward is a legitimate room
 rather than a degenerate one.
 
-Traps are laid within the archetype's budget, on room tiles nothing else has claimed.
-
 ### 7. Chests
 
 Chests are laid last, within the archetype's chest budget, on room tiles that no
-connector or trap has claimed and that are away from doorways, so a chest never blocks
-the way through a room. They are laid once, like traps, and nothing ever adds or removes
-one. Each chest is numbered in the order it was laid. That number and the floor's seed
+connector has claimed and that are away from doorways, so a chest never blocks the way
+through a room. They are laid once, and nothing ever adds or removes one. Each chest is numbered in the order it was laid. That number and the floor's seed
 are what loot seeds the chest's contents from, so generation never rolls what a chest
 holds and the floor never stores it.
 
@@ -151,8 +144,7 @@ than values, and generation draws from those ranges.
 | `roomSize` | minimum and maximum room dimensions |
 | `loops` | extra non-tree connections, as a range |
 | `doorChance` | how often a room threshold becomes a door rather than an open archway |
-| `lockedChance`, `secretChance` | how often a door is locked, and how often a loop connection is secret |
-| `traps` | how many traps to lay, as a range |
+| `lockedChance` | how often a door is locked |
 | `chests` | how many chests to lay, as a range |
 | `chestTable` | the loot table every chest on the floor rolls on |
 
@@ -212,7 +204,7 @@ which rooms are worth refilling, asks the enemies segment which bands go in them
 returns the contents with their positions. Which bands exist is not generation's
 business; where they stand is.
 
-It never touches the layout and never touches a trap. Re-stocking is derived from the
+It never touches the layout. Re-stocking is derived from the
 floor's own seed combined with a re-stocking counter, so the same floor re-stocked
 twice after the same absence gives the same result, and a floor visited repeatedly does
 not converge on one arrangement.
@@ -226,7 +218,7 @@ not converge on one arrangement.
 | Room placement | Recursive splitting, one room per leaf region | Scattering rooms and rejecting overlaps; cellular automata caves | A split cannot overlap, so there is no rejection loop that can fail or run long on an unlucky seed. Caves suit a different genre; this one wants rooms and corridors. |
 | Connectivity | Guaranteed by construction, joining the rooms in one chain | Generating freely, then detecting and repairing disconnection | A repair pass is a second generator with its own failure modes. A floor that cannot come out disconnected needs no check. |
 | Loops | Extra connections drawn from the archetype | Leaving the corridor tree as-is | One route between any two points makes a floor tedious and trivially mapped. Loops are what make a map worth drawing. |
-| Secret doors | Only on loop connections, and never the last open route into a region | Anywhere; loop connections without the further check | Restricting to loops is not enough on its own — two loops into the same region could both turn secret and seal it again. The invariant is that every region keeps a route in that is neither secret nor locked. |
+| Locked doors | Never the last open route into a region | Anywhere | A lock is a wall until a key exists, so a region reachable only through locks would be sealed. Each lock is tried and undone if it would strand anything. |
 | Room count | A target the generator approaches, not a contract | Failing when an archetype cannot be satisfied | An archetype asking for more rooms than a floor can hold should give a smaller floor, not an error. Generation has no good way to refuse. |
 | Arrival | A rule carried by the connector, resolved at the destination | Coordinates named by the source connector | A source floor cannot name a tile on a floor that does not exist yet. Descending to the matching upward staircase is also a rule, not a coordinate — it says what the arrival means. |
 | Lazy floors | Requested through a provider exploration is handed | Exploration calling generation; generating every floor up front | Exploration already takes its neighbours as injected hooks. A provider keeps the boundary intact and leaves the generated floor cached and saved thereafter. |
@@ -239,15 +231,15 @@ not converge on one arrangement.
 ### Resolved
 
 1. ✅ **The seed is the floor** — identical seed and archetype give an identical floor, always.
-2. ✅ **Layout, traps and chests are frozen** at generation; only room contents are ever refilled, and an opened chest stays opened.
+2. ✅ **Layout and chests are frozen** at generation; only room contents are ever refilled, and an opened chest stays opened.
 3. ✅ **Connectivity is guaranteed by construction**, not checked and repaired.
 4. ✅ **Archetypes are ranges**, and hold no absolute coordinates.
-5. ✅ **Secret doors only ever sit on loop connections**, never on the sole route to anywhere.
+5. ✅ **A floor lays no traps and no secret doors**; every edge is what it looks like.
 6. ✅ **The dungeon plan fixes the floor graph first**; floors are generated lazily.
 7. ✅ **Re-stocking derives from the floor seed plus a counter**, never from re-running generation.
 8. ✅ **Generation is a floor's first stocking.** Arriving on a newly built floor re-stocks nothing.
 9. ✅ **Room count is a target**, not a guarantee — a small floor delivers what fits.
-10. ✅ **Every region keeps a route in that is neither secret nor locked.**
+10. ✅ **Every region keeps a route in that is not locked.**
 11. ✅ **Connectors carry an arrival rule**, resolved against the destination once it exists.
 12. ✅ **Every floor holds an upward staircase**, so a descent is always retraceable.
 13. ✅ **Chests are laid last**, from a derived generator, numbered by when they were laid; generation never rolls their contents.
@@ -259,6 +251,7 @@ not converge on one arrangement.
 3. **Re-stocking density.** Generation asks the enemies segment which bands refill a room and reports them with their positions. How many a room is worth, and how that scales with the floor's tier, is untuned. A re-stocking draws from the campaign's own generator today; deriving it from the floor's seed and a counter is not built.
 4. **Archetype progression.** Nothing decides which archetype a floor at a given depth should use, or how a campaign escalates. Different loot on different floors waits on this, since a floor's chest table is its archetype's.
 5. **Floor size versus drawn depth.** A long straight corridor beyond the maximum drawn depth is invisible past its limit; whether archetypes should avoid sightlines that long is untested.
+6. **Traps and secret doors.** Neither is laid. Returning them would need a reason to look for them (a search action and the skill behind it) and a rule that a secret never seals a region, as locks already have.
 
 ## References
 

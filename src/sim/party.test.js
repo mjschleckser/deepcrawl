@@ -161,7 +161,7 @@ describe('characters', () => {
 
   // @spec PARTY-SKILL-002
   it('starts a class with its own skills, so nobody is useless on the first descent', () => {
-    // A fresh thief can already look for traps; a fresh cleric can already try a revival.
+    // A fresh thief already has a rank in Detection; a fresh cleric can already try a revival.
     expect(skillRank(createCharacter({ id: 't', name: 'T', characterClass: CharacterClass.THIEF }), Skill.DETECTION)).toBeGreaterThanOrEqual(1);
     expect(skillRank(cleric(), Skill.RESTORATION)).toBeGreaterThanOrEqual(1);
     expect(skillRank(fighter(), Skill.BLADE)).toBeGreaterThanOrEqual(1);

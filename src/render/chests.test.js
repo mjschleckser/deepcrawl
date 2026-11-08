@@ -39,18 +39,18 @@ describe('a chest on the automap', () => {
   const view = {
     floorId: 'f1', width: 6, height: 2,
     tiles: [
-      { x: 0, y: 0, feature: TileFeature.CHEST, chestOpened: false, trapKnown: false, edges },
-      { x: 1, y: 0, feature: TileFeature.CHEST, chestOpened: true, trapKnown: false, edges },
-      { x: 2, y: 0, feature: TileFeature.STAIRS_DOWN, chestOpened: null, trapKnown: false, edges },
-      { x: 3, y: 0, feature: TileFeature.PIT, chestOpened: null, trapKnown: false, edges },
-      { x: 4, y: 0, feature: TileFeature.NONE, chestOpened: null, trapKnown: true, edges },
+      { x: 0, y: 0, feature: TileFeature.CHEST, chestOpened: false, edges },
+      { x: 1, y: 0, feature: TileFeature.CHEST, chestOpened: true, edges },
+      { x: 2, y: 0, feature: TileFeature.STAIRS_DOWN, chestOpened: null, edges },
+      { x: 3, y: 0, feature: TileFeature.PIT, chestOpened: null, edges },
+      { x: 4, y: 0, feature: TileFeature.NONE, chestOpened: null, edges },
     ],
     party: { x: 5, y: 1, facing: Direction.NORTH },
     enemies: [],
   };
 
   // @spec PRESENT-MAP-012
-  it('marks a chest, opened or not, apart from stairs, pits and traps', () => {
+  it('marks a chest, opened or not, apart from stairs and pits', () => {
     const marks = buildMapPlan(view, viewport).cells.map((c) => c.mark);
 
     expect(marks).toEqual([MapMark.CHEST, MapMark.OPENED_CHEST, MapMark.STAIRS, MapMark.PIT, null]);

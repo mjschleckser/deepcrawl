@@ -45,6 +45,11 @@ when it is read.
 - [x] **SAVE-READ-010**: When a save holds items from before items carried a rarity, in a slot or in the pack, the system shall read each as common.
 - [x] **SAVE-READ-011**: When a save holds weapons carrying accuracy, combatants carrying Perception, or shields carrying defence, the system shall drop the accuracy and the Perception, and shall give each shield the armour its authored file gives it today, or none if it has no file.
 
+## The switch
+
+- [x] **SAVE-OFF-001**: While saving is switched off, the system shall begin a new campaign every time the game opens, and shall neither read, write, nor remove any save in storage.
+- [x] **SAVE-OFF-002**: While saving is switched off, the system shall report the campaign as not being saved.
+
 ## Beginning again
 
 - [x] **SAVE-NEW-001**: When beginning again is confirmed, the system shall replace the campaign and its save with a new campaign, and shall leave nothing of the old one in play.

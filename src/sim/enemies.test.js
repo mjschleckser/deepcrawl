@@ -171,13 +171,13 @@ describe('awareness', () => {
   });
 
   // @spec ENEMY-AWARE-006
-  it('cannot see the party through a wall, a closed door, or an unfound secret door', () => {
+  it('cannot see the party through a wall or a closed door', () => {
     const floor = openFloor();
     const roamer = roamerAt(5, 5);
     const party = { x: 5, y: 3 };
     expect(roamerSees(roamer, floor, party)).toBe(true);
 
-    for (const kind of [EdgeKind.WALL, EdgeKind.DOOR, EdgeKind.SECRET_DOOR]) {
+    for (const kind of [EdgeKind.WALL, EdgeKind.DOOR]) {
       const blocked = openFloor();
       setEdge(blocked, 5, 4, Direction.NORTH, kind);
       expect(roamerSees(roamer, blocked, party)).toBe(false);
@@ -387,7 +387,6 @@ describe('re-stocking', () => {
       expect(typeof occupant.y).toBe('number');
       // Nothing here describes the floor itself.
       expect(occupant).not.toHaveProperty('edges');
-      expect(occupant).not.toHaveProperty('traps');
       expect(occupant).not.toHaveProperty('feature');
     }
   });

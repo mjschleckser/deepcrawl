@@ -141,7 +141,7 @@ authored.
 ### A chest
 
 A chest is a tile feature, laid by generation within the archetype's chest budget on
-room tiles nothing else has claimed, as traps are. It is opened with `INTERACT` while
+room tiles nothing else has claimed. It is opened with `INTERACT` while
 the party stands on it, which costs a tick, as committing any party action does.
 
 **What a chest holds is fixed by the floor, not by the moment it is opened.** Its find
@@ -155,7 +155,7 @@ flags, and an opened chest offers nothing more. It is still drawn, open and empt
 the map stays a true record of where the party has been.
 
 **Re-stocking never refills a chest.** A chest is part of what the floor is, laid once
-like a trap. Revisited floors stay worth walking because their bands return, and bands
+like a staircase. Revisited floors stay worth walking because their bands return, and bands
 carry drops.
 
 ## Gold
@@ -204,7 +204,7 @@ visible from one place.
 | Party | a purse of gold beside the pack; `addGold`; `useItem`, which consumes from the pack and heals the character using it through `applyHealing`, refusing a character at full health or who is not conscious |
 | Enemies | an optional `loot` table id on each roster entry |
 | Combat | per-enemy rolls on victory, stowed and added to the outcome; a **Use** action that costs the full bar |
-| Generation | archetype fields `chests` (a range) and `chestTable`; chests laid at generation on room tiles no connector or trap has claimed, and never added or removed afterwards (GEN-PLACE-007) |
+| Generation | archetype fields `chests` (a range) and `chestTable`; chests laid at generation on room tiles no connector has claimed, and never added or removed afterwards (GEN-PLACE-007) |
 | Exploration | a `chest` tile feature; `INTERACT` on an unopened chest opens it, costs a tick and hands its find to the party; a per-floor record of opened chests, saved |
 | Persistence | save format 4: the party's purse and each floor's opened chests, with a migration from format 3 that starts the purse at zero and every chest unopened |
 | Presentation | the victory banner lists gold and items found; opening a chest shows a report over the view, dismissed by a press; the Items screen shows the purse, draws each item's name in its rarity's colour, and offers consumables as rows that use them; the corridor and the automap draw a chest, open or closed |
@@ -253,7 +253,7 @@ or archetype naming a table that doesn't exist is rejected the same way.
 
 1. **Affixes.** Varying an item within its kind wants enemy armour on a curve to balance against (ENEMY-ROSTER-007, -008).
 2. **A pack limit** (ITEM-PACK-006), and with it a reason to choose what to take.
-3. **Trapped chests and locked chests.** The trap segment does not exist yet. A chest is opened with `INTERACT` rather than by stepping onto it so that a trap can later make opening a decision.
+3. **Locked chests.** A chest is opened with `INTERACT` rather than by stepping onto it so that something about a chest can later make opening a decision.
 4. **Different loot on each floor**, through richer tables named by deeper archetypes and enemies (GEN-PLAN-008).
 5. **Spending gold**, in a town.
 
@@ -262,5 +262,5 @@ or archetype naming a table that doesn't exist is rejected the same way.
 - `docs/high-level-design.md`: the loot and items component, and the rarity decision.
 - `docs/intent/items/items-design.md`: what an item is, the pack.
 - `docs/intent/party/party-design.md`: `stow`, `applyHealing`, the condition chain.
-- `docs/intent/generation/generation-design.md`: determinism, connectors and traps, archetypes.
+- `docs/intent/generation/generation-design.md`: determinism, connectors, archetypes.
 - `docs/intent/exploration/exploration-design.md`: `INTERACT`, the cost of committing a party action.

@@ -1199,13 +1199,24 @@ describe('the turn strip', () => {
   });
 
   // @spec PRESENT-STRIP-005
-  it("marks a character's tile with their initial, and an enemy's with nothing", () => {
+  it("marks a character's tile with their initial, and an enemy's with its place in the column", () => {
     const { tiles } = planOf(controller()).strip;
     const markOf = (id) => tiles.find((t) => t.id === id)?.mark;
 
     expect(markOf('bram')).toBe('B');
-    expect(markOf('g1')).toBeNull();
-    expect(markOf('a1')).toBeNull();
+    expect(markOf('g1')).toBe('1');
+    expect(markOf('a1')).toBe('3');
+  });
+
+  // @spec PRESENT-STRIP-005
+  it('keeps an enemy\'s number when one above it falls', () => {
+    const encounter = fightState();
+    const foe = encounter.enemies.members.find((e) => e.id === 'g1');
+    foe.hitPoints = 0;
+    foe.condition = Condition.DEAD;
+    const { tiles } = planOf(createFightController({ encounter, viewport, onDraw: vi.fn() })).strip;
+
+    expect(tiles.find((t) => t.id === 'a1')?.mark).toBe('3');
   });
 
   // @spec PRESENT-STRIP-006

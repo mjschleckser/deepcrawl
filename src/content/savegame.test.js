@@ -11,7 +11,8 @@ import {
 import { createCampaign } from './campaign.js';
 import { itemById } from './items.js';
 import {
-  SAVE_FORMAT, SAVE_KEY, WRITE_DELAY_MS, createAutosave, encodeCampaign, migrate, openCampaign,
+  SAVE_FORMAT, SAVE_KEY, SAVING, WRITE_DELAY_MS, createAutosave, encodeCampaign, migrate, openCampaign,
+  startCampaign,
 } from './savegame.js';
 
 const fakeStorage = (seeded = {}) => {
@@ -528,5 +529,49 @@ describe('writing a save', () => {
     createAutosave({ storage: null, read: () => campaign, onStatus }).flush();
 
     expect(onStatus).toHaveBeenCalledWith(false);
+  });
+});
+
+describe('saving switched off', () => {
+  // @spec SAVE-OFF-001
+  it('is off while items are being reworked', () => {
+    expect(SAVING).toBe(false);
+  });
+
+  // @spec SAVE-OFF-001
+  it('begins a new campaign, leaving any save in storage untouched', () => {
+    const text = encodeCampaign(createCampaign({ seed: 5 }));
+    const storage = fakeStorage({ [SAVE_KEY]: text });
+    const getItem = vi.spyOn(storage, 'getItem');
+    const fresh = createCampaign({ seed: 9 });
+    const create = vi.fn(() => fresh);
+
+    const opened = startCampaign(storage, { saving: false, create });
+
+    expect(getItem).not.toHaveBeenCalled();
+    expect(create).toHaveBeenCalledWith();
+    expect(opened.campaign).toBe(fresh);
+    expect(opened.canWrite).toBe(false);
+    expect(opened.setAside).toBe(false);
+
+    const onStatus = vi.fn();
+    const autosave = createAutosave({ storage, read: () => opened.campaign, canWrite: opened.canWrite, onStatus });
+    autosave.flush();
+
+    // @spec SAVE-OFF-002
+    expect(onStatus).toHaveBeenCalledWith(false);
+    expect([...storage.items.keys()]).toEqual([SAVE_KEY]);
+    expect(storage.items.get(SAVE_KEY)).toBe(text);
+  });
+
+  // @spec SAVE-OFF-001
+  it('opens the save as before once switched back on', () => {
+    const saved = createCampaign({ seed: 5 });
+    const storage = fakeStorage({ [SAVE_KEY]: encodeCampaign(saved) });
+
+    const opened = startCampaign(storage, { saving: true });
+
+    expect(opened.canWrite).toBe(true);
+    expect(JSON.stringify(opened.campaign.snapshot())).toBe(JSON.stringify(saved.snapshot()));
   });
 });

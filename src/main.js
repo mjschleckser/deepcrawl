@@ -1,6 +1,6 @@
 import './style.css';
 import { createCampaign } from './content/campaign.js';
-import { createAutosave, openCampaign } from './content/savegame.js';
+import { createAutosave, startCampaign } from './content/savegame.js';
 import { computeSight } from './sim/exploration.js';
 import { createRenderer } from './render/app.js';
 import { playableViewport } from './render/viewport.js';
@@ -22,7 +22,8 @@ function browserStorage() {
 async function bootstrap() {
   const mount = document.querySelector('#app');
   const storage = browserStorage();
-  const { campaign, setAside, canWrite } = openCampaign(storage);
+  // Saving can be switched off, in which case every load is a new campaign.
+  const { campaign, setAside, canWrite } = startCampaign(storage);
   // Exposed for driving the game from a browser smoke test. Development only.
   if (import.meta.env.DEV) window.__campaign = campaign;
   // Record what the party can see from where it stands, before anything is drawn.

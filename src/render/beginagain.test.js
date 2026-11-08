@@ -199,6 +199,16 @@ describe('replacing the campaign', () => {
     expect(controller.partyScreen).toBeNull();
     expect(layer(controller, 'fight')).toBeNull();
   });
+
+  // @spec PRESENT-MAP-013
+  it('opens the new campaign with the map expanded', () => {
+    const { controller } = wiped();
+    controller.expanded = false;
+
+    replaceCampaign(controller, createCampaign({ seed: 22 }));
+
+    expect(controller.expanded).toBe(true);
+  });
 });
 
 describe('the save note', () => {
@@ -215,8 +225,16 @@ describe('the save note', () => {
     const { note, stamp } = layer(controller, 'hud');
 
     expect(note.text).toBe('Not saving');
-    expect(note.x).toBe(stamp.x);
-    expect(note.y + note.size).toBeLessThanOrEqual(stamp.y);
+    // On the stamp's own line, after the number, and the stamp is placed clear of every
+    // control at the width of both.
+    expect(note.y).toBe(stamp.y);
+    expect(note.x).toBeGreaterThan(stamp.x);
+    expect(stamp.x + stamp.width).toBeGreaterThanOrEqual(note.x + note.width - 0.5);
+    for (const c of layer(controller, 'hud').controls) {
+      const overlaps = c.x < note.x + note.width && c.x + c.width > note.x
+        && c.y < note.y + note.size && c.y + c.height > note.y;
+      expect(overlaps).toBe(false);
+    }
 
     const { controller: fighting } = wiped();
     setSaveNote(fighting, 'Old save set aside');

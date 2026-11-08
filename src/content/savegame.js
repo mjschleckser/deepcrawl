@@ -16,6 +16,14 @@ export const SAVE_KEY = 'deepcrawl.save';
 /** The schema a save is written in. Raise it, and add a migration, when the shape changes. */
 export const SAVE_FORMAT = 5;
 
+/**
+ * Whether the campaign is saved at all. Off while items are reworked from build to build:
+ * every load is then a new campaign, and nothing in storage is read or written.
+ *
+ * @spec SAVE-OFF-001
+ */
+export const SAVING = false;
+
 /** How long a change waits, so a run of steps becomes one write. */
 export const WRITE_DELAY_MS = 1000;
 
@@ -240,6 +248,19 @@ export function openCampaign(storage, { create = createCampaign, now = Date.now 
     }
     return { campaign: create(), setAside: true, canWrite: moved };
   }
+}
+
+/**
+ * The campaign the game opens on. With saving switched off it is always a new one, and
+ * storage is left exactly as it was; the answer says nothing may be written, which is
+ * what has the game report that it is not saving.
+ *
+ * @spec SAVE-OFF-001
+ * @spec SAVE-OFF-002
+ */
+export function startCampaign(storage, { saving = SAVING, create = createCampaign, now = Date.now } = {}) {
+  if (!saving) return { campaign: create(), setAside: false, canWrite: false };
+  return openCampaign(storage, { create, now });
 }
 
 /**
