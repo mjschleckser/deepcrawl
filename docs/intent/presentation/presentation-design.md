@@ -171,14 +171,14 @@ viewport, not pixels, so they hold their proportions on any screen:
 ┌─────────────────────────────────┐
 │┌─┐                         [Map]│ ← automap widget, and its control
 ││▓│ ┌───────────────┐            │
-│└─┘ │  step forward │            │
-│ ◀  │               │  ▶         │
-│turn├───────────────┤ turn       │
-│left│   step back   │ right      │
+│└─┘ │               │            │
+│ ◀  │  step forward │  ▶         │
+│turn│               │ turn       │
+│left│               │ right      │
 │    └───────────────┘            │
-│  ┌────┬────┬────┬────┬────┐     │
-│  │part│item│spel│srch│ use│     │ ← party action bar
-│  └────┴────┴────┴────┴────┘     │
+│  ┌──────┬──────┬──────┬──────┐  │
+│  │party │items │spells│ use  │  │ ← party action bar
+│  └──────┴──────┴──────┴──────┘  │
 └─────────────────────────────────┘
 ```
 
@@ -947,7 +947,7 @@ screen the player can see but the game cannot have.
 | Tap regions | Fractions of the viewport, with a pixel floor on size | Fractions alone; fixed pixel rectangles | The same layout has to work on a phone and a desktop window, so fractions hold the proportions — but a thumb does not shrink with the viewport, so the floor is in real pixels. |
 | Drawing the controls | Every tappable region is drawn | Leaving the view uncluttered and the regions invisible | A control nobody can see is a control only a keyboard player has, and the first target user is holding a phone. |
 | Navigation zones | The label alone, outlined only while pressed | Always framed | A panel the size of a movement zone is a panel big enough to hide the corridor, and the corridor is the game. The outline under the finger teaches where the zones are without keeping the dungeon covered. |
-| Stepping back | A zone of its own, under the forward zone | Reaching it by turning about, stepping, and turning back | A withdrawal that needs three taps is not a withdrawal. Splitting the centre of the view gives the verb a home without taking a thumb's width from any other control. |
+| Stepping back | No control: the `S` and `↓` keys, and by touch turning about, stepping, and turning about again | A zone of its own under the forward zone | Backing away is rare beside walking on, and a zone for it took the lower centre of the view — the room nearest the thumb on a phone, just above the action bar. Giving that room to the forward zone serves the step taken almost every time; the occasional withdrawal costs a few taps of controls already under the thumb. |
 | A door in the view | Drawn on the frame the corridor stops at, with an open one drawn as its frame alone | Drawn as a floor marking, like stairs and pits | A door is in the way rather than underfoot, and drawn on the floor it would say nothing about whether the corridor goes on. Drawing the open ones too costs a frame and buys the landmark a player navigates by. |
 | Enemies in the corridor | A figure at the depth the report puts it, sharing the map mark's horned head | Drawing none, leaving the map to show them; a card or banner announcing one | A monster the map shows and the corridor does not makes the player watch the corner of the screen instead of the dungeon. Sharing the head is what makes the mark and the figure read as the same creature. |
 | The enemy mark | One creature mark for every enemy | A dot; a different mark per roster entry | A dot beside the party triangle and the stair marks reads as one more marking rather than a creature. Per-enemy marks are authoring that the roster does not yet justify, and they would leak what the party has not fought. |
@@ -1012,7 +1012,7 @@ screen the player can see but the game cannot have.
 8. ✅ **Tap regions are viewport fractions**, recomputed on resize, with a pixel floor on how small one may be drawn.
 9. ✅ **Every tappable region is drawn**, and every drawn control carries its own hit region in the plan.
 10. ✅ **A navigation zone is its label alone**, outlined only while pressed; a button keeps its panel and frame.
-11. ✅ **Stepping back is a zone of its own**, beneath the forward zone.
+11. ✅ **Stepping back has no control of its own**: it is keyed on `S` and `↓`, and the forward zone takes the whole centre of the view.
 12. ✅ **Turning about has a key but no control**, being two taps of one the player already uses.
 13. ✅ **Labels name the action**, with any keyboard hint as secondary text.
 14. ✅ **Enemies are a column on the left and the party a column on the right**, each centred vertically on its own count, every position decided in the plan.

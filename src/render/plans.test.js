@@ -389,7 +389,7 @@ describe('tap regions', () => {
     const wide = { width: 2400, height: 1000 };
     const column = contentColumn(wide);
     const buttons = tapRegionsFor(wide).filter(
-      (r) => !['FORWARD', 'BACKWARD', 'TURN_LEFT', 'TURN_RIGHT'].includes(r.region),
+      (r) => !['FORWARD', 'TURN_LEFT', 'TURN_RIGHT'].includes(r.region),
     );
 
     expect(buttons.length).toBeGreaterThan(0);
@@ -427,13 +427,16 @@ describe('tap regions', () => {
   });
 
   // @spec PRESENT-CTRL-014
-  it('puts the backward zone under the forward one, neither taking room from the other', () => {
-    const forward = tapRegionsFor(viewport).find((r) => r.region === 'FORWARD');
-    const back = tapRegionsFor(viewport).find((r) => r.region === 'BACKWARD');
+  it('draws no backward zone, and gives the forward zone the whole centre', () => {
+    const regions = tapRegionsFor(viewport);
+    const forward = regions.find((r) => r.region === 'FORWARD');
+    const left = regions.find((r) => r.region === 'TURN_LEFT');
 
-    expect(back).toBeDefined();
-    expect(back.y).toBeGreaterThanOrEqual(forward.y + forward.height);
-    expect(hitTest(viewport, viewport.width / 2, back.y + back.height / 2)).toBe('BACKWARD');
+    expect(regions.map((r) => r.region)).not.toContain('BACKWARD');
+    // As tall as the turn zones beside it, so the lower centre walks on too.
+    expect(forward.y).toBe(left.y);
+    expect(forward.height).toBe(left.height);
+    expect(hitTest(viewport, viewport.width / 2, forward.y + forward.height * 0.9)).toBe('FORWARD');
   });
 
   // @spec PRESENT-INPUT-002

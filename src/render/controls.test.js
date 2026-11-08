@@ -11,8 +11,10 @@ import {
 } from './fight.js';
 import { buildPromptPlan } from './promptplan.js';
 import { createController, pressKey, pressPointer, scrollFightLog, layers } from './controller.js';
-import { createExploration, Verb, PartyAction } from '../sim/exploration.js';
-import { boundActions } from '../sim/input.js';
+import {
+  createExploration, Verb, PartyAction, perform, partyPosition, tickCount,
+} from '../sim/exploration.js';
+import { actionForTouch, boundActions } from '../sim/input.js';
 import { createFloor, Direction } from '../sim/floor.js';
 import { readFile } from 'node:fs/promises';
 
@@ -391,6 +393,8 @@ describe('controls over the dungeon', () => {
     );
     // Turning about is two turns the same way.
     if (byTouch.has(Verb.TURN_LEFT) || byTouch.has(Verb.TURN_RIGHT)) byTouch.add(Verb.TURN_AROUND);
+    // Stepping back is turning about either side of a step forward.
+    if (byTouch.has(Verb.TURN_AROUND) && byTouch.has(Verb.STEP_FORWARD)) byTouch.add(Verb.STEP_BACKWARD);
 
     for (const action of [...Object.values(Verb), ...Object.values(PartyAction)]) {
       expect(byTouch).toContain(action);
@@ -398,10 +402,25 @@ describe('controls over the dungeon', () => {
   });
 
   // @spec EXPLORE-INPUT-004
-  it('gives walking backward a control, which no repetition of another reaches', () => {
+  it('leaves walking backward reachable by touch, by turning about either side of a step', () => {
     const regions = tapRegionsFor(phone).map((r) => r.region);
+    expect(regions).not.toContain('BACKWARD');
+    for (const region of ['TURN_RIGHT', 'FORWARD']) expect(regions).toContain(region);
 
-    expect(regions).toContain('BACKWARD');
+    const room = () => {
+      const floor = createFloor({ id: 'f1', width: 5, height: 5 });
+      return createExploration({ floors: [floor], floorId: 'f1', tile: { x: 2, y: 2 }, facing: Direction.NORTH });
+    };
+    const keyed = room();
+    perform(keyed, { verb: Verb.STEP_BACKWARD });
+
+    const touched = room();
+    for (const region of ['TURN_RIGHT', 'TURN_RIGHT', 'FORWARD', 'TURN_RIGHT', 'TURN_RIGHT']) {
+      perform(touched, actionForTouch(region));
+    }
+
+    expect(partyPosition(touched)).toEqual(partyPosition(keyed));
+    expect(tickCount(touched)).toBe(tickCount(keyed));
   });
 
   // @spec PRESENT-CTRL-007
@@ -432,7 +451,7 @@ describe('the two kinds of control', () => {
 
   // @spec PRESENT-CTRL-007
   it('makes the movement areas zones, which draw as bare labels', () => {
-    for (const region of ['FORWARD', 'BACKWARD', 'TURN_LEFT', 'TURN_RIGHT']) {
+    for (const region of ['FORWARD', 'TURN_LEFT', 'TURN_RIGHT']) {
       expect(byRegion(region).kind).toBe(ControlKind.ZONE);
     }
   });

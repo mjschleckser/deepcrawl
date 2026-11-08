@@ -32,8 +32,8 @@ const BINDINGS = [
   { action: Verb.STEP_BACKWARD, keys: ['s', 'ArrowDown'], region: TouchRegion.BACKWARD },
   { action: Verb.TURN_LEFT, keys: ['a', 'ArrowLeft'], region: TouchRegion.TURN_LEFT },
   { action: Verb.TURN_RIGHT, keys: ['d', 'ArrowRight'], region: TouchRegion.TURN_RIGHT },
-  // The four keys under one hand walk the party; turning about is the verb reached by
-  // repeating another, so it keeps a key of its own and no control.
+  // The four keys under one hand walk the party. Turning about and stepping back are
+  // reached by repeating others, so each keeps a key of its own and no drawn control.
   { action: Verb.TURN_AROUND, keys: ['x'], region: TouchRegion.TURN_AROUND },
   { action: PartyAction.PARTY, keys: ['p'], region: TouchRegion.PARTY_BAR },
   { action: PartyAction.ITEMS, keys: ['i'], region: TouchRegion.ITEMS },

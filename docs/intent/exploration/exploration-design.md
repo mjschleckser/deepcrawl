@@ -470,16 +470,24 @@ do while standing still.
 | Movement verb | Keyboard | Touch |
 |---|---|---|
 | `STEP_FORWARD` | `W` / `↑` | tap upper-centre of the view |
-| `STEP_BACKWARD` | `S` / `↓` | tap lower-centre of the view |
+| `STEP_BACKWARD` | `S` / `↓` | turn about, step, and turn about again |
 | `TURN_LEFT` | `A` / `←` | tap left edge of the view |
 | `TURN_RIGHT` | `D` / `→` | tap right edge of the view |
 | `TURN_AROUND` | `X` | two taps of either turn control |
 
 The four keys under one hand walk the party: forward, back, and a turn either way.
-Turning about is the one verb reached by repeating another, so it keeps a key without
-a control of its own. A control earns its place by being the only way to do something
-or by being worth the room it takes, and this one is neither. What must hold is that
-every action stays *achievable* by touch, not that each has a button of its own.
+Turning about and stepping back are the two verbs reached by repeating others, so each
+keeps a key without a control of its own. A control earns its place by being the only
+way to do something or by being worth the room it takes, and neither of these is. What
+must hold is that every action stays *achievable* by touch, not that each has a button
+of its own.
+
+Stepping back is the rarer of the two by far: a party walks forward almost every step and
+backs away only to give ground. On a phone the lower centre of the view is prime room,
+just above the action bar and under the thumb, so it goes to the forward zone rather than
+to a verb a player wants a few times a fight's worth of walking. A touch player backs away
+by turning about, stepping, and turning about again — the same tile and the same facing,
+for the same one step's ticks, since turns are free.
 
 | Party action | Keyboard | Touch | Owned by |
 |---|---|---|---|
@@ -502,10 +510,10 @@ the lever each cost a tick.
 ┌─────────────────────────────────┐
 │┌─┐                         [Map]│ ← automap, and the control
 ││▓│ ┌───────────────┐            │   that expands it
-│└─┘ │  step forward │            │
-│ ◀  │               │  ▶         │
-│turn├───────────────┤ turn       │
-│left│   step back   │ right      │
+│└─┘ │               │            │
+│ ◀  │  step forward │  ▶         │
+│turn│               │ turn       │
+│left│               │ right      │
 │    └───────────────┘            │
 └─────────────────────────────────┘
 ```

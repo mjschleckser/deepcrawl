@@ -77,7 +77,7 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-CTRL-013**: The system shall carry the scale on the plan rather than working it out while drawing.
 - [x] **PRESENT-CTRL-008**: While a pointer is held on a control, the system shall draw that control's outline, and shall stop drawing it when the pointer is released.
 - [x] **PRESENT-CTRL-009**: The system shall mark at most one control as pressed at a time.
-- [x] **PRESENT-CTRL-014**: The system shall offer a navigation zone for stepping backward beneath the one for stepping forward, giving neither any part of the other's area.
+- [x] **PRESENT-CTRL-014**: The system shall draw no control for stepping backward, giving the forward zone the whole centre of the view between the turn zones, and shall step backward when the player presses `S` or the down arrow.
 
 ## Build stamp
 
