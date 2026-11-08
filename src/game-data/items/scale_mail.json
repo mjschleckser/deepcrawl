@@ -1,0 +1,13 @@
+{
+  "id": "scale_mail",
+  "name": "Scale Mail",
+  "kind": "ARMOUR",
+  "slot": "BODY",
+  "rarity": "RARE",
+  "skill": "HEAVY_ARMOUR",
+  "armour": 7,
+  "classes": [
+    "FIGHTER",
+    "CLERIC"
+  ]
+}

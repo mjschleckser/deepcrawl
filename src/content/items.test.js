@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { buildItem, itemDefinitions, itemById } from './items.js';
-import { ItemKind, Slot } from '../sim/items.js';
+import { ItemKind, Slot, Rarity } from '../sim/items.js';
 import { Attribute, CharacterClass, Skill } from '../sim/party.js';
 
 const swordFile = {
@@ -29,6 +29,40 @@ describe('reading an authored item', () => {
       .toThrow(/attr\.json: attribute "MITE"/);
     expect(() => buildItem('class.json', { ...swordFile, classes: ['FIGTHER'] }))
       .toThrow(/class\.json: class "FIGTHER"/);
+  });
+
+  // @spec ITEM-DATA-005
+  it('reads an item naming no rarity as common, and one naming a rarity as that', () => {
+    expect(buildItem('blade.json', swordFile).rarity).toBe(Rarity.COMMON);
+    expect(buildItem('blade.json', { ...swordFile, rarity: 'RARE' }).rarity).toBe(Rarity.RARE);
+  });
+
+  // @spec ITEM-DATA-003
+  // @spec ITEM-DEF-013
+  it('reads a consumable with an effect and no slot', () => {
+    const potion = buildItem('potion.json', {
+      id: 'potion', name: 'Potion', kind: 'CONSUMABLE', effect: { heal: 8 },
+    });
+
+    expect(potion).toMatchObject({ kind: ItemKind.CONSUMABLE, slot: null, effect: { heal: 8 } });
+  });
+
+  // @spec ITEM-DATA-006
+  it('rejects a bad rarity, a consumable with a slot, and an effect it cannot read', () => {
+    const potion = { id: 'p', name: 'P', kind: 'CONSUMABLE', effect: { heal: 8 } };
+
+    expect(() => buildItem('rare.json', { ...swordFile, rarity: 'MYTHIC' }))
+      .toThrow(/rare\.json: rarity "MYTHIC"/);
+    expect(() => buildItem('slotted.json', { ...potion, slot: 'MAIN_HAND' }))
+      .toThrow(/slotted\.json: a consumable has no slot/);
+    expect(() => buildItem('none.json', { ...potion, effect: undefined }))
+      .toThrow(/none\.json: no effect/);
+    expect(() => buildItem('odd.json', { ...potion, effect: { poison: 3 } }))
+      .toThrow(/odd\.json: effect "poison"/);
+    expect(() => buildItem('weak.json', { ...potion, effect: { heal: 0 } }))
+      .toThrow(/weak\.json: heal 0/);
+    expect(() => buildItem('worn.json', { ...swordFile, effect: { heal: 3 } }))
+      .toThrow(/worn\.json: only a consumable has an effect/);
   });
 
   // @spec ITEM-DATA-003

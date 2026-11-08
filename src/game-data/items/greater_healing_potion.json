@@ -1,0 +1,9 @@
+{
+  "id": "greater_healing_potion",
+  "name": "Greater Healing Potion",
+  "kind": "CONSUMABLE",
+  "rarity": "RARE",
+  "effect": {
+    "heal": 25
+  }
+}

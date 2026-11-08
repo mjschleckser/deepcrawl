@@ -1,0 +1,34 @@
+{
+  "id": "goblin",
+  "odds": {
+    "LEGENDARY": 0.002,
+    "EPIC": 0.01,
+    "RARE": 0.04,
+    "UNCOMMON": 0.15
+  },
+  "gold": {
+    "min": 1,
+    "max": 6
+  },
+  "draws": {
+    "count": 1,
+    "chance": 0.3
+  },
+  "items": [
+    "minor_healing_potion",
+    "dagger",
+    "shortsword",
+    "mace",
+    "leather_jerkin",
+    "healing_potion",
+    "greater_healing_potion",
+    "longsword",
+    "studded_leather",
+    "kite_shield",
+    "warhammer",
+    "scale_mail",
+    "runed_dagger",
+    "elder_staff",
+    "sunforged_mace"
+  ]
+}

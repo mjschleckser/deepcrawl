@@ -12,7 +12,7 @@
  */
 
 import { Attribute, CharacterClass, Skill } from '../sim/party.js';
-import { ItemKind, Slot, createItem } from '../sim/items.js';
+import { Effect, ItemKind, Rarity, Slot, createItem } from '../sim/items.js';
 
 const ITEM_FILES = import.meta.glob('../game-data/items/*.json', { eager: true, import: 'default' });
 
@@ -35,17 +35,28 @@ function oneOf(file, field, value, allowed) {
  * @spec ITEM-DATA-002
  * @spec ITEM-DATA-003
  * @spec ITEM-DATA-004
+ * @spec ITEM-DATA-005
+ * @spec ITEM-DATA-006
  */
 export function buildItem(file, data) {
-  for (const required of ['id', 'name', 'kind', 'slot']) {
+  for (const required of ['id', 'name', 'kind']) {
     if (data?.[required] === undefined) throw new Error(`${file}: no ${required}`);
+  }
+  const kind = oneOf(file, 'kind', data.kind, ItemKind);
+  const consumable = kind === ItemKind.CONSUMABLE;
+  if (consumable && data.slot !== undefined) throw new Error(`${file}: a consumable has no slot`);
+  if (!consumable && data.slot === undefined) throw new Error(`${file}: no slot`);
+  if (!consumable && data.effect !== undefined) {
+    throw new Error(`${file}: only a consumable has an effect`);
   }
 
   return createItem({
     id: data.id,
     name: data.name,
-    kind: oneOf(file, 'kind', data.kind, ItemKind),
-    slot: oneOf(file, 'slot', data.slot, Slot),
+    kind,
+    slot: consumable ? null : oneOf(file, 'slot', data.slot, Slot),
+    rarity: data.rarity === undefined ? Rarity.COMMON : oneOf(file, 'rarity', data.rarity, Rarity),
+    effect: consumable ? readEffect(file, data.effect) : null,
     // A weapon's skill, or the skill a piece of armour is worn under. A shield has
     // neither, and says so by omitting it.
     skill: data.skill === undefined ? null : oneOf(file, 'skill', data.skill, Skill),
@@ -61,6 +72,22 @@ export function buildItem(file, data) {
       ? data.classes.map((name) => oneOf(file, 'class', name, CharacterClass))
       : null,
   });
+}
+
+/**
+ * What a consumable does. Healing is the one effect, and it heals at least a point.
+ *
+ * @spec ITEM-DATA-006
+ */
+function readEffect(file, effect) {
+  if (!effect || typeof effect !== 'object') throw new Error(`${file}: no effect`);
+  const known = Object.values(Effect);
+  for (const name of Object.keys(effect)) {
+    if (!known.includes(name)) throw new Error(`${file}: effect "${name}" is not one of ${known.join(', ')}`);
+  }
+  const heal = effect[Effect.HEAL];
+  if (!Number.isInteger(heal) || heal < 1) throw new Error(`${file}: heal ${heal} is not a whole number of at least 1`);
+  return { [Effect.HEAL]: heal };
 }
 
 /**

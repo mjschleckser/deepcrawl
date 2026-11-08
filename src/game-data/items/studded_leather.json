@@ -1,0 +1,9 @@
+{
+  "id": "studded_leather",
+  "name": "Studded Leather",
+  "kind": "ARMOUR",
+  "slot": "BODY",
+  "rarity": "UNCOMMON",
+  "skill": "LIGHT_ARMOUR",
+  "armour": 3
+}

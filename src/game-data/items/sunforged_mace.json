@@ -1,0 +1,15 @@
+{
+  "id": "sunforged_mace",
+  "name": "Sunforged Mace",
+  "kind": "WEAPON",
+  "slot": "MAIN_HAND",
+  "rarity": "LEGENDARY",
+  "skill": "BLUNT",
+  "damage": 18,
+  "accuracy": 28,
+  "governs": "MIGHT",
+  "classes": [
+    "FIGHTER",
+    "CLERIC"
+  ]
+}

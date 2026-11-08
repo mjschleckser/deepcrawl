@@ -12,8 +12,37 @@
 
 import { Attribute, skillRank } from './party.js';
 
-/** @spec ITEM-DEF-002 */
-export const ItemKind = { WEAPON: 'WEAPON', ARMOUR: 'ARMOUR', SHIELD: 'SHIELD' };
+/**
+ * A consumable is the one kind that is used up rather than worn, and so the one kind
+ * with no slot.
+ *
+ * @spec ITEM-DEF-002
+ */
+export const ItemKind = {
+  WEAPON: 'WEAPON', ARMOUR: 'ARMOUR', SHIELD: 'SHIELD', CONSUMABLE: 'CONSUMABLE',
+};
+
+/**
+ * How rare an item is. The tier belongs to the item, so a legendary blade is legendary
+ * in every table that holds it and in every place it is drawn.
+ *
+ * @spec ITEM-DEF-012
+ */
+export const Rarity = {
+  COMMON: 'COMMON', UNCOMMON: 'UNCOMMON', RARE: 'RARE', EPIC: 'EPIC', LEGENDARY: 'LEGENDARY',
+};
+
+/** @spec ITEM-DEF-012 */
+export const RARITY_ORDER = [
+  Rarity.COMMON, Rarity.UNCOMMON, Rarity.RARE, Rarity.EPIC, Rarity.LEGENDARY,
+];
+
+/**
+ * What using a consumable does. Healing is the only effect so far.
+ *
+ * @spec ITEM-DEF-013
+ */
+export const Effect = { HEAL: 'heal' };
 
 /**
  * Where a thing is worn or held. A shield takes the off hand, which is what makes a
@@ -44,17 +73,23 @@ const DAMAGE_PER_ATTRIBUTE = 0.04;
  * @spec ITEM-DEF-005
  * @spec ITEM-DEF-006
  * @spec ITEM-DEF-007
+ * @spec ITEM-DEF-012
+ * @spec ITEM-DEF-013
  */
 export function createItem({
-  id, name, kind, slot,
+  id, name, kind, slot = null, rarity = Rarity.COMMON,
   skill = null, damage = 0, accuracy = 0, governs = Attribute.MIGHT,
-  armour = 0, defence = 0, classes = null,
+  armour = 0, defence = 0, classes = null, effect = null,
 }) {
+  const consumable = kind === ItemKind.CONSUMABLE;
   return {
     id,
     name,
     kind,
-    slot,
+    // A consumable is used up rather than worn, so it never names a slot.
+    slot: consumable ? null : slot,
+    // @spec ITEM-DATA-005
+    rarity: rarity ?? Rarity.COMMON,
     // A weapon's skill, or the skill a piece of armour is worn under.
     skill,
     damage,
@@ -67,8 +102,13 @@ export function createItem({
     // Nothing named means anybody may hold it.
     // @spec ITEM-DATA-004
     classes: classes ? [...classes] : null,
+    // What using it does: only a consumable has one.
+    effect: consumable && effect ? { ...effect } : null,
   };
 }
+
+/** Whether an item is used up rather than worn. */
+export const isConsumable = (item) => item?.kind === ItemKind.CONSUMABLE;
 
 const held = (combatant, slot) => combatant?.equipment?.[slot] ?? null;
 
@@ -170,9 +210,14 @@ export function baseDamageWith(combatant) {
     * (1 + DAMAGE_PER_ATTRIBUTE * (score(combatant, weapon.governs) - 10));
 }
 
-/** @spec ITEM-WIELD-001 */
+/**
+ * A consumable fits no slot, which is what keeps it out of every hand.
+ *
+ * @spec ITEM-WIELD-001
+ * @spec ITEM-WIELD-004
+ */
 export function fitsSlot(item, slot) {
-  return Boolean(item) && item.slot === slot;
+  return Boolean(item) && !isConsumable(item) && item.slot === slot;
 }
 
 /**

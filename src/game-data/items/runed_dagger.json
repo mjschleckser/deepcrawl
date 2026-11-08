@@ -1,0 +1,11 @@
+{
+  "id": "runed_dagger",
+  "name": "Runed Dagger",
+  "kind": "WEAPON",
+  "slot": "MAIN_HAND",
+  "rarity": "EPIC",
+  "skill": "BLADE",
+  "damage": 10,
+  "accuracy": 32,
+  "governs": "DEXTERITY"
+}

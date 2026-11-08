@@ -1,0 +1,12 @@
+{
+  "id": "kite_shield",
+  "name": "Kite Shield",
+  "kind": "SHIELD",
+  "slot": "OFF_HAND",
+  "rarity": "UNCOMMON",
+  "defence": 7,
+  "classes": [
+    "FIGHTER",
+    "CLERIC"
+  ]
+}

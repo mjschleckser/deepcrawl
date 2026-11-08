@@ -1,0 +1,15 @@
+{
+  "id": "longsword",
+  "name": "Longsword",
+  "kind": "WEAPON",
+  "slot": "MAIN_HAND",
+  "rarity": "UNCOMMON",
+  "skill": "BLADE",
+  "damage": 11,
+  "accuracy": 23,
+  "governs": "MIGHT",
+  "classes": [
+    "FIGHTER",
+    "THIEF"
+  ]
+}

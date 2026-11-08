@@ -1,0 +1,37 @@
+{
+  "id": "chest",
+  "odds": {
+    "LEGENDARY": 0.01,
+    "EPIC": 0.04,
+    "RARE": 0.12,
+    "UNCOMMON": 0.3
+  },
+  "gold": {
+    "min": 8,
+    "max": 25
+  },
+  "draws": {
+    "count": 2,
+    "chance": 1
+  },
+  "items": [
+    "minor_healing_potion",
+    "dagger",
+    "shortsword",
+    "mace",
+    "quarterstaff",
+    "leather_jerkin",
+    "round_shield",
+    "chainmail",
+    "healing_potion",
+    "greater_healing_potion",
+    "longsword",
+    "studded_leather",
+    "kite_shield",
+    "warhammer",
+    "scale_mail",
+    "runed_dagger",
+    "elder_staff",
+    "sunforged_mace"
+  ]
+}

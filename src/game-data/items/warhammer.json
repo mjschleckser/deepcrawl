@@ -1,0 +1,15 @@
+{
+  "id": "warhammer",
+  "name": "Warhammer",
+  "kind": "WEAPON",
+  "slot": "MAIN_HAND",
+  "rarity": "RARE",
+  "skill": "BLUNT",
+  "damage": 14,
+  "accuracy": 20,
+  "governs": "MIGHT",
+  "classes": [
+    "FIGHTER",
+    "CLERIC"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "id": "elder_staff",
+  "name": "Elder Staff",
+  "kind": "WEAPON",
+  "slot": "MAIN_HAND",
+  "rarity": "EPIC",
+  "skill": "POLEARM",
+  "damage": 11,
+  "accuracy": 27,
+  "governs": "MIGHT"
+}

@@ -1,0 +1,8 @@
+{
+  "id": "minor_healing_potion",
+  "name": "Minor Healing Potion",
+  "kind": "CONSUMABLE",
+  "effect": {
+    "heal": 8
+  }
+}

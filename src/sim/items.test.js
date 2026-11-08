@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  ItemKind, Slot, createItem,
+  ItemKind, Slot, Rarity, RARITY_ORDER, createItem,
   weaponOf, armourOf, accuracyWith, defenceOf, baseDamageWith,
   fitsSlot, wieldableBy,
 } from './items.js';
@@ -51,6 +51,42 @@ describe('what an item is', () => {
   // @spec ITEM-DATA-004
   it('is wieldable by anyone when it names no classes', () => {
     expect(wieldableBy(sword(), CharacterClass.MAGE)).toBe(true);
+  });
+
+  // @spec ITEM-DEF-001
+  // @spec ITEM-DATA-005
+  it('carries a rarity, common unless it names another', () => {
+    expect(sword().rarity).toBe(Rarity.COMMON);
+    expect(sword({ rarity: Rarity.EPIC }).rarity).toBe(Rarity.EPIC);
+  });
+
+  // @spec ITEM-DEF-001
+  // @spec ITEM-DEF-013
+  it('lets a consumable carry an effect and no slot', () => {
+    const potion = createItem({
+      id: 'potion', name: 'Potion', kind: ItemKind.CONSUMABLE, slot: Slot.MAIN_HAND,
+      effect: { heal: 8 },
+    });
+
+    expect(potion.slot).toBeNull();
+    expect(potion.effect).toEqual({ heal: 8 });
+  });
+
+  // @spec ITEM-WIELD-004
+  it('fits a consumable to no slot, so it can never be equipped', () => {
+    const potion = createItem({ id: 'p', name: 'P', kind: ItemKind.CONSUMABLE, effect: { heal: 8 } });
+
+    for (const slot of Object.values(Slot)) expect(fitsSlot(potion, slot)).toBe(false);
+  });
+
+  it('copies what it is given, so two items never share a part', () => {
+    const effect = { heal: 8 };
+    const potion = createItem({ id: 'p', name: 'P', kind: ItemKind.CONSUMABLE, effect });
+    const again = createItem(potion);
+
+    expect(again).toEqual(potion);
+    expect(again.effect).not.toBe(potion.effect);
+    expect(potion.effect).not.toBe(effect);
   });
 });
 
@@ -217,8 +253,16 @@ describe('who may hold what', () => {
 
 describe('the vocabulary an item is built from', () => {
   // @spec ITEM-DEF-002
-  it('offers three kinds and no others', () => {
-    expect(Object.keys(ItemKind).sort()).toEqual(['ARMOUR', 'SHIELD', 'WEAPON']);
+  it('offers four kinds and no others', () => {
+    expect(Object.keys(ItemKind).sort()).toEqual(['ARMOUR', 'CONSUMABLE', 'SHIELD', 'WEAPON']);
+  });
+
+  // @spec ITEM-DEF-012
+  it('offers five rarities, lowest to highest', () => {
+    expect(RARITY_ORDER).toEqual([
+      Rarity.COMMON, Rarity.UNCOMMON, Rarity.RARE, Rarity.EPIC, Rarity.LEGENDARY,
+    ]);
+    expect(Object.keys(Rarity).sort()).toEqual(['COMMON', 'EPIC', 'LEGENDARY', 'RARE', 'UNCOMMON']);
   });
 
   // @spec ITEM-DEF-003

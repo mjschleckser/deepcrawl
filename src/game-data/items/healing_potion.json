@@ -1,0 +1,9 @@
+{
+  "id": "healing_potion",
+  "name": "Healing Potion",
+  "kind": "CONSUMABLE",
+  "rarity": "UNCOMMON",
+  "effect": {
+    "heal": 15
+  }
+}

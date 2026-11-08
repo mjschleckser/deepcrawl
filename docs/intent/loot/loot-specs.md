@@ -8,24 +8,24 @@ where finds come from.
 
 ## Tables
 
-- [ ] **LOOT-TABLE-001**: The system shall read each loot table from a file of its own under the authored loot data, holding an identifier, the odds of each tier above common, a gold range, a number of draws with the chance that each yields an item, and the identifiers of the items it can yield.
-- [ ] **LOOT-TABLE-002**: The system shall resolve a table's item identifiers to items when the table is read, so that a find holds resolved items.
+- [x] **LOOT-TABLE-001**: The system shall read each loot table from a file of its own under the authored loot data, holding an identifier, the odds of each tier above common, a gold range, a number of draws with the chance that each yields an item, and the identifiers of the items it can yield.
+- [x] **LOOT-TABLE-002**: The system shall resolve a table's item identifiers to items when the table is read, so that a find holds resolved items.
 
 ## Authoring
 
-- [ ] **LOOT-DATA-001**: When an authored loot table names an item that does not exist, gives odds or a draw chance outside 0 to 1, gives a gold range or draw count below zero or a gold range whose minimum exceeds its maximum, or holds no common item, the system shall reject that file by name and the value it could not read.
+- [x] **LOOT-DATA-001**: When an authored loot table names an item that does not exist, gives odds or a draw chance outside 0 to 1, gives a gold range or draw count below zero or a gold range whose minimum exceeds its maximum, or holds no common item, the system shall reject that file by name and the value it could not read.
 - [ ] **LOOT-DATA-002**: When an enemy roster entry or an archetype names a loot table that does not exist, the system shall reject that file by name and the table it named.
 - [ ] **LOOT-DATA-003**: The system shall hold every archetype's chest table richer than the table of every enemy that can be placed on a floor of that archetype: odds no lower in every tier above common and higher in at least one, at least as many draws at no lower chance, and a gold range no lower at either end.
 
 ## Rolling a find
 
-- [ ] **LOOT-ROLL-001**: When a table is rolled, the system shall yield gold drawn uniformly from the table's gold range, inclusive.
-- [ ] **LOOT-ROLL-002**: When a table is rolled, the system shall make as many draws as the table names, each yielding an item with the table's draw chance, independently of every other draw.
-- [ ] **LOOT-ROLL-003**: When a draw yields an item, the system shall try legendary at the table's legendary odds, then epic, rare and uncommon in that order at their own odds, taking the first tier that succeeds, and common when none does.
-- [ ] **LOOT-ROLL-004**: If a table holds no item of the tier a draw lands on, then the system shall take the nearest lower tier that holds one.
-- [ ] **LOOT-ROLL-005**: The system shall pick a draw's item uniformly among the table's items of the tier it lands on.
-- [ ] **LOOT-ROLL-006**: The system shall consume the same number of generator values for every draw, whether it yields an item and whatever tier it lands on.
-- [ ] **LOOT-ROLL-007**: The system shall yield the same find from the same table and the same generator position.
+- [x] **LOOT-ROLL-001**: When a table is rolled, the system shall yield gold drawn uniformly from the table's gold range, inclusive.
+- [x] **LOOT-ROLL-002**: When a table is rolled, the system shall make as many draws as the table names, each yielding an item with the table's draw chance, independently of every other draw.
+- [x] **LOOT-ROLL-003**: When a draw yields an item, the system shall try legendary at the table's legendary odds, then epic, rare and uncommon in that order at their own odds, taking the first tier that succeeds, and common when none does.
+- [x] **LOOT-ROLL-004**: If a table holds no item of the tier a draw lands on, then the system shall take the nearest lower tier that holds one.
+- [x] **LOOT-ROLL-005**: The system shall pick a draw's item uniformly among the table's items of the tier it lands on.
+- [x] **LOOT-ROLL-006**: The system shall consume the same number of generator values for every draw, whether it yields an item and whatever tier it lands on.
+- [x] **LOOT-ROLL-007**: The system shall yield the same find from the same table and the same generator position.
 
 ## Fight drops
 
