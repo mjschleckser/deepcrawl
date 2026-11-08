@@ -16,6 +16,8 @@ are assembled into the two the fight resolves, and who may hold it.
 - [x] **ITEM-DEF-006**: The system shall carry on a shield the armour it adds to its holder's.
 - [x] **ITEM-DEF-007**: The system shall decide an item's behaviour from the fields it carries and from no property of its identifier or name.
 - [x] **ITEM-DEF-008**: The system shall treat a weapon that names Dexterity as its damage attribute as training the same skill as one that names Might.
+- [x] **ITEM-DEF-014**: The system shall let a weapon name `MAGIC` as its skill, meaning the wielder's highest-ranked magic school among Evocation, Alteration, Healing and Restoration, ties going in that order.
+- [x] **ITEM-DEF-015**: The system shall hold a Wand: an uncommon weapon for mages and clerics, whose skill is `MAGIC` and whose damage draws on Intellect.
 - [x] **ITEM-DEF-012**: The system shall offer these rarities and no others, from lowest to highest: common, uncommon, rare, epic, legendary.
 - [x] **ITEM-DEF-013**: The system shall carry on a consumable the effect it has when used, and shall offer two effects: healing a stated number of hit points, and teaching a named spell.
 
@@ -38,6 +40,7 @@ are assembled into the two the fight resolves, and who may hold it.
 ## The numbers
 
 - [x] **ITEM-NUM-003**: The system shall assemble a combatant's base damage from their weapon's damage, a tenth more per rank of that weapon's skill, and four hundredths more or less per point of the weapon's governing attribute above or below ten.
+- [x] **ITEM-NUM-007**: The system shall assemble the base damage of a weapon whose skill is `MAGIC` from the wielder's rank in the school it resolves to, and shall record that school as the skill an attack with it uses.
 - [x] **ITEM-NUM-006**: The system shall assemble base damage and armour for a combatant holding nothing in any slot, contributing nothing for each empty slot rather than failing.
 
 ## Wielding

@@ -126,6 +126,15 @@ armour      = body armour (or authored armour) + shield.armour
 (see the combat segment), so there is no to-hit number to assemble: how hard a blow is
 and how much of it is turned are the whole of a fight's arithmetic.
 
+**A wand is a caster's weapon, and its skill is the caster's magic.** A wand names
+`MAGIC` as its skill rather than one weapon skill: whoever holds it swings with their
+strongest magic school — Evocation, Alteration, Healing or Restoration, the highest rank,
+ties going in that order — so its damage grows with that rank, and striking with it
+trains that school. It names Intellect as the attribute its damage draws on. A mage
+zapping with a wand practises Evocation and a cleric practises Healing, which is what
+makes one weapon serve both classes that cast, and makes practice at magic pay off
+between spells as well as in them.
+
 **A shield is armour you hold.** It turns a share of every blow exactly as body armour
 does, and adds to it only while it is in the off hand. Carrying one is a choice against
 a second weapon or an empty hand, and what it buys is a smaller number on every enemy
@@ -201,6 +210,7 @@ by name, as a combatant file is. A typo in content should fail where it was type
 | Where an item lives | One JSON file each under `src/game-data/items` | A table inside the module that reads them; a single catalogue file | A file each diffs cleanly and is addable without opening code, which is the same argument that put each combatant in its own file. One big catalogue reintroduces the merge conflicts the per-file layout exists to avoid. |
 | What a character holds | The resolved item, not an identifier | An id resolved against a registry at point of use | A registry is a second global to thread through combat and the save, and an id that fails to resolve fails somewhere far from where it was authored. Resolving once at load keeps the simulation free of lookups and matches how a combatant already holds its attack. The cost is that a save holds a copy of an item's numbers, so re-tuning a weapon does not reach gear already owned. |
 | Where the formulas live | In the items segment, read by combat and the party | In combat, with items holding only data; duplicated in both | A weapon, a rank and an attribute meet in exactly one place and the two spec sets that describe them (`COMBAT-ATTACK-*` and `PARTY-SKILL-*`) say the same thing. Writing them once and reading them from both is what stops the two drifting into two different games. |
+| A caster's weapon | A wand whose skill is the wielder's strongest magic school, drawing on Intellect | A wand training one fixed school (Evocation); a separate wand per class | One fixed school would leave a cleric holding a weapon they can never get better with. Following the strongest school lets one item serve every caster and keeps practice the axis that matters, without a wand per class to author and balance. |
 | Which attribute governs damage | Named by the weapon | Fixed per skill; fixed per class | A dagger and a longsword are both Blade and are not the same argument for what makes a character dangerous. Fixing it per skill would make finesse a new skill rather than a property, and split practice in two for a distinction that is about the object. |
 | What a shield does | Adds its armour to the body's | Raising a separate defence that decides whether a blow lands; reducing damage by a share | Every attack lands, so a number that decides whether one lands has nothing to do. Adding flat armour keeps a blow's damage a single subtraction the player can read off the preview. |
 | A missing weapon | The combatant's authored attack stands in | A bare-hands item every combatant silently equips; refusing to fight unarmed | An authored goblin has no armoury and should not need one; its attack *is* its natural weapon. A phantom item would have to be authored, owned and saved for every combatant alive. Refusing to fight unarmed turns a disarm into a softlock. |
@@ -230,7 +240,8 @@ by name, as a combatant file is. A typo in content should fail where it was type
 11. ✅ **One pack, shared by the party**, holds everything carried and not equipped.
 12. ✅ **An item is always in a slot or in the pack**, and a swap sends the displaced item to the pack as one change.
 13. ✅ **Rarity is the item's own**, common unless authored otherwise.
-14. ✅ **A consumable is a kind with no slot**, used up from the pack; its one effect so far heals.
+14. ✅ **A consumable is a kind with no slot**, used up from the pack; a potion heals and a tome teaches a spell.
+15. ✅ **A wand's skill is the wielder's strongest magic school**, and it draws on Intellect; it is uncommon or rarer, for mages and clerics.
 
 ### Deferred
 

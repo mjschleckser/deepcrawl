@@ -12,7 +12,7 @@
  */
 
 import { Attribute, CharacterClass, Skill } from '../sim/party.js';
-import { Effect, ItemKind, Rarity, Slot, createItem } from '../sim/items.js';
+import { Effect, ItemKind, MAGIC_SKILL, Rarity, Slot, createItem } from '../sim/items.js';
 import { spellDefinitions } from './spells.js';
 
 const ITEM_FILES = import.meta.glob('../game-data/items/*.json', { eager: true, import: 'default' });
@@ -60,7 +60,11 @@ export function buildItem(file, data) {
     effect: consumable ? readEffect(file, data.effect) : null,
     // A weapon's skill, or the skill a piece of armour is worn under. A shield has
     // neither, and says so by omitting it.
-    skill: data.skill === undefined ? null : oneOf(file, 'skill', data.skill, Skill),
+    // A weapon may name the wielder's magic instead of one skill; nothing else may.
+    // @spec ITEM-DEF-014
+    skill: data.skill === undefined
+      ? null
+      : oneOf(file, 'skill', data.skill, kind === ItemKind.WEAPON ? { ...Skill, [MAGIC_SKILL]: MAGIC_SKILL } : Skill),
     damage: data.damage ?? 0,
     governs: data.governs === undefined
       ? Attribute.MIGHT

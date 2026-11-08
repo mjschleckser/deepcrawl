@@ -127,3 +127,21 @@ describe('a tome', () => {
     })).toThrow(/t\.json: teach "meteor"/);
   });
 });
+
+describe('the wand', () => {
+  // @spec ITEM-DEF-015
+  it('is an uncommon weapon for mages and clerics, of magic, drawing on Intellect', () => {
+    const wand = itemById('wand');
+    expect(wand).toMatchObject({
+      kind: ItemKind.WEAPON, slot: Slot.MAIN_HAND, skill: 'MAGIC', governs: Attribute.INTELLECT,
+    });
+    expect([Rarity.UNCOMMON, Rarity.RARE, Rarity.EPIC, Rarity.LEGENDARY]).toContain(wand.rarity);
+    expect(wand.classes.sort()).toEqual([CharacterClass.CLERIC, CharacterClass.MAGE]);
+  });
+
+  it('refuses MAGIC as the skill of anything but a weapon', () => {
+    expect(() => buildItem('robe.json', {
+      id: 'r', name: 'R', kind: 'ARMOUR', slot: 'BODY', skill: 'MAGIC', armour: 1,
+    })).toThrow(/robe\.json: skill "MAGIC"/);
+  });
+});

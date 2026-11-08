@@ -1,0 +1,14 @@
+{
+  "id": "wand",
+  "name": "Wand",
+  "kind": "WEAPON",
+  "slot": "MAIN_HAND",
+  "rarity": "UNCOMMON",
+  "skill": "MAGIC",
+  "damage": 7,
+  "governs": "INTELLECT",
+  "classes": [
+    "MAGE",
+    "CLERIC"
+  ]
+}

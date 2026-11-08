@@ -10,7 +10,7 @@
  * keeping a copy to drift from.
  */
 
-import { Attribute, skillRank } from './party.js';
+import { Attribute, Skill, skillRank } from './party.js';
 
 /**
  * A consumable is the one kind that is used up rather than worn, and so the one kind
@@ -148,6 +148,37 @@ export function armourOf(combatant) {
 const score = (combatant, attribute) => combatant?.attributes?.[attribute] ?? 10;
 
 /**
+ * What a wand names as its skill: not one weapon skill, but the wielder's magic.
+ *
+ * @spec ITEM-DEF-014
+ */
+export const MAGIC_SKILL = 'MAGIC';
+
+/**
+ * The schools a wand may draw on, in the order a tie between them goes. Read when asked
+ * rather than at load, because the party module that names them imports this one.
+ */
+const magicSchools = () => [Skill.EVOCATION, Skill.ALTERATION, Skill.HEALING, Skill.RESTORATION];
+
+/**
+ * The skill a combatant's weapon trains and grows with: its own, or for a wand, the
+ * wielder's highest-ranked magic school, ties going in school order.
+ *
+ * @spec ITEM-DEF-014
+ * @spec ITEM-NUM-007
+ */
+export function weaponSkill(combatant, weapon = weaponOf(combatant)) {
+  if (!weapon) return null;
+  if (weapon.skill !== MAGIC_SKILL) return weapon.skill;
+  const schools = magicSchools();
+  let best = schools[0];
+  for (const school of schools) {
+    if (skillRank(combatant, school) > skillRank(combatant, best)) best = school;
+  }
+  return best;
+}
+
+/**
  * Damage is practice and force, and the attribute is the weapon's to name.
  *
  * @spec ITEM-NUM-003
@@ -158,7 +189,7 @@ export function baseDamageWith(combatant) {
   if (!weapon) return 0;
 
   return weapon.damage
-    * (1 + DAMAGE_PER_RANK * skillRank(combatant, weapon.skill))
+    * (1 + DAMAGE_PER_RANK * skillRank(combatant, weaponSkill(combatant, weapon)))
     * (1 + DAMAGE_PER_ATTRIBUTE * (score(combatant, weapon.governs) - 10));
 }
 

@@ -933,6 +933,21 @@ describe('what a won fight teaches', () => {
     expect(trained).toEqual([Skill.BLUNT]);
   });
 
+  // @spec ITEM-NUM-007
+  it('credits a wand\'s blow to the wielder\'s strongest magic school', () => {
+    const encounter = fightState();
+    const fight = createFightController({ encounter, viewport, onDraw: vi.fn() });
+    const whose = fight.pending.characterId;
+    const c = character(encounter.party, whose);
+    c.ranks[Skill.HEALING] = 4;
+    c.equipment.MAIN_HAND = { name: 'Wand', skill: 'MAGIC', damage: 6, governs: 'INTELLECT' };
+
+    chooseOption(fight, 0);
+    chooseOption(fight, 0);
+
+    expect([...encounter.skillsByActor.get(whose)]).toEqual([Skill.HEALING]);
+  });
+
   // @spec PRESENT-FIGHT-008
   it('records the skill each attack used, so a victory advances something', () => {
     const fight = controller({

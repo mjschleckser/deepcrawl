@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   ItemKind, Slot, Rarity, RARITY_ORDER, createItem,
-  weaponOf, armourOf, baseDamageWith,
+  weaponOf, armourOf, baseDamageWith, weaponSkill, MAGIC_SKILL,
   fitsSlot, wieldableBy,
 } from './items.js';
 import { Attribute, CharacterClass, Skill, createCharacter } from './party.js';
@@ -227,5 +227,33 @@ describe('the vocabulary an item is built from', () => {
     const wielder = (w) => bare({ equipment: { [Slot.MAIN_HAND]: w } });
 
     expect(baseDamageWith(wielder(named))).toBe(baseDamageWith(wielder(plain)));
+  });
+});
+
+describe('a wand', () => {
+  const wand = () => createItem({
+    id: 'wand', name: 'Wand', kind: ItemKind.WEAPON, slot: Slot.MAIN_HAND,
+    skill: MAGIC_SKILL, damage: 10, governs: Attribute.INTELLECT,
+  });
+  const holding = (ranks, attributes = {}) => bare({
+    ranks, attributes: { ...bare().attributes, ...attributes }, equipment: { [Slot.MAIN_HAND]: wand() },
+  });
+
+  // @spec ITEM-DEF-014
+  it('resolves to the wielder\'s strongest magic school, ties in school order', () => {
+    expect(weaponSkill(holding({ [Skill.EVOCATION]: 2, [Skill.HEALING]: 1 }))).toBe(Skill.EVOCATION);
+    expect(weaponSkill(holding({ [Skill.HEALING]: 3, [Skill.EVOCATION]: 1 }))).toBe(Skill.HEALING);
+    expect(weaponSkill(holding({ [Skill.HEALING]: 2, [Skill.ALTERATION]: 2 }))).toBe(Skill.ALTERATION);
+    expect(weaponSkill(holding({}))).toBe(Skill.EVOCATION);
+    // Any other weapon trains its own skill.
+    expect(weaponSkill(bare({ equipment: { [Slot.MAIN_HAND]: sword() } }))).toBe(Skill.BLADE);
+  });
+
+  // @spec ITEM-NUM-007
+  it('grows with that school\'s rank and with Intellect', () => {
+    // 10 × (1 + 0.1 × 3) × (1 + 0.04 × 5)
+    expect(baseDamageWith(holding({ [Skill.HEALING]: 3 }, { INTELLECT: 15 }))).toBeCloseTo(10 * 1.3 * 1.2, 5);
+    // Might does nothing for it.
+    expect(baseDamageWith(holding({ [Skill.HEALING]: 3 }, { MIGHT: 18 }))).toBeCloseTo(13, 5);
   });
 });

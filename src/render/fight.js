@@ -22,7 +22,7 @@ import {
   CastRefusal, CastWhere, SpellTarget, knownSpells, slotsAt, slotsLeft,
 } from '../sim/magic.js';
 import { selectEnemyTarget } from '../sim/enemies.js';
-import { isConsumable, weaponOf, wieldableBy } from '../sim/items.js';
+import { isConsumable, weaponOf, weaponSkill, wieldableBy } from '../sim/items.js';
 import { describeFind } from './findsplan.js';
 
 export const FightPhase = { ACTING: 'ACTING', ENDED: 'ENDED' };
@@ -225,7 +225,7 @@ function layOutColumn(cards, column, top, scale, { height = ROW_HEIGHT * scale }
  * @spec COMBAT-ACTION-010
  */
 const attackOf = (encounter, id) => ({
-  skill: weaponOf(character(encounter.party, id))?.skill ?? Skill.BLADE,
+  skill: weaponSkill(character(encounter.party, id)) ?? Skill.BLADE,
 });
 
 const standing = (e) => e.condition === Condition.OK && e.hitPoints > 0;

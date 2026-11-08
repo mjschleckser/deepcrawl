@@ -87,3 +87,12 @@ describe('where tomes are found', () => {
     expect(has('goblin')).toBe(false);
   });
 });
+
+describe('where wands are found', () => {
+  // @spec LOOT-DATA-005
+  it('puts the wand in the goblin, goblin mage and chest tables', () => {
+    for (const id of ['goblin', 'goblin_mage', 'chest']) {
+      expect(lootTableById(id).items.map((item) => item.id)).toContain('wand');
+    }
+  });
+});
