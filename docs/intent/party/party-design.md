@@ -35,6 +35,7 @@ action worth taking.
 |---|---|---|
 | Characters | attributes, skills, condition, class, total level | — |
 | Equipment | which item sits in which slot, and the pack the party carries the rest in | items define what an item *is*, and what moving one in or out of the pack means |
+| The purse | how much gold the party carries, held for the party as a whole | loot decides how much a find adds |
 | Skills | ranks, advancement, what is unlocked | combat resolves what an ability does |
 | Condition | the state machine and its transitions | combat and exploration cause transitions |
 | Attributes | the six scores | weapons decide which score they draw on |
@@ -271,7 +272,9 @@ segment writes a character field. The operations are few on purpose.
 | `attemptRevival` | camp, town, a hired cleric, a consumed scroll | the condition chain, and degrading on failure |
 | `equip` | the player | slot rules, and what a class may wield; the item comes from the pack and whatever it displaces goes there |
 | `takeOff` | the player | the item goes to the pack |
-| `stow` | loot, and the authoring of a starting pack | the item goes to the pack |
+| `stow` | loot, and the authoring of a starting pack | the item goes to the end of the pack |
+| `addGold` | loot | gold is a count that only rises, never below zero |
+| `useItem` | the player, out of a fight and in one | the item comes from the pack and is used up; it heals only the character using it, through `applyHealing`, and is refused, using nothing, for a character at full health or one who is not conscious |
 | `awardEncounter` | combat | the pot divided equally among skills used |
 | `trainSkill` | camp | the clock's cost, and what a class may train |
 | `changeClass` | town | requirements met, ranks kept |
@@ -310,10 +313,20 @@ higher. A fresh Thief can already detect something; a fresh Cleric can already a
 a revival. A generator that produced a party unable to play its first hour would have
 failed.
 
+### Using an item
+
+A consumable is used by the character whose turn or Items page it is, and it heals that
+character and nobody else. A potion is drunk, and drinking needs a character who is
+awake: an unconscious one can't, and the dead can't at all. Waking someone is healing
+magic's job.
+
+A refused use changes nothing. The potion stays in the pack and no tick or turn is
+charged, because the player is told no before anything moves, as with a refused equip.
+
 ## Persistence
 
 The whole roster is saved: every character's attributes, skills and ranks, condition,
-equipment slots, class, and accumulated skill experience. A lost character is
+equipment slots, class, and accumulated skill experience, with the pack and the purse. A lost character is
 kept in the save as a record rather than deleted, because a campaign should be able to
 show what it cost.
 
@@ -338,6 +351,8 @@ show what it cost.
 | Death chain | Unconscious, dead, ashes, lost, with failure degrading | Always-recoverable death; a chain with no final stage | Skills earned by use make a loss unbuyable, so the threat has real weight. The tenet holds at the campaign level: losing a character is a setback, not erasure. |
 | Class change | Keeps every rank, including untrainable ones | Resetting or penalising skills on change | A character is the sum of what they have done. Ranks in skills the new class cannot train simply stop advancing. |
 | A lost character | Kept in the save as a record | Deleted from the roster | A campaign should be able to show what it cost. |
+| Gold | One purse for the party | A purse per character | The same argument as the shared pack: splitting it makes the player track who carries what, for no decision. |
+| Who a potion heals | Only the character using it, who must be conscious | Any character, including the unconscious | A potion is drunk. Tending someone else, and waking the unconscious, is what healing magic is for, which keeps that a reason to bring a cleric. |
 
 ## Open Questions & Future Decisions
 
@@ -358,6 +373,8 @@ show what it cost.
 13. ✅ **An unconscious character stays where they are**; with no positions there is nothing to move them out of.
 14. ✅ **Revival has four routes** — party Cleric, town temple, wandering cleric, one-use scroll.
 15. ✅ **A lost character stays in the save** as a record.
+16. ✅ **The party shares one purse**, beside the pack.
+17. ✅ **A consumable heals only whoever uses it**, and only while they are conscious.
 
 ### Deferred
 

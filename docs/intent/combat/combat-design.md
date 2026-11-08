@@ -262,6 +262,7 @@ made.
 | Attack | a full bar | the weapon in hand, or the attack the combatant was authored with if they hold none; what it trains is that weapon's skill |
 | Cast | a full bar, and a spell slot of that rank | |
 | Use ability | a full bar | unlocked by a skill rank |
+| Use an item | a full bar | a consumable from the pack, drunk by the acting character, through the party's `useItem`; a refused use costs nothing |
 | Change equipment | a full bar | one item put on from the pack, through the party's own operation, whatever it displaces going to the pack; a refused change costs nothing. Taking something off without putting anything on is not offered in a fight, gaining nothing for a turn |
 | Flee | a full bar, of the character who attempts it | resolved for the whole party; see below |
 
@@ -341,6 +342,11 @@ attack. Anything cleverer belongs with enemies, which are their own segment.
 
 On victory, combat totals the pot from the enemies defeated and hands it to the party
 with the distinct skills used, which is the whole of its involvement in advancement.
+
+It also asks loot for one roll per defeated enemy, on that enemy's table, from the
+fight's own generator, and stows each find in the party's pack and purse. The finds go
+on the victory's outcome beside the pot, so the banner can say what the fight was worth
+in gold and items as well as experience. An escape and a defeat yield nothing.
 
 ### Defeat
 
@@ -432,6 +438,8 @@ trouble. One character calls the retreat; the whole party leaves or nobody does.
 22. ✅ **A defeated party stays where it fell**, to be abandoned or recovered by a fresh party.
 23. ✅ **Combat reports a projected turn order**, by its own rules and without changing anything, and readiness stays inside the simulation.
 24. ✅ **Combat reports what a plain hit would deal**, by the sum a real blow runs through, without rolling or changing anything.
+25. ✅ **A victory yields one loot roll per defeated enemy**, from the fight's generator, reported on the outcome.
+26. ✅ **Using an item is an action**, costing the full bar, and only the acting character drinks.
 
 ### Deferred
 

@@ -109,6 +109,9 @@ Nothing in the dungeon is dark; the shading is perspective, and it is the same o
 tile at the same depth.
 
 Stairs and pits are markings on the floor within the band for the depth they occupy.
+A chest is drawn standing on the floor at its depth, a box with a lid, scaled to that
+depth's frame like a figure. An opened chest is drawn with its lid thrown back, so a
+room already looted looks it.
 
 **An enemy in the passage is drawn standing in it**, a figure on the floor of the
 depth the simulation reports it at and scaled to that depth's frame like everything
@@ -132,6 +135,8 @@ shown and nothing else.
   a door shows whether it stands open: closed, it bars the edge; open, it leaves the
   gap the party walked through between its two posts.
 - Known traps carry a mark; stairs carry a square and pits a ring.
+- A chest carries a small filled box while unopened and an outlined one once opened,
+  so the map shows which rooms still hold something.
 - The party is a triangle pointing the way it faces.
 - Enemies appear only where exploration reports them, which is only where the party
   can presently see them, and are drawn as a creature mark rather than a dot, so one is
@@ -571,7 +576,9 @@ and that is what an option with no tap target amounts to on a phone.
 ### Ending
 
 A victory or a defeat is drawn as a banner over the fight: what happened, and what it was
-worth. The player dismisses it, and combat gives way to the corridor again — or, on a
+worth. A victory's worth includes what the band left: the gold, then each item by name
+in its rarity's colour. A fight that yielded no item says so in one line rather than
+leaving the list out, so an empty find reads as a result and not as a missing panel. The player dismisses it, and combat gives way to the corridor again — or, on a
 defeat, to a new campaign. An escape has nothing to report and nothing to dismiss, so the
 corridor comes back the moment it succeeds.
 
@@ -717,7 +724,13 @@ arrows.
 
 **Wearing** lists every slot the items segment defines, with what is in it or a mark that
 it is empty. **Pack** lists everything the party carries, in the pack's own order, or says
-that it is empty. Every item, worn or carried, shows its name and beneath it the numbers
+that it is empty. Above it the page shows the party's gold, which belongs to the party as
+the pack does.
+
+**Identical consumables share one row**, with a count: *Healing Potion ×3*. A row is
+listed where the first of them stands in the pack. Equipment is never grouped, since two
+of the same sword can be worn by two characters and each is something to press. A pack
+that found eight potions is a pack with one potion row, not eight rows to scroll past. Every item, worn or carried, shows its name and beneath it the numbers
 it carries — its slot, its skill, and what it adds — so two items can be compared without
 equipping either.
 
@@ -732,9 +745,15 @@ the result.
 numbers** — *Fighter, Cleric only* — and pressing it does nothing, by the same rule as a
 greyed option in a fight. An empty slot is drawn but presses as nothing.
 
-**Out of a fight, each change costs one tick**, committed as an `ITEMS` action, and the
-screen stays open for the next. **In a fight, a change spends the character's turn**: the
-screen closes and the fight goes on. Taking something off is not offered in a fight —
+**Pressing a consumable uses it on the character whose page is open**: they drink it, and
+one comes out of the pack. Beneath it the row says what it does: *Heals 15*. Where the
+party refuses it, the row is greyed with the reason in place of its effect: *At full
+health* or *Unconscious* (or *Dead*, and so on). Pressing it then does nothing, as with an
+item that can't be wielded.
+
+**Out of a fight, each change or use costs one tick**, committed as an `ITEMS` action, and
+the screen stays open for the next. **In a fight, a change or a use spends the
+character's turn**: the screen closes and the fight goes on. Taking something off is not offered in a fight —
 worn items are drawn as they are out of one, but inert — because a turn spent emptying a
 hand gains nothing.
 
@@ -746,6 +765,24 @@ character's page, as they do on the party screen, rather than addressing pack it
 pack is not a short fixed list, and a key that meant a different item each time the pack
 changed would be a key nobody could press from memory. A pack longer than the page keeps
 the highlighted row in view by scrolling the list.
+
+## Opening a Chest
+
+Standing on an unopened chest offers it as an `INTERACT`, the same control that offers
+a staircase, worded *Open*. Opening it costs a tick and draws a report over the view:
+*The chest held*, then the gold and each item by name in its rarity's colour. The find
+is already in the pack and purse by the time the report shows. The report holds the
+input until it is dismissed by `Enter`, `Escape`, `E` or a press anywhere, and dismissing
+it changes nothing, because there is nothing left to decide.
+
+## Rarity
+
+An item's name is drawn in its rarity's colour wherever an item is named: on the Items
+screen, on the victory banner and in a chest's report. The colours follow the
+convention most players already read: common in the ordinary text colour, uncommon
+green, rare blue, epic purple, legendary orange. A colour is never the only signal.
+The Items screen also names the tier beneath an item above common, so a player who
+can't tell green from orange still can tell an uncommon from a legendary.
 
 ## Prompts
 
@@ -948,6 +985,9 @@ screen the player can see but the game cannot have.
 | Skills a class cannot train | Drawn, marked as no longer advancing | Hidden; drawn like any other | Hiding them understates a character who changed class, and drawing them plainly promises progress that will never come. |
 | The build stamp | Drawn in the corner of the running game, as a build number taken from the commit count | A version on an about screen; no version at all; a build date; a version and commit hash, `MAJOR.MINOR.PATCH+SHA` | "It does not work" and "you are looking at a cached build" are the same report without it, and a service worker makes the second common. Taking the number from the commit count means nobody has to remember to raise it, and it orders correctly by construction. A hash names the exact source but cannot be read as newer or older, and it buries the one digit that changes. |
 | Learning that a newer build is out | Check through the service worker on start, on an interval and on return to the foreground; mark the stamp once the new build is installed; the player refreshes | Reload automatically when a new build arrives; ask the server for its latest build number and compare | A reload the player did not ask for changes the screen under them, possibly mid-decision. Comparing against the server says a newer build exists before the cache has it, so a refresh can still load the old one and the notice looks wrong. Waiting for the install makes the notice true the moment it appears. |
+| Receiving a find | Straight to the pack, then a report: on the victory banner after a fight, over the view after a chest | A screen to choose what to take; a line in a log | With no pack limit there is nothing to choose. Exploration keeps no log, and a find is worth a moment of the player's attention rather than a line that scrolls away. |
+| Rarity on screen | A colour per tier on the name, with the tier also written beneath it on the Items screen | Colour alone; a symbol per tier | The colour convention is one most players already read at a glance. Colour alone fails a player who can't tell the colours apart, so the tier is also written out. |
+| Identical potions in the pack | One row with a count | A row each | A row each makes a pack full of potions a list to scroll through, with every row doing the same thing. Equipment stays a row each, since each copy is a separate decision. |
 
 ## Open Questions & Future Decisions
 
@@ -986,6 +1026,9 @@ screen the player can see but the game cannot have.
 31. ✅ **A skill on the party screen shows its rank and its progress toward the next**, the share computed by the party segment.
 32. ✅ **One Items screen, in a fight and out of one**, a page per character, where a press on a pack item equips it and a press on a worn item takes it off.
 33. ✅ **A newer build is announced beside the stamp, never applied**: `NEW BUILD AVAILABLE` appears once the new build is installed, and the player refreshes when they choose.
+34. ✅ **A find is reported, not chosen**: on the victory banner, or over the view after a chest is opened, with every item named in its rarity's colour.
+35. ✅ **A consumable is used by pressing it on the Items screen**, by the character whose page it is, greyed with the reason where that character can't drink it.
+36. ✅ **Identical consumables share a row with a count**; equipment never does.
 
 ### Deferred
 

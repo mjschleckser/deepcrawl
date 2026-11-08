@@ -46,8 +46,8 @@ be fixed; an update that erases one cannot.
 version      the schema this save was written in
 plan         the campaign's plan of floors, whole
 rng          where the campaign's generator has reached
-exploration  floors, discovery, roamers, the clock: exploration's own save
-party        every character, what they hold and what they have earned
+exploration  floors, discovery, opened chests, roamers, the clock: exploration's own save
+party        every character, what they hold and what they have earned; the pack and the purse
 encounter    the fight in progress, or nothing
 ```
 
@@ -106,6 +106,10 @@ the failed write did.
 **Migrations run in a chain**, each taking a save from one version to the next, so a
 save several versions old walks up to the present without any step knowing about more
 than its neighbour.
+
+**A migration fills a new field with what the campaign would have had without it.** A
+save from before the purse existed opens with an empty purse, and one from before chests
+existed opens with no chest opened. The save had none to open, so nothing is lost.
 
 A save from a later version is what an old cached build meets after a newer build has
 already run. Loading it would discard what it does not understand, so it is set aside

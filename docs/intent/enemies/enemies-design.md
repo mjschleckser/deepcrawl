@@ -26,7 +26,7 @@ design is built on.
 
 | | Owned by enemies | Owned elsewhere |
 |---|---|---|
-| Roster | which combatants exist, their role, and what each is worth | the shape of a combatant, which the party segment defines |
+| Roster | which combatants exist, their role, what each is worth, and which loot table each carries | the shape of a combatant, which the party segment defines; what a table yields, which loot decides |
 | Bands | which enemies gather, and how many | generation decides where a band goes |
 | Roaming | where a roamer stands, and how it moves on a floor | exploration owns the tick that moves it |
 | Awareness | whether a roamer knows where the party is, and so whether it gives chase | nothing outside this segment reads it |
@@ -55,6 +55,7 @@ status — can be given to a monster without new machinery.
 | `armour` | what a landed blow is reduced by |
 | `potValue` | what defeating it is worth in skill experience |
 | `forbidsEscape` | whether a party can flee from it |
+| `loot` | the loot table it drops from when defeated, or nothing for an enemy that carries nothing |
 
 **A fallen enemy is dead**, where a fallen character is unconscious. The condition
 machinery is the same; what differs is that nobody carries a goblin out. This is the one
@@ -271,6 +272,7 @@ abilities are all later, and all want a reason more interesting than list order.
 11. ✅ **Every roamer pays its own tick cost to cross a tile**, so a faster party can outrun a slower pursuer.
 12. ✅ **Roamers move through passages**, never through walls or closed doors.
 13. ✅ **The party and a roamer never share a tile**; the attempted entry is the encounter.
+14. ✅ **An enemy names the loot table it drops from**, and naming none means it carries nothing. Every goblin names the one goblin table for now.
 
 ### Deferred
 

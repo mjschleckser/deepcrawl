@@ -39,6 +39,7 @@ dungeon should not mean changing the generator.
 | Floor layout | walls, doors, secret doors, room shapes | nothing — frozen after creation |
 | Connectors | where stairs and pits sit, and what they point at | exploration decides what taking one does |
 | Traps | where they are laid, once | the trap segment owns detection, disarming, effects |
+| Chests | where they are laid, once, and which table they roll on | loot decides what a chest holds; exploration records whether it was opened |
 | Room contents | what refills a room, and when it is worth refilling | the enemies segment owns the bands it answers with, and everything they do once placed |
 
 ## Determinism
@@ -126,6 +127,18 @@ rather than a degenerate one.
 
 Traps are laid within the archetype's budget, on room tiles nothing else has claimed.
 
+### 7. Chests
+
+Chests are laid last, within the archetype's chest budget, on room tiles that no
+connector or trap has claimed and that are away from doorways, so a chest never blocks
+the way through a room. They are laid once, like traps, and nothing ever adds or removes
+one. Each chest is numbered in the order it was laid. That number and the floor's seed
+are what loot seeds the chest's contents from, so generation never rolls what a chest
+holds and the floor never stores it.
+
+Laying chests takes a generator derived from the floor's, so a floor that gets more
+chests doesn't shift anything generated before them.
+
 ## Archetypes
 
 An archetype is the authored data a floor is generated inside. It holds ranges rather
@@ -140,6 +153,8 @@ than values, and generation draws from those ranges.
 | `doorChance` | how often a room threshold becomes a door rather than an open archway |
 | `lockedChance`, `secretChance` | how often a door is locked, and how often a loop connection is secret |
 | `traps` | how many traps to lay, as a range |
+| `chests` | how many chests to lay, as a range |
+| `chestTable` | the loot table every chest on the floor rolls on |
 
 An archetype names no absolute coordinates and no specific rooms. A generator that
 needed hand-placed detail to produce a good floor would have failed at its job.
@@ -224,7 +239,7 @@ not converge on one arrangement.
 ### Resolved
 
 1. ✅ **The seed is the floor** — identical seed and archetype give an identical floor, always.
-2. ✅ **Layout and traps are frozen** at generation; only room contents are ever refilled.
+2. ✅ **Layout, traps and chests are frozen** at generation; only room contents are ever refilled, and an opened chest stays opened.
 3. ✅ **Connectivity is guaranteed by construction**, not checked and repaired.
 4. ✅ **Archetypes are ranges**, and hold no absolute coordinates.
 5. ✅ **Secret doors only ever sit on loop connections**, never on the sole route to anywhere.
@@ -235,15 +250,15 @@ not converge on one arrangement.
 10. ✅ **Every region keeps a route in that is neither secret nor locked.**
 11. ✅ **Connectors carry an arrival rule**, resolved against the destination once it exists.
 12. ✅ **Every floor holds an upward staircase**, so a descent is always retraceable.
+13. ✅ **Chests are laid last**, from a derived generator, numbered by when they were laid; generation never rolls their contents.
 
 ### Deferred
 
 1. **Themed floors.** Archetypes currently bound quantities, not character — no crypts that differ from caverns in anything but numbers.
 2. **Set pieces.** A hand-authored room dropped into a generated floor — a boss chamber, a vault — has no mechanism.
-3. **Loot placement.** Generation places traps and connectors but nothing worth carrying; the loot segment does not exist.
-4. **Re-stocking density.** Generation asks the enemies segment which bands refill a room and reports them with their positions. How many a room is worth, and how that scales with the floor's tier, is untuned. A re-stocking draws from the campaign's own generator today; deriving it from the floor's seed and a counter is not built.
-5. **Archetype progression.** Nothing decides which archetype a floor at a given depth should use, or how a campaign escalates.
-6. **Floor size versus drawn depth.** A long straight corridor beyond the maximum drawn depth is invisible past its limit; whether archetypes should avoid sightlines that long is untested.
+3. **Re-stocking density.** Generation asks the enemies segment which bands refill a room and reports them with their positions. How many a room is worth, and how that scales with the floor's tier, is untuned. A re-stocking draws from the campaign's own generator today; deriving it from the floor's seed and a counter is not built.
+4. **Archetype progression.** Nothing decides which archetype a floor at a given depth should use, or how a campaign escalates. Different loot on different floors waits on this, since a floor's chest table is its archetype's.
+5. **Floor size versus drawn depth.** A long straight corridor beyond the maximum drawn depth is invisible past its limit; whether archetypes should avoid sightlines that long is untested.
 
 ## References
 

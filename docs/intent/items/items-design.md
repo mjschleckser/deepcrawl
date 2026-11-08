@@ -39,7 +39,9 @@ to flow if content is to be addable.
 | Wielding rules | whether this class may hold this item in this slot | the party's `equip` enforces the answer |
 | Derived combat numbers | how accuracy, defence and base damage are assembled | combat resolves the roll they feed |
 | The pack | what it holds, and what moving an item in or out of it means | the party holds it, beside the slots |
-| Loot, drops, affixes | — | a later segment; nothing here generates an item |
+| Rarity | each item's tier, and the colour it is shown in | loot rolls by tier; presentation draws the colour |
+| Consumables | what a consumable is and what its effect does | the party's `useItem` applies it; combat and exploration charge for it |
+| Loot, drops, affixes | — | the loot segment generates finds; nothing here generates an item |
 
 Items are read by the party and by combat and read nothing back. The segment has no
 state of its own: a definition is a value, and the only mutable things in play are which
@@ -51,8 +53,9 @@ party.
 ```
 id        a stable name, unique across the catalogue
 name      what the player is shown
-kind      WEAPON | ARMOUR | SHIELD
-slot      MAIN_HAND | OFF_HAND | BODY
+kind      WEAPON | ARMOUR | SHIELD | CONSUMABLE
+rarity    COMMON | UNCOMMON | RARE | EPIC | LEGENDARY, common when not given
+slot      MAIN_HAND | OFF_HAND | BODY, for anything but a consumable
 classes   which classes may wield it, or nothing for anyone
 ```
 
@@ -63,6 +66,19 @@ and then, by kind:
 | **Weapon** | `skill`, `damage`, `accuracy`, `governs` | what it trains, what it hits for, how true it swings, and which attribute makes it hurt |
 | **Armour** | `skill`, `armour` | the armour skill it is worn under, and the damage it turns |
 | **Shield** | `defence` | how much harder it makes its holder to hit |
+| **Consumable** | `effect` | what using it does; the one effect so far is `heal`, a fixed number of hit points |
+
+**Rarity is a property of the item.** A legendary blade is legendary wherever it turns
+up: in any loot table, in the pack, in a hand. The tier is what loot rolls on and what
+the screen colours a name by, and putting it on the item is what keeps the two in
+agreement. An item authored without a rarity is common, so every item that existed
+before rarity still reads.
+
+**A consumable occupies no slot and is never equipped.** It sits in the pack until it
+is used, and using it removes it. It names no classes, because anyone can drink a
+potion. The pack holds a consumable like anything else, and wielding rules never apply
+to one: asking whether a potion fits a hand has no answer, so the question is refused
+rather than answered no.
 
 **Three slots, and no more for now.** A main hand, an off hand, and a body. A shield
 occupies the off hand, which is what makes a shield and a second weapon the same
@@ -166,9 +182,9 @@ equipping anything; the pack adds no rule of its own. A dead or unconscious char
 gear can be taken off and handed on, because a body that cannot fight still carries a
 sword someone else can use.
 
-**The pack has no limit yet.** While nothing generates an item, the most it can hold is
-what four characters can take off. A limit is a question about how much loot there is,
-and is decided with loot.
+**The pack has no limit yet.** Everything the party finds goes into it, so it never
+has to ask what to leave behind. A limit would bring that choice, and the screen to
+make it on.
 
 **The pack holds the resolved item**, as a slot does, for the same reason: no registry
 to consult, and nothing that fails to resolve far from where it was written.
@@ -196,8 +212,10 @@ by name, as a combatant file is. A typo in content should fail where it was type
 | Who may wield what | The item names its classes | The class names what it may hold; skill ranks implying permission | Content has to flow one way: adding a weapon must not mean editing four classes. Inferring permission from the skill table conflates what a class may *train* with what it may *hold*, and makes neither changeable alone. |
 | Where unequipped items go | One pack, shared by the party | A bag per character; items simply discarded when taken off | A bag per character turns handing over a sword into a bookkeeping errand and makes the player track who carries what. Discarding gear makes every swap irreversible, which punishes trying something. |
 | What a swap costs | One change: the displaced item goes to the pack | Taking off and putting on as two changes | Replacing one item with another is a single decision, and charging twice for it would make experimenting with gear cost double. |
-| A pack limit | None until loot exists | A slot count now | With nothing generated, the pack can only hold what the party already wears. A number chosen now answers a question nobody can yet ask. |
-| Where loot comes from | Nowhere yet: items are authored and held, never generated | Drop tables and affixes in this pass | Affixes are a balance design, and there is nothing tuned to balance them against while enemy damage is flat and the armour curve is unbuilt. Numbers invented before the thing they answer to are numbers invented twice. |
+| A pack limit | None yet | A slot count, with a screen to choose what to keep when a find will not fit | A limit only matters once finds outstrip what a party wants to carry, and choosing what to leave behind is a screen and a decision the loot pass does not need. Finds go straight to the pack while there is room for everything. |
+| Affixes | None yet; an item is exactly its file | Rolled affixes on found items | Affixes are a balance design, and there is nothing tuned to balance them against while enemy damage is flat and the armour curve is unbuilt. Numbers invented before the thing they answer to are numbers invented twice. |
+| Where rarity lives | On the item | On a loot table's entry | A tier on the entry would let one sword be common in one table and legendary in another, and the colour on the screen would stop meaning anything. |
+| Consumables and slots | A fourth kind, with no slot, never equipped | A consumable slot, or a belt of them per character | A slot for potions is a second inventory beside the pack, and choosing which potions to belt is bookkeeping that decides little. The shared pack already holds everything carried. |
 
 ## Open Questions & Future Decisions
 
@@ -212,23 +230,26 @@ by name, as a combatant file is. A typo in content should fail where it was type
 7. ✅ **An item names the classes that may hold it**, and a class names nothing.
 8. ✅ **A character holds the resolved item**, not an identifier resolved later.
 9. ✅ **The three formulas live here**, and combat and the party both read them.
-10. ✅ **Nothing here generates an item**; loot, drops and affixes are a later segment.
+10. ✅ **Nothing here generates an item**; the loot segment does, and affixes come later.
 11. ✅ **One pack, shared by the party**, holds everything carried and not equipped.
 12. ✅ **An item is always in a slot or in the pack**, and a swap sends the displaced item to the pack as one change.
+13. ✅ **Rarity is the item's own**, common unless authored otherwise.
+14. ✅ **A consumable is a kind with no slot**, used up from the pack; its one effect so far heals.
 
 ### Deferred
 
-1. **Loot, drops and affixes.** The HLD's items segment names generation within loot tables and affix rules. None of it exists: items are authored and given, never found. It wants floors tuned to drop against, which is a balance question and not a structural one.
+1. **Affixes.** The HLD names affix rules. They want enemy defence and armour on a curve to balance against.
 2. **More slots.** Rings, cloak, head and feet are slots with nothing to put in them. Adding one moves nothing already built.
-3. **Consumables.** A potion drunk mid-fight needs a kind of item that is used up rather than worn. The pack will hold it when it exists.
+3. **More effects.** A consumable heals and does nothing else; curing a status waits for status effects.
 4. **Two-handed weapons.** A weapon that claims the off hand as well as the main hand has nowhere to say so yet.
 5. **Weapon reach and exposure.** Combat removed rows on the promise that reach returns as a property of weapons and abilities. The property has no field here yet.
 6. **Encumbrance.** Nothing weighs anything, and nothing is slowed by what it carries.
 7. **Repair, durability and curses.** No item degrades, breaks, or refuses to be taken off.
-8. **A pack limit.** How much the party can carry is decided alongside loot, which is what would fill it.
+8. **A pack limit.** Finds go straight to the pack, which holds everything. A limit brings a choice of what to leave behind.
 
 ## References
 
 - `docs/high-level-design.md` — the loot and items component, and the content-is-data rule.
+- `docs/intent/loot/loot-design.md` — tables and finds, which roll on an item's rarity and fill the pack.
 - `docs/intent/party/party-design.md` — the slots this segment fills and the `equip` operation that enforces its rules.
 - `docs/intent/combat/combat-design.md` — the bands these numbers are resolved against.

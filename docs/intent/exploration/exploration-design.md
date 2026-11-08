@@ -74,6 +74,14 @@ Tile features (on the tile, not the edge):
 - `none`
 - `stairsUp`, `stairsDown` — connectors to another floor, taken deliberately
 - `pit` — a one-way connector downward, taken involuntarily
+- `chest` — a container, opened deliberately with `INTERACT`, once
+
+A chest is passable, and stepping onto one does nothing. It is opened with `INTERACT`
+while the party stands on it, which costs a tick, as committing any party action does.
+Exploration hands the find to the party and records the chest as opened, and loot
+decides what the find is. An opened chest is still a `chest` tile: the floor's features
+never change, so whether a chest is opened lives in a per-floor record beside the door
+flags. An opened chest offers nothing to `INTERACT`.
 
 Each tile also carries a discovery record (see *Sight and Discovery*).
 
@@ -404,6 +412,7 @@ Rules beyond that line belong to the other segment.
 | Trap triggering | the party enters a tile | the entered tile and the party | which trap fires and what it does |
 | Roaming enemies | after discovery on each step | floor and party tile | movement behavior, roster, respawn |
 | Floor re-stocking | the party arrives on a floor it has visited before | the floor and the ticks elapsed since it was last left | how far enemies move, which rooms refill |
+| Opening a chest | the player commits `INTERACT` on an unopened chest | the floor, its seed and archetype, and the chest's number | what the chest holds |
 | Encounter | the party and a roamer reach one another — either one attempting the other's tile | the encounter payload — see *The Combat Handoff* | all of combat |
 | Camp | the player enters camp | tick advance | sleep, eat, rest, train |
 
@@ -438,7 +447,7 @@ matter which segment triggered the change.
 |---|---|---|
 | Party tile, facing, current floor | exploration | exploration |
 | Tick counter | exploration | exploration; camp calls its advance |
-| Per-tile discovery, door open flags, known traps | exploration | exploration |
+| Per-tile discovery, door open flags, known traps, opened chests | exploration | exploration |
 | Floor layouts | dungeon generation | never mutated after creation |
 | Character hit points, status, death state | party | party operations, called by combat and exploration |
 | Party roster | party | party operations |
@@ -460,6 +469,7 @@ Saved by this segment:
 - Every generated floor: id, dimensions, edge arrays, tile features
 - Per-floor discovery record (tiles, edges, features, known traps)
 - Per-floor door open flags
+- Per-floor record of which chests have been opened
 - Per-floor tick at which the party last left it
 - Party's current floor, tile, and facing
 - Tick counter
@@ -595,6 +605,7 @@ map; tapping the control expands the map to full screen.
 25. ✅ **Re-stocking resolves immediately after relocation**, before the trap trigger fires.
 26. ✅ **Exploration hands combat an explicit payload**; party state is owned by the party segment and changed through its operations by both.
 27. ✅ **The party sees four tiles, and everything within them** that a line of sight reaches; nothing is ever dark.
+28. ✅ **A chest is opened with `INTERACT`, once**, for a tick. Whether it is opened is exploration's record, never a change to the floor.
 
 ### Deferred
 
