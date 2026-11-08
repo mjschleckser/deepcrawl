@@ -495,7 +495,7 @@ for the same one step's ticks, since turns are free.
 | `ITEMS` — equip and use items | `I` | Items button | loot and items |
 | `SPELLS` — out-of-combat magic | `C` | spell icon | abilities |
 | `INTERACT` — dungeon features on the current tile | `E` | use control | varies by feature; a staircase is exploration's own |
-| `TOGGLE_MAP` — open the automap | `M` | map control | exploration |
+| `TOGGLE_MAP` — step the automap between expanded, minimap and hidden | `M` | map control | exploration |
 
 Exploration owns none of these but `TOGGLE_MAP`: it routes each to the segment that
 owns it and charges the clock. **Opening a party action costs nothing; committing to

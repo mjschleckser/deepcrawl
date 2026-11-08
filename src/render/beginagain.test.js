@@ -7,6 +7,7 @@ import { makeRng } from '../sim/rng.js';
 import {
   createController, layers, pressKey, pressPointer, replaceCampaign, setSaveNote, tick,
 } from './controller.js';
+import { MapMode } from './mapplan.js';
 import { PartyControl } from './partyplan.js';
 import { MIN_TAP_PX } from './geometry.js';
 
@@ -203,11 +204,11 @@ describe('replacing the campaign', () => {
   // @spec PRESENT-MAP-013
   it('opens the new campaign with the map expanded', () => {
     const { controller } = wiped();
-    controller.expanded = false;
+    controller.mapMode = MapMode.HIDDEN;
 
     replaceCampaign(controller, createCampaign({ seed: 22 }));
 
-    expect(controller.expanded).toBe(true);
+    expect(controller.mapMode).toBe(MapMode.EXPANDED);
   });
 });
 

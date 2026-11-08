@@ -5,7 +5,7 @@ import {
 } from './geometry.js';
 import { buildViewPlan, shadeAt } from './viewplan.js';
 import { shade } from './appconfig.js';
-import { buildMapPlan } from './mapplan.js';
+import { MapMode, buildMapPlan } from './mapplan.js';
 
 const viewport = { width: 800, height: 600 };
 
@@ -263,25 +263,62 @@ describe('the automap draw plan', () => {
 
   // @spec PRESENT-MAP-001
   it('draws a cell for each discovered tile and no others', () => {
-    const plan = buildMapPlan(view, viewport, { expanded: false });
+    const plan = buildMapPlan(view, viewport, { mode: MapMode.MINI });
 
     expect(plan.cells).toHaveLength(2);
     expect(plan.cells.map((c) => `${c.x},${c.y}`).sort()).toEqual(['1,1', '2,1']);
   });
 
   // @spec PRESENT-MAP-002
-  it('sits in a corner while collapsed and fills the viewport when expanded', () => {
-    const collapsed = buildMapPlan(view, viewport, { expanded: false });
-    const expanded = buildMapPlan(view, viewport, { expanded: true });
+  it('sits in the top-left corner as a minimap, and grows when expanded', () => {
+    const collapsed = buildMapPlan(view, viewport, { mode: MapMode.MINI });
+    const expanded = buildMapPlan(view, viewport, { mode: MapMode.EXPANDED });
 
     expect(collapsed.bounds.width).toBeLessThan(viewport.width / 2);
+    expect(collapsed.bounds.x).toBeLessThan(viewport.width / 4);
+    expect(collapsed.bounds.y).toBeLessThan(viewport.height / 4);
     expect(expanded.bounds.width).toBeGreaterThan(collapsed.bounds.width);
+  });
+
+  // @spec PRESENT-MAP-002
+  // @spec PRESENT-MAP-014
+  it('lies under no control in either state, on any shape of screen', () => {
+    const square = { ...view, width: 20, height: 20 };
+    const tall = { ...view, width: 12, height: 30 };
+    const overlaps = (a, b) => a.x < b.x + b.width && a.x + a.width > b.x
+      && a.y < b.y + b.height && a.y + a.height > b.y;
+    const hidesUnder = new Set(['MAP', 'PARTY_BAR', 'ITEMS', 'SPELL_ICON', 'INTERACT_PROMPT']);
+
+    for (const screen of [
+      { width: 1258, height: 1279 }, { width: 390, height: 844 }, { width: 375, height: 667 },
+      { width: 1920, height: 1080 }, { width: 800, height: 600 },
+    ]) {
+      const controls = tapRegionsFor(screen).filter((r) => hidesUnder.has(r.region));
+      for (const floor of [square, tall]) {
+        for (const mode of [MapMode.MINI, MapMode.EXPANDED]) {
+          const { bounds } = buildMapPlan(floor, screen, { mode });
+          for (const control of controls) expect(overlaps(bounds, control)).toBe(false);
+        }
+      }
+    }
+  });
+
+  // @spec PRESENT-MAP-014
+  it('fits the whole floor into the centred column when expanded, as large as it will go', () => {
+    const screen = { width: 1258, height: 1279 };
+    const column = contentColumn(screen);
+    const { bounds } = buildMapPlan({ ...view, width: 20, height: 20 }, screen, { mode: MapMode.EXPANDED });
+
+    expect(bounds.x).toBeGreaterThanOrEqual(column.x);
+    expect(bounds.x + bounds.width).toBeLessThanOrEqual(column.x + column.width);
+    // Bounded by one side of the free space, not shrunk for no reason.
+    expect(bounds.width).toBeGreaterThan(column.width * 0.5);
   });
 
   // @spec PRESENT-MAP-004
   it('draws the same content at both scales, differing only in size', () => {
-    const collapsed = buildMapPlan(view, viewport, { expanded: false });
-    const expanded = buildMapPlan(view, viewport, { expanded: true });
+    const collapsed = buildMapPlan(view, viewport, { mode: MapMode.MINI });
+    const expanded = buildMapPlan(view, viewport, { mode: MapMode.EXPANDED });
 
     expect(expanded.cells.map((c) => [c.x, c.y])).toEqual(collapsed.cells.map((c) => [c.x, c.y]));
     expect(expanded.cellSize).toBeGreaterThan(collapsed.cellSize);
@@ -289,14 +326,14 @@ describe('the automap draw plan', () => {
 
   // @spec PRESENT-MAP-005
   it('draws a party marker carrying its facing', () => {
-    const plan = buildMapPlan(view, viewport, { expanded: false });
+    const plan = buildMapPlan(view, viewport, { mode: MapMode.MINI });
 
     expect(plan.party).toMatchObject({ x: 1, y: 1, facing: Direction.NORTH });
   });
 
   // @spec PRESENT-MAP-007
   it('emits a stroke per drawn edge, carrying the edge kind', () => {
-    const plan = buildMapPlan(view, viewport, { expanded: false });
+    const plan = buildMapPlan(view, viewport, { mode: MapMode.MINI });
 
     const north = plan.edges.find((e) => e.x === 1 && e.y === 1 && e.direction === Direction.NORTH);
     const south = plan.edges.find((e) => e.x === 1 && e.y === 1 && e.direction === Direction.SOUTH);
@@ -308,7 +345,7 @@ describe('the automap draw plan', () => {
 
   // @spec PRESENT-MAP-010
   it('leaves a gap in an open door and bars a closed one', () => {
-    const plan = buildMapPlan(view, viewport, { expanded: false });
+    const plan = buildMapPlan(view, viewport, { mode: MapMode.MINI });
     const find = (direction) =>
       plan.edges.find((e) => e.x === 1 && e.y === 1 && e.direction === direction);
 
@@ -320,7 +357,7 @@ describe('the automap draw plan', () => {
 
   // @spec PRESENT-MAP-007
   it('draws every edge from segments decided in the plan', () => {
-    const plan = buildMapPlan(view, viewport, { expanded: false });
+    const plan = buildMapPlan(view, viewport, { mode: MapMode.MINI });
 
     for (const edge of plan.edges) {
       expect(edge.segments.length).toBeGreaterThan(0);
@@ -332,7 +369,7 @@ describe('the automap draw plan', () => {
 
   // @spec PRESENT-MAP-008
   it('marks features, and carries no trap mark', () => {
-    const plan = buildMapPlan(view, viewport, { expanded: false });
+    const plan = buildMapPlan(view, viewport, { mode: MapMode.MINI });
 
     expect(plan.cells.find((c) => c.x === 2).feature).toBe(TileFeature.STAIRS_DOWN);
     for (const cell of plan.cells) expect(cell).not.toHaveProperty('trapKnown');
@@ -340,18 +377,18 @@ describe('the automap draw plan', () => {
 
   // @spec PRESENT-MAP-009
   it('draws an enemy marker only where the view reports one', () => {
-    const plan = buildMapPlan(view, viewport, { expanded: false });
+    const plan = buildMapPlan(view, viewport, { mode: MapMode.MINI });
 
     expect(plan.enemies).toHaveLength(1);
     expect(plan.enemies[0]).toMatchObject({ x: 2, y: 1 });
 
-    expect(buildMapPlan({ ...view, enemies: [] }, viewport, { expanded: false }).enemies).toEqual([]);
+    expect(buildMapPlan({ ...view, enemies: [] }, viewport, { mode: MapMode.MINI }).enemies).toEqual([]);
   });
 
   // @spec PRESENT-MAP-011
   it('carries one shared creature marker for every enemy, decided in the plan', () => {
     const two = { ...view, enemies: [{ id: 'r1', x: 2, y: 1 }, { id: 'r2', x: 1, y: 1 }] };
-    const plan = buildMapPlan(two, viewport, { expanded: false });
+    const plan = buildMapPlan(two, viewport, { mode: MapMode.MINI });
 
     for (const enemy of plan.enemies) {
       // A head, horns, and eyes: more than the party's triangle, and

@@ -127,8 +127,8 @@ what tells one stretch of passage from another.
 
 ## The Automap
 
-A corner widget over the first-person view, drawn from what exploration says may be
-shown and nothing else.
+An overlay on the first-person view, drawn from what exploration says may be shown and
+nothing else.
 
 - Discovered tiles are cells; discovered edges are strokes along the cell boundary.
 - Walls and doors are distinguished by stroke, and
@@ -143,15 +143,26 @@ shown and nothing else.
   not read as the party. Every enemy shares that mark; telling a goblin
   from a mage on the map is authoring nobody has done.
 
-The widget sits in the top-left corner and its Map control in the top-right, so the
-control's panel hides none of the map. The control is a short button, about as tall as it
+The Map control sits in the top-right corner. It is a short button, about as tall as it
 is wide on a phone, so it covers little of the corridor's ceiling.
 
-**The map opens expanded.** A game starts with the map drawn large over the middle of
-the view, translucent enough that the corridor still reads behind it, because the map is
-what a player is building and the reason to keep walking. Tapping the control or pressing
-the map key collapses it into its corner; the same input expands it again. Expanded, it is
-the same drawing at a larger scale — not a different map with different rules.
+**The map has three states, and the control steps through them.** *Expanded*, it is drawn
+large over the middle of the view, translucent enough that the corridor still reads
+behind it. As a *minimap*, it is a small square in the top-left corner, opposite the
+control. *Hidden*, nothing is drawn and the corridor has the screen to itself. Each press
+of the control or the map key moves one step smaller — expanded to minimap, minimap to
+hidden — and from hidden it comes back expanded, so the full map is never more than one
+press away. Every state is the same drawing at a different scale, never a different map
+with different rules.
+
+**It opens expanded**, because the map is what a player is building and the reason to
+keep walking.
+
+**The map never lies under a control.** Expanded, it is fitted, at the largest scale that
+keeps the whole floor in view, into the free space of the centred column: below the Map
+control and above the action bar. A map sized to the window alone grows, on a large or
+square screen, until it runs under the buttons along the bottom, and a map drawn beneath a
+button is a map half read. The minimap is held small enough to stay clear of both too.
 
 ## Input
 
@@ -892,7 +903,7 @@ startup and thereafter only when something has changed:
 
 - an action was performed
 - a prompt was answered
-- the map was expanded or collapsed
+- the map changed state
 - the window was resized
 
 Resizing recomputes the depth frames and the tap regions from the new viewport, then
@@ -995,6 +1006,7 @@ screen the player can see but the game cannot have.
 | Where a column sits vertically | Centred in the formation region, each side on its own count | Pinned to the top edge; both sides aligned on a shared top | Two goblins facing four characters read as a side that is outnumbered when they sit level with the middle of the party, and as a list that ran out when they hang from the top edge with empty panel beneath. Centring is fixed at the start of the encounter and cannot creep, because the fallen keep their places and a side's count never changes. |
 | The fallen | Drawn in place, spent and dimmed | Removing them from the column | The shape of a side that has lost its middle is information, and a column that closed its gaps would move everything below the gap while the player was looking at it. |
 | Where the party screen's open state lives | The controller, as view state, with the simulation told only that a menu is open | A flag in exploration state; a party action that commits and costs a tick | Opening a character sheet changes nothing that is true, which is the test the expanded map already passes. Exploration still owns the clock rule, so it is told a menu is up and nothing more. Charging a tick to read a sheet would make looking cost something, which pushes the systems player to look less. |
+| How the map is shown | Three states stepped through by one control — expanded, minimap, hidden — and back to expanded | Two states, expanded and collapsed; a separate control for each state | A minimap is worth keeping in view while walking, and a corridor with nothing over it is worth having too, so two states force a choice that three do not. One control stepping smaller and then back to full keeps every state one or two presses away without spending room on more buttons. |
 | Party screen layout | One character a page, paged with wrap-around, opening on the first | Four compact rows with the selected character's sheet beneath; all four sheets in one scrolling column | Four sheets do not fit a phone held upright at a readable size, and a roster-and-detail split spends a third of the screen repeating what the sheet already says. A scrolling column moves under the thumb. A page each gives every sheet the whole column, and with four characters wrap-around paging puts any one within two presses. |
 | Where a page's controls sit | Previous, Close and next in one row along the foot, the name across the head | Arrows either side of the name with Close at the top right | The top of a phone is out of a thumb's reach, and paging and closing are the most frequent presses on these screens. The name stays at the head, where reading starts and where it has the full width. |
 | Paging keys | The arrow keys, `A` and `D`, and `1` to `4` | Arrow keys alone; a dedicated pair of keys | `A` and `D` are the turn keys and free while the screen holds the input, so a keyboard player pages without moving their hand. The number keys match how fights already address a slot by number. |

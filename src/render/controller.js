@@ -3,7 +3,7 @@
  * screen needs redrawing, and assembles the draw plans for each layer.
  *
  * Holds no game state. Its only fields are the simulation it draws, the viewport it
- * draws into, and whether the map is expanded — which is a property of the view, not
+ * draws into, and how the map is shown — which is a property of the view, not
  * of the game.
  */
 
@@ -30,7 +30,7 @@ import { hitTest, controlsFor, uiScale, versionStamp } from './geometry.js';
 import { APP_VERSION } from '../version.js';
 import { buildPromptPlan } from './promptplan.js';
 import { buildViewPlan } from './viewplan.js';
-import { buildMapPlan } from './mapplan.js';
+import { MapMode, buildMapPlan, nextMapMode } from './mapplan.js';
 import {
   buildFightPlan, createFightController, chooseOption, pressOption, goBack, dismissOutcome,
   passTurn, equipInFight, useInFight, closeItems,
@@ -71,7 +71,7 @@ export function createController({ state, viewport, onDraw, campaign = null, onB
     state, viewport, onDraw, campaign, onBeginAgain,
     // The map opens large: it is what the player is building.
     // @spec PRESENT-MAP-013
-    expanded: true, fight: null,
+    mapMode: MapMode.EXPANDED, fight: null,
     // Anything worth saying about the save, beside the stamp.
     saveNote: null,
     // What the chest just opened held, while its report is up.
@@ -105,7 +105,7 @@ export function replaceCampaign(controller, campaign) {
   controller.fight = null;
   controller.partyScreen = null;
   controller.itemsScreen = null;
-  controller.expanded = true;
+  controller.mapMode = MapMode.EXPANDED;
   syncFight(controller);
   redraw(controller);
 }
@@ -226,7 +226,7 @@ export function layers(controller) {
   // Read the simulation, never a cache of it: a drawing derived from a stale flag is a
   // drawing of something that is no longer true.
   syncFight(controller);
-  const { state, viewport, expanded, fight } = controller;
+  const { state, viewport, mapMode, fight } = controller;
   if (fight) {
     const fightPlan = buildFightPlan(fight.encounter, viewport, {
       phase: fight.phase,
@@ -285,7 +285,11 @@ export function layers(controller) {
 
   return [
     { name: 'view', plan: buildViewPlan(corridorAhead(state), viewport) },
-    { name: 'map', plan: buildMapPlan(automapView(state), viewport, { expanded }) },
+    // @spec PRESENT-MAP-015
+    {
+      name: 'map',
+      plan: mapMode === MapMode.HIDDEN ? null : buildMapPlan(automapView(state), viewport, { mode: mapMode }),
+    },
     { name: 'fight', plan: null },
     { name: 'party', plan: sheet },
     { name: 'items', plan: items },
@@ -641,7 +645,7 @@ function applyAction(controller, action) {
   // true, so the controller answers it rather than the simulation.
   // @spec PRESENT-MAP-003
   if (action.partyAction === PartyAction.TOGGLE_MAP) {
-    controller.expanded = !controller.expanded;
+    controller.mapMode = nextMapMode(controller.mapMode);
     redraw(controller);
     return true;
   }

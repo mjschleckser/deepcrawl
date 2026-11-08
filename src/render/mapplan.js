@@ -6,11 +6,57 @@
  */
 
 import { Direction, EdgeKind, TileFeature } from '../sim/floor.js';
-import { hornedHead } from './geometry.js';
+import { Anchor, TouchLayout, contentColumn, hornedHead, tapRegionsFor } from './geometry.js';
 
-const COLLAPSED_FRACTION = 0.22;
-const EXPANDED_FRACTION = 0.9;
+/**
+ * The three ways the map is shown. The Map control steps through them in this order and
+ * back to the start: each press smaller, and from hidden straight back to the whole map.
+ *
+ * @spec PRESENT-MAP-003
+ */
+export const MapMode = { EXPANDED: 'EXPANDED', MINI: 'MINI', HIDDEN: 'HIDDEN' };
+export const MAP_MODE_ORDER = [MapMode.EXPANDED, MapMode.MINI, MapMode.HIDDEN];
+
+/** The mode the Map control moves to from this one. */
+export function nextMapMode(mode) {
+  return MAP_MODE_ORDER[(MAP_MODE_ORDER.indexOf(mode) + 1) % MAP_MODE_ORDER.length];
+}
+
+const MINI_FRACTION = 0.22;
 const MARGIN_FRACTION = 0.02;
+
+/** The row of buttons along the foot, which the map must stay above. */
+const FOOT_ROW = new Set(TouchLayout.filter((r) => r.anchor === Anchor.COLUMN).map((r) => r.region));
+
+/**
+ * Where the map may be drawn without lying under a control: the box an expanded map is
+ * fitted into, and the square a minimap may grow to.
+ *
+ * @spec PRESENT-MAP-002
+ * @spec PRESENT-MAP-014
+ */
+function freeSpace(viewport) {
+  const regions = tapRegionsFor(viewport);
+  const margin = Math.min(viewport.width, viewport.height) * MARGIN_FRACTION;
+  const mapControl = regions.find((r) => r.region === 'MAP');
+  const footTop = Math.min(viewport.height, ...regions.filter((r) => FOOT_ROW.has(r.region)).map((r) => r.y));
+  const column = contentColumn(viewport);
+
+  const top = mapControl.y + mapControl.height + margin;
+  const expanded = {
+    x: column.x + margin,
+    y: top,
+    width: Math.max(0, column.width - margin * 2),
+    height: Math.max(0, footTop - margin - top),
+  };
+  // The minimap holds the top-left corner, short of the Map control and the foot row.
+  const mini = Math.max(0, Math.min(
+    Math.min(viewport.width, viewport.height) * MINI_FRACTION,
+    mapControl.x - margin * 2,
+    footTop - margin * 2,
+  ));
+  return { margin, expanded, mini };
+}
 
 /** How much of an open door's edge is left as a gap between its two posts. */
 const DOORWAY_GAP = 0.44;
@@ -85,18 +131,29 @@ function markFor(tile) {
   return null;
 }
 
-export function buildMapPlan(view, viewport, { expanded = false } = {}) {
-  const fraction = expanded ? EXPANDED_FRACTION : COLLAPSED_FRACTION;
-  const available = Math.min(viewport.width, viewport.height) * fraction;
-  const cellSize = available / Math.max(view.width, view.height);
+/**
+ * The map placed for one of its visible states. Hidden is not a placement: whoever asks
+ * for the map draws nothing then.
+ *
+ * @spec PRESENT-MAP-002
+ * @spec PRESENT-MAP-004
+ * @spec PRESENT-MAP-014
+ */
+export function buildMapPlan(view, viewport, { mode = MapMode.MINI } = {}) {
+  const expanded = mode === MapMode.EXPANDED;
+  const space = freeSpace(viewport);
+
+  // Expanded, the whole floor at the largest scale the free space allows, centred in
+  // it; as a minimap, the floor fitted into a small square in the top-left corner.
+  const cellSize = expanded
+    ? Math.min(space.expanded.width / view.width, space.expanded.height / view.height)
+    : space.mini / Math.max(view.width, view.height);
 
   const width = cellSize * view.width;
   const height = cellSize * view.height;
 
-  // Collapsed, the map tucks into the top-left corner; expanded, it centres.
-  const margin = Math.min(viewport.width, viewport.height) * MARGIN_FRACTION;
-  const originX = expanded ? (viewport.width - width) / 2 : margin;
-  const originY = expanded ? (viewport.height - height) / 2 : margin;
+  const originX = expanded ? space.expanded.x + (space.expanded.width - width) / 2 : space.margin;
+  const originY = expanded ? space.expanded.y + (space.expanded.height - height) / 2 : space.margin;
 
   const place = (x, y) => ({ px: originX + x * cellSize, py: originY + y * cellSize });
 
@@ -129,6 +186,7 @@ export function buildMapPlan(view, viewport, { expanded = false } = {}) {
 
   return {
     floorId: view.floorId,
+    mode,
     expanded,
     cellSize,
     bounds: { x: originX, y: originY, width, height },

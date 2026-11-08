@@ -8,6 +8,7 @@ import { beginEncounter, createEnemy, createEnemyGroup } from '../sim/combat.js'
 import { makeRng } from '../sim/rng.js';
 import { PIXI_APP_OPTIONS } from './appconfig.js';
 import { createController, pressKey, pressPointer, releasePointer, resize, layers } from './controller.js';
+import { MapMode } from './mapplan.js';
 
 const viewport = { width: 800, height: 600 };
 
@@ -59,7 +60,7 @@ describe('the scene', () => {
       expect(controller).not.toHaveProperty(key);
     }
     // What it does keep is the view's own business.
-    expect(controller.expanded).toBe(true);
+    expect(controller.mapMode).toBe(MapMode.EXPANDED);
   });
 
   // @spec PRESENT-SCENE-006
@@ -126,22 +127,30 @@ describe('when the screen redraws', () => {
 
   // @spec PRESENT-SCENE-004
   // @spec PRESENT-MAP-003
-  it('collapses and expands the map, redrawing each time', () => {
+  it('steps the map from expanded to minimap to hidden and back, redrawing each time', () => {
     const { controller, onDraw } = harness();
+    const mapLayer = () => layers(controller).find((l) => l.name === 'map').plan;
     onDraw.mockClear();
 
     pressKey(controller, 'm');
-    expect(controller.expanded).toBe(false);
+    expect(controller.mapMode).toBe(MapMode.MINI);
+    expect(mapLayer().mode).toBe(MapMode.MINI);
 
     pressKey(controller, 'm');
-    expect(controller.expanded).toBe(true);
-    expect(onDraw).toHaveBeenCalledTimes(2);
+    expect(controller.mapMode).toBe(MapMode.HIDDEN);
+    // @spec PRESENT-MAP-015
+    expect(mapLayer()).toBeNull();
+
+    pressKey(controller, 'm');
+    expect(controller.mapMode).toBe(MapMode.EXPANDED);
+    expect(mapLayer().mode).toBe(MapMode.EXPANDED);
+    expect(onDraw).toHaveBeenCalledTimes(3);
   });
 
   // @spec PRESENT-MAP-013
   it('opens with the map expanded', () => {
     const { controller } = harness();
-    expect(controller.expanded).toBe(true);
+    expect(controller.mapMode).toBe(MapMode.EXPANDED);
   });
 });
 
@@ -294,7 +303,7 @@ describe('input while a fight is on', () => {
     pressKey(controller, 'm'); // the map
 
     expect(tickCount(state)).toBe(0);
-    expect(controller.expanded).toBe(true);
+    expect(controller.mapMode).toBe(MapMode.EXPANDED);
   });
 
   // @spec PRESENT-FIGHT-001
@@ -533,7 +542,7 @@ describe('the party screen', () => {
 
     expect(partyPosition(state)).toEqual(held);
     expect(tickCount(state)).toBe(0);
-    expect(controller.expanded).toBe(true);
+    expect(controller.mapMode).toBe(MapMode.EXPANDED);
     expect(hud(controller).controls).toEqual([]);
     expect(sheet(controller)).not.toBeNull();
   });

@@ -11,6 +11,7 @@ import { beginEncounter, createEnemy, createEnemyGroup, readinessOf } from '../s
 import { makeRng } from '../sim/rng.js';
 import { MIN_TAP_PX } from './geometry.js';
 import { createController, pressKey, pressPointer, layers } from './controller.js';
+import { MapMode } from './mapplan.js';
 import { buildItemsPlan, itemDetail, ItemsControl } from './itemsplan.js';
 import {
   createFightController, chooseOption, FightAction, FightPhase, OPTION_SLOTS,
@@ -221,7 +222,7 @@ describe('the Items screen out of a fight', () => {
     for (const key of ['x', 'e', 'p', 'c', 'm']) pressKey(controller, key);
 
     expect(partyPosition(state)).toEqual(held);
-    expect(controller.expanded).toBe(true);
+    expect(controller.mapMode).toBe(MapMode.EXPANDED);
     expect(controller.partyScreen).toBeNull();
     expect(layers(controller).find((l) => l.name === 'hud').plan.controls).toEqual([]);
   });

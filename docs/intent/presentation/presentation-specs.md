@@ -12,7 +12,7 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-SCENE-002**: The system shall keep the renderer's ticker stopped while nothing is playing out on its own, so that no redraw occurs merely because time has passed.
 - [x] **PRESENT-SCENE-011**: While a fight has a pause to wait out or a combatant still shaking, the system shall run the ticker, and shall stop it once the fight is waiting on the player with nothing left in motion.
 - [x] **PRESENT-SCENE-003**: When an action changes simulation state, the system shall redraw — including a turn, which changes facing without advancing the clock.
-- [x] **PRESENT-SCENE-004**: When a prompt is answered, the map is expanded or collapsed, or the window is resized, the system shall redraw.
+- [x] **PRESENT-SCENE-004**: When a prompt is answered, the map changes state, or the window is resized, the system shall redraw.
 - [x] **PRESENT-SCENE-005**: If an action changes no simulation state, then the system shall not redraw.
 - [x] **PRESENT-SCENE-010**: The system shall name every layer in every drawing, giving a layer with nothing to show an empty drawing rather than omitting it, so that nothing from a previous drawing can persist.
 - [x] **PRESENT-SCENE-006**: When redrawing a layer, the system shall clear and rebuild it rather than reconciling it against what it drew before.
@@ -38,9 +38,9 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 ## Automap
 
 - [x] **PRESENT-MAP-001**: The system shall draw the automap from the simulation's automap view and from no other source.
-- [x] **PRESENT-MAP-002**: While collapsed, the system shall draw the automap as an overlay occupying one corner of the viewport.
-- [x] **PRESENT-MAP-003**: When the player toggles the map, the system shall expand a collapsed automap to fill the viewport, and collapse an expanded one.
-- [x] **PRESENT-MAP-004**: The system shall draw the same content expanded as collapsed, differing only in scale.
+- [x] **PRESENT-MAP-002**: While the map is a minimap, the system shall draw the automap as a small overlay in the top-left corner of the viewport, clear of every control.
+- [x] **PRESENT-MAP-003**: When the player toggles the map, the system shall change an expanded map to a minimap, a minimap to hidden, and a hidden map to expanded.
+- [x] **PRESENT-MAP-004**: The system shall draw the same content expanded as in a minimap, differing only in scale.
 - [x] **PRESENT-MAP-005**: While the simulation reports a party position on the automap, the system shall draw a marker showing the party's tile and the direction it faces.
 - [x] **PRESENT-MAP-007**: The system shall draw walls and doors with distinguishable strokes.
 - [x] **PRESENT-MAP-008**: The system shall mark stairs and pits distinguishably from one another.
@@ -49,6 +49,8 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-MAP-011**: The system shall draw every enemy with one shared creature marker, distinguishable in shape from the party marker.
 - [x] **PRESENT-MAP-012**: The system shall mark tiles holding a discovered chest, an unopened chest distinguishably from an opened one, and both distinguishably from stairs and pits.
 - [x] **PRESENT-MAP-013**: When exploration is first drawn, and when a new campaign replaces the old one, the system shall draw the automap expanded.
+- [x] **PRESENT-MAP-014**: While the map is expanded, the system shall draw it at the largest scale that fits the whole floor within the centred column, below the Map control and above the action bar, so that it lies under no control.
+- [x] **PRESENT-MAP-015**: While the map is hidden, the system shall draw no automap.
 
 ## Input
 
