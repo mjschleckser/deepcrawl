@@ -185,41 +185,40 @@ export function buildItemsPlan(party, viewport, { page = 0, characterId = null, 
   const inner = { x: bounds.x + pad, width: bounds.width - pad * 2 };
   let y = bounds.y + pad;
 
-  // In a fight the page belongs to whoever is acting, so there is nobody to turn to.
+  // The controls sit in a row along the foot, where a thumb holding a phone already is:
+  // previous at the left, Close in the middle, next at the right. In a fight the page
+  // belongs to whoever is acting, so there is nobody to turn to and Close stands alone.
   // @spec PRESENT-ITEMS-013
+  // @spec PRESENT-ITEMS-030
   const tap = Math.max(MIN_TAP_PX, 48 * scale);
   const closeWidth = Math.max(MIN_TAP_PX, 76 * scale);
+  const footY = bounds.y + bounds.height - pad - tap;
   const controls = [];
   if (!inFight) {
     controls.push(
-      { role: ItemsControl.PREVIOUS, label: '<', hint: 'A', x: inner.x, y, width: tap, height: tap },
+      { role: ItemsControl.PREVIOUS, label: '<', hint: 'A', x: inner.x, y: footY, width: tap, height: tap },
       {
         role: ItemsControl.NEXT, label: '>', hint: 'D',
-        x: inner.x + inner.width - closeWidth - gap - tap, y, width: tap, height: tap,
+        x: inner.x + inner.width - tap, y: footY, width: tap, height: tap,
       },
     );
   }
   controls.push({
     role: ItemsControl.CLOSE, label: 'Close', hint: 'Esc',
-    x: inner.x + inner.width - closeWidth, y, width: closeWidth, height: tap,
+    x: inner.x + (inner.width - closeWidth) / 2, y: footY, width: closeWidth, height: tap,
   });
   for (const control of controls) control.kind = 'BUTTON';
 
-  const titleLeft = inFight ? inner.x : inner.x + tap + gap;
+  // The name runs across the head of the page, where reading starts.
   const title = {
     name: c.name,
     position: inFight ? 'Takes their turn' : `${at + 1} / ${members.length}`,
-    box: {
-      x: titleLeft,
-      y,
-      width: Math.max(0, inner.x + inner.width - closeWidth - gap - (inFight ? 0 : tap + gap) - titleLeft),
-      height: tap,
-    },
+    box: { x: inner.x, y, width: inner.width, height: tap },
   };
   y += tap + gap;
 
-  // The list scrolls inside whatever is left of the page.
-  const area = { x: inner.x, y, width: inner.width, height: bounds.y + bounds.height - pad - y };
+  // The list scrolls inside whatever is left between the name and the row of controls.
+  const area = { x: inner.x, y, width: inner.width, height: Math.max(0, footY - gap - y) };
 
   const rows = itemRows(party, c.id);
   const highlight = clampRow(rows, selected);

@@ -200,3 +200,32 @@ describe('the party screen page', () => {
     expect(plan.controls.find((c) => c.role === PartyControl.CLOSE).hint).toBe('Esc');
   });
 });
+
+describe('where the page controls sit', () => {
+  // @spec PRESENT-PARTY-024
+  it('puts previous, Close and next in one row along the foot, the name at the head', () => {
+    const plan = buildPartyPlan(fourOf(), phone, { page: 0 });
+    const of = (role) => plan.controls.find((c) => c.role === role);
+    const prev = of(PartyControl.PREVIOUS);
+    const close = of(PartyControl.CLOSE);
+    const next = of(PartyControl.NEXT);
+    const foot = plan.bounds.y + plan.bounds.height;
+
+    for (const c of [prev, close, next]) {
+      expect(c.y).toBe(prev.y);
+      expect(c.y + c.height).toBeLessThanOrEqual(foot);
+      expect(c.y).toBeGreaterThan(plan.bounds.y + plan.bounds.height / 2);
+    }
+    expect(prev.x).toBeLessThan(close.x);
+    expect(close.x + close.width).toBeLessThan(next.x);
+    expect(Math.abs((close.x + close.width / 2) - (plan.bounds.x + plan.bounds.width / 2))).toBeLessThan(1);
+
+    // The name runs across the head, above everything else on the page.
+    expect(plan.heading.title.y).toBeLessThan(plan.heading.box.y);
+    expect(plan.heading.title.width).toBeGreaterThan(plan.bounds.width / 2);
+
+    // New campaign stays clear of the row.
+    const fresh = of(PartyControl.NEW_CAMPAIGN);
+    expect(fresh.y + fresh.height).toBeLessThanOrEqual(prev.y);
+  });
+});

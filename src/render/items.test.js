@@ -120,6 +120,35 @@ describe('the Items page', () => {
     expect(plan.controls.map((c) => c.role)).not.toContain(ItemsControl.PREVIOUS);
   });
 
+  // @spec PRESENT-ITEMS-030
+  it('puts previous, Close and next in one row along the foot, under the list', () => {
+    const plan = buildItemsPlan(fourOf(), phone, { page: 0 });
+    const of = (role) => plan.controls.find((c) => c.role === role);
+    const prev = of(ItemsControl.PREVIOUS);
+    const close = of(ItemsControl.CLOSE);
+    const next = of(ItemsControl.NEXT);
+
+    for (const c of [prev, close, next]) {
+      expect(c.y).toBe(prev.y);
+      expect(c.y + c.height).toBeLessThanOrEqual(plan.bounds.y + plan.bounds.height);
+      expect(c.y).toBeGreaterThanOrEqual(plan.area.y + plan.area.height);
+    }
+    expect(prev.x).toBeLessThan(close.x);
+    expect(close.x + close.width).toBeLessThan(next.x);
+    expect(Math.abs((close.x + close.width / 2) - (plan.bounds.x + plan.bounds.width / 2))).toBeLessThan(1);
+    expect(plan.title.box.y).toBeLessThan(plan.area.y);
+    expect(plan.title.box.width).toBeGreaterThan(plan.bounds.width / 2);
+  });
+
+  // @spec PRESENT-ITEMS-030
+  it('in a fight puts Close alone at the foot', () => {
+    const plan = buildItemsPlan(fourOf(), phone, { characterId: 'tam', inFight: true });
+    const close = plan.controls.find((c) => c.role === ItemsControl.CLOSE);
+
+    expect(close.y).toBeGreaterThanOrEqual(plan.area.y + plan.area.height);
+    expect(Math.abs((close.x + close.width / 2) - (plan.bounds.x + plan.bounds.width / 2))).toBeLessThan(1);
+  });
+
   // @spec PRESENT-ITEMS-016
   it('in a fight draws worn items as rows nothing happens to', () => {
     const plan = buildItemsPlan(fourOf(), viewport, { characterId: 'bram', inFight: true });

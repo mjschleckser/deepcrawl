@@ -626,7 +626,7 @@ fit a phone held upright at a size anyone can read, and a page per character giv
 sheet the whole screen rather than a quarter of it.
 
 ```
-┌──── ◀  Bram  1 / 4  ▶ ──────── Close ┐
+┌──────────── Bram  1 / 4 ─────────────┐
 │ ▣  Fighter · Total level 9           │
 │    Hit points ████████░░ 31 / 33     │
 │                                      │
@@ -640,6 +640,8 @@ sheet the whole screen rather than a quarter of it.
 │ Main hand  Shortsword                │
 │ Off hand   Round shield              │
 │ Body       Chainmail                 │
+│                      [New campaign]  │
+│ [ ◀ ]         [Close]         [ ▶ ]  │
 └──────────────────────────────────────┘
 ```
 
@@ -649,9 +651,16 @@ starting in the same place is what makes it quick to use without reading.
 
 **Paging moves one character either way and wraps around**, so every character is
 always one or two presses from any other in a party of four. The page turns by drawn
-arrows either side of the name, by the left and right arrow keys, and by `A` and `D` —
+arrows at the foot of the page, by the left and right arrow keys, and by `A` and `D` —
 the turn keys, free while the screen holds the input, and where a keyboard player's hand
 already is. The number keys `1` to `4` go straight to that character.
+
+**The controls sit along the foot of the page, the name at its head.** Previous at the
+left, Close in the middle, next at the right, in one row at the bottom. A phone is held
+from the bottom, and the top of a tall screen is the one place a thumb cannot reach
+without shifting the grip; paging and closing are what a player does most on these
+screens, so they go where the thumb already is. The name and the place in the party stay
+at the top, across the full width, where the eye starts reading the page.
 
 ### What a page shows
 
@@ -710,15 +719,15 @@ Close return to the fight with the turn still waiting.
 ### A page per character
 
 The screen shows **one character at a time**, as the party screen does, and pages the same
-way out of a fight: arrows either side of the name, the arrow keys and `A` and `D`,
-wrapping round, opening on the first character. In a fight there is one page and no
-arrows.
+way out of a fight: arrows and Close along the foot of the page, for the same reason, the
+arrow keys and `A` and `D`, wrapping round, opening on the first character. In a fight
+there is one page, no arrows, and Close alone at the foot.
 
 ```
-┌──── ◀  Bram  1 / 4  ▶ ──────── Close ┐
+┌──────────── Bram  1 / 4 ─────────────┐
 │ Wearing                               │
 │ Main hand  Shortsword                 │
-│            Blade · damage 9 · acc 22  │
+│            Blade · damage 9           │
 │ Off hand   Round shield               │
 │ Body       Chainmail                  │
 │ Pack                                  │
@@ -726,6 +735,8 @@ arrows.
 │   Main hand · Blade · damage 6 · ...  │
 │ Robe                       (greyed)   │
 │   Body · Mage only                    │
+│                                       │
+│ [ ◀ ]         [Close]         [ ▶ ]   │
 └──────────────────────────────────────┘
 ```
 
@@ -985,6 +996,7 @@ screen the player can see but the game cannot have.
 | The fallen | Drawn in place, spent and dimmed | Removing them from the column | The shape of a side that has lost its middle is information, and a column that closed its gaps would move everything below the gap while the player was looking at it. |
 | Where the party screen's open state lives | The controller, as view state, with the simulation told only that a menu is open | A flag in exploration state; a party action that commits and costs a tick | Opening a character sheet changes nothing that is true, which is the test the expanded map already passes. Exploration still owns the clock rule, so it is told a menu is up and nothing more. Charging a tick to read a sheet would make looking cost something, which pushes the systems player to look less. |
 | Party screen layout | One character a page, paged with wrap-around, opening on the first | Four compact rows with the selected character's sheet beneath; all four sheets in one scrolling column | Four sheets do not fit a phone held upright at a readable size, and a roster-and-detail split spends a third of the screen repeating what the sheet already says. A scrolling column moves under the thumb. A page each gives every sheet the whole column, and with four characters wrap-around paging puts any one within two presses. |
+| Where a page's controls sit | Previous, Close and next in one row along the foot, the name across the head | Arrows either side of the name with Close at the top right | The top of a phone is out of a thumb's reach, and paging and closing are the most frequent presses on these screens. The name stays at the head, where reading starts and where it has the full width. |
 | Paging keys | The arrow keys, `A` and `D`, and `1` to `4` | Arrow keys alone; a dedicated pair of keys | `A` and `D` are the turn keys and free while the screen holds the input, so a keyboard player pages without moving their hand. The number keys match how fights already address a slot by number. |
 | Where equipment changes | One Items screen, reached from the action bar and from a fight's Items option alike | A fight menu of pack items off the Items button; editing equipment on the party screen | A menu off the button has room for a list of names but not for what each item does or what it would replace, which is the whole question. Two drawings of one pack would drift apart. The party screen is for reading a character; putting the controls there would make every look at a sheet a chance to change it by accident. |
 | The screen's name | Items, everywhere it is reached | Inventory in a fight and Pack on the action bar | One thing under two names reads as two things. *Items* is short enough for a button on a phone and names what is on the screen rather than a container. |

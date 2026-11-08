@@ -227,6 +227,7 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-PARTY-021**: When the player presses New campaign, the system shall ask for confirmation with a control to confirm and a control to decline, and shall change nothing until it is answered.
 - [x] **PRESENT-PARTY-022**: While that confirmation stands, when the player declines it, presses `Escape`, or closes the party screen, the system shall dismiss it and change nothing.
 - [x] **PRESENT-PARTY-023**: When the player confirms that question, the system shall begin a new campaign and close the party screen.
+- [x] **PRESENT-PARTY-024**: The system shall draw the party screen's previous, Close and next controls in one row along the foot of the page — previous at the left, Close centred, next at the right — and the character's name and place across the head of the page.
 
 ## The Items screen
 
@@ -258,6 +259,7 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-ITEMS-027**: The system shall draw greyed, with the reason in place of its effect, every consumable the character on the page cannot use, and a press on it shall do nothing.
 - [x] **PRESENT-ITEMS-028**: Out of a fight, when a consumable is used on the Items screen, the system shall commit an `ITEMS` action to exploration and shall leave the screen open showing the result.
 - [x] **PRESENT-ITEMS-029**: While the Items screen is open in a fight, when the player uses a consumable, the system shall take that use as the character's action, close the screen, and go on with the fight.
+- [x] **PRESENT-ITEMS-030**: The system shall draw the Items screen's controls in one row along the foot of the page — previous at the left, Close centred, next at the right, and Close alone in a fight — with the list of rows ending above that row and the character's name across the head of the page.
 
 ## Opening a chest
 

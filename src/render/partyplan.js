@@ -71,29 +71,26 @@ export function buildPartyPlan(party, viewport, { page = 0 } = {}) {
   const inner = { x: bounds.x + pad, width: bounds.width - pad * 2 };
   let y = bounds.y + pad;
 
-  // Previous and next either side of the name, Close at the far end: the page turns
-  // from the top, where the name it is turning to is.
+  // Previous, Close and next in one row along the foot, where a thumb holding a phone
+  // already is; the name runs across the head, where reading starts.
   // @spec PRESENT-PARTY-009
   // @spec PRESENT-PARTY-010
+  // @spec PRESENT-PARTY-024
   const tap = Math.max(MIN_TAP_PX, 48 * scale);
   const closeWidth = Math.max(MIN_TAP_PX, 76 * scale);
+  const footY = bounds.y + bounds.height - pad - tap;
   const controls = [
-    { role: PartyControl.PREVIOUS, label: '<', hint: 'A', x: inner.x, y, width: tap, height: tap },
+    { role: PartyControl.PREVIOUS, label: '<', hint: 'A', x: inner.x, y: footY, width: tap, height: tap },
     {
       role: PartyControl.NEXT, label: '>', hint: 'D',
-      x: inner.x + inner.width - closeWidth - gap - tap, y, width: tap, height: tap,
+      x: inner.x + inner.width - tap, y: footY, width: tap, height: tap,
     },
     {
       role: PartyControl.CLOSE, label: 'Close', hint: 'Esc',
-      x: inner.x + inner.width - closeWidth, y, width: closeWidth, height: tap,
+      x: inner.x + (inner.width - closeWidth) / 2, y: footY, width: closeWidth, height: tap,
     },
   ].map((control) => ({ ...control, kind: 'BUTTON' }));
-  const title = {
-    x: inner.x + tap + gap,
-    y,
-    width: Math.max(0, inner.width - tap * 2 - closeWidth - gap * 3),
-    height: tap,
-  };
+  const title = { x: inner.x, y, width: inner.width, height: tap };
   y += tap + gap;
 
   // Who this is, and where they sit among the others.
@@ -182,16 +179,16 @@ export function buildPartyPlan(party, viewport, { page = 0 } = {}) {
     box: { x: inner.x, y: y + i * line, width: inner.width, height: line },
   }));
 
-  // At the foot of the screen, apart from the page: it is about the campaign rather
-  // than anybody on it, and it should never be pressed on the way to something else.
-  // To the right, because on a short screen the equipment reaches the foot as well, and
-  // that side of the rows is empty.
+  // Just above the row of page controls, apart from the page: it is about the campaign
+  // rather than anybody on it, and it should never be pressed on the way to something
+  // else. To the right, because on a short screen the equipment reaches the foot as
+  // well, and that side of the rows is empty.
   // @spec PRESENT-PARTY-020
   const campaignWidth = Math.max(MIN_TAP_PX, 120 * scale);
   controls.push({
     kind: 'BUTTON', role: PartyControl.NEW_CAMPAIGN, label: 'New campaign',
     x: inner.x + inner.width - campaignWidth,
-    y: bounds.y + bounds.height - pad - tap,
+    y: footY - gap - tap,
     width: campaignWidth,
     height: tap,
   });
