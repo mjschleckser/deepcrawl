@@ -37,6 +37,20 @@ const SYMBOLS = {
     circles: [],
     polygons: [[0.98, 0.5, 0.76, 0.38, 0.76, 0.62]],
   },
+  // A spell school's mark, where a weapon's would sit beside a cast's number: a four-
+  // pointed spark for what strikes, a cross for what mends.
+  [Skill.EVOCATION]: {
+    lines: [],
+    curves: [],
+    circles: [],
+    polygons: [[0.5, 0.04, 0.6, 0.4, 0.96, 0.5, 0.6, 0.6, 0.5, 0.96, 0.4, 0.6, 0.04, 0.5, 0.4, 0.4]],
+  },
+  [Skill.HEALING]: {
+    lines: [],
+    curves: [],
+    circles: [],
+    polygons: [[0.38, 0.1, 0.62, 0.1, 0.62, 0.38, 0.9, 0.38, 0.9, 0.62, 0.62, 0.62, 0.62, 0.9, 0.38, 0.9, 0.38, 0.62, 0.1, 0.62, 0.1, 0.38, 0.38, 0.38]],
+  },
 };
 
 /**

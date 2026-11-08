@@ -784,6 +784,10 @@ party refuses it, the row is greyed with the reason in place of its effect: *At 
 health* or *Unconscious* (or *Dead*, and so on). Pressing it then does nothing, as with an
 item that can't be wielded.
 
+**Pressing a tome has the character whose page is open read it.** Beneath it the row says
+what it teaches: *Teaches Fire Bolt*. Where the reading would be refused, the row is greyed
+with the reason: *Mage only*, *Needs Evocation 1*, *Already known*, or *Not in a fight*.
+
 **Out of a fight, each change or use costs one tick**, committed as an `ITEMS` action, and
 the screen stays open for the next. **In a fight, a change or a use spends the
 character's turn**: the screen closes and the fight goes on. Taking something off is not offered in a fight —

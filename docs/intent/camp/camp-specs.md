@@ -7,12 +7,12 @@ camp may happen, what it costs, and what it restores.
 
 ## Camping
 
-- [ ] **CAMP-REST-001**: If any roaming enemy on the party's floor is within the party's sight distance with nothing opaque between them, then the system shall refuse the camp and spend nothing.
-- [ ] **CAMP-REST-002**: When the party camps, the system shall advance the exploration clock by the camp's ticks and give roaming enemies on the floor those ticks to move by.
-- [ ] **CAMP-REST-003**: If a roaming enemy reaches the party while the camp's ticks are spent, then the system shall begin that encounter and restore nothing.
-- [ ] **CAMP-REST-004**: When a camp is not broken, the system shall ask the magic segment to restore the spell slots of every character who is not dead, ashes or lost.
-- [ ] **CAMP-REST-005**: The system shall restore no hit points and wake no unconscious character by camping.
-- [ ] **CAMP-REST-006**: The system shall report how a camp ended: rested, broken by an encounter, or refused with an enemy in sight.
+- [x] **CAMP-REST-001**: If any roaming enemy on the party's floor is within the party's sight distance with nothing opaque between them, then the system shall refuse the camp and spend nothing.
+- [x] **CAMP-REST-002**: When the party camps, the system shall advance the exploration clock by the camp's ticks and give roaming enemies on the floor those ticks to move by.
+- [x] **CAMP-REST-003**: If a roaming enemy reaches the party while the camp's ticks are spent, then the system shall begin that encounter and restore nothing.
+- [x] **CAMP-REST-004**: When a camp is not broken, the system shall ask the magic segment to restore the spell slots of every character who is not dead, ashes or lost.
+- [x] **CAMP-REST-005**: The system shall restore no hit points and wake no unconscious character by camping.
+- [x] **CAMP-REST-006**: The system shall report how a camp ended: rested, broken by an encounter, or refused with an enemy in sight.
 
 ## Deferred
 

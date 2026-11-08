@@ -17,7 +17,7 @@ are assembled into the two the fight resolves, and who may hold it.
 - [x] **ITEM-DEF-007**: The system shall decide an item's behaviour from the fields it carries and from no property of its identifier or name.
 - [x] **ITEM-DEF-008**: The system shall treat a weapon that names Dexterity as its damage attribute as training the same skill as one that names Might.
 - [x] **ITEM-DEF-012**: The system shall offer these rarities and no others, from lowest to highest: common, uncommon, rare, epic, legendary.
-- [x] **ITEM-DEF-013**: The system shall carry on a consumable the effect it has when used, and shall offer one effect: healing a stated number of hit points.
+- [x] **ITEM-DEF-013**: The system shall carry on a consumable the effect it has when used, and shall offer two effects: healing a stated number of hit points, and teaching a named spell.
 
 ## Authoring
 
@@ -26,7 +26,7 @@ are assembled into the two the fight resolves, and who may hold it.
 - [x] **ITEM-DATA-003**: The system shall require of every authored item an identifier, a name and a kind, and of every item but a consumable a slot, and shall reject a file lacking any of them.
 - [x] **ITEM-DATA-004**: The system shall treat an authored item that names no classes as wieldable by every class.
 - [x] **ITEM-DATA-005**: The system shall treat an authored item that names no rarity as common.
-- [x] **ITEM-DATA-006**: When an authored item names a rarity or an effect that does not exist, or a consumable names a slot or an effect amount below one, the system shall reject that file by name and the value it could not read.
+- [x] **ITEM-DATA-006**: When an authored item names a rarity or an effect that does not exist, or a consumable names a slot, an effect amount below one, or a spell to teach that does not exist, the system shall reject that file by name and the value it could not read.
 
 ## What a combatant fights with
 

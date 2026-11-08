@@ -91,7 +91,7 @@ The first floor's inhabitants, and the shape every later roster follows.
 |---|---|---|
 | **Goblin** | melee | the ordinary body in a warband; weak alone, a problem in numbers |
 | **Goblin Archer** | ranged | quick and accurate, and no tougher than the bodies around it |
-| **Goblin Mage** | caster | frail, dangerous, and worth the most |
+| **Goblin Mage** | caster | frail, dangerous, and worth the most; drops from a table of its own that carries a tome |
 
 The archer and the mage are what make a goblin band a question of priorities rather
 than of arithmetic. Every one of them can be reached at any time, so which to spend a

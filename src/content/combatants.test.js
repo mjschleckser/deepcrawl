@@ -94,8 +94,12 @@ describe('the loot an enemy carries', () => {
   });
 
   // @spec ENEMY-ROSTER-012
-  it('gives every authored goblin the goblin table', () => {
-    for (const enemy of Object.values(enemyDefinitions())) expect(enemy.loot).toBe('goblin');
+  it('gives the goblin and the archer the goblin table, and the mage a table of its own', () => {
+    const roster = enemyDefinitions();
+    expect(roster.GOBLIN.loot).toBe('goblin');
+    expect(roster.GOBLIN_ARCHER.loot).toBe('goblin');
+    // @spec LOOT-DATA-004
+    expect(roster.GOBLIN_MAGE.loot).toBe('goblin_mage');
   });
 });
 

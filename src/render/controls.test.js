@@ -458,7 +458,7 @@ describe('the two kinds of control', () => {
 
   // @spec PRESENT-CTRL-010
   it('makes everything else a button, which keeps its panel', () => {
-    for (const region of ['MAP', 'PARTY_BAR', 'ITEMS', 'SPELL_ICON', 'INTERACT_PROMPT']) {
+    for (const region of ['MAP', 'PARTY_BAR', 'ITEMS', 'SPELL_ICON', 'CAMP_CONTROL', 'INTERACT_PROMPT']) {
       expect(byRegion(region).kind).toBe(ControlKind.BUTTON);
     }
   });
@@ -544,5 +544,18 @@ describe('scaling to the screen', () => {
     expect(column.width).toBeLessThan(desktop.width);
     // Centred: the margins either side match.
     expect(column.x).toBeCloseTo((desktop.width - column.width) / 2, 5);
+  });
+});
+
+describe('the Camp control', () => {
+  // @spec PRESENT-CAMP-001
+  it('sits on the action bar between Spells and Use, and performs CAMP', () => {
+    const row = tapRegionsFor(phone)
+      .filter((r) => ['PARTY_BAR', 'ITEMS', 'SPELL_ICON', 'CAMP_CONTROL', 'INTERACT_PROMPT'].includes(r.region))
+      .sort((a, b) => a.x - b.x)
+      .map((r) => r.region);
+
+    expect(row).toEqual(['PARTY_BAR', 'ITEMS', 'SPELL_ICON', 'CAMP_CONTROL', 'INTERACT_PROMPT']);
+    expect(actionForTouch('CAMP_CONTROL')).toEqual({ partyAction: PartyAction.CAMP });
   });
 });

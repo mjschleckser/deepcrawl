@@ -394,13 +394,15 @@ export async function createRenderer(mount) {
     fight: new Container(),
     party: new Container(),
     items: new Container(),
+    spells: new Container(),
     chest: new Container(),
     hud: new Container(),
   };
   // Added in order, so the view sits beneath everything and the HUD above it.
   app.stage.addChild(
     layerContainers.view, layerContainers.map, layerContainers.fight,
-    layerContainers.party, layerContainers.items, layerContainers.chest, layerContainers.hud,
+    layerContainers.party, layerContainers.items, layerContainers.spells, layerContainers.chest,
+    layerContainers.hud,
   );
 
   const draw = (layers) => {
@@ -414,6 +416,9 @@ export async function createRenderer(mount) {
       if (name === 'fight') drawFight(container, plan);
       if (name === 'party') drawParty(container, plan);
       if (name === 'items') drawItems(container, plan);
+      // The Spells screen is laid out in the Items screen's shape, and drawn by the same hand.
+      // @spec PRESENT-SPELLS-002
+      if (name === 'spells') drawItems(container, plan);
       if (name === 'chest') drawChestReport(container, plan);
       if (name === 'hud') drawHud(container, plan);
     }
@@ -774,6 +779,8 @@ function drawFight(container, plan) {
       // figures sit either side of the symbol and neither needs a label.
       // @spec PRESENT-MENU-016
       // @spec PRESENT-MENU-018
+      // A greyed entry says why in place of its number, and reads as inert.
+      const greyed = entry.available === false;
       const detail = label(entry.detail, Math.round(13 * scale), FIGHT_COLOURS.dim);
       detail.x = entry.x + entry.width - detail.width - 7 * scale;
       detail.y = middle - detail.height / 2;
@@ -781,15 +788,16 @@ function drawFight(container, plan) {
 
       const symbolSize = 22 * scale;
       const symbolX = detail.x - symbolSize - 7 * scale;
-      drawWeaponSymbol(container, entry.weapon, symbolX, middle - symbolSize / 2, symbolSize, scale);
+      if (entry.weapon) drawWeaponSymbol(container, entry.weapon, symbolX, middle - symbolSize / 2, symbolSize, scale);
 
       // What a hit is worth is the number being chosen by, so it is the brighter one.
-      const preview = label(entry.preview, Math.round(14 * scale), FIGHT_COLOURS.banner);
-      preview.x = symbolX - preview.width - 5 * scale;
+      const previewText = greyed ? (entry.reason ?? '') : (entry.preview ?? '');
+      const preview = label(previewText, Math.round(14 * scale), greyed ? FIGHT_COLOURS.critical : FIGHT_COLOURS.banner);
+      preview.x = (entry.weapon ? symbolX : detail.x) - preview.width - 5 * scale;
       preview.y = middle - preview.height / 2;
       container.addChild(preview);
 
-      const name = label(entry.label, Math.round(13 * scale), FIGHT_COLOURS.text);
+      const name = label(entry.label, Math.round(13 * scale), greyed ? FIGHT_COLOURS.dim : FIGHT_COLOURS.text);
       fitWithin(name, preview.x - entry.x - 12 * scale);
       name.x = entry.x + 6 * scale;
       name.y = middle - name.height / 2;

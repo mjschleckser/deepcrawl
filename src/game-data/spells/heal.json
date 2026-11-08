@@ -1,0 +1,11 @@
+{
+  "id": "heal",
+  "name": "Heal",
+  "school": "HEALING",
+  "rank": 1,
+  "classes": ["CLERIC"],
+  "target": "ALLY",
+  "effect": { "heal": 8 },
+  "where": ["COMBAT", "EXPLORATION"],
+  "learned": "CLASS"
+}

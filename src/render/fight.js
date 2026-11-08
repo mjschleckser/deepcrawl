@@ -14,10 +14,13 @@ import {
 } from '../sim/party.js';
 import { MIN_TAP_PX, ControlKind, uiScale, contentColumn } from './geometry.js';
 import {
-  Action, Outcome, attackTargets,
+  Action, Outcome, attackTargets, allyTargets,
   encounterOutcome, nextActor, takeAction, attemptFlee,
-  fleeCertainToFail, turnOrder, hitDamage,
+  fleeCertainToFail, turnOrder, hitDamage, castPreview, castRefusalInFight,
 } from '../sim/combat.js';
+import {
+  CastRefusal, CastWhere, SpellTarget, knownSpells, slotsAt, slotsLeft,
+} from '../sim/magic.js';
 import { selectEnemyTarget } from '../sim/enemies.js';
 import { isConsumable, weaponOf, wieldableBy } from '../sim/items.js';
 import { describeFind } from './findsplan.js';
@@ -544,11 +547,11 @@ function layOutMenu({ pending, opener, bounds, ceiling, metrics, scale }) {
     role: 'TARGET',
     entryIndex: index,
     label: target.name,
-    detail: `${target.hitPoints}/${target.maxHitPoints}`,
-    preview: String(target.damage),
-    weapon: target.weapon,
-    available: true,
-    reason: null,
+    detail: target.detail ?? `${target.hitPoints}/${target.maxHitPoints}`,
+    preview: target.preview ?? String(target.damage),
+    weapon: target.weapon ?? null,
+    available: target.available ?? true,
+    reason: target.reason ?? null,
     hint: null,
     x: box.x + gap + Math.floor(index / rows) * (entryWidth + gap),
     y: box.y + gap + (index % rows) * (entryHeight + gap),
@@ -644,11 +647,82 @@ function fightControls({ bounds, pending, banner, metrics, top, ceiling, scale }
  * @spec PRESENT-FIGHT-010
  * @spec PRESENT-FIGHT-011
  */
-export function describeEvent(event, names, targetId, felled) {
+export function describeEvent(event, names, targetId, felled, spellName = null) {
   const actor = names[event.actorId] ?? event.actorId;
   const target = names[targetId] ?? targetId;
-  const blow = `${actor} hits ${target} for ${event.damage}.`;
+  if (spellName && event.healed !== undefined) {
+    return `${actor} casts ${spellName} on ${target}, restoring ${event.healed}.`;
+  }
+  const blow = spellName
+    ? `${actor} casts ${spellName} at ${target} for ${event.damage}.`
+    : `${actor} hits ${target} for ${event.damage}.`;
   return felled ? `${blow} ${target} falls.` : blow;
+}
+
+/** The spells this character knows that may be cast in a fight, in catalogue order. */
+const fightSpells = (encounter, c) =>
+  knownSpells(c, encounter.spells ?? {}).filter((spell) => spell.where.includes(CastWhere.COMBAT));
+
+/**
+ * Why Magic cannot be taken, or null if it can: no spell to cast here, or no slot left
+ * to pay for any that there is.
+ *
+ * @spec PRESENT-FIGHT-036
+ */
+function magicReason(encounter, characterId) {
+  const c = character(encounter.party, characterId);
+  const spells = fightSpells(encounter, c);
+  if (spells.length === 0) return 'No spells';
+  return spells.some((spell) => slotsLeft(c, spell.rank, encounter.spells) > 0) ? null : 'No slots';
+}
+
+/** Short words for why a cast on a target is refused. */
+const REFUSAL_WORDS = {
+  [CastRefusal.UNHURT]: 'Unhurt',
+  [CastRefusal.UNCONSCIOUS]: 'Unconscious',
+  [CastRefusal.NO_SLOTS]: 'No slots',
+};
+
+/**
+ * The spells on offer, each with its slots left, a spent one greyed.
+ *
+ * @spec PRESENT-MENU-012
+ */
+function spellEntries(encounter, characterId) {
+  const c = character(encounter.party, characterId);
+  return fightSpells(encounter, c).map((spell) => {
+    const left = slotsLeft(c, spell.rank, encounter.spells);
+    return {
+      id: spell.id, name: spell.name, spell: true,
+      detail: `${left}/${slotsAt(c, spell.rank, encounter.spells)}`,
+      preview: '', weapon: spell.school,
+      available: left > 0, reason: left > 0 ? null : 'No slots',
+    };
+  });
+}
+
+/**
+ * Whom a spell may be aimed at, each with what the cast will do to them; one it would
+ * be refused on is greyed with the reason.
+ *
+ * @spec PRESENT-MENU-017
+ */
+function spellTargets(encounter, characterId, spellId) {
+  const spell = encounter.spells[spellId];
+  const candidates = spell.target === SpellTarget.ENEMY
+    ? attackTargets(encounter, characterId)
+    : roster(encounter.party).filter((c) => c.condition === Condition.OK || c.condition === Condition.UNCONSCIOUS);
+  return candidates.map((t) => {
+    const refusal = castRefusalInFight(encounter, characterId, spellId, t.id);
+    return {
+      id: t.id, name: t.name, hitPoints: t.hitPoints, maxHitPoints: t.maxHitPoints,
+      detail: `${t.hitPoints}/${t.maxHitPoints}`,
+      preview: String(castPreview(encounter, characterId, spellId, t.id)),
+      weapon: spell.school,
+      available: refusal === null,
+      reason: refusal ? (REFUSAL_WORDS[refusal] ?? 'Not now') : null,
+    };
+  });
 }
 
 /**
@@ -675,9 +749,7 @@ function optionsFor(encounter, characterId) {
     [FightAction.ATTACK]: armed
       ? (standingFoes ? null : 'Nothing standing')
       : 'Nothing to swing',
-    // Spells wait on a segment that does not exist. Drawn anyway: the row's shape is
-    // not a function of which systems happen to have landed.
-    [FightAction.MAGIC]: 'No spells',
+    [FightAction.MAGIC]: magicReason(encounter, characterId),
     [FightAction.ITEMS]: itemsReason(encounter, characterId),
     // Read from the same rule that resolves an attempt, so the button and the outcome
     // can never disagree about whether the way out is shut.
@@ -844,6 +916,12 @@ function resolveOne(fight, actorId, action) {
   if (event.action === Action.USE) {
     writeLog(fight, `${names(fight)[actorId]} drinks the ${action.item.name}.`);
   }
+  if (event.action === Action.CAST) {
+    const spellName = fight.encounter.spells[event.spellId].name;
+    writeLog(fight, describeEvent(event, names(fight), event.targetId, event.felled === true, spellName));
+    fight.shakingId = actorId;
+    fight.shake = 0;
+  }
   if (event && event.action === Action.ATTACK && event.targetId) {
     writeLog(fight, describeEvent(event, names(fight), event.targetId, event.felled === true));
     // The card that moves is the card that swung: nothing else in a fight moves, so a
@@ -987,6 +1065,21 @@ export function chooseOption(fight, index) {
   if (fight.pending.targets) {
     const target = fight.pending.targets[index];
     if (!target) return false;
+    // A greyed entry is drawn but inert, as a greyed option is.
+    if (target.available === false) return false;
+    if (fight.pending.action === FightAction.MAGIC) {
+      // The first question is which spell; the second, whom.
+      // @spec PRESENT-MENU-017
+      if (!fight.pending.spellId) {
+        fight.pending = {
+          ...fight.pending, spellId: target.id, targets: spellTargets(fight.encounter, characterId, target.id),
+        };
+        return true;
+      }
+      return Boolean(resolveOne(fight, characterId, {
+        kind: Action.CAST, spellId: fight.pending.spellId, targetId: target.id,
+      }));
+    }
     resolveOne(fight, characterId, {
       kind: Action.ATTACK, targetId: target.id, ...attackOf(fight.encounter, characterId),
     });
@@ -1021,6 +1114,17 @@ export function chooseOption(fight, index) {
     return true;
   }
 
+  // Magic asks which spell first, off its own button.
+  // @spec PRESENT-MENU-012
+  if (option.action === FightAction.MAGIC) {
+    const spells = spellEntries(fight.encounter, characterId);
+    if (spells.length === 0) return false;
+    fight.pending = {
+      ...fight.pending, action: option.action, spellId: null, targets: spells, openedBy: index,
+    };
+    return true;
+  }
+
   const targets = targetsFor(fight.encounter, characterId, option.action);
   // Asked however few there are, so a press on Attack means the same thing on every turn.
   if (targets?.length > 0) {
@@ -1048,7 +1152,7 @@ export function pressOption(fight, index) {
 
   if (!fight.pending.options[index]?.available) return false;
   const opener = fight.pending.openedBy === index;
-  goBack(fight);
+  closeMenu(fight);
   return opener || chooseOption(fight, index);
 }
 
@@ -1063,10 +1167,23 @@ export function goBack(fight) {
   if (fight.phase !== FightPhase.ACTING || !fight.pending) return false;
 
   if (fight.pending.targets) {
-    fight.pending = { ...fight.pending, action: null, targets: null, openedBy: null };
+    // Choosing whom to cast on backs out to the list of spells, not out of the menu.
+    // @spec PRESENT-MENU-018
+    if (fight.pending.action === FightAction.MAGIC && fight.pending.spellId) {
+      fight.pending = {
+        ...fight.pending, spellId: null, targets: spellEntries(fight.encounter, fight.pending.characterId),
+      };
+      return true;
+    }
+    closeMenu(fight);
     return true;
   }
   return false;
+}
+
+/** Shut whatever menu is open, however deep into it the player was. */
+function closeMenu(fight) {
+  fight.pending = { ...fight.pending, action: null, targets: null, openedBy: null, spellId: null };
 }
 
 /**

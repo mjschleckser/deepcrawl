@@ -251,6 +251,11 @@ export function createCharacter({
     skillExperience: {},
     equipment: {},
     trainable: Object.keys(table.rates),
+    // Spells learned from tomes, and slots spent since the last camp, by rank.
+    // @spec MAGIC-KNOW-006
+    // @spec MAGIC-SLOT-006
+    learnedSpells: [],
+    spentSlots: {},
   };
 }
 
@@ -586,6 +591,8 @@ export function stow(party, item) {
 export const UseRefusal = {
   NOT_IN_PACK: 'NOT_IN_PACK',
   NOT_CONSUMABLE: 'NOT_CONSUMABLE',
+  // A tome is read, not drunk: the magic segment says who may read it.
+  A_TOME: 'A_TOME',
   FULL_HEALTH: 'FULL_HEALTH',
   UNCONSCIOUS: Condition.UNCONSCIOUS,
   DEAD: Condition.DEAD,
@@ -601,6 +608,7 @@ export function useRefusal(party, id, item) {
   const c = character(party, id);
   if (!c || !item || !packOf(party).includes(item)) return UseRefusal.NOT_IN_PACK;
   if (!isConsumable(item)) return UseRefusal.NOT_CONSUMABLE;
+  if (item.effect?.[Effect.TEACH]) return UseRefusal.A_TOME;
   if (c.condition !== Condition.OK) return UseRefusal[c.condition] ?? c.condition;
   if (c.hitPoints >= c.maxHitPoints) return UseRefusal.FULL_HEALTH;
   return null;
@@ -632,7 +640,11 @@ export function useItem(party, id, item) {
 export function serializeParty(party) {
   return {
     purse: purseOf(party),
-    members: party.members.map((c) => ({ ...c, attributes: { ...c.attributes }, ranks: { ...c.ranks }, skillExperience: { ...c.skillExperience }, equipment: { ...c.equipment }, trainable: [...c.trainable] })),
+    members: party.members.map((c) => ({
+      ...c, attributes: { ...c.attributes }, ranks: { ...c.ranks }, skillExperience: { ...c.skillExperience },
+      equipment: { ...c.equipment }, trainable: [...c.trainable],
+      learnedSpells: [...(c.learnedSpells ?? [])], spentSlots: { ...(c.spentSlots ?? {}) },
+    })),
     pack: packOf(party).map((item) => ({ ...item })),
   };
 }
@@ -643,7 +655,9 @@ export function serializeParty(party) {
  */
 export function restoreParty(saved) {
   return {
-    members: saved.members.map((c) => ({ ...c })),
+    members: saved.members.map((c) => ({
+      ...c, learnedSpells: [...(c.learnedSpells ?? [])], spentSlots: { ...(c.spentSlots ?? {}) },
+    })),
     pack: (saved.pack ?? []).map((item) => ({ ...item })),
     purse: saved.purse ?? 0,
   };

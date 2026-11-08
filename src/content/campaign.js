@@ -24,6 +24,8 @@ import {
 } from '../sim/combat.js';
 import { startingCharacters } from './combatants.js';
 import { checkArchetype, lootTables } from './loot.js';
+import { spellDefinitions } from './spells.js';
+import { camp } from '../sim/camp.js';
 import { chestRng, rollLoot } from '../sim/loot.js';
 
 /** Bands standing on a freshly built floor, before anyone has disturbed it. */
@@ -66,12 +68,14 @@ export function createCampaign({ seed = Date.now() >>> 0, saved = null } = {}) {
   const rng = makeRng(saved ? saved.rng : (seed ^ 0x9e3779b9) >>> 0);
   // What a defeated enemy's drops are rolled on, read once for the whole campaign.
   const tables = lootTables();
+  const spells = spellDefinitions();
   // Every archetype in the plan must name a chest table that exists.
   // @spec LOOT-DATA-002
   for (const descriptor of plan.floors) checkArchetype(descriptor.archetype, tables);
 
   const party = saved ? restoreParty(saved.party) : createStartingParty();
-  const campaign = { plan, party, state: null, encounter: null };
+  // The spells are content, held here so every screen reads the same catalogue.
+  const campaign = { plan, party, state: null, encounter: null, spells };
 
   function stockFloor(floor, count = BANDS_PER_FLOOR) {
     // Nothing is stocked onto the party, so a floor re-stocking around a standing
@@ -171,6 +175,7 @@ export function createCampaign({ seed = Date.now() >>> 0, saved = null } = {}) {
       rng: makeRng(rng.int(1, 1e9)),
       origin: { floorId, x: tile.x, y: tile.y },
       lootTables: tables,
+      spells,
     });
     campaign.encounter.roamerId = met.id;
     setCombatActive(state, true);
@@ -221,6 +226,8 @@ export function createCampaign({ seed = Date.now() >>> 0, saved = null } = {}) {
       isTileOccupied,
       onRestock: ({ floorId, elapsed }) => restockFloor(floorId, elapsed),
       onOpenChest,
+      // @spec CAMP-REST-006
+      onCamp: () => camp(campaign.state, party),
     },
   };
 
@@ -255,7 +262,7 @@ export function createCampaign({ seed = Date.now() >>> 0, saved = null } = {}) {
 
   // @spec SAVE-READ-003
   if (saved?.encounter) {
-    campaign.encounter = restoreEncounter(saved.encounter, party, tables);
+    campaign.encounter = restoreEncounter(saved.encounter, party, tables, spells);
     setCombatActive(state, true);
   }
 

@@ -39,7 +39,7 @@ describe('the scene', () => {
   it('names every layer in every drawing, in order, whether or not it has anything to show', () => {
     const { controller } = harness();
 
-    expect(layers(controller).map((l) => l.name)).toEqual(['view', 'map', 'fight', 'party', 'items', 'chest', 'hud']);
+    expect(layers(controller).map((l) => l.name)).toEqual(['view', 'map', 'fight', 'party', 'items', 'spells', 'chest', 'hud']);
     // Nothing is fighting, so that layer is named and empty rather than left out.
     expect(layers(controller).find((l) => l.name === 'fight').plan).toBeNull();
   });
@@ -312,7 +312,7 @@ describe('input while a fight is on', () => {
     const { controller } = inFight();
     const drawn = layers(controller);
 
-    expect(drawn.map((l) => l.name)).toEqual(['view', 'map', 'fight', 'party', 'items', 'chest', 'hud']);
+    expect(drawn.map((l) => l.name)).toEqual(['view', 'map', 'fight', 'party', 'items', 'spells', 'chest', 'hud']);
     expect(drawn.find((l) => l.name === 'fight').plan).not.toBeNull();
     expect(drawn.find((l) => l.name === 'map').plan).toBeNull();
   });
@@ -341,7 +341,7 @@ describe('when a fight ends', () => {
 
     // Every layer is still named, so the one with nothing to show is cleared rather
     // than left holding its last drawing.
-    expect(layers(controller).map((l) => l.name)).toEqual(['view', 'map', 'fight', 'party', 'items', 'chest', 'hud']);
+    expect(layers(controller).map((l) => l.name)).toEqual(['view', 'map', 'fight', 'party', 'items', 'spells', 'chest', 'hud']);
     expect(named('fight')).toBeNull();
     expect(named('map')).not.toBeNull();
   });

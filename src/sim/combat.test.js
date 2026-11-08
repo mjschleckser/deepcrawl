@@ -9,8 +9,9 @@ import {
   beginEncounter, takeAction, nextActor, damageFor, actingOrder, readinessOf, hitDamage,
   attackTargets, allyTargets, attemptFlee, fleeCertainToFail, createEnemy,
   createEnemyGroup, encounterOutcome, Action, Outcome, MAX_ENEMY_GROUP,
-  MIN_DAMAGE_FRACTION, FULL_BAR, serializeEncounter, restoreEncounter,
+  MIN_DAMAGE_FRACTION, FULL_BAR, serializeEncounter, restoreEncounter, castPreview, advanceBeats,
 } from './combat.js';
+import { createSpell, CastWhere, Learned, SpellTarget } from './magic.js';
 import { createLootTable } from './loot.js';
 
 /** Bring one combatant to a full bar without waiting out the beats. */
@@ -757,5 +758,128 @@ describe('what a victory yields', () => {
   it('lets an enemy name the table it drops from, or none', () => {
     expect(orc('o1').loot).toBeNull();
     expect(orc('o1', { loot: 'pockets' }).loot).toBe('pockets');
+  });
+});
+
+describe('casting in a fight', () => {
+  const missile = createSpell({
+    id: 'magic_missile', name: 'Magic Missile', school: Skill.EVOCATION, rank: 1,
+    classes: [CharacterClass.MAGE], target: SpellTarget.ENEMY,
+    effect: { damage: 6, ignoresArmour: true }, where: [CastWhere.COMBAT], learned: Learned.CLASS,
+  });
+  const bolt = createSpell({
+    id: 'fire_bolt', name: 'Fire Bolt', school: Skill.EVOCATION, rank: 1,
+    classes: [CharacterClass.MAGE], target: SpellTarget.ENEMY,
+    effect: { damage: 10, ignoresArmour: false }, where: [CastWhere.COMBAT], learned: Learned.TOME,
+  });
+  const heal = createSpell({
+    id: 'heal', name: 'Heal', school: Skill.HEALING, rank: 1,
+    classes: [CharacterClass.CLERIC], target: SpellTarget.ALLY,
+    effect: { heal: 8 }, where: [CastWhere.COMBAT, CastWhere.EXPLORATION], learned: Learned.CLASS,
+  });
+  const spells = { magic_missile: missile, fire_bolt: bolt, heal };
+  const mage = () => hero('isolde', { characterClass: CharacterClass.MAGE });
+  const cleric = () => hero('wren', { characterClass: CharacterClass.CLERIC });
+
+  function fight(enemies = [orc('o1', { maxHitPoints: 60, armour: 4 })]) {
+    return beginEncounter({
+      party: party(mage(), cleric(), hero('bram')),
+      enemies: createEnemyGroup(enemies),
+      rng: makeRng(5),
+      origin: { floorId: 'f1', x: 0, y: 0 },
+      spells,
+    });
+  }
+  const cast = (spellId, targetId) => ({ kind: Action.CAST, spellId, targetId });
+
+  // @spec COMBAT-ACTION-015
+  // @spec MAGIC-CAST-002
+  it('resolves Magic Missile whole through the armour, for a full bar, recording the school', () => {
+    const state = fight();
+    readyUp(state, 'isolde');
+    const preview = castPreview(state, 'isolde', 'magic_missile', 'o1');
+
+    const event = takeAction(state, 'isolde', cast('magic_missile', 'o1'));
+
+    // 6 × 1.2 = 7, and the orc's armour of 4 takes none of it.
+    expect(preview).toBe(7);
+    expect(event).toMatchObject({ action: Action.CAST, spellId: 'magic_missile', targetId: 'o1', damage: 7 });
+    expect(state.enemies.members[0].hitPoints).toBe(53);
+    expect(readinessOf(state, 'isolde')).toBe(0);
+    expect(state.skillsByActor.get('isolde')).toContain(Skill.EVOCATION);
+  });
+
+  // @spec MAGIC-CAST-009
+  it('blunts Fire Bolt by armour, as a weapon blow is', () => {
+    const state = fight();
+    character(state.party, 'isolde').learnedSpells = ['fire_bolt'];
+    readyUp(state, 'isolde');
+
+    // 10 × 1.2 = 12, less 4 armour.
+    expect(castPreview(state, 'isolde', 'fire_bolt', 'o1')).toBe(8);
+    expect(takeAction(state, 'isolde', cast('fire_bolt', 'o1')).damage).toBe(8);
+  });
+
+  // @spec COMBAT-ACTION-001
+  // @spec COMBAT-ACTION-016
+  it('spends a slot per cast, and refuses a cast with none left, spending nothing', () => {
+    const state = fight();
+    for (let i = 0; i < 3; i++) {
+      readyUp(state, 'isolde');
+      expect(takeAction(state, 'isolde', cast('magic_missile', 'o1'))).not.toBeNull();
+    }
+    readyUp(state, 'isolde');
+
+    expect(takeAction(state, 'isolde', cast('magic_missile', 'o1'))).toBeNull();
+    expect(readinessOf(state, 'isolde')).toBe(FULL_BAR);
+  });
+
+  // @spec COMBAT-ACTION-015
+  it('heals a hurt ally through the party, and refuses a heal on the unhurt', () => {
+    const state = fight();
+    character(state.party, 'bram').hitPoints -= 6;
+    readyUp(state, 'wren');
+
+    expect(castPreview(state, 'wren', 'heal', 'bram')).toBe(6);
+    expect(takeAction(state, 'wren', cast('heal', 'isolde'))).toBeNull();
+    expect(readinessOf(state, 'wren')).toBe(FULL_BAR);
+
+    const event = takeAction(state, 'wren', cast('heal', 'bram'));
+    expect(event).toMatchObject({ action: Action.CAST, spellId: 'heal', targetId: 'bram', healed: 6 });
+    expect(character(state.party, 'bram').hitPoints).toBe(character(state.party, 'bram').maxHitPoints);
+    expect(state.skillsByActor.get('wren')).toContain(Skill.HEALING);
+  });
+
+  it('refuses a spell the caster does not know', () => {
+    const state = fight();
+    readyUp(state, 'bram');
+    expect(takeAction(state, 'bram', cast('magic_missile', 'o1'))).toBeNull();
+    expect(readinessOf(state, 'bram')).toBe(FULL_BAR);
+  });
+
+  // @spec COMBAT-ACTION-002
+  // @spec MAGIC-SLOT-005
+  it('restores no slot as the fight runs on', () => {
+    const state = fight();
+    readyUp(state, 'isolde');
+    takeAction(state, 'isolde', cast('magic_missile', 'o1'));
+    advanceBeats(state, 50);
+
+    expect(character(state.party, 'isolde').spentSlots[1]).toBe(1);
+  });
+
+  it('fells an enemy a missile finishes, and banks its pot', () => {
+    const state = fight([orc('o1', { maxHitPoints: 5, armour: 99, potValue: 30 })]);
+    readyUp(state, 'isolde');
+    const event = takeAction(state, 'isolde', cast('magic_missile', 'o1'));
+    expect(event.felled).toBe(true);
+    expect(encounterOutcome(state)).toMatchObject({ outcome: Outcome.VICTORY, pot: 30 });
+  });
+
+  it('keeps its spells through a save of the fight', () => {
+    const state = fight();
+    const back = restoreEncounter(JSON.parse(JSON.stringify(serializeEncounter(state))), state.party, {}, spells);
+    readyUp(back, 'isolde');
+    expect(takeAction(back, 'isolde', cast('magic_missile', 'o1')).damage).toBe(7);
   });
 });

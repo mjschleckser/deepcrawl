@@ -9,6 +9,7 @@ import {
   FULL_BAR, Outcome,
 } from '../sim/combat.js';
 import { MIN_TAP_PX } from './geometry.js';
+import { createSpell, CastWhere, Learned, SpellTarget } from '../sim/magic.js';
 import { weaponSymbol } from './symbols.js';
 import {
   buildFightPlan, createFightController, chooseOption, pressOption, goBack, dismissOutcome,
@@ -1681,5 +1682,138 @@ describe('the pace of a fight', () => {
 
     expect(fight.shakingId).toBeNull();
     expect(fightIsPlaying(fight)).toBe(false);
+  });
+});
+
+describe('casting from the Magic menu', () => {
+  const spells = {
+    magic_missile: createSpell({
+      id: 'magic_missile', name: 'Magic Missile', school: Skill.EVOCATION, rank: 1,
+      classes: [CharacterClass.MAGE], target: SpellTarget.ENEMY,
+      effect: { damage: 6, ignoresArmour: true }, where: [CastWhere.COMBAT], learned: Learned.CLASS,
+    }),
+    heal: createSpell({
+      id: 'heal', name: 'Heal', school: Skill.HEALING, rank: 1,
+      classes: [CharacterClass.CLERIC], target: SpellTarget.ALLY,
+      effect: { heal: 8 }, where: [CastWhere.COMBAT, CastWhere.EXPLORATION], learned: Learned.CLASS,
+    }),
+  };
+
+  function casting() {
+    const party = createParty();
+    addCharacter(party, hero('bram', CharacterClass.FIGHTER));
+    addCharacter(party, hero('isolde', CharacterClass.MAGE));
+    addCharacter(party, hero('wren', CharacterClass.CLERIC));
+    const encounter = beginEncounter({
+      party,
+      enemies: createEnemyGroup([
+        createEnemy({ id: 'g1', name: 'Goblin', maxHitPoints: 90, potValue: 14, armour: 2, attack: { baseDamage: 1 } }),
+        createEnemy({ id: 'g2', name: 'Goblin', maxHitPoints: 90, potValue: 14, armour: 2, attack: { baseDamage: 1 } }),
+      ]),
+      rng: makeRng(4),
+      origin: { floorId: 'f1', x: 0, y: 0 },
+      spells,
+    });
+    return createFightController({ encounter, viewport, onDraw: vi.fn() });
+  }
+
+  /** Play the fight on until this character is the one being asked. */
+  function askedFor(fight, id) {
+    for (let i = 0; i < 200 && fight.pending?.characterId !== id; i++) {
+      if (fight.pending) defend(fight); else playEnemyTurn(fight);
+    }
+    expect(fight.pending?.characterId).toBe(id);
+    return fight;
+  }
+  const magicIndex = (fight) => fight.pending.options.findIndex((o) => o.action === FightAction.MAGIC);
+
+  // @spec PRESENT-FIGHT-036
+  it('offers Magic to a caster with a slot, and greys it for those who know no spell or have none left', () => {
+    const fight = askedFor(casting(), 'isolde');
+    expect(slot(fight, FightAction.MAGIC).available).toBe(true);
+
+    character(fight.encounter.party, 'isolde').spentSlots = { 1: 3 };
+    const spent = askedFor(fight, 'isolde');
+    // Recomposed on the next turn: asked again after one round.
+    defend(spent);
+    askedFor(spent, 'isolde');
+    expect(slot(spent, FightAction.MAGIC)).toMatchObject({ available: false, reason: 'No slots' });
+
+    askedFor(spent, 'bram');
+    expect(slot(spent, FightAction.MAGIC)).toMatchObject({ available: false, reason: 'No spells' });
+  });
+
+  // @spec PRESENT-MENU-012
+  it('opens a menu of the spells the caster knows, each with the slots left', () => {
+    const fight = askedFor(casting(), 'isolde');
+
+    chooseOption(fight, magicIndex(fight));
+
+    expect(fight.pending.targets.map((t) => t.name)).toEqual(['Magic Missile']);
+    expect(fight.pending.targets[0]).toMatchObject({ available: true, detail: '3/3' });
+  });
+
+  // @spec PRESENT-MENU-017
+  it('asks whom next, with what the cast will do, and casts on the one chosen', () => {
+    const fight = askedFor(casting(), 'isolde');
+    chooseOption(fight, magicIndex(fight));
+    chooseOption(fight, 0);
+
+    // Every standing goblin, with the missile's whole 7 beside it, armour or not.
+    const [g1, g2] = fight.encounter.enemies.members;
+    expect(fight.pending.targets.map((t) => t.id)).toEqual(['g1', 'g2']);
+    expect(fight.pending.targets[0]).toMatchObject({ preview: '7', detail: `${g1.hitPoints}/90` });
+    const before = g2.hitPoints;
+
+    chooseOption(fight, 1);
+
+    expect(g2.hitPoints).toBe(before - 7);
+    expect(fight.log.at(-1)).toBe('isolde casts Magic Missile at Goblin for 7.');
+    expect(character(fight.encounter.party, 'isolde').spentSlots[1]).toBe(1);
+  });
+
+  // @spec PRESENT-MENU-017
+  it('greys a heal on someone already whole, and heals someone hurt', () => {
+    const fight = askedFor(casting(), 'wren');
+    character(fight.encounter.party, 'bram').hitPoints -= 5;
+    chooseOption(fight, magicIndex(fight));
+    chooseOption(fight, 0);
+
+    const entries = fight.pending.targets;
+    const bram = entries.find((t) => t.id === 'bram');
+    const isolde = entries.find((t) => t.id === 'isolde');
+    expect(bram).toMatchObject({ available: true, preview: '5' });
+    expect(isolde).toMatchObject({ available: false, reason: 'Unhurt' });
+
+    // A greyed entry does nothing.
+    expect(chooseOption(fight, entries.indexOf(isolde))).toBe(false);
+    chooseOption(fight, entries.indexOf(bram));
+
+    expect(character(fight.encounter.party, 'bram').hitPoints).toBe(character(fight.encounter.party, 'bram').maxHitPoints);
+    expect(fight.log.at(-1)).toBe('wren casts Heal on bram, restoring 5.');
+  });
+
+  // @spec PRESENT-MENU-018
+  it('backs out of choosing a target to the list of spells, and then closes', () => {
+    const fight = askedFor(casting(), 'isolde');
+    chooseOption(fight, magicIndex(fight));
+    chooseOption(fight, 0);
+
+    goBack(fight);
+    expect(fight.pending.targets.map((t) => t.name)).toEqual(['Magic Missile']);
+
+    goBack(fight);
+    expect(fight.pending.targets).toBeNull();
+  });
+
+  it('closes the whole menu when the Magic button is pressed again', () => {
+    const fight = askedFor(casting(), 'isolde');
+    pressOption(fight, magicIndex(fight));
+    chooseOption(fight, 0);
+
+    pressOption(fight, magicIndex(fight));
+
+    expect(fight.pending.targets).toBeNull();
+    expect(fight.turnsTaken).toBeGreaterThanOrEqual(0);
   });
 });

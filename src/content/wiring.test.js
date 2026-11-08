@@ -351,3 +351,22 @@ describe('re-stocking a floor', () => {
     expect(state.roamers.filter((r) => r.floorId === home).length).toBeGreaterThan(0);
   });
 });
+
+describe('camping in a campaign', () => {
+  // @spec CAMP-REST-004
+  // @spec CAMP-REST-006
+  it('reaches the camp segment and restores slots when the camp is not broken', () => {
+    const campaign = booted();
+    const state = campaign.state;
+    // Nobody in sight, so the camp may begin.
+    state.roamers = state.roamers.filter((r) => r.floorId !== state.party.floorId);
+    const isolde = roster(campaign.party).find((c) => c.characterClass === CharacterClass.MAGE);
+    isolde.spentSlots = { 1: 2 };
+
+    const result = perform(state, { partyAction: PartyAction.CAMP, commit: true });
+
+    expect(result.camp).toEqual({ outcome: 'RESTED' });
+    expect(isolde.spentSlots).toEqual({});
+    expect(tickCount(state)).toBeGreaterThan(0);
+  });
+});

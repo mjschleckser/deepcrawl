@@ -60,7 +60,7 @@ describe('the authored tables', () => {
   it('reads every table file, keyed by what it calls itself', () => {
     const tables = lootTables();
 
-    expect(Object.keys(tables).sort()).toEqual(['chest', 'goblin']);
+    expect(Object.keys(tables).sort()).toEqual(['chest', 'goblin', 'goblin_mage']);
     expect(lootTableById('goblin').id).toBe('goblin');
     expect(lootTableById('nothing')).toBeNull();
   });
@@ -75,5 +75,15 @@ describe('the authored tables', () => {
   it('offers potions to drink', () => {
     const potions = Object.values(itemDefinitions()).filter((i) => i.effect?.heal > 0);
     expect(potions.length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe('where tomes are found', () => {
+  // @spec LOOT-DATA-004
+  it('puts the tome of Fire Bolt in the chest table and the goblin mage table, and not the goblin table', () => {
+    const has = (id) => lootTableById(id).items.some((item) => item.id === 'tome_of_fire_bolt');
+    expect(has('chest')).toBe(true);
+    expect(has('goblin_mage')).toBe(true);
+    expect(has('goblin')).toBe(false);
   });
 });

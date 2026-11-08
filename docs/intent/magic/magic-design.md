@@ -55,22 +55,43 @@ A spell is authored as one file under `src/game-data/spells`, carrying:
 | `target` | `ENEMY` or `ALLY`: whom it is aimed at |
 | `effect` | what it does: `damage` with whether it `ignoresArmour`, or `heal` |
 | `where` | where it may be cast: `COMBAT`, `EXPLORATION`, or both |
+| `learned` | how a character comes to know it: `CLASS` or `TOME` |
 
-The first two spells:
+The first spells:
 
-| Spell | School | Rank | Classes | Target | Effect | Where |
-|---|---|---|---|---|---|---|
-| **Magic Missile** | Evocation | 1 | Mage | an enemy | 6 damage, ignoring armour | in a fight |
-| **Heal** | Healing | 1 | Cleric | a conscious ally, the caster included | heals 8 | in a fight and exploring |
+| Spell | Learned | School | Rank | Classes | Target | Effect | Where |
+|---|---|---|---|---|---|---|---|
+| **Magic Missile** | class | Evocation | 1 | Mage | an enemy | 6 damage, ignoring armour | in a fight |
+| **Heal** | class | Healing | 1 | Cleric | a conscious ally, the caster included | heals 8 | in a fight and exploring |
+| **Fire Bolt** | tome | Evocation | 1 | Mage | an enemy | 10 damage, reduced by armour | in a fight |
+
+Fire Bolt hits harder than Magic Missile and is blunted by armour where the missile is
+not, so a mage who knows both chooses by what they are aiming at rather than always
+reaching for the newer one.
 
 ## Who Knows a Spell
 
-**A character knows a spell when their class is among the spell's classes and their rank
-in the spell's school is at least the spell's rank.** Nothing is learned by hand and
-nothing is chosen at creation: a cleric with a rank in Healing knows Heal, and a mage
-whose Evocation reaches rank 3 will know the rank-3 Evocation spells when there are any.
-The class says which spells are open to a character; practice says how far into them
-they have come.
+There are two kinds of spell, and they are learned two ways.
+
+**A class spell is known as soon as practice reaches it.** A character knows one when
+their class is among the spell's classes and their rank in the spell's school is at least
+the spell's rank. Nothing is learned by hand and nothing is chosen at creation: a cleric
+with a rank in Healing knows Heal, and a mage whose Evocation reaches rank 3 will know the
+rank-3 Evocation class spells the moment it does. The class says which spells are open to
+a character; practice says how far into them they have come.
+
+**A rare spell is known only by reading its tome.** A tome is an item, found like any
+other: in chests, and on the enemies whose loot tables carry one. Reading it teaches its
+spell to the character who reads it, for good, and uses the tome up. A character may read
+a tome only when their class is among the spell's classes, their rank in its school
+reaches the spell's rank, and they do not know the spell already; otherwise the tome is
+refused and kept, so it can go to someone who can use it, or wait until practice catches
+up. A tome is read out of a fight, as a committed party action costing a tick: study is
+not something done between blows.
+
+Rare spells are what make a find exciting for a caster in the way a rare weapon is for a
+fighter: practice gives every mage the same spells, and tomes are what make one mage's
+repertoire different from another's.
 
 ## Spell Slots
 
@@ -146,7 +167,8 @@ value it could not read, as an item file is.
 |---|---|---|---|
 | Paying for a spell | A slot of the spell's rank, restored only by camping | A mana pool that refills; cooldowns; free casting | Slots make magic attrition, so the question is whether this fight is worth spending on. A pool that refills, or a cooldown, makes the best spell the one cast every time it is ready, which is a rotation rather than a decision. |
 | Restoring slots | Only by camping | After every won fight; on taking stairs | Refilling after every fight makes each fight a fresh budget and the long view disappears. Tying it to camping puts the refill where it costs something: time, risk, and the food buffs camping clears. |
-| Knowing a spell | Class allows it, school rank reaches it | Spells learned from scrolls or trainers; chosen at creation | Practice already drives every other part of a character. A spell that arrives when the school rank does needs no learning screen, and a caster's repertoire grows by casting. |
+| Knowing a spell | Class spells by class and school rank; rare spells only by reading a tome | Every spell learned from scrolls or trainers; every spell by rank; chosen at creation | Practice already drives every other part of a character, so the common spells arrive with it and need no learning screen. Tomes give loot something for casters to hope for and make two casters of one class differ. |
+| Reading a tome | Out of a fight, by a character whose class and school rank fit, using the tome up | Readable by anyone; learning first and needing the rank later to cast; readable in a fight | A tome read by someone who can never cast its spell is a tome wasted, so it is refused and kept. Requiring the rank at reading keeps one rule for when a spell can be cast: known means castable. |
 | Slot count | Three rank-1 slots, one more per two points of Intellect over ten | Slots from the school's rank; one slot per rank | Intellect is the attribute the party gives slots to. Three is enough for a fight or two and too few for a floor, which is the attrition intended. |
 | Magnitude | Base × school rank × Intellect, fixed | A rolled range; base only | A fixed number keeps the preview honest, as weapon damage is. Growing with the school rank is what makes casting worth practising, and Intellect gives the attribute a reason to exist in a fight. |
 | Magic Missile and armour | Ignores armour | Reduced by armour like a weapon blow | A mage's spell should answer what a mage's staff cannot. Ignoring armour gives a slot a reason to be spent on the armoured enemy rather than the soft one. |
@@ -157,7 +179,8 @@ value it could not read, as an item file is.
 ### Resolved
 
 1. ✅ **Spells are authored files**, one each, and nothing branches on a spell's name.
-2. ✅ **A character knows a spell when their class may cast it and their school rank reaches its rank.**
+2. ✅ **Class spells come with practice; rare spells only from tomes.** A class spell is known when class and school rank allow; a rare one when its tome has been read.
+9. ✅ **A tome is read out of a fight**, by a character who could cast its spell and does not know it, and is used up.
 3. ✅ **Slots are per rank, spent one per cast, restored only by camping.**
 4. ✅ **A cast with no slot left is refused and costs nothing.**
 5. ✅ **A spell's effect is fixed**, grown by the school's rank and by Intellect, and reported before it is cast.
@@ -166,6 +189,8 @@ value it could not read, as an item file is.
 8. ✅ **Casting uses the spell's school**, in a fight and out of one.
 
 ### Deferred
+
+6. **More rare spells and tomes.** Fire Bolt is the only rare spell; which spells are rare and which enemies carry their tomes is content to grow with the floors.
 
 1. **Higher-rank slots.** Only rank-1 spells exist, so only rank-1 slots are defined. How many a character holds at higher ranks waits on spells to spend them on.
 2. **Restoration.** Waking the unconscious, and the revival chain the party describes, is a spell not yet written.

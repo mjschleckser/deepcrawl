@@ -157,9 +157,9 @@ describe('party actions and the clock', () => {
   });
 
   // @spec EXPLORE-ACTION-001
-  it('accepts exactly the five defined party actions', () => {
+  it('accepts exactly the six defined party actions', () => {
     expect(Object.values(PartyAction).sort()).toEqual(
-      ['PARTY', 'ITEMS', 'SPELLS', 'INTERACT', 'TOGGLE_MAP'].sort(),
+      ['PARTY', 'ITEMS', 'SPELLS', 'CAMP', 'INTERACT', 'TOGGLE_MAP'].sort(),
     );
   });
 

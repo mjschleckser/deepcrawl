@@ -111,3 +111,19 @@ describe('the authored catalogue', () => {
     expect(itemById('chainmail').classes).not.toContain(CharacterClass.MAGE);
   });
 });
+
+describe('a tome', () => {
+  // @spec ITEM-DEF-013
+  it('is a consumable whose effect teaches a spell', () => {
+    const tome = itemById('tome_of_fire_bolt');
+    expect(tome).toMatchObject({ kind: ItemKind.CONSUMABLE, rarity: Rarity.RARE });
+    expect(tome.effect).toEqual({ teach: 'fire_bolt' });
+  });
+
+  // @spec ITEM-DATA-006
+  it('is refused when it names a spell that does not exist', () => {
+    expect(() => buildItem('t.json', {
+      id: 't', name: 'T', kind: 'CONSUMABLE', effect: { teach: 'meteor' },
+    })).toThrow(/t\.json: teach "meteor"/);
+  });
+});

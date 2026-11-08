@@ -167,9 +167,15 @@ a town; until then, gold is a score that will later become a currency.
 ## Consumables
 
 A consumable is an item the items segment defines with an effect rather than a slot.
-It sits in the pack and is used up rather than worn. This pass has one effect,
-**healing**: a potion restores a fixed number of hit points through the party's
-`applyHealing` operation, which already caps at the maximum and wakes the unconscious.
+It sits in the pack and is used up rather than worn. There are two kinds. A **potion**
+heals: it restores a fixed number of hit points through the party's `applyHealing`
+operation, which caps at the maximum. A **tome** teaches a rare spell to whoever reads
+it; who may read one, and when, belongs to the magic segment.
+
+**Tomes are rare finds.** A tome is authored at rare or above, so it comes out of the
+tiers loot reaches least often. Chests carry tomes, and so do the enemies whose loot
+tables name them: the goblin mage drops from a table of its own, the goblin's table with
+the tome added, because a caster is where a book of spells is believable.
 
 Using one is the party's operation, not this segment's, and the cost depends on where
 it happens:

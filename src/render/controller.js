@@ -18,7 +18,9 @@ import {
   PartyAction,
 } from '../sim/exploration.js';
 import { TileFeature, chestOpenedIn, getTile } from '../sim/floor.js';
-import { buildChestReportPlan } from './findsplan.js';
+import { buildChestReportPlan, buildCampReportPlan } from './findsplan.js';
+import { buildSpellsPlan, openingSpellsPage, SpellsControl } from './spellsplan.js';
+import { CastWhere, castOnAlly, readTome, tomeSpell } from '../sim/magic.js';
 import { character, equip, roster, takeOff, useItem } from '../sim/party.js';
 import { isConsumable } from '../sim/items.js';
 import { buildPartyPlan, pageFor, PartyControl } from './partyplan.js';
@@ -76,6 +78,11 @@ export function createController({ state, viewport, onDraw, campaign = null, onB
     saveNote: null,
     // What the chest just opened held, while its report is up.
     chestFind: null,
+    // How the last camp ended, while its report is up.
+    campReport: null,
+    // The Spells screen, when open: whose page, which row, and a spell awaiting a target.
+    // @spec PRESENT-SPELLS-003
+    spellsScreen: null,
     // Whether a newer build is installed and waiting for the player to refresh.
     newBuild: false,
     // The party screen, when open: which character's page is showing. A view of the
@@ -105,6 +112,8 @@ export function replaceCampaign(controller, campaign) {
   controller.fight = null;
   controller.partyScreen = null;
   controller.itemsScreen = null;
+  controller.spellsScreen = null;
+  controller.campReport = null;
   controller.mapMode = MapMode.EXPANDED;
   syncFight(controller);
   redraw(controller);
@@ -160,11 +169,14 @@ function controlLabels(state) {
  */
 function closeChestReport(controller) {
   controller.chestFind = null;
+  controller.campReport = null;
   redraw(controller);
   return true;
 }
 
 const CHEST_DISMISS_KEYS = ['Enter', 'Escape', 'e', 'E', ' '];
+/** @spec PRESENT-CAMP-003 */
+const CAMP_DISMISS_KEYS = ['Enter', 'Escape', 'r', 'R', ' '];
 
 /**
  * On the stamp's own line, after the number: the stamp was placed at the width of both,
@@ -251,6 +263,7 @@ export function layers(controller) {
       { name: 'fight', plan: fightPlan },
       { name: 'party', plan: null },
       { name: 'items', plan: itemsOverFight },
+      { name: 'spells', plan: null },
       { name: 'chest', plan: null },
       {
         name: 'hud',
@@ -267,8 +280,10 @@ export function layers(controller) {
   }
   const sheet = partyPlan(controller);
   const items = itemsPlan(controller);
-  const report = buildChestReportPlan(controller.chestFind, viewport);
-  const screen = sheet ?? items ?? report;
+  const spellsScreen = spellsPlan(controller);
+  const report = buildChestReportPlan(controller.chestFind, viewport)
+    ?? buildCampReportPlan(controller.campReport, viewport);
+  const screen = sheet ?? items ?? spellsScreen ?? report;
   // Nothing to walk toward while a prompt stands or a screen is up, so the walking
   // controls and the action bar go.
   // @spec PRESENT-PARTY-006
@@ -293,6 +308,7 @@ export function layers(controller) {
     { name: 'fight', plan: null },
     { name: 'party', plan: sheet },
     { name: 'items', plan: items },
+    { name: 'spells', plan: spellsScreen },
     { name: 'chest', plan: report },
     // The prompt is read from the simulation's pending confirmation, so one can never
     // be shown for a confirmation that is not actually pending.
@@ -477,7 +493,129 @@ function itemsPlan(controller) {
     page: controller.itemsScreen?.page ?? 0,
     selected: controller.itemsScreen?.selected ?? 0,
     inFight,
+    spells: controller.campaign?.spells ?? {},
   });
+}
+
+/** The catalogue every screen reads spells from. */
+const spellsOf = (controller) => controller.campaign?.spells ?? {};
+
+/** The Spells screen's open page, or nothing while it is shut. */
+function spellsPlan(controller) {
+  const party = partyOf(controller);
+  const screen = controller.spellsScreen;
+  if (!party || !screen) return null;
+  return buildSpellsPlan(party, controller.viewport, {
+    page: screen.page, selected: screen.selected, spellId: screen.spellId, spells: spellsOf(controller),
+  });
+}
+
+/**
+ * Open the Spells screen on the first character who can cast out of a fight. Browsing
+ * it changes nothing, so the simulation is told only that a menu is up.
+ *
+ * @spec PRESENT-SPELLS-001
+ * @spec PRESENT-SPELLS-003
+ */
+function openSpellsScreen(controller) {
+  const party = partyOf(controller);
+  if (controller.fight || controller.state.pendingConfirmation) return false;
+  if (!party || roster(party).length === 0) return false;
+  controller.spellsScreen = { page: openingSpellsPage(party, spellsOf(controller)), selected: 0, spellId: null };
+  setMenuOpen(controller.state, true);
+  redraw(controller);
+  return true;
+}
+
+/**
+ * Close the screen, or, while a spell awaits a target, go back to the list of spells.
+ *
+ * @spec PRESENT-SPELLS-002
+ * @spec PRESENT-SPELLS-008
+ */
+function backOutOfSpells(controller) {
+  const screen = controller.spellsScreen;
+  if (screen.spellId) {
+    screen.spellId = null;
+    screen.selected = 0;
+  } else {
+    controller.spellsScreen = null;
+    setMenuOpen(controller.state, false);
+  }
+  redraw(controller);
+  return true;
+}
+
+/** @spec PRESENT-SPELLS-002 */
+function showSpellsPage(controller, page) {
+  const screen = controller.spellsScreen;
+  if (screen.spellId) return false;
+  const count = roster(partyOf(controller)).length;
+  screen.page = ((page % count) + count) % count;
+  screen.selected = 0;
+  redraw(controller);
+  return true;
+}
+
+function moveSpellsHighlight(controller, by) {
+  const screen = controller.spellsScreen;
+  const rows = spellsPlan(controller)?.entries.filter((e) => e.kind === 'ROW') ?? [];
+  const next = Math.max(0, Math.min(rows.length - 1, screen.selected + by));
+  if (rows.length === 0 || next === screen.selected) return false;
+  screen.selected = next;
+  redraw(controller);
+  return true;
+}
+
+/**
+ * Press a row: choose a spell, then whom to cast it on. Casting is a committed party
+ * action, a tick as well as a slot, and the page goes back to its spells.
+ *
+ * @spec PRESENT-SPELLS-006
+ * @spec PRESENT-SPELLS-007
+ */
+function pressSpellsRow(controller, index) {
+  const party = partyOf(controller);
+  const screen = controller.spellsScreen;
+  const plan = spellsPlan(controller);
+  const row = plan?.entries.find((e) => e.kind === 'ROW' && e.index === index);
+  if (!row || !row.available) return false;
+  if (!screen.spellId) {
+    screen.spellId = row.id;
+    screen.selected = 0;
+    redraw(controller);
+    return true;
+  }
+  const spell = spellsOf(controller)[screen.spellId];
+  const cast = castOnAlly(party, plan.characterId, spell, row.id, { where: CastWhere.EXPLORATION });
+  if (!cast) return false;
+  perform(controller.state, { partyAction: PartyAction.SPELLS, commit: true });
+  screen.spellId = null;
+  screen.selected = 0;
+  redraw(controller);
+  return true;
+}
+
+/** @spec PRESENT-SPELLS-002 */
+function pressKeyOnSpellsScreen(controller, key) {
+  const screen = controller.spellsScreen;
+  if (keyIs(key, 'Escape', 'c')) return backOutOfSpells(controller);
+  if (keyIs(key, 'ArrowUp', 'w')) return moveSpellsHighlight(controller, -1);
+  if (keyIs(key, 'ArrowDown', 's')) return moveSpellsHighlight(controller, 1);
+  if (key === 'Enter' || key === ' ') return pressSpellsRow(controller, screen.selected);
+  if (keyIs(key, 'ArrowRight', 'd')) return showSpellsPage(controller, screen.page + 1);
+  if (keyIs(key, 'ArrowLeft', 'a')) return showSpellsPage(controller, screen.page - 1);
+  return false;
+}
+
+function pressPointerOnSpellsScreen(controller, px, py) {
+  const control = hit(spellsPlan(controller)?.controls, px, py);
+  if (!control) return false;
+  const screen = controller.spellsScreen;
+  if (control.role === SpellsControl.CLOSE) return backOutOfSpells(controller);
+  if (control.role === SpellsControl.NEXT) return showSpellsPage(controller, screen.page + 1);
+  if (control.role === SpellsControl.PREVIOUS) return showSpellsPage(controller, screen.page - 1);
+  return pressSpellsRow(controller, control.index);
 }
 
 /**
@@ -566,7 +704,7 @@ function pressItemRow(controller, index) {
   const characterId = itemsCharacter(controller);
   const row = itemRows(party, characterId)[index];
   const inFight = itemsInFight(controller);
-  if (!row || !rowActs(row, character(party, characterId), { inFight, party })) return false;
+  if (!row || !rowActs(row, character(party, characterId), { inFight, party, spells: spellsOf(controller) })) return false;
   const drink = row.role === ItemsControl.PACK && isConsumable(row.item);
 
   const screen = controller.itemsScreen
@@ -582,7 +720,10 @@ function pressItemRow(controller, index) {
   }
 
   let changed;
-  if (drink) changed = useItem(party, characterId, row.item);
+  // A tome is read rather than drunk, and teaches its spell to whoever's page it is.
+  // @spec MAGIC-KNOW-003
+  if (drink && tomeSpell(row.item, spellsOf(controller))) changed = readTome(party, characterId, row.item, spellsOf(controller));
+  else if (drink) changed = useItem(party, characterId, row.item);
   else if (row.role === ItemsControl.PACK) changed = equip(party, characterId, row.item);
   else changed = takeOff(party, characterId, row.slot);
   if (!changed) return false;
@@ -652,6 +793,18 @@ function applyAction(controller, action) {
   // So is the party screen: reading a character changes nothing about them.
   if (action.partyAction === PartyAction.PARTY) return openPartyScreen(controller);
   if (action.partyAction === PartyAction.ITEMS) return openItemsScreen(controller);
+  if (action.partyAction === PartyAction.SPELLS) return openSpellsScreen(controller);
+  // Camping is committed at once; how it ended is reported over the view, unless an enemy
+  // broke it, in which case the fight that begins is the report.
+  // @spec PRESENT-CAMP-001
+  // @spec PRESENT-CAMP-002
+  if (action.partyAction === PartyAction.CAMP) {
+    const { camp } = perform(controller.state, { partyAction: PartyAction.CAMP, commit: true });
+    syncFight(controller);
+    if (camp && !controller.fight) controller.campReport = camp.outcome;
+    redraw(controller);
+    return true;
+  }
 
   const before = stateSignature(controller.state);
   const result = perform(controller.state, action);
@@ -768,8 +921,11 @@ export function pressKey(controller, key) {
   // A chest's report holds the keyboard until it is put away.
   // @spec PRESENT-CHEST-002
   if (controller.chestFind) return CHEST_DISMISS_KEYS.includes(key) ? closeChestReport(controller) : false;
+  // @spec PRESENT-CAMP-003
+  if (controller.campReport) return CAMP_DISMISS_KEYS.includes(key) ? closeChestReport(controller) : false;
   if (controller.partyScreen) return pressKeyOnPartyScreen(controller, key);
   if (controller.itemsScreen) return pressKeyOnItemsScreen(controller, key);
+  if (controller.spellsScreen) return pressKeyOnSpellsScreen(controller, key);
   return applyAction(controller, actionForKey(key));
 }
 
@@ -848,10 +1004,11 @@ export function pressPointer(controller, px, py) {
 
   // Anywhere at all puts a chest's report away: there is nothing on it to press.
   // @spec PRESENT-CHEST-002
-  if (controller.chestFind) return closeChestReport(controller);
+  if (controller.chestFind || controller.campReport) return closeChestReport(controller);
   // A tap outside the page lands on nothing: a stray thumb must not dismiss it.
   if (controller.partyScreen) return pressPointerOnPartyScreen(controller, px, py);
   if (controller.itemsScreen) return pressPointerOnItemsScreen(controller, px, py);
+  if (controller.spellsScreen) return pressPointerOnSpellsScreen(controller, px, py);
 
   const region = hitTest(controller.viewport, px, py);
   if (!region) return false;

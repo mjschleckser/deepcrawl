@@ -13,6 +13,9 @@ import {
 import { mergeFinds, rollLoot } from './loot.js';
 import { armourOf, baseDamageWith } from './items.js';
 import { makeRng } from './rng.js';
+import {
+  CastWhere, SpellEffect, SpellTarget, castOnAlly, castRefusal, healPreview, payForCast, spellMagnitude,
+} from './magic.js';
 
 export const Action = {
   ATTACK: 'ATTACK', CAST: 'CAST', ABILITY: 'ABILITY',
@@ -126,7 +129,7 @@ const enemyStanding = (e) => e.condition === Condition.OK && e.hitPoints > 0;
  * @spec COMBAT-SURPRISE-003
  * @spec COMBAT-SURPRISE-010
  */
-export function beginEncounter({ party, enemies, rng, origin, lootTables = {} }) {
+export function beginEncounter({ party, enemies, rng, origin, lootTables = {}, spells = {} }) {
   const state = {
     party,
     enemies,
@@ -135,6 +138,9 @@ export function beginEncounter({ party, enemies, rng, origin, lootTables = {} })
     // The tables a defeated enemy's loot is rolled on, by identifier. Content, not
     // state: it is handed in again when a saved fight is restored.
     lootTables,
+    // The spells a cast is resolved from, by identifier. Content, not state, like the
+    // tables: handed in again when a saved fight is restored.
+    spells,
     // What the fight yielded, rolled the first time its victory is read.
     finds: null,
     // How full each combatant's bar is, by id. The fight's own clock, in beats, is
@@ -364,11 +370,12 @@ export function serializeEncounter(state) {
  * @spec SAVE-READ-003
  * @spec SAVE-READ-004
  */
-export function restoreEncounter(saved, party, lootTables = {}) {
+export function restoreEncounter(saved, party, lootTables = {}, spells = {}) {
   return {
     ...saved,
     party,
     lootTables,
+    spells,
     finds: saved.finds ?? null,
     rng: makeRng(saved.rng),
     readiness: new Map(saved.readiness),
@@ -389,6 +396,75 @@ export function hitDamage(state, actorId, targetId) {
   const target = findTarget(state, targetId);
   if (!swinger || !target) return 0;
   return damageFor(baseDamageWith(swinger), armourOf(target));
+}
+
+/**
+ * Why a cast in this fight cannot happen, or nothing when it can: the magic segment's
+ * rules, with whether an enemy target is standing judged here. Asked before anything is
+ * spent, so a refused cast costs nothing and a menu can grey it with the reason.
+ *
+ * @spec COMBAT-ACTION-001
+ * @spec COMBAT-ACTION-016
+ */
+export function castRefusalInFight(state, actorId, spellId, targetId = null) {
+  const spell = state.spells?.[spellId];
+  if (!spell || !character(state.party, actorId)) return 'NOT_KNOWN';
+  const refusal = castRefusal(state.party, actorId, spell, {
+    where: CastWhere.COMBAT,
+    targetId: spell.target === SpellTarget.ALLY ? targetId : null,
+  });
+  if (refusal) return refusal;
+  if (targetId !== null && spell.target === SpellTarget.ENEMY) {
+    const foe = state.enemies.members.find((e) => e.id === targetId);
+    if (!foe || !enemyStanding(foe)) return 'NO_TARGET';
+  }
+  return null;
+}
+
+/** What a spell aimed at an enemy deals: its whole magnitude, or that less armour. */
+function spellDamage(caster, spell, target) {
+  const magnitude = spellMagnitude(caster, spell);
+  return spell.effect.ignoresArmour ? magnitude : damageFor(magnitude, armourOf(target));
+}
+
+/**
+ * What a cast on a given target would do — the damage it deals or the hit points it
+ * restores — by the sum the cast runs through. Nothing is spent and nothing changes.
+ *
+ * @spec MAGIC-CAST-005
+ */
+export function castPreview(state, actorId, spellId, targetId) {
+  const spell = state.spells?.[spellId];
+  const caster = character(state.party, actorId);
+  if (!spell || !caster) return 0;
+  if (spell.target === SpellTarget.ALLY) return healPreview(state.party, actorId, spell, targetId);
+  const target = findTarget(state, targetId);
+  return target && spell.effect[SpellEffect.DAMAGE] ? spellDamage(caster, spell, target) : 0;
+}
+
+/**
+ * Land a blow on whoever it is aimed at, through the party's operation for a character
+ * and directly for an enemy, which is dead where a character would be unconscious.
+ * Answers whether it felled them.
+ */
+function strike(state, target, damage) {
+  if (character(state.party, target.id)) {
+    // Every change to a character goes through the party's own operation.
+    const wasUp = target.condition === Condition.OK;
+    if (damage > 0) applyDamage(state.party, target.id, damage);
+    return wasUp && character(state.party, target.id).condition !== Condition.OK;
+  }
+  // A fallen enemy is dead where a fallen character is unconscious: nobody is
+  // coming back for a goblin.
+  // @spec ENEMY-ROSTER-011
+  target.hitPoints = Math.max(0, target.hitPoints - damage);
+  if (target.hitPoints === 0 && target.condition === Condition.OK) {
+    target.condition = Condition.DEAD;
+    // The pot belongs to the enemies defeated, never to how long the fight ran.
+    state.potBanked += target.potValue;
+    return true;
+  }
+  return false;
 }
 
 /**
@@ -425,13 +501,36 @@ export function takeAction(state, actorId, action) {
     if (!useItem(state.party, actorId, action.item)) return null;
   }
 
+  // A cast is asked first, as a drink is: a refused one was never an action.
+  // @spec COMBAT-ACTION-016
+  if (action.kind === Action.CAST && castRefusalInFight(state, actorId, action.spellId, action.targetId)) {
+    return null;
+  }
+
   state.readiness.set(actorId, readinessOf(state, actorId) - actionCost(action));
+
+  // A cast trains the school it belongs to, whatever skill the caller named.
+  if (action.kind === Action.CAST) action = { ...action, skill: state.spells[action.spellId].school };
 
   if (action.skill) {
     state.skillsUsed.add(action.skill);
     const mine = state.skillsByActor.get(actorId) ?? new Set();
     mine.add(action.skill);
     state.skillsByActor.set(actorId, mine);
+  }
+
+  // @spec COMBAT-ACTION-015
+  if (action.kind === Action.CAST) {
+    const spell = state.spells[action.spellId];
+    if (spell.target === SpellTarget.ALLY) {
+      const { healed } = castOnAlly(state.party, actorId, spell, action.targetId, { where: CastWhere.COMBAT });
+      return { actorId, action: action.kind, spellId: spell.id, targetId: action.targetId, healed };
+    }
+    const target = findTarget(state, action.targetId);
+    payForCast(state.party, actorId, spell);
+    const damage = spellDamage(recordOf(state, actorId), spell, target);
+    const felled = strike(state, target, damage);
+    return { actorId, action: action.kind, spellId: spell.id, targetId: target.id, damage, felled };
   }
 
   if (action.kind !== Action.ATTACK) {
@@ -459,24 +558,7 @@ export function takeAction(state, actorId, action) {
   // @spec COMBAT-ATTACK-016
   const damage = damageFor(baseDamage, armourOf(target));
 
-  let felled = false;
-  if (character(state.party, target.id)) {
-    // Every change to a character goes through the party's own operation.
-    const wasUp = target.condition === Condition.OK;
-    if (damage > 0) applyDamage(state.party, target.id, damage);
-    felled = wasUp && character(state.party, target.id).condition !== Condition.OK;
-  } else {
-    // A fallen enemy is dead where a fallen character is unconscious: nobody is
-    // coming back for a goblin.
-    // @spec ENEMY-ROSTER-011
-    target.hitPoints = Math.max(0, target.hitPoints - damage);
-    if (target.hitPoints === 0 && target.condition === Condition.OK) {
-      target.condition = Condition.DEAD;
-      felled = true;
-      // The pot belongs to the enemies defeated, never to how long the fight ran.
-      state.potBanked += target.potValue;
-    }
-  }
+  const felled = strike(state, target, damage);
 
   return { actorId, action: action.kind, targetId: target.id, damage, felled };
 }

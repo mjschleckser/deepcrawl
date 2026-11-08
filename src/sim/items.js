@@ -42,7 +42,7 @@ export const RARITY_ORDER = [
  *
  * @spec ITEM-DEF-013
  */
-export const Effect = { HEAL: 'heal' };
+export const Effect = { HEAL: 'heal', TEACH: 'teach' };
 
 /**
  * Where a thing is worn or held. A shield takes the off hand, which is what makes a

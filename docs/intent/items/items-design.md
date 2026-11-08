@@ -66,7 +66,7 @@ and then, by kind:
 | **Weapon** | `skill`, `damage`, `governs` | what it trains, what it hits for, and which attribute makes it hurt |
 | **Armour** | `skill`, `armour` | the armour skill it is worn under, and the damage it turns |
 | **Shield** | `armour` | the damage it turns, on top of what the body wears |
-| **Consumable** | `effect` | what using it does; the one effect so far is `heal`, a fixed number of hit points |
+| **Consumable** | `effect` | what using it does: `heal`, a fixed number of hit points, or `teach`, the spell a tome teaches |
 
 **Rarity is a property of the item.** A legendary blade is legendary wherever it turns
 up: in any loot table, in the pack, in a hand. The tier is what loot rolls on and what

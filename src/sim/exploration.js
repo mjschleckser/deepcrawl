@@ -52,6 +52,7 @@ export const PartyAction = {
   PARTY: 'PARTY',
   ITEMS: 'ITEMS',
   SPELLS: 'SPELLS',
+  CAMP: 'CAMP',
   INTERACT: 'INTERACT',
   TOGGLE_MAP: 'TOGGLE_MAP',
 };
@@ -81,6 +82,8 @@ const NO_HOOKS = {
   isTileOccupied: () => false,
   onSight: () => {},
   onPartyAction: () => {},
+  // Whether a camp may begin, and what it restores, is the camp segment's to decide.
+  onCamp: () => null,
   // What a chest holds is loot's to roll; exploration only asks, and hands it on.
   onOpenChest: () => null,
 };
@@ -318,6 +321,20 @@ function advance(state, n, { committed = false } = {}) {
  */
 export function advanceForCamp(state, ticks) {
   return advance(state, ticks);
+}
+
+/**
+ * A rest's stretch of ticks, spent as walking would spend them: the clock advances,
+ * roaming enemies move on those ticks, and contact is checked after.
+ *
+ * @spec EXPLORE-ACTION-007
+ */
+export function restForCamp(state, ticks) {
+  const spent = advance(state, ticks, { committed: true });
+  const here = { floorId: state.party.floorId, tile: { ...state.party.tile } };
+  state.hooks.onRoamersMove({ floorId: state.party.floorId, ticks: spent });
+  state.hooks.onContactCheck(here);
+  return spent;
 }
 
 /** An edge a step opens on its way through, as against one it cannot pass at all. */
@@ -635,6 +652,12 @@ function partyAction(state, action, commit) {
   }
 
   state.hooks.onPartyAction({ action, committed: Boolean(commit) });
+
+  // Camping is the camp segment's, and spends its own stretch of ticks rather than one.
+  // @spec EXPLORE-ACTION-007
+  if (action === PartyAction.CAMP) {
+    return { events: [], camp: commit ? state.hooks.onCamp() : null };
+  }
 
   // The map has nothing to commit to, so it never costs a tick.
   if (commit && action !== PartyAction.TOGGLE_MAP) advance(state, 1, { committed: true });

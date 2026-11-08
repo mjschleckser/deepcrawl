@@ -123,17 +123,17 @@ tuning the game does not rewrite its specs.
 
 ## Party actions
 
-- [ ] **EXPLORE-ACTION-001**: The system shall accept six party actions during exploration: `PARTY`, `ITEMS`, `SPELLS`, `CAMP`, `INTERACT`, and `TOGGLE_MAP`.
+- [x] **EXPLORE-ACTION-001**: The system shall accept six party actions during exploration: `PARTY`, `ITEMS`, `SPELLS`, `CAMP`, `INTERACT`, and `TOGGLE_MAP`.
 - [x] **EXPLORE-ACTION-002**: When the player opens a party action, the system shall not advance the clock.
 - [x] **EXPLORE-ACTION-003**: When the player commits to a party action — equipping or using an item, casting a spell, or working a dungeon feature — the system shall advance the clock by one tick, and when the player commits to `CAMP`, by the camp's ticks instead.
 - [x] **EXPLORE-ACTION-004**: The system shall not advance the clock for `TOGGLE_MAP` under any circumstance.
 - [x] **EXPLORE-ACTION-005**: When the player selects `INTERACT`, the system shall offer only features present on the party's current tile.
-- [ ] **EXPLORE-ACTION-007**: When the player commits to `CAMP`, the system shall route it to the camp segment, and for a camp that begins shall give roaming enemies on the floor the camp's ticks to move by and check contact after.
+- [x] **EXPLORE-ACTION-007**: When the player commits to `CAMP`, the system shall route it to the camp segment, and for a camp that begins shall give roaming enemies on the floor the camp's ticks to move by and check contact after.
 - [x] **EXPLORE-ACTION-006**: While the party is in combat, the system shall not accept any exploration movement verb or party action.
 
 ## Input
 
-- [ ] **EXPLORE-INPUT-001**: The system shall give every movement verb and every party action — `STEP_FORWARD`, `STEP_BACKWARD`, `TURN_LEFT`, `TURN_RIGHT`, `TURN_AROUND`, `PARTY`, `ITEMS`, `SPELLS`, `CAMP`, `INTERACT`, `TOGGLE_MAP` — a keyboard path.
+- [x] **EXPLORE-INPUT-001**: The system shall give every movement verb and every party action — `STEP_FORWARD`, `STEP_BACKWARD`, `TURN_LEFT`, `TURN_RIGHT`, `TURN_AROUND`, `PARTY`, `ITEMS`, `SPELLS`, `CAMP`, `INTERACT`, `TOGGLE_MAP` — a keyboard path.
 - [x] **EXPLORE-INPUT-004**: The system shall leave every movement verb and party action achievable by touch, whether through a control of its own or through repeating another.
 - [x] **EXPLORE-INPUT-002**: The system shall produce an identical action for a given verb whether it originated from keyboard or from touch.
 - [x] **EXPLORE-INPUT-003**: The system shall not expose to the simulation which input device produced an action.

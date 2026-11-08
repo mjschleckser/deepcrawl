@@ -59,10 +59,10 @@ are fed into.
 
 ## Actions
 
-- [ ] **COMBAT-ACTION-001**: When a character casts a spell, the system shall spend one spell slot of that spell's rank, and shall refuse the cast when no slot of that rank remains.
-- [ ] **COMBAT-ACTION-002**: The system shall not restore a spell slot during an encounter.
-- [ ] **COMBAT-ACTION-015**: When a character casts a spell they know that may be cast in a fight, the system shall resolve its effect through the magic segment against a target resolved at that moment, spend a full bar of their readiness, and record the spell's school as a skill they used.
-- [ ] **COMBAT-ACTION-016**: If a cast in a fight is refused, then the system shall spend none of the character's readiness and leave their turn waiting.
+- [x] **COMBAT-ACTION-001**: When a character casts a spell, the system shall spend one spell slot of that spell's rank, and shall refuse the cast when no slot of that rank remains.
+- [x] **COMBAT-ACTION-002**: The system shall not restore a spell slot during an encounter.
+- [x] **COMBAT-ACTION-015**: When a character casts a spell they know that may be cast in a fight, the system shall resolve its effect through the magic segment against a target resolved at that moment, spend a full bar of their readiness, and record the spell's school as a skill they used.
+- [x] **COMBAT-ACTION-016**: If a cast in a fight is refused, then the system shall spend none of the character's readiness and leave their turn waiting.
 - [x] **COMBAT-ACTION-009**: When a combatant passes their turn, the system shall spend a full bar of their readiness and shall resolve no action.
 - [x] **COMBAT-ACTION-006**: The system shall apply every change to a character's hit points or condition through the party segment's operations.
 - [x] **COMBAT-ACTION-008**: The system shall take an attack's base damage from the combatant that is acting, and the armour reducing it from the combatant struck, on either side alike.

@@ -13,6 +13,7 @@
 
 import { Attribute, CharacterClass, Skill } from '../sim/party.js';
 import { Effect, ItemKind, Rarity, Slot, createItem } from '../sim/items.js';
+import { spellDefinitions } from './spells.js';
 
 const ITEM_FILES = import.meta.glob('../game-data/items/*.json', { eager: true, import: 'default' });
 
@@ -73,8 +74,10 @@ export function buildItem(file, data) {
 }
 
 /**
- * What a consumable does. Healing is the one effect, and it heals at least a point.
+ * What a consumable does: a potion heals at least a point, and a tome teaches a spell
+ * somebody has authored.
  *
+ * @spec ITEM-DEF-013
  * @spec ITEM-DATA-006
  */
 function readEffect(file, effect) {
@@ -82,6 +85,11 @@ function readEffect(file, effect) {
   const known = Object.values(Effect);
   for (const name of Object.keys(effect)) {
     if (!known.includes(name)) throw new Error(`${file}: effect "${name}" is not one of ${known.join(', ')}`);
+  }
+  if (effect[Effect.TEACH] !== undefined) {
+    const spell = effect[Effect.TEACH];
+    if (!spellDefinitions()[spell]) throw new Error(`${file}: teach "${spell}" is not a spell anybody authored`);
+    return { [Effect.TEACH]: spell };
   }
   const heal = effect[Effect.HEAL];
   if (!Number.isInteger(heal) || heal < 1) throw new Error(`${file}: heal ${heal} is not a whole number of at least 1`);

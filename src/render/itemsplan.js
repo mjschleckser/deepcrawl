@@ -12,6 +12,7 @@ import {
   Effect, ItemKind, Rarity, Slot, isConsumable, wieldableBy,
 } from '../sim/items.js';
 import { rarityColour } from './appconfig.js';
+import { ReadRefusal, readRefusal, tomeSpell } from '../sim/magic.js';
 import { MIN_TAP_PX, uiScale, contentColumn, stampRoom } from './geometry.js';
 import { pageFor } from './partyplan.js';
 
@@ -129,9 +130,11 @@ export function clampRow(rows, selected) {
  * @spec PRESENT-ITEMS-012
  * @spec PRESENT-ITEMS-016
  */
-export function rowActs(row, c, { inFight, party = null }) {
+export function rowActs(row, c, { inFight, party = null, spells = {} }) {
   if (!row.item) return false;
   if (row.role === ItemsControl.WORN) return !inFight;
+  // A tome is read by whoever's page it is, out of a fight, if they could cast its spell.
+  if (tomeSpell(row.item, spells)) return Boolean(party) && readRefusal(party, c.id, row.item, spells, { inFight }) === null;
   // A potion is drunk by whoever's page it is, when they can drink it.
   // @spec PRESENT-ITEMS-026
   // @spec PRESENT-ITEMS-027
@@ -140,8 +143,19 @@ export function rowActs(row, c, { inFight, party = null }) {
 }
 
 /** The line beneath a row: its numbers, who may wield it, or why it cannot be drunk. */
-function rowDetail(row, c, party) {
+function rowDetail(row, c, party, spells = {}) {
   if (!row.item) return null;
+  const taught = tomeSpell(row.item, spells);
+  if (row.role === ItemsControl.PACK && taught) {
+    const refusal = readRefusal(party, c.id, row.item, spells, { inFight: false });
+    const words = {
+      [ReadRefusal.WRONG_CLASS]: `${taught.classes.map(titled).join(', ')} only`,
+      [ReadRefusal.RANK_TOO_LOW]: `Needs ${titled(taught.school)} ${taught.rank}`,
+      [ReadRefusal.ALREADY_KNOWN]: 'Already known',
+      [ReadRefusal.NOT_CONSCIOUS]: 'Unconscious',
+    };
+    return withTier(row.item, refusal ? (words[refusal] ?? 'Cannot be read') : `Teaches ${taught.name}`);
+  }
   if (row.role === ItemsControl.PACK && isConsumable(row.item)) {
     const refusal = useRefusal(party, c.id, row.item);
     return refusal ? withTier(row.item, REFUSALS[refusal] ?? 'Cannot be used') : itemDetail(row.item);
@@ -160,7 +174,9 @@ function rowDetail(row, c, party) {
  * @spec PRESENT-ITEMS-016
  * @spec PRESENT-ITEMS-019
  */
-export function buildItemsPlan(party, viewport, { page = 0, characterId = null, selected = 0, inFight = false } = {}) {
+export function buildItemsPlan(party, viewport, {
+  page = 0, characterId = null, selected = 0, inFight = false, spells = {},
+} = {}) {
   const members = roster(party);
   const at = characterId !== null
     ? members.findIndex((m) => m.id === characterId)
@@ -239,7 +255,7 @@ export function buildItemsPlan(party, viewport, { page = 0, characterId = null, 
       laid.push(packHeading(cursor + gap / 2));
       cursor += heading + gap / 2;
     }
-    const acts = rowActs(row, c, { inFight, party });
+    const acts = rowActs(row, c, { inFight, party, spells });
     const usable = row.role === ItemsControl.WORN
       || (isConsumable(row.item) ? acts : wieldableBy(row.item, c.characterClass));
     laid.push({
@@ -253,7 +269,7 @@ export function buildItemsPlan(party, viewport, { page = 0, characterId = null, 
       // @spec PRESENT-RARITY-001
       rarity: row.item?.rarity ?? null,
       colour: row.item ? rarityColour(row.item) : null,
-      detail: rowDetail(row, c, party),
+      detail: inFight && tomeSpell(row.item, spells) ? withTier(row.item, 'Not in a fight') : rowDetail(row, c, party, spells),
       available: acts,
       // A worn item drawn in a fight is shown as it is, just not pressable; only an
       // item the character cannot wield or drink is greyed for what it is.

@@ -16,6 +16,7 @@ where finds come from.
 - [x] **LOOT-DATA-001**: When an authored loot table names an item that does not exist, gives odds or a draw chance outside 0 to 1, gives a gold range or draw count below zero or a gold range whose minimum exceeds its maximum, or holds no common item, the system shall reject that file by name and the value it could not read.
 - [x] **LOOT-DATA-002**: When an enemy roster entry or an archetype names a loot table that does not exist, the system shall reject that file by name and the table it named.
 - [x] **LOOT-DATA-003**: The system shall hold every archetype's chest table richer than the table of every enemy that can be placed on a floor of that archetype: odds no lower in every tier above common and higher in at least one, at least as many draws at no lower chance, and a gold range no lower at either end.
+- [x] **LOOT-DATA-004**: The system shall hold the tome of Fire Bolt, authored at rare, in the chest table and in the goblin mage's table, and shall give the goblin mage a table of its own.
 
 ## Rolling a find
 

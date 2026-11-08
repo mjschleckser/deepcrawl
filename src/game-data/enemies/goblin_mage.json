@@ -23,5 +23,5 @@
   "potValue": 24,
   "forbidsEscape": false,
   "portrait": "goblin_mage.png",
-  "loot": "goblin"
+  "loot": "goblin_mage"
 }

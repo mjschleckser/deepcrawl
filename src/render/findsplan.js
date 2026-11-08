@@ -61,3 +61,31 @@ export function buildChestReportPlan(found, viewport) {
     },
   };
 }
+
+/** What each way a camp can end says, over the view. A broken camp is its own fight. */
+const CAMP_WORDS = {
+  RESTED: 'The party rests. Spell slots are restored.',
+  REFUSED: 'An enemy is in sight. The party cannot camp here.',
+};
+
+/**
+ * The report drawn over the view when the party camps, in the chest report's panel.
+ *
+ * @spec PRESENT-CAMP-002
+ */
+export function buildCampReportPlan(outcome, viewport) {
+  const words = CAMP_WORDS[outcome];
+  if (!words) return null;
+  const scale = uiScale(viewport);
+  const column = contentColumn(viewport);
+  const width = Math.min(column.width - 24 * scale, 360 * scale);
+  const height = (64 + REPORT_LINE + 34) * scale;
+  return {
+    title: 'Camp',
+    find: { gold: null, items: [{ text: words, colour: 0xe8d9a8 }], nothing: null },
+    hint: 'Enter to go on',
+    scale,
+    lineHeight: REPORT_LINE * scale,
+    bounds: { x: column.x + (column.width - width) / 2, y: (viewport.height - height) / 2, width, height },
+  };
+}

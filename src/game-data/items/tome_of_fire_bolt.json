@@ -1,0 +1,7 @@
+{
+  "id": "tome_of_fire_bolt",
+  "name": "Tome of Fire Bolt",
+  "kind": "CONSUMABLE",
+  "rarity": "RARE",
+  "effect": { "teach": "fire_bolt" }
+}
