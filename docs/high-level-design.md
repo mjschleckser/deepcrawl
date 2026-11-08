@@ -182,6 +182,8 @@ flowchart TB
     content --> dungeon
     content --> combat
     content --> loot
+    dungeon --> loot
+    loot --> party
     sim <--> save
 ```
 
@@ -197,7 +199,7 @@ There is no scheduler above combat and exploration. Each owns its own advance of
 input reaches whichever of the two is running.
 
 **Party.** The player's characters: stats, classes, progression, equipment loadout,
-and the conscious / unconscious / dead / ashes / lost state machine. A party holds at most
+the pack and the purse of gold the party shares, and the conscious / unconscious / dead / ashes / lost state machine. A party holds at most
 four characters. Also owns total level — the sum of a character's skill ranks — which
 is how much of a character there is, in one number, wherever one is needed.
 
@@ -209,7 +211,8 @@ the automap is a view of what the party has seen, and what the party has seen ha
 to survive a save.
 
 **Dungeon generation.** Produces a floor from an archetype plus a seed. Seeded and
-reproducible, so a floor can be regenerated identically and tested. Floors form a
+reproducible, so a floor can be regenerated identically and tested. Generation also
+places a floor's chests, within the archetype's loot budget. Floors form a
 graph rather than a stack: a floor's connectors name target floors by id, so one
 floor may lead to several, and depth is a label rather than a computed property.
 Floors are generated once and persist for the campaign. The dungeon is not simulated
@@ -217,8 +220,14 @@ while the party is away; a floor is re-stocked on return in proportion to the ti
 elapsed, so a known map stays accurate about its layout and unreliable about what
 occupies it.
 
-**Loot and items.** Item generation within loot tables and affix rules; inventory
-and equipment.
+**Loot and items.** What an item is, and what the party finds. Loot is generated,
+never placed by hand: a defeated band and an opened chest each yield items and gold,
+drawn from authored loot tables. A table sorts its items into rarity tiers and is
+rolled from the top down, legendary first and common last, so the rarest tier is
+always the hardest to reach and the odds of every tier are data. Items are equipment,
+which is worn, and consumables, which are used up from the pack in a fight or out of
+one. Affix rules, which vary an item within its kind, come later, once there are
+enemy numbers to balance them against.
 
 **Content definitions.** The authored guidelines generation runs inside — floor
 archetypes, encounter budgets, loot tables, ability definitions — and the combatants
@@ -261,6 +270,7 @@ work first reaches it rather than all at once.
 | Characters and enemies are one shape | Enemies carrying their own reduced set of combat stats | A monster that is a different kind of thing from a character needs every rule written twice, and the two copies drift. One shape means combat, the display and the save read a combatant without asking which side it is on, and a goblin can be given anything a character can have. Enemies carry no class, being authored whole rather than grown. |
 | Combatants authored as one file each, in a data folder | A table per kind inside the module that reads it | A file per combatant is editable by hand, diffs cleanly, and can be added without touching code. Bundling them into the module that consumes them is what makes content look like a code change and keeps non-code edits inside a programming language. |
 | Death recoverable, at a cost | Permadeath; death impossible | Follows the *setbacks, not erasure* tenet. A death the player can undo for free is not a consequence; one they cannot undo at all contradicts the single-save structure. |
+| Loot rolled by rarity from the top tier down: a chance at legendary, and on a miss a chance at epic, then rare, then uncommon, with common the floor | One weighted draw across every item in a table; a fixed drop per enemy | A single weighted draw makes the rare items' odds depend on how many common items share the table, so authoring another dagger quietly makes a legendary scarcer. Rolling tier by tier keeps each tier's odds a number someone wrote down, and changing one tier leaves the others where they were. A fixed drop makes every fight's reward known in advance, and a find that can be predicted is not a find. |
 | Procedural generation constrained by authored data | Fully hand-authored floors; unconstrained generation | Hand-authoring every floor is unsustainable solo; unconstrained generation produces incoherent dungeons. Authored archetypes and tables bound the generator's output space. |
 | First-person 2D view plus a corner automap | Top-down view of the whole floor; first-person with no automap; 3D or raycast rendering | The first-person view makes the dungeon a place to be lost in, which is the genre's appeal; the automap keeps being lost from becoming tedious. A top-down view gives orientation for free and loses the tension. 3D is disproportionate for a 2D sprite game and costs mobile performance. |
 | Facing and discovered tiles are simulation state | Treating facing as camera state and discovery as automap state | The automap must show what the party actually saw, and that has to survive a save. Putting either in the presentation layer would mean the renderer owns state the save file needs. |
