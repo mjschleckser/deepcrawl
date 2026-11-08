@@ -109,7 +109,10 @@ than its neighbour.
 
 **A migration fills a new field with what the campaign would have had without it.** A
 save from before the purse existed opens with an empty purse, and one from before chests
-existed opens with no chest opened. The save had none to open, so nothing is lost.
+existed opens with no chest opened. The save had none to open, so nothing is lost. An
+enemy already placed when enemies began carrying loot takes the table its roster entry
+names today, so a warband standing in an old save drops what a new one would. An item
+from before rarity is common.
 
 A save from a later version is what an old cached build meets after a newer build has
 already run. Loading it would discard what it does not understand, so it is set aside

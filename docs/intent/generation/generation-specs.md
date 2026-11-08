@@ -46,7 +46,7 @@ guarantees it with.
 - [x] **GEN-PLACE-009**: When a floor has more ways down than rooms, the system shall place one in each room and no more.
 - [x] **GEN-PLACE-003**: The system shall lay traps numbering within the archetype's trap range.
 - [ ] **GEN-PLACE-004**: The system shall lay every trap at generation, and shall neither add nor remove a trap on a floor thereafter.
-- [ ] **GEN-PLACE-007**: The system shall lay chests numbering within the archetype's chest range, on room tiles no connector or trap has claimed and that the party need not cross to pass through a doorway.
+- [ ] **GEN-PLACE-007**: The system shall lay chests numbering within the archetype's chest range, on room tiles no connector or trap has claimed and that the party need not cross to pass through a doorway, and where fewer such tiles remain than the number drawn, shall lay as many as fit.
 - [ ] **GEN-PLACE-010**: The system shall lay chests after every other placement, from a generator derived from the floor's own, so that the number of chests changes nothing else generated.
 - [ ] **GEN-PLACE-011**: The system shall number each chest on a floor in the order it was laid.
 - [ ] **GEN-PLACE-012**: The system shall lay every chest at generation, and shall neither add nor remove a chest on a floor thereafter, re-stocking included.
