@@ -19,7 +19,7 @@ because the moment it does, content becomes a programming task and the rate at w
 the game can be filled in drops to the rate at which it can be edited.
 
 **An item carries its own numbers, and nothing derives them from its name.** A weapon
-states its damage, its accuracy, the skill it trains and the attribute it draws on.
+states its damage, the skill it trains and the attribute it draws on.
 Nothing anywhere asks "is this a dagger" to decide how it behaves. A dagger and a
 longsword are both Blade and are not the same argument for what makes a character
 dangerous, and that difference lives in their files rather than in a branch.
@@ -37,7 +37,7 @@ to flow if content is to be addable.
 | Item definitions | what an item is: slot, kind, numbers, who may wield it | — |
 | Slots | which slots exist, and what each admits | the party records what occupies them |
 | Wielding rules | whether this class may hold this item in this slot | the party's `equip` enforces the answer |
-| Derived combat numbers | how accuracy, defence and base damage are assembled | combat resolves the attack base damage feeds; it reads no accuracy or defence |
+| Derived combat numbers | how base damage and armour are assembled | combat resolves the attack they feed |
 | The pack | what it holds, and what moving an item in or out of it means | the party holds it, beside the slots |
 | Rarity | each item's tier, and the colour it is shown in | loot rolls by tier; presentation draws the colour |
 | Consumables | what a consumable is and what its effect does | the party's `useItem` applies it; combat and exploration charge for it |
@@ -63,9 +63,9 @@ and then, by kind:
 
 | Kind | Carries | Means |
 |---|---|---|
-| **Weapon** | `skill`, `damage`, `accuracy`, `governs` | what it trains, what it hits for, how true it swings, and which attribute makes it hurt |
+| **Weapon** | `skill`, `damage`, `governs` | what it trains, what it hits for, and which attribute makes it hurt |
 | **Armour** | `skill`, `armour` | the armour skill it is worn under, and the damage it turns |
-| **Shield** | `defence` | how much harder it makes its holder to hit |
+| **Shield** | `armour` | the damage it turns, on top of what the body wears |
 | **Consumable** | `effect` | what using it does; the one effect so far is `heal`, a fixed number of hit points |
 
 **Rarity is a property of the item.** A legendary blade is legendary wherever it turns
@@ -104,44 +104,35 @@ for monsters — it is what *natural weapon* means, and a character who has been
 disarmed reaches it by the same route.
 
 The same holds for armour: what the body slot turns, or failing that what the combatant
-was authored to turn.
+was authored to turn, with whatever a shield in the off hand turns added on top.
 
 This is the whole of the compatibility story. Nothing in combat branches on side, and
 no enemy file has to be rewritten to hold a dagger it does not own.
 
 ## The Numbers
 
-The three formulas combat resolves against, assembled from the combatant and what they
-hold. They live here because they are the only place a weapon, a rank and an attribute
+The two numbers combat resolves an attack with, assembled from the combatant and what
+they hold. They live here because they are the only place a weapon, a rank and an attribute
 meet, and splitting them between party and combat would mean writing each twice.
 
 ```
-accuracy    = weapon.accuracy + 5 × rank(weapon.skill) + 2 × (Perception − 10)
-
-defence     = 20 + 2 × (Dexterity − 10) + 3 × rank(worn armour's skill) + shield.defence
-
 base damage = weapon.damage × (1 + 0.10 × rank(weapon.skill))
                             × (1 + 0.04 × (attribute(weapon.governs) − 10))
+
+armour      = body armour (or authored armour) + shield.armour
 ```
 
-**Accuracy is practice and eyesight; defence is nimbleness and what is strapped on;
-damage is practice and force.** Perception governs accuracy for every weapon, which is
-what stops the damage attribute compounding twice in the same swing: a mighty character
-hits harder, not more often.
+**Damage is practice and force; armour is what is strapped on.** An attack always lands
+(see the combat segment), so there is no to-hit number to assemble: how hard a blow is
+and how much of it is turned are the whole of a fight's arithmetic.
 
-**Armour is not in the defence line, and that is the point.** Armour reduces the damage
-of a blow that landed and does nothing else. One number doing both jobs makes heavy
-armour doubly good and light armour doubly bad, and squeezes the bands until a point of
-armour outweighs a rank of practice. A shield is the exception that proves it: a shield
-is in the defence line because turning a blow aside is the whole of what a shield does.
+**A shield is armour you hold.** It turns a share of every blow exactly as body armour
+does, and adds to it only while it is in the off hand. Carrying one is a choice against
+a second weapon or an empty hand, and what it buys is a smaller number on every enemy
+blow.
 
-**Combat reads base damage and armour only.** An attack rolls nothing and always lands
-(see the combat segment), so accuracy and defence are assembled here but nothing reads
-them yet. They stay on items and in these sums until a deterministic use for them is
-decided.
-
-**Every term degrades to nothing.** No weapon is accuracy zero and damage zero; no
-armour skill is rank zero; an empty slot contributes nothing rather than failing. A
+**Every term degrades to nothing.** No weapon is damage zero; an empty slot contributes
+nothing rather than failing. A
 combatant holding nothing at all is weak, never broken.
 
 ## Wielding
@@ -211,7 +202,7 @@ by name, as a combatant file is. A typo in content should fail where it was type
 | What a character holds | The resolved item, not an identifier | An id resolved against a registry at point of use | A registry is a second global to thread through combat and the save, and an id that fails to resolve fails somewhere far from where it was authored. Resolving once at load keeps the simulation free of lookups and matches how a combatant already holds its attack. The cost is that a save holds a copy of an item's numbers, so re-tuning a weapon does not reach gear already owned. |
 | Where the formulas live | In the items segment, read by combat and the party | In combat, with items holding only data; duplicated in both | A weapon, a rank and an attribute meet in exactly one place and the two spec sets that describe them (`COMBAT-ATTACK-*` and `PARTY-SKILL-*`) say the same thing. Writing them once and reading them from both is what stops the two drifting into two different games. |
 | Which attribute governs damage | Named by the weapon | Fixed per skill; fixed per class | A dagger and a longsword are both Blade and are not the same argument for what makes a character dangerous. Fixing it per skill would make finesse a new skill rather than a property, and split practice in two for a distinction that is about the object. |
-| Accuracy's attribute | Always Perception | The weapon's governing attribute, as damage uses | Tying to-hit to the governing attribute would make Might raise both how often you hit and how hard, compounding one attribute twice in the same swing. Perception gains a reason to exist in a fight without becoming universal. |
+| What a shield does | Adds its armour to the body's | Raising a separate defence that decides whether a blow lands; reducing damage by a share | Every attack lands, so a number that decides whether one lands has nothing to do. Adding flat armour keeps a blow's damage a single subtraction the player can read off the preview. |
 | A missing weapon | The combatant's authored attack stands in | A bare-hands item every combatant silently equips; refusing to fight unarmed | An authored goblin has no armoury and should not need one; its attack *is* its natural weapon. A phantom item would have to be authored, owned and saved for every combatant alive. Refusing to fight unarmed turns a disarm into a softlock. |
 | Slots | Main hand, off hand, body | A fuller set with rings, cloak, head, feet; a weight-limited bag with no slots at all | A slot with nothing to put in it is empty space on a screen nobody has designed. A shield in the off hand is what makes a shield and a second weapon one decision. Slots can be added without moving anything, and will be when there is gear for them. |
 | Who may wield what | The item names its classes | The class names what it may hold; skill ranks implying permission | Content has to flow one way: adding a weapon must not mean editing four classes. Inferring permission from the skill table conflates what a class may *train* with what it may *hold*, and makes neither changeable alone. |
@@ -229,12 +220,12 @@ by name, as a combatant file is. A typo in content should fail where it was type
 1. ✅ **An item is a file**, read by the same kind of loader that reads a combatant.
 2. ✅ **An item carries its own numbers**; nothing branches on what it is called.
 3. ✅ **Three slots** — main hand, off hand, body — and a shield occupies the off hand.
-4. ✅ **The weapon names the attribute its damage draws on**; Perception always governs accuracy.
+4. ✅ **The weapon names the attribute its damage draws on.**
 5. ✅ **A combatant with an empty main hand fights with its authored attack**, which is what a natural weapon is.
-6. ✅ **Armour reduces damage and never defence**; a shield raises defence and reduces nothing.
+6. ✅ **A shield is armour you hold**: it adds its armour to the body's while in the off hand, and there is no accuracy or defence.
 7. ✅ **An item names the classes that may hold it**, and a class names nothing.
 8. ✅ **A character holds the resolved item**, not an identifier resolved later.
-9. ✅ **The three formulas live here**, and combat and the party both read them.
+9. ✅ **Base damage and armour are assembled here**, and combat and the party both read them.
 10. ✅ **Nothing here generates an item**; the loot segment does, and affixes come later.
 11. ✅ **One pack, shared by the party**, holds everything carried and not equipped.
 12. ✅ **An item is always in a slot or in the pack**, and a swap sends the displaced item to the pack as one change.
@@ -243,7 +234,7 @@ by name, as a combatant file is. A typo in content should fail where it was type
 
 ### Deferred
 
-1. **Affixes.** The HLD names affix rules. They want enemy defence and armour on a curve to balance against.
+1. **Affixes.** The HLD names affix rules. They want enemy armour on a curve to balance against.
 2. **More slots.** Rings, cloak, head and feet are slots with nothing to put in them. Adding one moves nothing already built.
 3. **More effects.** A consumable heals and does nothing else; curing a status waits for status effects.
 4. **Two-handed weapons.** A weapon that claims the off hand as well as the main hand has nowhere to say so yet.

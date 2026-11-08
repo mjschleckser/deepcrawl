@@ -45,7 +45,7 @@ describe('the victory banner', () => {
     const party = createParty();
     addCharacter(party, createCharacter({
       id: 'bram', name: 'Bram', characterClass: CharacterClass.FIGHTER, attributes: { DEXTERITY: 30 },
-      attack: { skill: Skill.BLADE, baseDamage: 50, accuracy: 300 },
+      attack: { skill: Skill.BLADE, baseDamage: 50 },
     }));
     const pockets = createLootTable({
       id: 'pockets', gold: { min: 4, max: 4 }, draws: { count: 1, chance: 1 }, items: [potion()],

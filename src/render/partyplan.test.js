@@ -12,7 +12,7 @@ const desktop = { width: 1600, height: 900 };
 
 const sword = createItem({
   id: 'shortsword', name: 'Shortsword', kind: ItemKind.WEAPON, slot: Slot.MAIN_HAND,
-  skill: Skill.BLADE, damage: 8, accuracy: 20,
+  skill: Skill.BLADE, damage: 8,
 });
 
 function fourOf() {
@@ -104,11 +104,11 @@ describe('the party screen page', () => {
   });
 
   // @spec PRESENT-PARTY-014
-  it('shows all six attributes, named in full, with their scores', () => {
+  it('shows all five attributes, named in full, with their scores', () => {
     const plan = buildPartyPlan(fourOf(), phone, { page: 0 });
 
     expect(plan.attributes.map((a) => a.label)).toEqual([
-      'Might', 'Constitution', 'Dexterity', 'Intellect', 'Perception', 'Resolve',
+      'Might', 'Constitution', 'Dexterity', 'Intellect', 'Resolve',
     ]);
     expect(plan.attributes.find((a) => a.label === 'Dexterity').score).toBe(13);
     expect(plan.attributes.find((a) => a.label === 'Might').score).toBe(10);

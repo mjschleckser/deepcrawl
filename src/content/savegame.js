@@ -9,11 +9,12 @@ import { createCampaign } from './campaign.js';
 import { ArrivalRule, DEFAULT_ARCHETYPE } from '../sim/generation.js';
 import { TileFeature } from '../sim/floor.js';
 import { enemyDefinitions } from './combatants.js';
+import { itemById } from './items.js';
 
 export const SAVE_KEY = 'deepcrawl.save';
 
 /** The schema a save is written in. Raise it, and add a migration, when the shape changes. */
-export const SAVE_FORMAT = 4;
+export const SAVE_FORMAT = 5;
 
 /** How long a change waits, so a run of steps becomes one write. */
 export const WRITE_DELAY_MS = 1000;
@@ -143,8 +144,51 @@ function addLoot(save) {
   };
 }
 
+/**
+ * Version 4 still carried accuracy, defence and Perception. A weapon and an attack lose
+ * their accuracy, every combatant loses its Perception, and a shield's defence becomes the
+ * armour its own file gives that shield today, or none if no file names it.
+ *
+ * @spec SAVE-READ-011
+ */
+function retireToHit(save) {
+  const item = (it) => {
+    if (!it) return it;
+    const { accuracy, defence, ...rest } = it;
+    return rest.kind === 'SHIELD' ? { ...rest, armour: itemById(rest.id)?.armour ?? 0 } : rest;
+  };
+  const combatant = (c) => {
+    if (!c) return c;
+    const out = { ...c };
+    if (c.attributes) {
+      const { PERCEPTION, ...attributes } = c.attributes;
+      out.attributes = attributes;
+    }
+    if (c.attack) {
+      const { accuracy, ...attack } = c.attack;
+      out.attack = attack;
+    }
+    if (c.equipment) {
+      out.equipment = Object.fromEntries(Object.entries(c.equipment).map(([slot, it]) => [slot, item(it)]));
+    }
+    return out;
+  };
+  const band = (b) => (b ? { ...b, members: (b.members ?? []).map(combatant) } : b);
+  const { party, exploration, encounter } = save;
+
+  return {
+    ...save,
+    party: { ...party, pack: (party.pack ?? []).map(item), members: party.members.map(combatant) },
+    exploration: {
+      ...exploration,
+      roamers: (exploration.roamers ?? []).map((roamer) => ({ ...roamer, band: band(roamer.band) })),
+    },
+    encounter: encounter ? { ...encounter, enemies: band(encounter.enemies) } : encounter,
+  };
+}
+
 /** Each step takes a save from the version it is keyed by to the next. */
-const MIGRATIONS = { 1: addWaysBack, 2: addPack, 3: addLoot };
+const MIGRATIONS = { 1: addWaysBack, 2: addPack, 3: addLoot, 4: retireToHit };
 
 /** @spec SAVE-READ-005 */
 export function migrate(save, migrations = MIGRATIONS, current = SAVE_FORMAT) {

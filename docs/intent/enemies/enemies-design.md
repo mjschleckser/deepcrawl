@@ -48,11 +48,11 @@ status — can be given to a monster without new machinery.
 |---|---|
 | `id`, `name` | identity |
 | `role` | `MELEE`, `RANGED`, or `CASTER` |
-| `attributes` | the same six a character has |
+| `attributes` | the same five a character has |
 | `ranks` | skill ranks, which are also what its total level is summed from |
 | `maxHitPoints` | authored rather than derived from a class |
-| `attack` | its natural weapon: the skill it trains, base damage and accuracy |
-| `armour` | what a landed blow is reduced by |
+| `attack` | its natural weapon: the skill it trains and its base damage |
+| `armour` | what every blow against it is reduced by |
 | `potValue` | what defeating it is worth in skill experience |
 | `forbidsEscape` | whether a party can flee from it |
 | `loot` | the loot table it drops from when defeated, or nothing for an enemy that carries nothing |
@@ -98,12 +98,10 @@ than of arithmetic. Every one of them can be reached at any time, so which to sp
 turn on is the whole decision: the mage is the danger, the bodies are the damage, and
 nothing protects either.
 
-An enemy has **defence** and **armour** as separate numbers, exactly as a character
-does: armour decides what a blow against it is worth, and defence waits, unread, on
-whatever use combat finds for it (an attack always lands). Defence is
-assembled from its Dexterity by the formula a character's is, so it is not authored;
-armour is. A goblin is easy to hit and lightly protected; something in plate later will
-be the reverse of one and not the other.
+An enemy has **armour**, exactly as a character does, and it decides what every blow
+against it is worth. It is authored, since an enemy wears nothing it could take off. A
+goblin is lightly protected; something in plate later will shrug off a weak blow
+entirely, down to the floor every blow is held to.
 
 ### What an enemy is worth
 

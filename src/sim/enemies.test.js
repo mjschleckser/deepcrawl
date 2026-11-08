@@ -33,7 +33,7 @@ describe('the roster', () => {
       expect(enemy.name).toBeTruthy();
       expect(Object.values(EnemyRole)).toContain(enemy.role);
       expect(enemy.row).toBeUndefined();
-      expect(Object.keys(enemy.attributes)).toHaveLength(6);
+      expect(Object.keys(enemy.attributes)).toHaveLength(5);
       expect(Object.keys(enemy.ranks).length).toBeGreaterThan(0);
       expect(enemy.attack).toMatchObject({ baseDamage: expect.any(Number) });
       for (const field of ['maxHitPoints', 'hitPoints', 'armour', 'potValue']) {

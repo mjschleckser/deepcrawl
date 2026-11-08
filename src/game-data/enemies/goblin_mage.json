@@ -7,7 +7,6 @@
     "CONSTITUTION": 8,
     "DEXTERITY": 10,
     "INTELLECT": 14,
-    "PERCEPTION": 11,
     "RESOLVE": 12
   },
   "ranks": {
@@ -18,8 +17,7 @@
   "maxHitPoints": 6,
   "attack": {
     "skill": "EVOCATION",
-    "baseDamage": 8,
-    "accuracy": 34
+    "baseDamage": 8
   },
   "armour": 0,
   "potValue": 24,

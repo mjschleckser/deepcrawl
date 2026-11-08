@@ -8,8 +8,7 @@
   },
   "attack": {
     "skill": "BLADE",
-    "baseDamage": 5,
-    "accuracy": 24
+    "baseDamage": 5
   },
   "armour": 0,
   "portrait": "mage.png",

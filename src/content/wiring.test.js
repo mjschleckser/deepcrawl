@@ -228,7 +228,7 @@ describe('winning a fight', () => {
       if (!target) break;
       takeAction(encounter, actor.id, {
         kind: Action.ATTACK, targetId: target.id,
-        baseDamage: 40, accuracy: 300, skill: Skill.BLADE,
+        baseDamage: 40, skill: Skill.BLADE,
       });
     }
     return encounterOutcome(encounter);

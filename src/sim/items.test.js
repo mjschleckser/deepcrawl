@@ -1,14 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import {
   ItemKind, Slot, Rarity, RARITY_ORDER, createItem,
-  weaponOf, armourOf, accuracyWith, defenceOf, baseDamageWith,
+  weaponOf, armourOf, baseDamageWith,
   fitsSlot, wieldableBy,
 } from './items.js';
 import { Attribute, CharacterClass, Skill, createCharacter } from './party.js';
 
 const sword = (over = {}) => createItem({
   id: 'sword', name: 'Sword', kind: ItemKind.WEAPON, slot: Slot.MAIN_HAND,
-  skill: Skill.BLADE, damage: 10, accuracy: 20, governs: Attribute.MIGHT, ...over,
+  skill: Skill.BLADE, damage: 10, governs: Attribute.MIGHT, ...over,
 });
 
 const mail = (over = {}) => createItem({
@@ -18,13 +18,13 @@ const mail = (over = {}) => createItem({
 
 const buckler = (over = {}) => createItem({
   id: 'buckler', name: 'Buckler', kind: ItemKind.SHIELD, slot: Slot.OFF_HAND,
-  defence: 5, ...over,
+  armour: 2, ...over,
 });
 
 /** A combatant shaped the way both sides are shaped, with nothing held. */
 const bare = (over = {}) => ({
   id: 'x', name: 'X',
-  attributes: { ...{ MIGHT: 10, CONSTITUTION: 10, DEXTERITY: 10, INTELLECT: 10, PERCEPTION: 10, RESOLVE: 10 } },
+  attributes: { ...{ MIGHT: 10, CONSTITUTION: 10, DEXTERITY: 10, INTELLECT: 10, RESOLVE: 10 } },
   ranks: {}, equipment: {}, attack: null, armour: 0, ...over,
 });
 
@@ -36,8 +36,9 @@ describe('what an item is', () => {
 
     expect(w).toMatchObject({
       id: 'sword', kind: ItemKind.WEAPON, slot: Slot.MAIN_HAND,
-      skill: Skill.BLADE, damage: 10, accuracy: 20, governs: Attribute.MIGHT,
+      skill: Skill.BLADE, damage: 10, governs: Attribute.MIGHT,
     });
+    expect(w).not.toHaveProperty('accuracy');
   });
 
   // @spec ITEM-DEF-008
@@ -102,11 +103,11 @@ describe('what a combatant fights with', () => {
   // @spec ITEM-HOLD-003
   it('falls back to the attack a combatant was authored with', () => {
     const goblin = bare({
-      equipment: {}, attack: { skill: Skill.BLADE, baseDamage: 5, accuracy: 24 },
+      equipment: {}, attack: { skill: Skill.BLADE, baseDamage: 5 },
     });
 
     // Its claws are its weapon: the same fields, read the same way.
-    expect(weaponOf(goblin)).toMatchObject({ skill: Skill.BLADE, damage: 5, accuracy: 24 });
+    expect(weaponOf(goblin)).toMatchObject({ skill: Skill.BLADE, damage: 5 });
   });
 
   // @spec ITEM-HOLD-002
@@ -116,78 +117,16 @@ describe('what a combatant fights with', () => {
   });
 
   // @spec ITEM-HOLD-004
-  it('counts a shield only while it is in the off hand', () => {
-    const held = bare({ equipment: { [Slot.OFF_HAND]: buckler() } });
-    const none = bare();
-
-    expect(defenceOf(held) - defenceOf(none)).toBe(5);
+  it('adds a shield\'s armour to the body\'s, only while it is in the off hand', () => {
+    expect(armourOf(bare({ equipment: { [Slot.OFF_HAND]: buckler() } }))).toBe(2);
+    expect(armourOf(bare({ equipment: { [Slot.BODY]: mail(), [Slot.OFF_HAND]: buckler() } }))).toBe(6);
+    expect(armourOf(bare({ armour: 3, equipment: { [Slot.OFF_HAND]: buckler() } }))).toBe(5);
+    // A second weapon in the off hand turns nothing.
+    expect(armourOf(bare({ equipment: { [Slot.BODY]: mail(), [Slot.OFF_HAND]: sword({ slot: Slot.OFF_HAND }) } }))).toBe(4);
   });
 });
 
-describe('the three numbers', () => {
-  // @spec ITEM-NUM-001
-  it('assembles accuracy from the weapon, the rank behind it, and Perception', () => {
-    const c = bare({
-      attributes: { ...bare().attributes, PERCEPTION: 14 },
-      ranks: { [Skill.BLADE]: 3 },
-      equipment: { [Slot.MAIN_HAND]: sword() },
-    });
-
-    // 20 + 5x3 + 2x(14-10)
-    expect(accuracyWith(c)).toBe(20 + 15 + 8);
-  });
-
-  // @spec ITEM-NUM-004
-  it('draws accuracy from Perception whatever the weapon governs', () => {
-    const attrs = { ...bare().attributes, PERCEPTION: 14, MIGHT: 18, DEXTERITY: 18 };
-    const might = bare({ attributes: attrs, equipment: { [Slot.MAIN_HAND]: sword() } });
-    const finesse = bare({
-      attributes: attrs,
-      equipment: { [Slot.MAIN_HAND]: sword({ governs: Attribute.DEXTERITY }) },
-    });
-
-    expect(accuracyWith(finesse)).toBe(accuracyWith(might));
-  });
-
-  // @spec ITEM-NUM-002
-  it('assembles defence from the base, Dexterity, the armour rank, and the shield', () => {
-    const c = bare({
-      attributes: { ...bare().attributes, DEXTERITY: 14 },
-      ranks: { [Skill.HEAVY_ARMOUR]: 2 },
-      equipment: { [Slot.BODY]: mail(), [Slot.OFF_HAND]: buckler() },
-    });
-
-    // 20 + 2x(14-10) + 3x2 + 5
-    expect(defenceOf(c)).toBe(20 + 8 + 6 + 5);
-  });
-
-  // @spec ITEM-NUM-002
-  it('reads the armour rank of the skill the worn armour is used under', () => {
-    const inLight = bare({
-      ranks: { [Skill.HEAVY_ARMOUR]: 5, [Skill.LIGHT_ARMOUR]: 1 },
-      equipment: { [Slot.BODY]: mail({ skill: Skill.LIGHT_ARMOUR }) },
-    });
-
-    // Light armour worn, so the light rank counts and the heavy rank does not.
-    expect(defenceOf(inLight)).toBe(20 + 3 * 1);
-  });
-
-  // @spec ITEM-NUM-005
-  it('lets armour reduce damage without making anybody harder to hit', () => {
-    const plated = bare({ equipment: { [Slot.BODY]: mail({ armour: 40 }) } });
-
-    expect(defenceOf(plated)).toBe(defenceOf(bare()));
-    expect(armourOf(plated)).toBe(40);
-  });
-
-  // @spec ITEM-NUM-005
-  it('lets a shield raise defence without turning any damage', () => {
-    const shielded = bare({ equipment: { [Slot.OFF_HAND]: buckler() } });
-
-    expect(armourOf(shielded)).toBe(0);
-    expect(defenceOf(shielded)).toBeGreaterThan(defenceOf(bare()));
-  });
-
+describe('the numbers', () => {
   // @spec ITEM-NUM-003
   it('assembles base damage from the weapon, the rank, and what the weapon governs', () => {
     const c = bare({
@@ -213,11 +152,10 @@ describe('the three numbers', () => {
   });
 
   // @spec ITEM-NUM-006
-  it('assembles all three for somebody holding nothing at all', () => {
+  it('assembles both for somebody holding nothing at all', () => {
     const empty = bare();
 
-    expect(accuracyWith(empty)).toBe(0);
-    expect(defenceOf(empty)).toBe(20);
+    expect(armourOf(empty)).toBe(0);
     expect(baseDamageWith(empty)).toBe(0);
   });
 });
@@ -276,8 +214,9 @@ describe('the vocabulary an item is built from', () => {
   });
 
   // @spec ITEM-DEF-006
-  it('carries on a shield what it adds to defence', () => {
-    expect(buckler()).toMatchObject({ kind: ItemKind.SHIELD, defence: 5 });
+  it('carries on a shield the armour it adds', () => {
+    expect(buckler()).toMatchObject({ kind: ItemKind.SHIELD, armour: 2 });
+    expect(buckler()).not.toHaveProperty('defence');
   });
 
   // @spec ITEM-DEF-007
@@ -287,7 +226,6 @@ describe('the vocabulary an item is built from', () => {
     const plain = sword();
     const wielder = (w) => bare({ equipment: { [Slot.MAIN_HAND]: w } });
 
-    expect(accuracyWith(wielder(named))).toBe(accuracyWith(wielder(plain)));
     expect(baseDamageWith(wielder(named))).toBe(baseDamageWith(wielder(plain)));
   });
 });

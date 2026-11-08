@@ -4,16 +4,16 @@ Specs for the items segment. Design: `items-design.md`.
 
 The numbers an item carries — a particular sword's damage, a particular mail's armour —
 are content data, not requirements. These specs fix what an item is, how its numbers
-are assembled into the three the fight resolves, and who may hold it.
+are assembled into the two the fight resolves, and who may hold it.
 
 ## What an item is
 
 - [x] **ITEM-DEF-001**: The system shall give every item an identifier, a name, a kind and a rarity, and every item but a consumable the slot it occupies.
 - [x] **ITEM-DEF-002**: The system shall offer these kinds and no others: weapon, armour, shield, consumable.
 - [x] **ITEM-DEF-003**: The system shall offer these slots and no others: main hand, off hand, body.
-- [x] **ITEM-DEF-004**: The system shall carry on a weapon the skill it trains, its damage, its accuracy, and the attribute its damage draws on.
+- [x] **ITEM-DEF-004**: The system shall carry on a weapon the skill it trains, its damage, and the attribute its damage draws on.
 - [x] **ITEM-DEF-005**: The system shall carry on a piece of armour the armour skill it is worn under and the damage it turns.
-- [x] **ITEM-DEF-006**: The system shall carry on a shield the amount it adds to its holder's defence.
+- [x] **ITEM-DEF-006**: The system shall carry on a shield the armour it adds to its holder's.
 - [x] **ITEM-DEF-007**: The system shall decide an item's behaviour from the fields it carries and from no property of its identifier or name.
 - [x] **ITEM-DEF-008**: The system shall treat a weapon that names Dexterity as its damage attribute as training the same skill as one that names Might.
 - [x] **ITEM-DEF-012**: The system shall offer these rarities and no others, from lowest to highest: common, uncommon, rare, epic, legendary.
@@ -33,16 +33,12 @@ are assembled into the three the fight resolves, and who may hold it.
 - [x] **ITEM-HOLD-001**: The system shall take a combatant's weapon from the item in their main hand, and when that slot is empty, from the attack they were authored with.
 - [x] **ITEM-HOLD-002**: The system shall take the damage a combatant turns from the item on their body, and when that slot is empty, from the armour they were authored with.
 - [x] **ITEM-HOLD-003**: The system shall read a combatant's weapon and armour the same way whether they belong to the party or to an enemy group.
-- [x] **ITEM-HOLD-004**: The system shall add a shield's defence only while that shield occupies the off hand.
+- [x] **ITEM-HOLD-004**: The system shall add a shield's armour to the damage a combatant turns only while that shield occupies the off hand.
 
 ## The numbers
 
-- [x] **ITEM-NUM-001**: The system shall assemble a combatant's accuracy from their weapon's accuracy, five per rank of that weapon's skill, and two per point of Perception above or below ten.
-- [x] **ITEM-NUM-002**: The system shall assemble a combatant's defence from a base of twenty, two per point of Dexterity above or below ten, three per rank of the skill their worn armour is used under, and the defence of any shield they hold.
 - [x] **ITEM-NUM-003**: The system shall assemble a combatant's base damage from their weapon's damage, a tenth more per rank of that weapon's skill, and four hundredths more or less per point of the weapon's governing attribute above or below ten.
-- [x] **ITEM-NUM-004**: The system shall draw accuracy from Perception whatever attribute a weapon's damage draws on.
-- [x] **ITEM-NUM-005**: The system shall let no armour raise a combatant's defence, and no shield reduce the damage a combatant takes.
-- [x] **ITEM-NUM-006**: The system shall assemble each of the three numbers for a combatant holding nothing in any slot, contributing nothing for each empty slot rather than failing.
+- [x] **ITEM-NUM-006**: The system shall assemble base damage and armour for a combatant holding nothing in any slot, contributing nothing for each empty slot rather than failing.
 
 ## Wielding
 

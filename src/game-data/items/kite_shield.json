@@ -4,7 +4,7 @@
   "kind": "SHIELD",
   "slot": "OFF_HAND",
   "rarity": "UNCOMMON",
-  "defence": 7,
+  "armour": 2,
   "classes": [
     "FIGHTER",
     "CLERIC"

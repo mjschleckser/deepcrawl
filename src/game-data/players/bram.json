@@ -8,8 +8,7 @@
   },
   "attack": {
     "skill": "BLADE",
-    "baseDamage": 9,
-    "accuracy": 30
+    "baseDamage": 9
   },
   "armour": 0,
   "portrait": "fighter.png",

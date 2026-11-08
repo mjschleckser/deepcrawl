@@ -114,6 +114,12 @@ enemy already placed when enemies began carrying loot takes the table its roster
 names today, so a warband standing in an old save drops what a new one would. An item
 from before rarity is common.
 
+**A migration also takes away what the game no longer has.** When accuracy, defence and
+Perception were retired, a save still carrying them drops them: a weapon loses its
+accuracy, every combatant loses its Perception, and a shield's defence is replaced by the
+armour its own file gives that shield today, so a shield already owned turns blows as a
+newly found one would.
+
 A save from a later version is what an old cached build meets after a newer build has
 already run. Loading it would discard what it does not understand, so it is set aside
 exactly as a broken one is.

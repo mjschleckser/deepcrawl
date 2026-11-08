@@ -7,7 +7,6 @@
     "CONSTITUTION": 9,
     "DEXTERITY": 13,
     "INTELLECT": 9,
-    "PERCEPTION": 13,
     "RESOLVE": 8
   },
   "ranks": {
@@ -18,8 +17,7 @@
   "maxHitPoints": 7,
   "attack": {
     "skill": "BOW",
-    "baseDamage": 6,
-    "accuracy": 30
+    "baseDamage": 6
   },
   "armour": 1,
   "potValue": 18,

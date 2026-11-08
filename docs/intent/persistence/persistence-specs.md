@@ -43,6 +43,7 @@ when it is read.
 - [x] **SAVE-READ-008**: When a save from before the purse and opened chests is read, the system shall migrate it with an empty purse and no chest opened on any floor, and shall give every floor of its plan not yet built the chests its archetype would lay today.
 - [x] **SAVE-READ-009**: When a save holds enemies placed before enemies carried a loot table, whether roaming or in a fight, the system shall give each the loot table its roster entry names, matched by roster identifier, and none where no roster entry matches.
 - [x] **SAVE-READ-010**: When a save holds items from before items carried a rarity, in a slot or in the pack, the system shall read each as common.
+- [x] **SAVE-READ-011**: When a save holds weapons carrying accuracy, combatants carrying Perception, or shields carrying defence, the system shall drop the accuracy and the Perception, and shall give each shield the armour its authored file gives it today, or none if it has no file.
 
 ## Beginning again
 

@@ -5,6 +5,5 @@
   "slot": "MAIN_HAND",
   "skill": "BLUNT",
   "damage": 10,
-  "accuracy": 20,
   "governs": "MIGHT"
 }

@@ -40,12 +40,12 @@ function untilAsked(fight, limit = 200) {
 const viewport = { width: 900, height: 640 };
 
 /** Held in the hand of a character authored with a blade. */
-const mace = { name: 'Mace', skill: Skill.BLUNT, damage: 8, accuracy: 20, governs: 'MIGHT' };
+const mace = { name: 'Mace', skill: Skill.BLUNT, damage: 8, governs: 'MIGHT' };
 
 const hero = (id, cls) =>
   createCharacter({
     id, name: id, characterClass: cls,
-    attack: { skill: Skill.BLADE, baseDamage: 9, accuracy: 30 },
+    attack: { skill: Skill.BLADE, baseDamage: 9 },
   });
 
 function fightState({ enemies, light = 'BRIGHT' } = {}) {
@@ -57,9 +57,9 @@ function fightState({ enemies, light = 'BRIGHT' } = {}) {
   return beginEncounter({
     party,
     enemies: createEnemyGroup(enemies ?? [
-      createEnemy({ id: 'g1', name: 'Goblin', maxHitPoints: 9, potValue: 14, attack: { baseDamage: 5, accuracy: 24 } }),
-      createEnemy({ id: 'g2', name: 'Goblin', maxHitPoints: 9, potValue: 14, attack: { baseDamage: 5, accuracy: 24 } }),
-      createEnemy({ id: 'a1', name: 'Goblin Archer', maxHitPoints: 7, potValue: 18, attack: { baseDamage: 5, accuracy: 24 } }),
+      createEnemy({ id: 'g1', name: 'Goblin', maxHitPoints: 9, potValue: 14, attack: { baseDamage: 5 } }),
+      createEnemy({ id: 'g2', name: 'Goblin', maxHitPoints: 9, potValue: 14, attack: { baseDamage: 5 } }),
+      createEnemy({ id: 'a1', name: 'Goblin Archer', maxHitPoints: 7, potValue: 18, attack: { baseDamage: 5 } }),
     ]),
     light,
     rng: makeRng(4),
@@ -589,7 +589,7 @@ describe('the four a turn offers', () => {
     const encounter = fightState({
       enemies: [createEnemy({
         id: 'j1', name: 'Jailer', maxHitPoints: 9, potValue: 14,
-        attack: { baseDamage: 5, accuracy: 24 }, forbidsEscape: true,
+        attack: { baseDamage: 5 }, forbidsEscape: true,
       })],
     });
     const fight = createFightController({ encounter, viewport, onDraw: vi.fn() });
@@ -604,7 +604,7 @@ describe('the four a turn offers', () => {
     const encounter = fightState({
       enemies: [createEnemy({
         id: 'w1', name: 'Wolf', maxHitPoints: 9, potValue: 14,
-        attributes: { DEXTERITY: 20 }, attack: { baseDamage: 5, accuracy: 24 },
+        attributes: { DEXTERITY: 20 }, attack: { baseDamage: 5 },
       })],
     });
     const fight = createFightController({ encounter, viewport, onDraw: vi.fn() });
@@ -631,7 +631,7 @@ describe('the four a turn offers', () => {
     const encounter = fightState({
       enemies: [createEnemy({
         id: 'w1', name: 'Wolf', maxHitPoints: 9, potValue: 14,
-        attributes: { DEXTERITY: 20 }, attack: { baseDamage: 5, accuracy: 24 },
+        attributes: { DEXTERITY: 20 }, attack: { baseDamage: 5 },
       })],
     });
     const fight = createFightController({ encounter, viewport, onDraw: vi.fn() });
@@ -717,7 +717,7 @@ describe('a turn with nothing in it', () => {
     const encounter = fightState({
       enemies: [createEnemy({
         id: 'j1', name: 'Jailer', maxHitPoints: 9, potValue: 14,
-        attack: { baseDamage: 5, accuracy: 24 }, forbidsEscape: true,
+        attack: { baseDamage: 5 }, forbidsEscape: true,
       })],
     });
     for (const c of roster(encounter.party)) c.attack = null;
@@ -856,7 +856,7 @@ describe('ending', () => {
   // @spec PRESENT-FIGHT-014
   it('draws a banner naming the outcome and what a victory was worth', () => {
     const fight = controller({
-      enemies: [createEnemy({ id: 'g1', name: 'Goblin', maxHitPoints: 1, potValue: 14, attack: { baseDamage: 5, accuracy: 24 } })],
+      enemies: [createEnemy({ id: 'g1', name: 'Goblin', maxHitPoints: 1, potValue: 14, attack: { baseDamage: 5 } })],
     });
 
     // One character can finish this, so the round ends it.
@@ -874,7 +874,7 @@ describe('ending', () => {
   // @spec PRESENT-FIGHT-015
   it('hands control back when the banner is dismissed', () => {
     const fight = controller({
-      enemies: [createEnemy({ id: 'g1', name: 'Goblin', maxHitPoints: 1, potValue: 14, attack: { baseDamage: 5, accuracy: 24 } })],
+      enemies: [createEnemy({ id: 'g1', name: 'Goblin', maxHitPoints: 1, potValue: 14, attack: { baseDamage: 5 } })],
     });
     for (let i = 0; i < 3 && fight.phase !== FightPhase.ENDED; i++) {
       chooseOption(fight, 0);
@@ -935,7 +935,7 @@ describe('what a won fight teaches', () => {
   // @spec PRESENT-FIGHT-008
   it('records the skill each attack used, so a victory advances something', () => {
     const fight = controller({
-      enemies: [createEnemy({ id: 'g1', name: 'Goblin', maxHitPoints: 1, potValue: 14, attack: { baseDamage: 5, accuracy: 24 } })],
+      enemies: [createEnemy({ id: 'g1', name: 'Goblin', maxHitPoints: 1, potValue: 14, attack: { baseDamage: 5 } })],
     });
 
     for (let i = 0; i < 6 && fight.phase !== FightPhase.ENDED; i++) {
@@ -1000,7 +1000,7 @@ describe('the panel is sized to what is in it', () => {
         createEnemy({ id: `g${i}`, name: 'Goblin', maxHitPoints: 9, potValue: 14 })),
     });
     const skirmish = withPending({
-      enemies: [createEnemy({ id: 'g1', name: 'Goblin', maxHitPoints: 9, potValue: 14, attack: { baseDamage: 5, accuracy: 24 } })],
+      enemies: [createEnemy({ id: 'g1', name: 'Goblin', maxHitPoints: 9, potValue: 14, attack: { baseDamage: 5 } })],
     });
 
     expect(skirmish.bounds.height).toBeLessThan(crowd.bounds.height);
@@ -1165,7 +1165,7 @@ describe('the turn strip', () => {
   // @spec PRESENT-STRIP-002
   it('shows the same number of turns however few are fighting', () => {
     const fight = controller({
-      enemies: [createEnemy({ id: 'g1', name: 'Goblin', maxHitPoints: 90, potValue: 14, attack: { baseDamage: 1, accuracy: 24 } })],
+      enemies: [createEnemy({ id: 'g1', name: 'Goblin', maxHitPoints: 90, potValue: 14, attack: { baseDamage: 1 } })],
     });
 
     expect(planOf(fight).strip.tiles).toHaveLength(TURN_STRIP_LENGTH);
@@ -1303,7 +1303,7 @@ describe('the action menu', () => {
   const options = (plan) => plan.controls.filter((c) => c.role === 'OPTION');
   const entries = (plan) => plan.controls.filter((c) => c.role === 'TARGET');
   const lone = () => [createEnemy({
-    id: 'g1', name: 'Goblin', maxHitPoints: 90, potValue: 14, attack: { baseDamage: 5, accuracy: 24 },
+    id: 'g1', name: 'Goblin', maxHitPoints: 90, potValue: 14, attack: { baseDamage: 5 },
   })];
 
   // @spec PRESENT-MENU-002
@@ -1459,7 +1459,7 @@ describe('the action menu', () => {
   // @spec PRESENT-CTRL-002
   it('wraps a swarm into columns, staying below the strip and thumb-sized', () => {
     const many = Array.from({ length: 20 }, (_, i) => createEnemy({
-      id: `g${i}`, name: 'Goblin', maxHitPoints: 9, potValue: 14, attack: { baseDamage: 1, accuracy: 24 },
+      id: `g${i}`, name: 'Goblin', maxHitPoints: 9, potValue: 14, attack: { baseDamage: 1 },
     }));
     const fight = untilAsked(controller({ enemies: many }));
     chooseOption(fight, 0);
@@ -1563,7 +1563,7 @@ describe('the action menu', () => {
   // @spec PRESENT-FIGHT-045
   it('does not grow the controls for a crowd', () => {
     const many = Array.from({ length: 12 }, (_, i) => createEnemy({
-      id: `g${i}`, name: 'Goblin', maxHitPoints: 9, potValue: 14, attack: { baseDamage: 1, accuracy: 24 },
+      id: `g${i}`, name: 'Goblin', maxHitPoints: 9, potValue: 14, attack: { baseDamage: 1 },
     }));
     const crowd = planOf(controller({ enemies: many }));
 
@@ -1575,7 +1575,7 @@ describe('the pace of a fight', () => {
   /** Enemies so slow that the party's turns run on from one another. */
   const dawdling = () => [createEnemy({
     id: 's1', name: 'Slug', maxHitPoints: 90, potValue: 14,
-    attributes: { DEXTERITY: 1 }, attack: { baseDamage: 1, accuracy: 24 },
+    attributes: { DEXTERITY: 1 }, attack: { baseDamage: 1 },
   })];
 
   /** A fight stopped at the moment an enemy is the next to act. */

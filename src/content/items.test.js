@@ -5,7 +5,7 @@ import { Attribute, CharacterClass, Skill } from '../sim/party.js';
 
 const swordFile = {
   id: 'blade', name: 'Blade', kind: 'WEAPON', slot: 'MAIN_HAND',
-  skill: 'BLADE', damage: 9, accuracy: 22, governs: 'MIGHT',
+  skill: 'BLADE', damage: 9, governs: 'MIGHT',
 };
 
 describe('reading an authored item', () => {
@@ -13,7 +13,7 @@ describe('reading an authored item', () => {
   it('builds an item with everything its file said', () => {
     expect(buildItem('blade.json', swordFile)).toMatchObject({
       id: 'blade', kind: ItemKind.WEAPON, slot: Slot.MAIN_HAND,
-      skill: Skill.BLADE, damage: 9, accuracy: 22, governs: Attribute.MIGHT,
+      skill: Skill.BLADE, damage: 9, governs: Attribute.MIGHT,
     });
   });
 
@@ -82,11 +82,11 @@ describe('reading an authored item', () => {
   // @spec ITEM-DATA-002
   it('lets a shield omit the skill a weapon needs', () => {
     const shield = buildItem('shield.json', {
-      id: 's', name: 'S', kind: 'SHIELD', slot: 'OFF_HAND', defence: 5,
+      id: 's', name: 'S', kind: 'SHIELD', slot: 'OFF_HAND', armour: 2,
     });
 
     expect(shield.skill).toBeNull();
-    expect(shield.defence).toBe(5);
+    expect(shield.armour).toBe(2);
   });
 });
 

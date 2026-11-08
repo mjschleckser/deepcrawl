@@ -251,7 +251,7 @@ or archetype naming a table that doesn't exist is rejected the same way.
 
 ### Deferred
 
-1. **Affixes.** Varying an item within its kind wants enemy defence and armour on a curve to balance against (ENEMY-ROSTER-007, -008).
+1. **Affixes.** Varying an item within its kind wants enemy armour on a curve to balance against (ENEMY-ROSTER-007, -008).
 2. **A pack limit** (ITEM-PACK-006), and with it a reason to choose what to take.
 3. **Trapped chests and locked chests.** The trap segment does not exist yet. A chest is opened with `INTERACT` rather than by stepping onto it so that a trap can later make opening a decision.
 4. **Different loot on each floor**, through richer tables named by deeper archetypes and enemies (GEN-PLAN-008).

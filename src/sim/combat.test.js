@@ -142,7 +142,7 @@ describe('targeting', () => {
   // @spec COMBAT-TARGET-005
   it('bounds what a combatant may do by what they carry, never by where they are', () => {
     const state = encounter({
-      members: [hero('armed', { attack: { baseDamage: 9, accuracy: 30 } }), hero('bare')],
+      members: [hero('armed', { attack: { baseDamage: 9 } }), hero('bare')],
       enemies: [orc('o1')],
     });
 
@@ -158,7 +158,7 @@ describe('enemy groups', () => {
   it('makes an enemy of the same stuff a character is', () => {
     const goblin = orc('g');
 
-    expect(Object.keys(goblin.attributes)).toHaveLength(6);
+    expect(Object.keys(goblin.attributes)).toHaveLength(5);
     expect(goblin.characterClass).toBeUndefined();
     expect(goblin.condition).toBe(Condition.OK);
     expect(goblin.hitPoints).toBe(goblin.maxHitPoints);
@@ -187,10 +187,10 @@ describe('aiming at what is there', () => {
       enemies: [orc('o1', { maxHitPoints: 1 }), orc('o2', { maxHitPoints: 40 })],
     });
     readyUp(state, 'a');
-    takeAction(state, 'a', { kind: Action.ATTACK, targetId: 'o1', baseDamage: 50, accuracy: 100 });
+    takeAction(state, 'a', { kind: Action.ATTACK, targetId: 'o1', baseDamage: 50 });
 
     readyUp(state, 'a');
-    const event = takeAction(state, 'a', { kind: Action.ATTACK, targetId: 'o1', baseDamage: 50, accuracy: 100 });
+    const event = takeAction(state, 'a', { kind: Action.ATTACK, targetId: 'o1', baseDamage: 50 });
 
     expect(event.targetId).toBeNull();
     // The other orc is untouched: a swing at nothing does not wander onto it.
@@ -202,7 +202,7 @@ describe('aiming at what is there', () => {
     const state = encounter({ members: [hero('a')], enemies: [orc('o1', { maxHitPoints: 40 })] });
     readyUp(state, 'a');
 
-    const event = takeAction(state, 'a', { kind: Action.ATTACK, targetId: 'o1', baseDamage: 12, accuracy: 100 });
+    const event = takeAction(state, 'a', { kind: Action.ATTACK, targetId: 'o1', baseDamage: 12 });
 
     expect(event.targetId).toBe('o1');
     expect(state.enemies.members[0].hitPoints).toBeLessThan(40);
@@ -326,7 +326,7 @@ describe('ending', () => {
   it('ends in victory and reports the pot with the skills used', () => {
     const state = encounter({ members: [hero('a')], enemies: [orc('o1', { hitPoints: 1, potValue: 30 })] });
     readyUp(state, 'a');
-    takeAction(state, 'a', { kind: Action.ATTACK, targetId: 'o1', baseDamage: 50, accuracy: 100, skill: Skill.BLADE });
+    takeAction(state, 'a', { kind: Action.ATTACK, targetId: 'o1', baseDamage: 50, skill: Skill.BLADE });
 
     const result = encounterOutcome(state);
     expect(result.outcome).toBe(Outcome.VICTORY);
@@ -338,12 +338,12 @@ describe('ending', () => {
   it('reports the same pot however long the fight ran', () => {
     const quick = encounter({ members: [hero('a')], enemies: [orc('o1', { hitPoints: 1, potValue: 30 })] });
     readyUp(quick, 'a');
-    takeAction(quick, 'a', { kind: Action.ATTACK, targetId: 'o1', baseDamage: 99, accuracy: 100, skill: Skill.BLADE });
+    takeAction(quick, 'a', { kind: Action.ATTACK, targetId: 'o1', baseDamage: 99, skill: Skill.BLADE });
 
     const slow = encounter({ members: [hero('a')], enemies: [orc('o1', { hitPoints: 40, potValue: 30 })] });
     for (let i = 0; i < 12 && encounterOutcome(slow).outcome === Outcome.ONGOING; i++) {
       readyUp(slow, 'a');
-      takeAction(slow, 'a', { kind: Action.ATTACK, targetId: 'o1', baseDamage: 6, accuracy: 100, skill: Skill.BLADE });
+      takeAction(slow, 'a', { kind: Action.ATTACK, targetId: 'o1', baseDamage: 6, skill: Skill.BLADE });
     }
 
     expect(encounterOutcome(slow).outcome).toBe(Outcome.VICTORY);
@@ -427,7 +427,7 @@ describe('damage from a fight', () => {
   it('takes a real blow through the party operation, floor and chain included', () => {
     const state = encounter({
       members: [hero('victim')],
-      enemies: [orc('o1', { attack: { baseDamage: 9999, accuracy: 999 } })],
+      enemies: [orc('o1', { attack: { baseDamage: 9999 } })],
     });
     readyUp(state, 'o1');
 
@@ -461,7 +461,7 @@ describe('passing a turn', () => {
 describe('changing equipment in a fight', () => {
   const dagger = () => createItem({
     id: 'dagger', name: 'Dagger', kind: ItemKind.WEAPON, slot: Slot.MAIN_HAND,
-    skill: Skill.BLADE, damage: 6, accuracy: 26,
+    skill: Skill.BLADE, damage: 6,
   });
 
   // @spec COMBAT-ACTION-011
@@ -502,7 +502,7 @@ describe('taking a turn', () => {
     });
 
     expect(nextActor(state).id).toBe('a');
-    takeAction(state, 'a', { kind: Action.ATTACK, targetId: 'o1', baseDamage: 50, accuracy: 100 });
+    takeAction(state, 'a', { kind: Action.ATTACK, targetId: 'o1', baseDamage: 50 });
 
     expect(state.enemies.members[0].hitPoints).toBeLessThan(20);
     // The bar is spent, so the turn has genuinely passed on.
@@ -548,10 +548,10 @@ describe('taking a turn', () => {
 describe('what a blow is worth', () => {
   // @spec COMBAT-ACTION-008
   it('takes damage from whoever swung, on either side alike', () => {
-    const heavy = hero('heavy', { attack: { baseDamage: 20, accuracy: 100 } });
+    const heavy = hero('heavy', { attack: { baseDamage: 20 } });
     const state = encounter({
       members: [heavy],
-      enemies: [orc('o1', { maxHitPoints: 40, attack: { baseDamage: 3, accuracy: 100 } })],
+      enemies: [orc('o1', { maxHitPoints: 40, attack: { baseDamage: 3 } })],
     });
     readyUp(state, 'heavy');
     readyUp(state, 'o1');
@@ -567,8 +567,8 @@ describe('what a blow is worth', () => {
   // @spec ENEMY-ROSTER-011
   it('kills an enemy outright where a character would be left unconscious', () => {
     const state = encounter({
-      members: [hero('bram', { attack: { baseDamage: 40, accuracy: 100 } })],
-      enemies: [orc('o1', { maxHitPoints: 6, attack: { baseDamage: 40, accuracy: 100 } })],
+      members: [hero('bram', { attack: { baseDamage: 40 } })],
+      enemies: [orc('o1', { maxHitPoints: 6, attack: { baseDamage: 40 } })],
     });
     readyUp(state, 'o1');
     takeAction(state, 'o1', { kind: Action.ATTACK, targetId: 'bram' });
@@ -577,7 +577,7 @@ describe('what a blow is worth', () => {
     expect(character(state.party, 'bram').condition).toBe(Condition.UNCONSCIOUS);
 
     const other = encounter({
-      members: [hero('rook', { attack: { baseDamage: 40, accuracy: 100 } })],
+      members: [hero('rook', { attack: { baseDamage: 40 } })],
       enemies: [orc('o2', { maxHitPoints: 6 })],
     });
     readyUp(other, 'rook');
@@ -600,9 +600,9 @@ describe('what a turn reports', () => {
 
     // Both swing at the same orc; the first wounds it, the second finishes it.
     readyUp(state, 'a');
-    const first = takeAction(state, 'a', { kind: Action.ATTACK, targetId: 'o1', baseDamage: 12, accuracy: 100 });
+    const first = takeAction(state, 'a', { kind: Action.ATTACK, targetId: 'o1', baseDamage: 12 });
     readyUp(state, 'b');
-    const second = takeAction(state, 'b', { kind: Action.ATTACK, targetId: 'o1', baseDamage: 12, accuracy: 100 });
+    const second = takeAction(state, 'b', { kind: Action.ATTACK, targetId: 'o1', baseDamage: 12 });
 
     expect(first.felled).toBe(false);
     expect(second.felled).toBe(true);
@@ -613,7 +613,7 @@ describe('what a turn reports', () => {
     const state = encounter({ members: [hero('a')], enemies: [orc('o1')] });
     readyUp(state, 'a');
 
-    expect(takeAction(state, 'a', { kind: Action.ATTACK, targetId: 'o1', baseDamage: 5, accuracy: 100 }).targetId)
+    expect(takeAction(state, 'a', { kind: Action.ATTACK, targetId: 'o1', baseDamage: 5 }).targetId)
       .toBe('o1');
   });
 

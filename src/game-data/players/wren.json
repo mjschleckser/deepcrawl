@@ -8,8 +8,7 @@
   },
   "attack": {
     "skill": "BLUNT",
-    "baseDamage": 7,
-    "accuracy": 26
+    "baseDamage": 7
   },
   "armour": 0,
   "portrait": "cleric.png",

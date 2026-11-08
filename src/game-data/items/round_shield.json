@@ -3,7 +3,7 @@
   "name": "Round Shield",
   "kind": "SHIELD",
   "slot": "OFF_HAND",
-  "defence": 5,
+  "armour": 1,
   "classes": [
     "FIGHTER",
     "CLERIC"

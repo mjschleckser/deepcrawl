@@ -9,6 +9,7 @@ import {
   chooseOption, createFightController, playEnemyTurn, FightPhase,
 } from '../render/fight.js';
 import { createCampaign } from './campaign.js';
+import { itemById } from './items.js';
 import {
   SAVE_FORMAT, SAVE_KEY, WRITE_DELAY_MS, createAutosave, encodeCampaign, migrate, openCampaign,
 } from './savegame.js';
@@ -333,6 +334,60 @@ describe('resuming', () => {
     const items = [...migrated.party.pack, ...migrated.party.members.flatMap((c) => Object.values(c.equipment))];
     expect(items.length).toBeGreaterThan(1);
     for (const item of items) expect(item.rarity).toBe('COMMON');
+  });
+
+  function versionFourSave() {
+    const campaign = createCampaign({ seed: 5 });
+    const bram = roster(campaign.party)[0];
+    takeOff(campaign.party, bram.id, 'MAIN_HAND');
+    const saved = JSON.parse(encodeCampaign(campaign));
+    saved.version = 4;
+    const items = [...saved.party.pack, ...saved.party.members.flatMap((c) => Object.values(c.equipment))];
+    for (const item of items) {
+      if (item.kind === 'WEAPON') item.accuracy = 22;
+      if (item.kind === 'SHIELD') { delete item.armour; item.defence = 4; }
+    }
+    saved.party.pack.push({ id: 'lost_buckler', name: 'Lost buckler', kind: 'SHIELD', slot: 'OFF_HAND', defence: 9 });
+    for (const c of saved.party.members) {
+      c.attributes.PERCEPTION = 12;
+      if (c.attack) c.attack.accuracy = 30;
+    }
+    for (const roamer of saved.exploration.roamers) {
+      for (const member of roamer.band.members) {
+        member.attributes.PERCEPTION = 4;
+        member.attack.accuracy = 24;
+      }
+    }
+    saved.encounter = {
+      enemies: { members: [{ id: 'GOBLIN-0', attributes: { DEXTERITY: 7, PERCEPTION: 4 }, attack: { baseDamage: 5, accuracy: 24 } }] },
+    };
+    return saved;
+  }
+
+  // @spec SAVE-READ-011
+  it('drops accuracy and Perception from a version 4 save, and arms its shields with armour', () => {
+    const migrated = migrate(versionFourSave());
+    const text = JSON.stringify(migrated);
+
+    expect(migrated.version).toBe(SAVE_FORMAT);
+    expect(text).not.toMatch(/"accuracy"|"PERCEPTION"|"defence"/);
+
+    const items = [...migrated.party.pack, ...migrated.party.members.flatMap((c) => Object.values(c.equipment))];
+    const shields = items.filter((i) => i.kind === 'SHIELD');
+    expect(shields.length).toBeGreaterThan(1);
+    for (const shield of shields) {
+      expect(shield.armour).toBe(itemById(shield.id)?.armour ?? 0);
+    }
+    expect(shields.find((i) => i.id === 'round_shield').armour).toBeGreaterThan(0);
+    expect(shields.find((i) => i.id === 'lost_buckler').armour).toBe(0);
+  });
+
+  // @spec SAVE-READ-011
+  it('resumes a version 4 save', () => {
+    const saved = versionFourSave();
+    saved.encounter = null;
+    const resumed = createCampaign({ saved: migrate(saved) });
+    expect(Object.keys(roster(resumed.party)[0].attributes)).not.toContain('PERCEPTION');
   });
 
   // @spec SAVE-READ-008

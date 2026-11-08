@@ -8,8 +8,7 @@
   },
   "attack": {
     "skill": "BLADE",
-    "baseDamage": 7,
-    "accuracy": 32
+    "baseDamage": 7
   },
   "armour": 0,
   "portrait": "thief.png",

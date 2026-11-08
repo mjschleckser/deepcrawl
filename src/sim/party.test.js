@@ -128,8 +128,12 @@ describe('total level', () => {
 
 describe('characters', () => {
   // @spec PARTY-CHAR-001
-  it('gives every character the six attributes', () => {
+  it('gives every character the five attributes, with no Perception', () => {
     const c = fighter();
+
+    expect(Object.values(Attribute).sort()).toEqual(
+      ['CONSTITUTION', 'DEXTERITY', 'INTELLECT', 'MIGHT', 'RESOLVE'],
+    );
 
     for (const attribute of Object.values(Attribute)) {
       expect(c.attributes[attribute]).toBeGreaterThan(0);
@@ -702,7 +706,7 @@ describe('what total level decides', () => {
 describe('putting something in a slot', () => {
   const sword = () => createItem({
     id: 'sword', name: 'Sword', kind: ItemKind.WEAPON, slot: Slot.MAIN_HAND,
-    skill: Skill.BLADE, damage: 10, accuracy: 20, governs: Attribute.MIGHT,
+    skill: Skill.BLADE, damage: 10, governs: Attribute.MIGHT,
   });
   const plate = () => createItem({
     id: 'plate', name: 'Plate', kind: ItemKind.ARMOUR, slot: Slot.BODY,
@@ -792,7 +796,7 @@ describe('putting something in a slot', () => {
     const blade = sword();
     const axe = createItem({
       id: 'axe', name: 'Axe', kind: ItemKind.WEAPON, slot: Slot.MAIN_HAND,
-      skill: Skill.BLUNT, damage: 12, accuracy: 16, governs: Attribute.MIGHT,
+      skill: Skill.BLUNT, damage: 12, governs: Attribute.MIGHT,
     });
     const party = carrying(CharacterClass.FIGHTER, blade, axe);
     equip(party, 'x', blade);

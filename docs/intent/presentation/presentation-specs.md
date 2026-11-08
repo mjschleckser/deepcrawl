@@ -216,7 +216,7 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-PARTY-011**: While the party screen is open, when the player presses a number key from `1` to the party's size, the system shall show that character's page.
 - [x] **PRESENT-PARTY-012**: The system shall draw on a character's page their portrait, name, class, total level, and their place in the party as a position out of the party's size.
 - [x] **PRESENT-PARTY-013**: The system shall draw on a character's page their current and maximum hit points with a bar, and shall name their condition in words whenever it is anything other than conscious.
-- [x] **PRESENT-PARTY-014**: The system shall draw on a character's page all six attributes, named in full, with their scores.
+- [x] **PRESENT-PARTY-014**: The system shall draw on a character's page all five attributes, named in full, with their scores.
 - [x] **PRESENT-PARTY-015**: The system shall draw on a character's page every skill they hold at rank 1 or above, grouped by the party segment's skill groups in that segment's order, each with its rank.
 - [x] **PRESENT-PARTY-016**: The system shall draw under every skill on a character's page a bar filled to the progress toward the next rank that the party segment reports, and shall mark a skill at the rank cap as at the cap.
 - [x] **PRESENT-PARTY-017**: The system shall mark on a character's page every skill their class cannot train as no longer advancing.
@@ -235,7 +235,7 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-ITEMS-004**: While the Items screen is open, the system shall discard every movement verb and every party action other than `ITEMS`, and shall draw neither the navigation zones nor the party action bar.
 - [x] **PRESENT-ITEMS-005**: The system shall draw the Items screen as one character's page at a time within the centred column, and out of a fight shall page it by the same controls and keys, with the same wrap-around, as the party screen.
 - [x] **PRESENT-ITEMS-006**: The system shall draw on an Items page the character's name, every equipment slot the items segment defines with the item in it or a mark that it is empty, and every item in the pack in the pack's order or a mark that the pack is empty.
-- [x] **PRESENT-ITEMS-007**: The system shall draw beneath every item on the Items screen its slot and the numbers it carries: a weapon's skill, damage and accuracy; an armour's skill and armour; a shield's defence.
+- [x] **PRESENT-ITEMS-007**: The system shall draw beneath every item on the Items screen its slot and the numbers it carries: a weapon's skill and damage; an armour's skill and armour; a shield's armour.
 - [x] **PRESENT-ITEMS-008**: The system shall draw greyed, with the classes that may wield it in place of its numbers, every pack item the character on the page may not wield, and a press on it shall do nothing.
 - [x] **PRESENT-ITEMS-009**: When the player presses a pack item the character on the page may wield, the system shall equip it on that character through the party segment.
 - [x] **PRESENT-ITEMS-010**: Out of a fight, when the player presses a worn item, the system shall take it off that character into the pack through the party segment.

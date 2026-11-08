@@ -12,7 +12,7 @@ const goblinFile = {
   attributes: { DEXTERITY: 11 },
   ranks: { BLADE: 2, LIGHT_ARMOUR: 1 },
   maxHitPoints: 9,
-  attack: { skill: 'BLADE', baseDamage: 5, accuracy: 24 },
+  attack: { skill: 'BLADE', baseDamage: 5 },
   armour: 2,
   potValue: 14,
 };
@@ -21,7 +21,7 @@ const playerFile = {
   id: 'bram', name: 'Bram', characterClass: 'FIGHTER',
   attributes: { DEXTERITY: 13 },
   maxHitPoints: 20,
-  attack: { skill: 'BLADE', baseDamage: 9, accuracy: 30 },
+  attack: { skill: 'BLADE', baseDamage: 9 },
 };
 
 describe('reading an authored combatant', () => {
@@ -33,7 +33,7 @@ describe('reading an authored combatant', () => {
       id: 'bram', name: 'Bram', characterClass: CharacterClass.FIGHTER, condition: Condition.OK,
     });
     expect(bram.attributes[Attribute.DEXTERITY]).toBe(13);
-    expect(bram.attack).toMatchObject({ baseDamage: 9, accuracy: 30 });
+    expect(bram.attack).toMatchObject({ baseDamage: 9 });
   });
 
   // @spec PARTY-DATA-003
@@ -51,7 +51,7 @@ describe('reading an authored combatant', () => {
   it('fills in what a file left out', () => {
     const plain = buildEnemy('plain.json', { id: 'x', name: 'X', maxHitPoints: 5 });
 
-    expect(Object.keys(plain.attributes)).toHaveLength(6);
+    expect(Object.keys(plain.attributes)).toHaveLength(5);
     expect(plain.attributes[Attribute.MIGHT]).toBe(10);
     expect(plain.attack).toBeNull();
     expect(plain.armour).toBe(0);
@@ -75,6 +75,8 @@ describe('reading an authored combatant', () => {
       .toThrow(/ranks\.json: skill "BLDAE"/);
     expect(() => buildEnemy('role.json', { ...goblinFile, role: 'SNEAKY' }))
       .toThrow(/role\.json: role "SNEAKY"/);
+    expect(() => buildEnemy('eyes.json', { ...goblinFile, attributes: { PERCEPTION: 12 } }))
+      .toThrow(/eyes\.json: attribute "PERCEPTION"/);
   });
 });
 

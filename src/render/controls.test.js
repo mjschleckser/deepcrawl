@@ -26,12 +26,12 @@ function fightOf(viewport, foes = 2) {
   const party = createParty();
   addCharacter(party, createCharacter({
     id: 'bram', name: 'Bram', characterClass: CharacterClass.FIGHTER,
-    attack: { baseDamage: 9, accuracy: 30 },
+    attack: { baseDamage: 9 },
   }));
   const encounter = beginEncounter({
     party,
     enemies: createEnemyGroup(Array.from({ length: foes }, (_, i) => createEnemy({
-      id: `g${i + 1}`, name: 'Goblin', maxHitPoints: 9, potValue: 10, attack: { baseDamage: 5, accuracy: 24 },
+      id: `g${i + 1}`, name: 'Goblin', maxHitPoints: 9, potValue: 10, attack: { baseDamage: 5 },
     }))),
     rng: makeRng(1),
     origin: { floorId: 'f1', x: 1, y: 1 },

@@ -654,7 +654,7 @@ screen holds no copy of a character.
 |---|---|
 | Heading | portrait, name, class, total level, and where this page sits among the party |
 | Hit points | current and maximum, with a bar; the condition named when it is anything but conscious |
-| Attributes | all six, named in full, with their scores |
+| Attributes | all five, named in full, with their scores |
 | Skills | every skill held at rank 1 or above, in the party segment's six groups and their order |
 | Equipment | every slot the items segment defines, with what is in it or a mark that it is empty |
 

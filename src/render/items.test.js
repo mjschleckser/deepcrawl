@@ -21,18 +21,18 @@ const phone = { width: 390, height: 780 };
 
 const sword = () => createItem({
   id: 'shortsword', name: 'Shortsword', kind: ItemKind.WEAPON, slot: Slot.MAIN_HAND,
-  skill: Skill.BLADE, damage: 9, accuracy: 22,
+  skill: Skill.BLADE, damage: 9,
 });
 const dagger = () => createItem({
   id: 'dagger', name: 'Dagger', kind: ItemKind.WEAPON, slot: Slot.MAIN_HAND,
-  skill: Skill.BLADE, damage: 6, accuracy: 26,
+  skill: Skill.BLADE, damage: 6,
 });
 const mail = () => createItem({
   id: 'chainmail', name: 'Chainmail', kind: ItemKind.ARMOUR, slot: Slot.BODY,
   skill: Skill.HEAVY_ARMOUR, armour: 5, classes: [CharacterClass.FIGHTER, CharacterClass.CLERIC],
 });
 const shield = () => createItem({
-  id: 'round_shield', name: 'Round shield', kind: ItemKind.SHIELD, slot: Slot.OFF_HAND, defence: 4,
+  id: 'round_shield', name: 'Round shield', kind: ItemKind.SHIELD, slot: Slot.OFF_HAND, armour: 1,
 });
 
 /** Bram the fighter holding a sword, and a pack of a dagger and chainmail. */
@@ -95,9 +95,9 @@ describe('the Items page', () => {
 
   // @spec PRESENT-ITEMS-007
   it('says what each kind of item carries', () => {
-    expect(itemDetail(sword())).toBe('Main hand · Blade · damage 9 · accuracy 22');
+    expect(itemDetail(sword())).toBe('Main hand · Blade · damage 9');
     expect(itemDetail(mail())).toBe('Body · Heavy Armour · armour 5');
-    expect(itemDetail(shield())).toBe('Off hand · defence 4');
+    expect(itemDetail(shield())).toBe('Off hand · armour 1');
   });
 
   // @spec PRESENT-ITEMS-008
@@ -296,7 +296,7 @@ describe('the Items screen in a fight', () => {
     const party = createParty();
     addCharacter(party, createCharacter({
       id: 'bram', name: 'Bram', characterClass: CharacterClass.FIGHTER, attributes: { DEXTERITY: 30 },
-      attack: { skill: Skill.BLADE, baseDamage: 5, accuracy: 20 },
+      attack: { skill: Skill.BLADE, baseDamage: 5 },
     }));
     if (packed) stow(party, dagger());
     const encounter = beginEncounter({
@@ -536,7 +536,7 @@ describe('drinking in a fight', () => {
     const party = createParty();
     addCharacter(party, createCharacter({
       id: 'bram', name: 'Bram', characterClass: CharacterClass.FIGHTER, attributes: { DEXTERITY: 30 },
-      attack: { skill: Skill.BLADE, baseDamage: 5, accuracy: 20 },
+      attack: { skill: Skill.BLADE, baseDamage: 5 },
     }));
     stow(party, potion());
     if (hurt) applyDamage(party, 'bram', 10);

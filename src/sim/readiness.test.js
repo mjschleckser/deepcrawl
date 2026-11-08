@@ -266,7 +266,7 @@ describe('what time does not buy', () => {
 
 describe('what a hit would deal', () => {
   const swinger = () => hero('bram', 12, {
-    attack: { baseDamage: 9, accuracy: 30, skill: 'BLADE' },
+    attack: { baseDamage: 9, skill: 'BLADE' },
   });
   const armoured = (armour) => createEnemy({
     id: 'o1', name: 'Orc', maxHitPoints: 400, potValue: 20, armour,

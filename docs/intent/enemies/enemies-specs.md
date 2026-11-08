@@ -8,7 +8,7 @@ are fed into.
 
 ## The roster
 
-- [x] **ENEMY-ROSTER-001**: The system shall define each enemy with an id, a name, a role, the six attributes, skill ranks, maximum hit points, an attack, a pot value, and whether it forbids escape.
+- [x] **ENEMY-ROSTER-001**: The system shall define each enemy with an id, a name, a role, the five attributes, skill ranks, maximum hit points, an attack, a pot value, and whether it forbids escape.
 - [x] **ENEMY-ROSTER-002**: The system shall give every enemy exactly one role from: melee, ranged, or caster.
 - [x] **ENEMY-ROSTER-003**: The system shall give an enemy every field a character has except a class, and shall read the same fields from both wherever a combatant is used.
 - [x] **ENEMY-ROSTER-009**: The system shall give an enemy no class, and shall take its maximum hit points as authored rather than deriving them from a class.
@@ -16,7 +16,7 @@ are fed into.
 - [x] **ENEMY-ROSTER-010**: The system shall report an enemy's total level as the sum of its skill ranks, by the same summation it uses for a character.
 - [x] **ENEMY-ROSTER-004**: The system shall hold the goblin, the goblin archer, and the goblin mage in the first floor's roster, as a melee enemy, a ranged enemy, and a caster respectively.
 - [x] **ENEMY-ROSTER-005**: The system shall read every enemy from its own authored file, and shall hold no behaviour particular to any named enemy.
-- [ ] **ENEMY-ROSTER-007**: The system shall give every enemy a defence and an armour as separate values, armour reducing what a blow against it is worth.
+- [x] **ENEMY-ROSTER-007**: The system shall give every enemy an authored armour, reducing what every blow against it is worth.
 - [ ] **ENEMY-ROSTER-008**: The system shall set an ordinary enemy's pot value at about twelve for each floor tier of its depth, and a dangerous one's at up to twice that.
 - [x] **ENEMY-ROSTER-012**: The system shall carry on every roster entry the loot table it drops from when defeated, or none.
 

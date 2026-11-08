@@ -5,9 +5,9 @@
  * combat says what happens when one is swung. Nothing here holds state — a definition
  * is a value, and the only mutable thing is the slot pointing at it.
  *
- * The three formulas live here because a weapon, a rank and an attribute meet in
- * exactly one place, and the party and combat both read them rather than each keeping
- * a copy to drift from.
+ * Base damage and armour are assembled here because a weapon, a rank and an attribute
+ * meet in exactly one place, and the party and combat both read them rather than each
+ * keeping a copy to drift from.
  */
 
 import { Attribute, skillRank } from './party.js';
@@ -52,13 +52,6 @@ export const Effect = { HEAL: 'heal' };
  */
 export const Slot = { MAIN_HAND: 'MAIN_HAND', OFF_HAND: 'OFF_HAND', BODY: 'BODY' };
 
-/** The base everybody is hit against before anything they are or carry is counted. */
-export const BASE_DEFENCE = 20;
-
-const ACCURACY_PER_RANK = 5;
-const ACCURACY_PER_PERCEPTION = 2;
-const DEFENCE_PER_DEXTERITY = 2;
-const DEFENCE_PER_ARMOUR_RANK = 3;
 const DAMAGE_PER_RANK = 0.1;
 const DAMAGE_PER_ATTRIBUTE = 0.04;
 
@@ -78,8 +71,8 @@ const DAMAGE_PER_ATTRIBUTE = 0.04;
  */
 export function createItem({
   id, name, kind, slot = null, rarity = Rarity.COMMON,
-  skill = null, damage = 0, accuracy = 0, governs = Attribute.MIGHT,
-  armour = 0, defence = 0, classes = null, effect = null,
+  skill = null, damage = 0, governs = Attribute.MIGHT,
+  armour = 0, classes = null, effect = null,
 }) {
   const consumable = kind === ItemKind.CONSUMABLE;
   return {
@@ -93,12 +86,11 @@ export function createItem({
     // A weapon's skill, or the skill a piece of armour is worn under.
     skill,
     damage,
-    accuracy,
     // Might by default; a finesse weapon names Dexterity and trains the same skill.
     // @spec ITEM-DEF-008
     governs,
+    // What body armour turns, or what a shield adds to it.
     armour,
-    defence,
     // Nothing named means anybody may hold it.
     // @spec ITEM-DATA-004
     classes: classes ? [...classes] : null,
@@ -131,69 +123,29 @@ export function weaponOf(combatant) {
   return {
     skill: natural.skill ?? null,
     damage: natural.baseDamage ?? 0,
-    accuracy: natural.accuracy ?? 0,
     governs: natural.governs ?? Attribute.MIGHT,
   };
 }
 
 /**
- * What a combatant turns: what is on the body, or what they were authored to turn.
+ * What a combatant turns: what is on the body, or what they were authored to turn, and
+ * on top of it whatever a shield in the off hand turns. A shield is armour you hold.
  *
  * @spec ITEM-HOLD-002
  * @spec ITEM-HOLD-003
+ * @spec ITEM-HOLD-004
+ * @spec ITEM-NUM-006
  */
 export function armourOf(combatant) {
   const worn = held(combatant, Slot.BODY);
-  return worn ? worn.armour : (combatant?.armour ?? 0);
+  const body = worn ? worn.armour : (combatant?.armour ?? 0);
+  // Only a shield adds; a second weapon in the same slot turns nothing.
+  const offHand = held(combatant, Slot.OFF_HAND);
+  const shield = offHand?.kind === ItemKind.SHIELD ? (offHand.armour ?? 0) : 0;
+  return body + shield;
 }
 
 const score = (combatant, attribute) => combatant?.attributes?.[attribute] ?? 10;
-
-/**
- * Accuracy is practice and eyesight: the weapon in hand, the rank behind it, and how
- * much the wielder notices.
- *
- * Perception governs for every weapon whatever its damage draws on, so that a mighty
- * character hits harder rather than more often — one attribute compounding twice in
- * the same swing is the thing this avoids.
- *
- * @spec ITEM-NUM-001
- * @spec ITEM-NUM-004
- * @spec ITEM-NUM-006
- */
-export function accuracyWith(combatant) {
-  const weapon = weaponOf(combatant);
-  if (!weapon) return 0;
-
-  return weapon.accuracy
-    + ACCURACY_PER_RANK * skillRank(combatant, weapon.skill)
-    + ACCURACY_PER_PERCEPTION * (score(combatant, Attribute.PERCEPTION) - 10);
-}
-
-/**
- * Defence is what it takes to avoid being hit, which is a different thing entirely
- * from what it takes to survive being hit.
- *
- * Armour is deliberately not in this line: it reduces the damage of a blow that landed
- * and does nothing else. A shield is here because turning a blow aside is the whole of
- * what a shield does.
- *
- * @spec ITEM-NUM-002
- * @spec ITEM-NUM-005
- * @spec ITEM-NUM-006
- */
-export function defenceOf(combatant) {
-  const worn = held(combatant, Slot.BODY);
-  const offHand = held(combatant, Slot.OFF_HAND);
-  // Only a shield adds; a second weapon in the same slot adds nothing.
-  // @spec ITEM-HOLD-004
-  const shield = offHand?.kind === ItemKind.SHIELD ? offHand.defence : 0;
-
-  return BASE_DEFENCE
-    + DEFENCE_PER_DEXTERITY * (score(combatant, Attribute.DEXTERITY) - 10)
-    + DEFENCE_PER_ARMOUR_RANK * (worn ? skillRank(combatant, worn.skill) : 0)
-    + shield;
-}
 
 /**
  * Damage is practice and force, and the attribute is the weapon's to name.

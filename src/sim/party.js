@@ -21,7 +21,6 @@ export const Attribute = {
   CONSTITUTION: 'CONSTITUTION',
   DEXTERITY: 'DEXTERITY',
   INTELLECT: 'INTELLECT',
-  PERCEPTION: 'PERCEPTION',
   RESOLVE: 'RESOLVE',
 };
 
@@ -199,7 +198,7 @@ export function hitPointsFor(characterClass, constitution) {
 
 export const DEFAULT_ATTRIBUTES = {
   [Attribute.MIGHT]: 10, [Attribute.CONSTITUTION]: 10, [Attribute.DEXTERITY]: 10,
-  [Attribute.INTELLECT]: 10, [Attribute.PERCEPTION]: 10, [Attribute.RESOLVE]: 10,
+  [Attribute.INTELLECT]: 10, [Attribute.RESOLVE]: 10,
 };
 
 /**

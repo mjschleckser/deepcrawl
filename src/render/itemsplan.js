@@ -39,12 +39,12 @@ export function itemDetail(item) {
   const parts = [SLOT_LABELS[item.slot] ?? titled(item.slot)];
   if (item.kind === ItemKind.WEAPON) {
     if (item.skill) parts.push(titled(item.skill));
-    parts.push(`damage ${item.damage}`, `accuracy ${item.accuracy}`);
+    parts.push(`damage ${item.damage}`);
   } else if (item.kind === ItemKind.ARMOUR) {
     if (item.skill) parts.push(titled(item.skill));
     parts.push(`armour ${item.armour}`);
   } else if (item.kind === ItemKind.SHIELD) {
-    parts.push(`defence ${item.defence}`);
+    parts.push(`armour ${item.armour}`);
   }
   return withTier(item, parts.join(' · '));
 }

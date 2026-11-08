@@ -6,7 +6,6 @@
   "rarity": "UNCOMMON",
   "skill": "BLADE",
   "damage": 11,
-  "accuracy": 23,
   "governs": "MIGHT",
   "classes": [
     "FIGHTER",

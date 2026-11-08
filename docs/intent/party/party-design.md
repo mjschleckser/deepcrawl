@@ -38,7 +38,7 @@ action worth taking.
 | The purse | how much gold the party carries, held for the party as a whole | loot decides how much a find adds |
 | Skills | ranks, advancement, what is unlocked | combat resolves what an ability does |
 | Condition | the state machine and its transitions | combat and exploration cause transitions |
-| Attributes | the six scores | weapons decide which score they draw on |
+| Attributes | the five scores | weapons decide which score they draw on |
 
 ## The Roster
 
@@ -50,24 +50,23 @@ the only kind of composition decision this game asks anyone to make.
 
 ## Attributes
 
-Six scores, fixed at creation and moved only by rare effects.
+Five scores, fixed at creation and moved only by rare effects.
 
 | Attribute | What it contributes |
 |---|---|
 | **Might** | +4% damage per point over 10, for any weapon that names it |
 | **Constitution** | hit points; resisting poison and disease |
-| **Dexterity** | step cost, turn order, fleeing, +2 defence per point over 10 |
+| **Dexterity** | step cost, turn order, fleeing; +4% damage per point over 10 for a finesse weapon |
 | **Intellect** | spell slots at the lower ranks; spell magnitude and duration |
-| **Perception** | +2 accuracy per point over 10; finding traps and secret doors |
 | **Resolve** | resisting fear and charm; holding a spell when struck mid-cast |
 
 Each attribute has its own contribution rather than a blanket rule applied to whichever
 one a weapon names. Might is the damage attribute by default, but *which* attribute a
 weapon draws on for damage is a property of the weapon: a dagger with the *finesse*
-property names Dexterity, and still trains Blade. Accuracy is not open to that
-substitution — it is always weapon skill and Perception — because letting one attribute
-raise both how often a character connects and how hard would compound it twice in the
-same swing.
+property names Dexterity, and still trains Blade.
+
+There is no attribute for noticing things. Finding traps and secret doors belongs to the
+Detection skill, which is practised and grows, rather than to a score fixed at creation.
 
 Attributes are fixed at creation and moved only by a trainer, rarely and at cost. They
 are what a character *is*; skills are what they have done.
@@ -91,7 +90,7 @@ to kill. Getting harder to kill instead means better armour, better healing, spe
 turns better, and — rarely — buying Constitution from a trainer.
 
 This has a consequence worth being deliberate about: the survivability curve across a
-campaign runs entirely through armour, defence, and healing, so enemy damage can stay
+campaign runs entirely through armour and healing, so enemy damage can stay
 roughly flat as floors deepen instead of chasing an ever-growing pool. A deep floor
 stays lethal to a veteran party in a way it would not if hit points had quietly
 tripled on the way down.
@@ -202,7 +201,7 @@ as no progress until earned experience catches up with it, because that is how f
 holder actually is from the next one; a skill at the cap is reported as complete.
 
 The cap of 10 is what lets content be calibrated at all: it fixes the top of the
-accuracy and damage curves, so the deepest floor can be built against a known ceiling
+damage curve, so the deepest floor can be built against a known ceiling
 rather than an open-ended one.
 
 ### Class
@@ -338,7 +337,7 @@ show what it cost.
 | Total level | The sum of skill ranks, derived on demand | A level awarded for experience, with ranks bought from it; a stored number kept in step with the ranks | A character is their ranks; any number claiming to summarise them should be recomputable from them, or it is a second truth to keep in step and eventually to contradict them. An awarded level would also be a second progression track competing with the one the whole segment is built on. |
 | Constitution's shape | Multiplicative, 5% per point over 10 | Flat hit points per point | Flat would make a point of Constitution worth the same to a mage as to a fighter, compressing the classes together at high scores until a tough mage outlasts a frail fighter. |
 | Rank cost | 300 × r to leave rank r, capped at rank 10 | A flat cost per rank; a geometric curve | A flat cost makes floor one exactly as efficient at rank 9 as at rank 2, so nothing ever pulls a party downward. A geometric curve makes the last ranks a grind measured in hundreds of fights. A linear-cost curve decays farming gently while leaving it available. |
-| Rank ceiling | 10 | Uncapped ranks | Without a ceiling there is no top to the accuracy and damage curves, and the deepest floor cannot be built against anything. |
+| Rank ceiling | 10 | Uncapped ranks | Without a ceiling there is no top to the damage curve, and the deepest floor cannot be built against anything. |
 | Who writes character state | Only this segment, through named operations | Combat and exploration writing fields directly | Both legitimately change hit points. One owner means the zero floor, the death chain and the roster limits are enforced once rather than in every caller. |
 | Progression | Skill ranks earned by use | Experience points and character levels | A character should be what they have done. It also makes class a governor rather than an identity, which is what allows changing class without discarding a character. |
 | Combat advancement | A pot per enemy, growing with distinct skills used up to a ceiling, split equally | Per-action gain; a flat pot split equally; diminishing returns per action | A pot fixed by the enemy is what makes prolonging a fight worthless. Growing it with distinct skills stops a flat split punishing a party for using its whole kit; the ceiling stops a party inflating it by dragging the fight out until everyone has touched everything. |

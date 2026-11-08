@@ -22,7 +22,7 @@ const titled = (key) => key.toLowerCase().split('_')
 
 const ATTRIBUTE_ORDER = [
   Attribute.MIGHT, Attribute.CONSTITUTION, Attribute.DEXTERITY,
-  Attribute.INTELLECT, Attribute.PERCEPTION, Attribute.RESOLVE,
+  Attribute.INTELLECT, Attribute.RESOLVE,
 ];
 
 const SLOT_LABELS = { [Slot.MAIN_HAND]: 'Main hand', [Slot.OFF_HAND]: 'Off hand', [Slot.BODY]: 'Body' };
@@ -123,7 +123,7 @@ export function buildPartyPlan(party, viewport, { page = 0 } = {}) {
   health.bar = { x: inner.x, y, width: inner.width, height: 10 * scale };
   y += 10 * scale + gap;
 
-  // Six attributes, two to a row.
+  // The attributes, two to a row.
   const half = (inner.width - gap) / 2;
   const cell = (index, top, height) => ({
     x: inner.x + (index % 2) * (half + gap),

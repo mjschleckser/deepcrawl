@@ -6,7 +6,6 @@
   "rarity": "RARE",
   "skill": "BLUNT",
   "damage": 14,
-  "accuracy": 20,
   "governs": "MIGHT",
   "classes": [
     "FIGHTER",

@@ -5,6 +5,5 @@
   "slot": "MAIN_HAND",
   "skill": "BLADE",
   "damage": 6,
-  "accuracy": 26,
   "governs": "DEXTERITY"
 }

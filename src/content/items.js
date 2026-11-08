@@ -61,12 +61,10 @@ export function buildItem(file, data) {
     // neither, and says so by omitting it.
     skill: data.skill === undefined ? null : oneOf(file, 'skill', data.skill, Skill),
     damage: data.damage ?? 0,
-    accuracy: data.accuracy ?? 0,
     governs: data.governs === undefined
       ? Attribute.MIGHT
       : oneOf(file, 'attribute', data.governs, Attribute),
     armour: data.armour ?? 0,
-    defence: data.defence ?? 0,
     // Naming nobody means anybody may hold it.
     classes: data.classes
       ? data.classes.map((name) => oneOf(file, 'class', name, CharacterClass))

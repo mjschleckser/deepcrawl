@@ -174,11 +174,8 @@ instead, and still trains the same weapon skill. This is why the governing attri
 a property of the weapon rather than of the skill: a dagger and a longsword are both
 Blade, and they are not the same argument for what makes a character dangerous.
 
-**Armour is subtracted from every blow**, and that is the whole of what armour does.
-
-Accuracy and defence are assembled by the items segment but take no part in resolving
-an attack: with nothing rolled there is nothing for them to shift. They wait on a
-deterministic use (see Deferred).
+**Armour is subtracted from every blow**, and that is the whole of what armour does. A
+combatant's armour is what their body wears plus any shield in their off hand.
 
 ### What an attack will deal
 
@@ -194,12 +191,12 @@ files author them.
 
 | | Base damage | Armour | Hit points |
 |---|---|---|---|
-| Bram: shortsword, shield, chainmail | 10.8 | 5 | 30 |
+| Bram: shortsword, round shield, chainmail | 10.8 | 6 | 30 |
 | Isolde: quarterstaff, robe | 7 | 0 | 18 |
 | Goblin | 4.6 | 2 | 9 |
 
 An attack from Bram finishes a goblin, and one from Isolde takes two. A goblin's attack
-is worth 1 against Bram's armour and 5 against Isolde's robe, so a goblin's danger falls
+is worth 1 against Bram's mail and shield and 5 against Isolde's robe, so a goblin's danger falls
 on whoever wears the least — and the player can see exactly how much before any blow
 is struck.
 
@@ -350,8 +347,8 @@ trouble. One character calls the retreat; the whole party leaves or nobody does.
 
 | Decision | Chosen | Alternatives Considered | Rationale |
 |---|---|---|---|
-| Defence and armour | Armour alone shapes an attack, by subtraction; defence is not read | Defence and armour both read, defence deciding a roll's band | With no roll there is no band for defence to decide. Armour subtracting from a fixed blow keeps the result one sum the player can read. |
-| Rank value | +10% damage per rank (and +5 accuracy, assembled but not yet read) | +3/+6%, so gear leads; +8/+15%, so skill dominates | Practice should be the main axis in a game whose progression is practice, while still leaving a found weapon and the right attribute able to decide a fight between two similar characters. |
+| What a target brings to an attack | Armour alone, by subtraction | A defence deciding a roll's band beside armour | With no roll there is no band for a defence to decide. Armour subtracting from a fixed blow keeps the result one sum the player can read. |
+| Rank value | +10% damage per rank | +3/+6%, so gear leads; +8/+15%, so skill dominates | Practice should be the main axis in a game whose progression is practice, while still leaving a found weapon and the right attribute able to decide a fight between two similar characters. |
 | Attack resolution | No roll: every attack lands for exactly the damage previewed | One roll into four bands (miss, graze, hit, crit); binary hit or miss; always-hit with variable damage | Any roll puts a gap between the number the player chose on and the number that happened, so a turn becomes a bet rather than a decision. A fixed result makes the preview the truth and makes every choice of target a choice between known outcomes; a fight stays uncertain through its random opening and the enemies' choices of target. |
 | The order of acting | A readiness that fills with the fight's own time; whoever fills first acts, alone | A round in which everyone acts once, resolved in descending Dexterity | A round makes a quick combatant and a slow one differ only in who moves first, which wastes the attribute already deciding speed everywhere else, and it caps the difference between them at one place in a queue. A bar lets the quick act twice while the slow act once, which is the difference actually worth building an attribute on. |
 | What the player is told about the order | A projected turn order, with readiness itself kept inside the simulation | Reporting each combatant's readiness for a bar to be drawn from; true rounds, whose order needs no projecting | A bar has to be watched filling, and a player comparing bars is working out the turn order by eye. Reporting that order directly answers the question for them and lets the fight's time pass without being shown. True rounds would make the list trivial but give up the difference between a quick combatant and a slow one. |
@@ -413,7 +410,6 @@ trouble. One character calls the retreat; the whole party leaves or nobody does.
 6. **Status effects.** Poison, fear, paralysis and the rest have no model here.
 7. **Recovering a fallen party.** That a wiped party stays where it fell and can be recovered by a fresh one is settled; a stranded roster, bodies on a floor, and hiring at a tavern all need segments that do not exist.
 8. **The numbers.** The minimum-damage fraction is a placeholder in code, waiting to move to content data and be tuned against more than one floor.
-9. **What accuracy and defence are for.** Both are still assembled from weapons, ranks, attributes and shields, but nothing in an attack reads them. Whether they fold into the fixed damage sum, become inputs to abilities, or are retired from items is an open decision.
 
 ## References
 
