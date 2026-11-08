@@ -40,6 +40,7 @@ when it is read.
 - [x] **SAVE-READ-005**: When a save of an earlier version is read, the system shall migrate it one version at a time, in order, to the current version before resuming it.
 - [x] **SAVE-READ-006**: If a save cannot be read or carries a later version than the system knows, then the system shall move it unchanged to a key of its own, begin a new campaign, and report that this happened.
 - [x] **SAVE-READ-007**: The system shall never overwrite a save it could not read.
+- [ ] **SAVE-READ-008**: When a save from before the purse and opened chests is read, the system shall migrate it with an empty purse and no chest opened on any floor.
 
 ## Beginning again
 

@@ -33,6 +33,7 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-VIEW-013**: When the simulation reports an open door on the edge ahead at a depth, the system shall draw that door's frame on that depth's far frame and shall leave what lies beyond it visible through the opening.
 - [x] **PRESENT-VIEW-014**: When the simulation reports a roaming enemy at a depth, the system shall draw a figure standing on the floor at that depth, scaled to that depth's frame.
 - [x] **PRESENT-VIEW-015**: The system shall draw the figure for an enemy in the corridor with the same horned head it marks that enemy with on the automap.
+- [ ] **PRESENT-VIEW-016**: The system shall draw a chest the simulation reports at a depth standing on that depth's floor, scaled to that depth's frame, and shall draw an opened chest distinguishably from an unopened one.
 
 ## Automap
 
@@ -46,6 +47,7 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-MAP-009**: The system shall draw an enemy marker for each enemy the simulation reports, and for no other position.
 - [x] **PRESENT-MAP-010**: The system shall draw a door the simulation reports as open distinguishably from one it reports as closed.
 - [x] **PRESENT-MAP-011**: The system shall draw every enemy with one shared creature marker, distinguishable in shape from the party marker and from a trap mark.
+- [ ] **PRESENT-MAP-012**: The system shall mark tiles holding a discovered chest, an unopened chest distinguishably from an opened one, and both distinguishably from stairs, pits and traps.
 
 ## Input
 
@@ -149,6 +151,7 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-PROMPT-004**: When the player confirms or declines a prompt drawn from a pending confirmation, the system shall pass the answer to the simulation and redraw.
 - [x] **PRESENT-PROMPT-005**: The system shall bind confirm to Enter and to the affirmative on-screen control, and decline to Escape and to the negative on-screen control.
 - [x] **PRESENT-PROMPT-006**: The system shall word a staircase prompt by the way the staircase leads, up or down.
+- [ ] **PRESENT-PROMPT-007**: The system shall word the `INTERACT` control for an unopened chest as Open.
 
 ## Combat
 
@@ -196,6 +199,7 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-FIGHT-017**: The system shall give every combat option and menu entry on offer a drawn control with its own hit region, so that a fight can be played by touch alone.
 - [x] **PRESENT-FIGHT-015**: When the player dismisses the outcome banner after a victory, or the moment an escape succeeds, the system shall return to drawing the corridor and accept exploration input again.
 - [x] **PRESENT-FIGHT-049**: When an encounter ends in defeat, the system shall label the banner's control Begin again, and when the player presses it, shall begin a new campaign.
+- [ ] **PRESENT-FIGHT-050**: When an encounter ends in victory, the system shall draw on the banner the gold found and every item found, each named in its rarity's colour, or a line saying that no item was found.
 
 ## The party screen
 
@@ -246,6 +250,24 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-ITEMS-019**: While the Items screen is open, if the highlighted row would fall outside the page, then the system shall scroll the list of rows to bring it into view.
 - [x] **PRESENT-ITEMS-020**: The system shall name the screen, the action bar's control and the fight's option Items.
 - [x] **PRESENT-ITEMS-021**: When the Items screen shows a different page or the pack changes, the system shall keep the highlight within the rows there are.
+- [ ] **PRESENT-ITEMS-023**: The system shall draw on every Items page the gold in the party's purse.
+- [ ] **PRESENT-ITEMS-024**: The system shall draw identical consumables in the pack as one row with their count, placed where the first of them stands in the pack's order, and shall draw every piece of equipment as a row of its own.
+- [ ] **PRESENT-ITEMS-025**: The system shall draw beneath a consumable on the Items screen the effect it has when used.
+- [ ] **PRESENT-ITEMS-026**: When the player presses a consumable the character on the page can use, the system shall use it on that character through the party segment.
+- [ ] **PRESENT-ITEMS-027**: The system shall draw greyed, with the reason in place of its effect, every consumable the character on the page cannot use, and a press on it shall do nothing.
+- [ ] **PRESENT-ITEMS-028**: Out of a fight, when a consumable is used on the Items screen, the system shall commit an `ITEMS` action to exploration and shall leave the screen open showing the result.
+- [ ] **PRESENT-ITEMS-029**: While the Items screen is open in a fight, when the player uses a consumable, the system shall take that use as the character's action, close the screen, and go on with the fight.
+
+## Opening a chest
+
+- [ ] **PRESENT-CHEST-001**: When a chest is opened, the system shall draw over the view a report naming the gold the chest held and every item it held, each named in its rarity's colour.
+- [ ] **PRESENT-CHEST-002**: While a chest report is drawn, the system shall discard every movement verb and party action, and when the player presses `Enter`, `Escape` or `E`, or presses anywhere, shall close the report and change nothing else.
+
+## Rarity
+
+- [ ] **PRESENT-RARITY-001**: The system shall draw an item's name in its rarity's colour wherever an item is named: on the Items screen, on a victory banner, and in a chest report.
+- [ ] **PRESENT-RARITY-002**: The system shall draw common in the ordinary text colour, uncommon green, rare blue, epic purple and legendary orange.
+- [ ] **PRESENT-RARITY-003**: The system shall write the rarity beneath every item above common on the Items screen, so that the tier never rests on colour alone.
 
 ## The save note
 
