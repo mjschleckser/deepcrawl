@@ -71,17 +71,17 @@ are fed into, never the numbers.
 
 - [x] **PARTY-OP-001**: When combat or exploration applies damage, the system shall apply it through the party's own operation, enforcing the floor at zero and the condition chain.
 - [x] **PARTY-OP-003**: When equipment is changed, the system shall refuse a slot the item does not fit and a class that may not wield it.
-- [ ] **PARTY-OP-005**: The system shall move items between a character's slots and the pack only through the party's `equip`, `takeOff` and `stow` operations, shall take a consumable out of the pack only through `useItem`, and shall refuse to equip or use an item that is not in the pack.
-- [ ] **PARTY-OP-006**: The system shall hold for the party as a whole one purse of gold, starting at zero, and shall add to it only through the party's `addGold` operation, which never lowers it.
-- [ ] **PARTY-OP-007**: When a character uses a consumable, the system shall remove one of it from the pack and heal that character, and no other, by its stated amount through the party's healing operation.
-- [ ] **PARTY-OP-008**: If a character using a consumable is at full health or is not conscious, then the system shall refuse the use and leave the pack and every character as they were.
+- [x] **PARTY-OP-005**: The system shall move items between a character's slots and the pack only through the party's `equip`, `takeOff` and `stow` operations, shall take a consumable out of the pack only through `useItem`, and shall refuse to equip or use an item that is not in the pack.
+- [x] **PARTY-OP-006**: The system shall hold for the party as a whole one purse of gold, starting at zero, and shall add to it only through the party's `addGold` operation, which never lowers it.
+- [x] **PARTY-OP-007**: When a character uses a consumable, the system shall remove one of it from the pack and heal that character, and no other, by its stated amount through the party's healing operation.
+- [x] **PARTY-OP-008**: If a character using a consumable is at full health or is not conscious, then the system shall refuse the use and leave the pack and every character as they were.
 
 ## Persistence
 
 - [x] **PARTY-SAVE-001**: The system shall save every character's attributes, class, skill ranks, accumulated skill experience, condition, hit points, and equipment.
 - [x] **PARTY-SAVE-003**: The system shall save the pack and every item in it, and shall restore it in the same order.
 - [x] **PARTY-SAVE-002**: The system shall restore a party from a save with every character in the condition they were saved in.
-- [ ] **PARTY-SAVE-004**: The system shall save the party's purse, and shall restore it to the same amount.
+- [x] **PARTY-SAVE-004**: The system shall save the party's purse, and shall restore it to the same amount.
 
 ## Authored combatants
 

@@ -48,3 +48,21 @@ export const PALETTE = {
     backdrop: 0x000000,
   },
 };
+
+/**
+ * The colour an item's name is drawn in, by rarity: the convention most players already
+ * read at a glance. Common is the ordinary text colour, so only a find worth noticing
+ * stands out.
+ *
+ * @spec PRESENT-RARITY-002
+ */
+export const RARITY_COLOURS = {
+  COMMON: 0xe8d9a8,
+  UNCOMMON: 0x6cc24a,
+  RARE: 0x4f8fe6,
+  EPIC: 0xa66be0,
+  LEGENDARY: 0xec8a2c,
+};
+
+/** The colour for an item's name. @spec PRESENT-RARITY-001 */
+export const rarityColour = (item) => RARITY_COLOURS[item?.rarity] ?? RARITY_COLOURS.COMMON;

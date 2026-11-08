@@ -1,4 +1,4 @@
-import { fitsSlot, wieldableBy } from './items.js';
+import { Effect, fitsSlot, isConsumable, wieldableBy } from './items.js';
 /**
  * The party: characters, what they can do, and what has happened to them.
  *
@@ -255,9 +255,35 @@ export function createCharacter({
   };
 }
 
-/** @spec ITEM-PACK-001 */
+/**
+ * @spec ITEM-PACK-001
+ * @spec PARTY-OP-006
+ */
 export function createParty() {
-  return { members: [], pack: [] };
+  return { members: [], pack: [], purse: 0 };
+}
+
+/**
+ * The gold the party carries, held for the party as a whole as the pack is. A party
+ * from before the purse existed carries none.
+ *
+ * @spec PARTY-OP-006
+ */
+export function purseOf(party) {
+  party.purse ??= 0;
+  return party.purse;
+}
+
+/**
+ * Add a find's gold. The purse only rises: nothing yet spends gold, and a find never
+ * takes any away.
+ *
+ * @spec PARTY-OP-006
+ */
+export function addGold(party, amount) {
+  if (!Number.isInteger(amount) || amount < 0) return false;
+  party.purse = purseOf(party) + amount;
+  return true;
 }
 
 /**
@@ -553,11 +579,60 @@ export function stow(party, item) {
 }
 
 /**
+ * Why a character cannot use an item, or nothing when they can.
+ *
+ * A potion is drunk, so whoever uses it must be awake to drink it, and must have
+ * something for it to heal. Saying why is what lets the screen grey it with a reason.
+ */
+export const UseRefusal = {
+  NOT_IN_PACK: 'NOT_IN_PACK',
+  NOT_CONSUMABLE: 'NOT_CONSUMABLE',
+  FULL_HEALTH: 'FULL_HEALTH',
+  UNCONSCIOUS: Condition.UNCONSCIOUS,
+  DEAD: Condition.DEAD,
+  ASHES: Condition.ASHES,
+  LOST: Condition.LOST,
+};
+
+/**
+ * @spec PARTY-OP-005
+ * @spec PARTY-OP-008
+ */
+export function useRefusal(party, id, item) {
+  const c = character(party, id);
+  if (!c || !item || !packOf(party).includes(item)) return UseRefusal.NOT_IN_PACK;
+  if (!isConsumable(item)) return UseRefusal.NOT_CONSUMABLE;
+  if (c.condition !== Condition.OK) return UseRefusal[c.condition] ?? c.condition;
+  if (c.hitPoints >= c.maxHitPoints) return UseRefusal.FULL_HEALTH;
+  return null;
+}
+
+/**
+ * Drink a potion from the pack. It heals the one who drinks it and nobody else, and a
+ * refused use moves nothing.
+ *
+ * @spec PARTY-OP-005
+ * @spec PARTY-OP-007
+ * @spec PARTY-OP-008
+ * @spec ITEM-USE-001
+ */
+export function useItem(party, id, item) {
+  if (useRefusal(party, id, item)) return false;
+
+  const pack = packOf(party);
+  pack.splice(pack.indexOf(item), 1);
+  applyHealing(party, id, item.effect?.[Effect.HEAL] ?? 0);
+  return true;
+}
+
+/**
  * @spec PARTY-SAVE-001
  * @spec PARTY-SAVE-003
+ * @spec PARTY-SAVE-004
  */
 export function serializeParty(party) {
   return {
+    purse: purseOf(party),
     members: party.members.map((c) => ({ ...c, attributes: { ...c.attributes }, ranks: { ...c.ranks }, skillExperience: { ...c.skillExperience }, equipment: { ...c.equipment }, trainable: [...c.trainable] })),
     pack: packOf(party).map((item) => ({ ...item })),
   };
@@ -571,5 +646,6 @@ export function restoreParty(saved) {
   return {
     members: saved.members.map((c) => ({ ...c })),
     pack: (saved.pack ?? []).map((item) => ({ ...item })),
+    purse: saved.purse ?? 0,
   };
 }

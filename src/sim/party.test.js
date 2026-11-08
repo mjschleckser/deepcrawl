@@ -35,6 +35,11 @@ import {
   skillProgress,
   SKILL_GROUPS,
   SkillGroup,
+  purseOf,
+  addGold,
+  useItem,
+  useRefusal,
+  UseRefusal,
 } from './party.js';
 
 const fighter = (over = {}) =>
@@ -901,5 +906,116 @@ describe('skill groups', () => {
     const placed = SKILL_GROUPS.flatMap((g) => g.skills);
     expect([...placed].sort()).toEqual(Object.values(Skill).sort());
     expect(new Set(placed).size).toBe(placed.length);
+  });
+});
+
+describe('the purse', () => {
+  // @spec PARTY-OP-006
+  it('starts empty, for the party as a whole, and only rises', () => {
+    const party = partyOf(fighter(), cleric());
+    expect(purseOf(party)).toBe(0);
+
+    expect(addGold(party, 12)).toBe(true);
+    expect(addGold(party, 3)).toBe(true);
+    expect(purseOf(party)).toBe(15);
+
+    expect(addGold(party, -5)).toBe(false);
+    expect(addGold(party, 1.5)).toBe(false);
+    expect(purseOf(party)).toBe(15);
+  });
+
+  // @spec PARTY-SAVE-004
+  it('is saved and restored at the same amount', () => {
+    const party = partyOf(fighter());
+    addGold(party, 41);
+
+    const restored = restoreParty(JSON.parse(JSON.stringify(serializeParty(party))));
+    expect(purseOf(restored)).toBe(41);
+  });
+
+  // @spec PARTY-OP-006
+  it('reads a party saved before the purse as holding nothing', () => {
+    expect(purseOf(restoreParty({ members: [], pack: [] }))).toBe(0);
+  });
+});
+
+describe('drinking from the pack', () => {
+  const potion = (heal = 8) => createItem({
+    id: 'potion', name: 'Potion', kind: ItemKind.CONSUMABLE, effect: { heal },
+  });
+
+  function hurt() {
+    const party = partyOf(fighter(), cleric());
+    applyDamage(party, 'f1', 20);
+    return party;
+  }
+
+  // @spec PARTY-OP-007
+  // @spec ITEM-USE-001
+  it('heals the one who drinks, by what the potion says, and uses it up', () => {
+    const party = hurt();
+    const drink = potion(8);
+    stow(party, drink);
+    const before = character(party, 'f1').hitPoints;
+    const cleric = character(party, 'c1').hitPoints;
+
+    expect(useItem(party, 'f1', drink)).toBe(true);
+    expect(character(party, 'f1').hitPoints).toBe(before + 8);
+    expect(character(party, 'c1').hitPoints).toBe(cleric);
+    expect(packOf(party)).toEqual([]);
+  });
+
+  // @spec PARTY-OP-007
+  it('heals no further than full', () => {
+    const party = hurt();
+    const drink = potion(500);
+    stow(party, drink);
+
+    useItem(party, 'f1', drink);
+    expect(character(party, 'f1').hitPoints).toBe(character(party, 'f1').maxHitPoints);
+  });
+
+  // @spec PARTY-OP-008
+  it('refuses someone at full health, or not awake, and uses nothing', () => {
+    const party = partyOf(fighter(), cleric());
+    const drink = potion();
+    stow(party, drink);
+
+    expect(useRefusal(party, 'c1', drink)).toBe(UseRefusal.FULL_HEALTH);
+    expect(useItem(party, 'c1', drink)).toBe(false);
+
+    applyDamage(party, 'c1', 9999);
+    expect(useRefusal(party, 'c1', drink)).toBe(UseRefusal.UNCONSCIOUS);
+    expect(useItem(party, 'c1', drink)).toBe(false);
+
+    applyDamage(party, 'c1', 1);
+    expect(useRefusal(party, 'c1', drink)).toBe(UseRefusal.DEAD);
+    expect(useItem(party, 'c1', drink)).toBe(false);
+
+    expect(packOf(party)).toEqual([drink]);
+    expect(character(party, 'c1').condition).toBe(Condition.DEAD);
+  });
+
+  // @spec PARTY-OP-005
+  it('uses only what is in the pack, and only what can be used up', () => {
+    const party = hurt();
+    const elsewhere = potion();
+    const sword = createItem({ id: 's', name: 'S', kind: ItemKind.WEAPON, slot: Slot.MAIN_HAND });
+    stow(party, sword);
+
+    expect(useItem(party, 'f1', elsewhere)).toBe(false);
+    expect(useRefusal(party, 'f1', sword)).toBe(UseRefusal.NOT_CONSUMABLE);
+    expect(useItem(party, 'f1', sword)).toBe(false);
+    expect(packOf(party)).toEqual([sword]);
+  });
+
+  // @spec PARTY-OP-005
+  it('refuses to equip a potion from the pack', () => {
+    const party = partyOf(fighter());
+    const drink = potion();
+    stow(party, drink);
+
+    expect(equip(party, 'f1', drink, Slot.MAIN_HAND)).toBe(false);
+    expect(packOf(party)).toEqual([drink]);
   });
 });

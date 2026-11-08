@@ -16,7 +16,8 @@ import {
   setMenuOpen,
   PartyAction,
 } from '../sim/exploration.js';
-import { character, equip, roster, takeOff } from '../sim/party.js';
+import { character, equip, roster, takeOff, useItem } from '../sim/party.js';
+import { isConsumable } from '../sim/items.js';
 import { buildPartyPlan, pageFor, PartyControl } from './partyplan.js';
 import {
   buildItemsPlan, clampRow, itemRows, rowActs, ItemsControl,
@@ -29,7 +30,7 @@ import { buildViewPlan } from './viewplan.js';
 import { buildMapPlan } from './mapplan.js';
 import {
   buildFightPlan, createFightController, chooseOption, pressOption, goBack, dismissOutcome,
-  passTurn, equipInFight, closeItems,
+  passTurn, equipInFight, useInFight, closeItems,
   advanceClock, fightIsPlaying, scrollLog, FightPhase,
 } from './fight.js';
 
@@ -503,28 +504,34 @@ function moveHighlight(controller, by) {
  * @spec PRESENT-ITEMS-015
  * @spec PRESENT-ITEMS-016
  * @spec PRESENT-ITEMS-021
+ * @spec PRESENT-ITEMS-026
+ * @spec PRESENT-ITEMS-028
+ * @spec PRESENT-ITEMS-029
  */
 function pressItemRow(controller, index) {
   const party = partyOf(controller);
   const characterId = itemsCharacter(controller);
   const row = itemRows(party, characterId)[index];
   const inFight = itemsInFight(controller);
-  if (!row || !rowActs(row, character(party, characterId), { inFight })) return false;
+  if (!row || !rowActs(row, character(party, characterId), { inFight, party })) return false;
+  const drink = row.role === ItemsControl.PACK && isConsumable(row.item);
 
   const screen = controller.itemsScreen
     ?? (controller.itemsScreen = { page: 0, selected: 0, fromFight: itemsInFight(controller) });
   screen.selected = index;
 
   if (inFight) {
-    if (!equipInFight(controller.fight, row.item)) return false;
+    const taken = drink ? useInFight(controller.fight, row.item) : equipInFight(controller.fight, row.item);
+    if (!taken) return false;
     controller.itemsScreen = null;
     redraw(controller);
     return true;
   }
 
-  const changed = row.role === ItemsControl.PACK
-    ? equip(party, characterId, row.item)
-    : takeOff(party, characterId, row.slot);
+  let changed;
+  if (drink) changed = useItem(party, characterId, row.item);
+  else if (row.role === ItemsControl.PACK) changed = equip(party, characterId, row.item);
+  else changed = takeOff(party, characterId, row.slot);
   if (!changed) return false;
   perform(controller.state, { partyAction: PartyAction.ITEMS, commit: true });
   screen.selected = clampRow(itemRows(party, characterId), screen.selected);

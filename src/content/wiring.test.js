@@ -5,7 +5,7 @@ import {
   computeSight, perform, partyPosition, tickCount, isTrapKnown, recordTrapDetected,
   advanceForCamp, Verb, PartyAction,
 } from '../sim/exploration.js';
-import { Condition, CharacterClass, Skill, character, roster } from '../sim/party.js';
+import { Condition, CharacterClass, Skill, character, roster, packOf, purseOf } from '../sim/party.js';
 import { Outcome, Action, encounterOutcome, nextActor, takeAction } from '../sim/combat.js';
 import { isAware } from '../sim/enemies.js';
 import { createCampaign } from './campaign.js';
@@ -247,6 +247,33 @@ describe('winning a fight', () => {
     expect(result.outcome).toBe(Outcome.VICTORY);
     expect(result.pot).toBeGreaterThan(0);
     expect(character(campaign.party, fighter.id).skillExperience[Skill.BLADE]).toBeGreaterThan(before);
+  });
+
+  // @spec LOOT-DROP-001
+  it('hands the gold and items the warband dropped to the purse and the pack', () => {
+    const campaign = booted();
+    stepIntoContact(campaign);
+    const tables = campaign.encounter.enemies.members.map((e) => e.loot);
+
+    const result = fightToTheEnd(campaign);
+    campaign.concludeEncounter();
+
+    // Every goblin carries a table, and each drops some gold.
+    expect(tables.every((t) => t === 'goblin')).toBe(true);
+    expect(result.finds.gold).toBeGreaterThan(0);
+    expect(purseOf(campaign.party)).toBe(result.finds.gold);
+    expect(packOf(campaign.party).map((i) => i.id)).toEqual(result.finds.items.map((i) => i.id));
+  });
+
+  // @spec LOOT-DROP-003
+  it('hands over nothing when the party escapes', () => {
+    const campaign = booted();
+    stepIntoContact(campaign);
+
+    campaign.fleeEncounter();
+
+    expect(purseOf(campaign.party)).toBe(0);
+    expect(packOf(campaign.party)).toEqual([]);
   });
 
   it('lets the party walk again, with the warband gone from the floor', () => {

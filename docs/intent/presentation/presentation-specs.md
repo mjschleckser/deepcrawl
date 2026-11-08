@@ -181,7 +181,7 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-FIGHT-006**: The system shall offer every character the same four options in the same order on every turn: Attack, Magic, Items, then Flee.
 - [x] **PRESENT-FIGHT-034**: The system shall draw an option the acting character cannot take in its own place, marked unavailable, rather than omitting it or reordering the options around it.
 - [x] **PRESENT-FIGHT-035**: When the player presses an option marked unavailable, the system shall do nothing and shall report nothing.
-- [x] **PRESENT-FIGHT-036**: The system shall mark Attack unavailable when the character carries no attack or no combatant is standing to attack, Magic unavailable when the character can cast no spell, Items unavailable when the pack holds no item that character may wield, and Flee unavailable when the simulation reports a flee attempt as certain to fail.
+- [x] **PRESENT-FIGHT-036**: The system shall mark Attack unavailable when the character carries no attack or no combatant is standing to attack, Magic unavailable when the character can cast no spell, Items unavailable when the pack holds nothing that character may wield or drink, and Flee unavailable when the simulation reports a flee attempt as certain to fail.
 - [x] **PRESENT-FIGHT-040**: The system shall draw on each unavailable option, beneath its name and in smaller text, a reason naming why it cannot be taken.
 - [x] **PRESENT-FIGHT-041**: The system shall draw an unavailable option's reason in the place an available option draws its key hint, and shall draw no key hint on an unavailable option.
 - [x] **PRESENT-FIGHT-042**: While every option is unavailable, the system shall draw a Pass turn control over the four, shall accept a press on it alone, and shall keep the four drawn beneath it.
@@ -199,7 +199,7 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-FIGHT-017**: The system shall give every combat option and menu entry on offer a drawn control with its own hit region, so that a fight can be played by touch alone.
 - [x] **PRESENT-FIGHT-015**: When the player dismisses the outcome banner after a victory, or the moment an escape succeeds, the system shall return to drawing the corridor and accept exploration input again.
 - [x] **PRESENT-FIGHT-049**: When an encounter ends in defeat, the system shall label the banner's control Begin again, and when the player presses it, shall begin a new campaign.
-- [ ] **PRESENT-FIGHT-050**: When an encounter ends in victory, the system shall draw on the banner the gold found when there is any, and every item found, each named in its rarity's colour and identical items named once with their count, or a line saying that no item was found.
+- [x] **PRESENT-FIGHT-050**: When an encounter ends in victory, the system shall draw on the banner the gold found when there is any, and every item found, each named in its rarity's colour and identical items named once with their count, or a line saying that no item was found.
 
 ## The party screen
 
@@ -250,13 +250,13 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-ITEMS-019**: While the Items screen is open, if the highlighted row would fall outside the page, then the system shall scroll the list of rows to bring it into view.
 - [x] **PRESENT-ITEMS-020**: The system shall name the screen, the action bar's control and the fight's option Items.
 - [x] **PRESENT-ITEMS-021**: When the Items screen shows a different page or the pack changes, the system shall keep the highlight within the rows there are.
-- [ ] **PRESENT-ITEMS-023**: The system shall draw on every Items page the gold in the party's purse.
-- [ ] **PRESENT-ITEMS-024**: The system shall draw consumables in the pack that share an identifier as one row with their count, placed where the first of them stands in the pack's order, and shall draw every piece of equipment as a row of its own.
-- [ ] **PRESENT-ITEMS-025**: The system shall draw beneath a consumable on the Items screen the effect it has when used.
-- [ ] **PRESENT-ITEMS-026**: When the player presses a consumable the character on the page can use, the system shall use it on that character through the party segment.
-- [ ] **PRESENT-ITEMS-027**: The system shall draw greyed, with the reason in place of its effect, every consumable the character on the page cannot use, and a press on it shall do nothing.
-- [ ] **PRESENT-ITEMS-028**: Out of a fight, when a consumable is used on the Items screen, the system shall commit an `ITEMS` action to exploration and shall leave the screen open showing the result.
-- [ ] **PRESENT-ITEMS-029**: While the Items screen is open in a fight, when the player uses a consumable, the system shall take that use as the character's action, close the screen, and go on with the fight.
+- [x] **PRESENT-ITEMS-023**: The system shall draw on every Items page the gold in the party's purse.
+- [x] **PRESENT-ITEMS-024**: The system shall draw consumables in the pack that share an identifier as one row with their count, placed where the first of them stands in the pack's order, and shall draw every piece of equipment as a row of its own.
+- [x] **PRESENT-ITEMS-025**: The system shall draw beneath a consumable on the Items screen the effect it has when used.
+- [x] **PRESENT-ITEMS-026**: When the player presses a consumable the character on the page can use, the system shall use it on that character through the party segment.
+- [x] **PRESENT-ITEMS-027**: The system shall draw greyed, with the reason in place of its effect, every consumable the character on the page cannot use, and a press on it shall do nothing.
+- [x] **PRESENT-ITEMS-028**: Out of a fight, when a consumable is used on the Items screen, the system shall commit an `ITEMS` action to exploration and shall leave the screen open showing the result.
+- [x] **PRESENT-ITEMS-029**: While the Items screen is open in a fight, when the player uses a consumable, the system shall take that use as the character's action, close the screen, and go on with the fight.
 
 ## Opening a chest
 
@@ -265,9 +265,9 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 
 ## Rarity
 
-- [ ] **PRESENT-RARITY-001**: The system shall draw an item's name in its rarity's colour wherever an item is named: on the Items screen, on a victory banner, and in a chest report.
-- [ ] **PRESENT-RARITY-002**: The system shall draw common in the ordinary text colour, uncommon green, rare blue, epic purple and legendary orange.
-- [ ] **PRESENT-RARITY-003**: The system shall write the rarity beneath every item above common on the Items screen, so that the tier never rests on colour alone.
+- [x] **PRESENT-RARITY-001**: The system shall draw an item's name in its rarity's colour wherever an item is named: on the Items screen, on a victory banner, and in a chest report.
+- [x] **PRESENT-RARITY-002**: The system shall draw common in the ordinary text colour, uncommon green, rare blue, epic purple and legendary orange.
+- [x] **PRESENT-RARITY-003**: The system shall write the rarity beneath every item above common on the Items screen, so that the tier never rests on colour alone.
 
 ## The save note
 

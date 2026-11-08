@@ -16,6 +16,7 @@ import {
 import { Action, EnemyRole, createEnemy } from '../sim/combat.js';
 import { Slot } from '../sim/items.js';
 import { itemById } from './items.js';
+import { lootTables } from './loot.js';
 
 const PLAYER_FILES = import.meta.glob('../game-data/players/*.json', { eager: true, import: 'default' });
 const ENEMY_FILES = import.meta.glob('../game-data/enemies/*.json', { eager: true, import: 'default' });
@@ -128,7 +129,20 @@ export function buildEnemy(file, data) {
     role: oneOf(file, 'role', data.role ?? EnemyRole.MELEE, EnemyRole),
     potValue: data.potValue ?? 10,
     forbidsEscape: data.forbidsEscape ?? false,
+    loot: lootTableName(file, data.loot),
   });
+}
+
+/**
+ * The table an enemy drops from, which must be one somebody authored.
+ *
+ * @spec ENEMY-ROSTER-012
+ * @spec LOOT-DATA-002
+ */
+function lootTableName(file, name) {
+  if (name === undefined || name === null) return null;
+  if (!lootTables()[name]) throw new Error(`${file}: loot table "${name}" does not exist`);
+  return name;
 }
 
 function read(files, build) {

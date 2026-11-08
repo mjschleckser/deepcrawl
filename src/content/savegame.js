@@ -8,11 +8,12 @@
 import { createCampaign } from './campaign.js';
 import { ArrivalRule } from '../sim/generation.js';
 import { TileFeature } from '../sim/floor.js';
+import { enemyDefinitions } from './combatants.js';
 
 export const SAVE_KEY = 'deepcrawl.save';
 
 /** The schema a save is written in. Raise it, and add a migration, when the shape changes. */
-export const SAVE_FORMAT = 3;
+export const SAVE_FORMAT = 4;
 
 /** How long a change waits, so a run of steps becomes one write. */
 export const WRITE_DELAY_MS = 1000;
@@ -69,8 +70,62 @@ function addPack(save) {
   return { ...save, party: { ...save.party, pack: save.party.pack ?? [] } };
 }
 
+/**
+ * The roster entry an enemy was placed from. A roamer's member keeps the entry's own
+ * identifier; an enemy in a fight carries the member's, which is the entry's with its
+ * place in the band after it.
+ */
+function rosterEntryFor(enemy, roster) {
+  if (roster[enemy.id]) return roster[enemy.id];
+  const base = String(enemy.id).replace(/-\d+$/, '');
+  return roster[base] ?? null;
+}
+
+/**
+ * Version 3 had no loot. The party opens with an empty purse and every chest unopened,
+ * every enemy already placed takes the table its roster entry names now, so a warband
+ * standing in an old save drops what a new one would, and every item is common.
+ *
+ * @spec SAVE-READ-008
+ * @spec SAVE-READ-009
+ * @spec SAVE-READ-010
+ */
+function addLoot(save) {
+  const roster = enemyDefinitions();
+  const withTable = (enemy) => ({
+    ...enemy,
+    loot: enemy.loot ?? rosterEntryFor(enemy, roster)?.loot ?? null,
+  });
+  const common = (item) => (item ? { ...item, rarity: item.rarity ?? 'COMMON' } : item);
+  const { party, exploration, encounter } = save;
+
+  return {
+    ...save,
+    party: {
+      ...party,
+      purse: party.purse ?? 0,
+      pack: (party.pack ?? []).map(common),
+      members: party.members.map((c) => ({
+        ...c,
+        equipment: Object.fromEntries(Object.entries(c.equipment ?? {}).map(([slot, item]) => [slot, common(item)])),
+      })),
+    },
+    exploration: {
+      ...exploration,
+      openedChests: exploration.openedChests ?? {},
+      roamers: (exploration.roamers ?? []).map((roamer) => ({
+        ...roamer,
+        band: roamer.band ? { ...roamer.band, members: roamer.band.members.map(withTable) } : roamer.band,
+      })),
+    },
+    encounter: encounter
+      ? { ...encounter, enemies: { ...encounter.enemies, members: encounter.enemies.members.map(withTable) } }
+      : encounter,
+  };
+}
+
 /** Each step takes a save from the version it is keyed by to the next. */
-const MIGRATIONS = { 1: addWaysBack, 2: addPack };
+const MIGRATIONS = { 1: addWaysBack, 2: addPack, 3: addLoot };
 
 /** @spec SAVE-READ-005 */
 export function migrate(save, migrations = MIGRATIONS, current = SAVE_FORMAT) {

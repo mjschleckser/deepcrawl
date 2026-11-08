@@ -71,8 +71,8 @@ specs fix the structure those numbers are fed into.
 - [x] **COMBAT-ACTION-011**: When a character equips an item from the pack in a fight, the system shall make the change through the party segment's operation and shall spend a full bar of their readiness.
 - [x] **COMBAT-ACTION-012**: If a change of equipment in a fight is refused, then the system shall spend none of the character's readiness.
 - [x] **COMBAT-ACTION-010**: When a character attacks, the system shall record as the skill used the skill of the weapon they are using, rather than the skill of the attack they were authored with.
-- [ ] **COMBAT-ACTION-013**: When a character uses a consumable in a fight, the system shall use it on that character alone, through the party's operation, and shall spend their full bar.
-- [ ] **COMBAT-ACTION-014**: If the party refuses a character's use of a consumable in a fight, then the system shall spend nothing and leave the character's turn waiting.
+- [x] **COMBAT-ACTION-013**: When a character uses a consumable in a fight, the system shall use it on that character alone, through the party's operation, and shall spend their full bar.
+- [x] **COMBAT-ACTION-014**: If the party refuses a character's use of a consumable in a fight, then the system shall spend nothing and leave the character's turn waiting.
 
 ## Taking a turn
 
@@ -105,7 +105,7 @@ specs fix the structure those numbers are fed into.
 - [x] **COMBAT-END-004**: The system shall determine the pot from the enemies defeated and never from how long the encounter took.
 - [x] **COMBAT-END-005**: When an encounter ends in defeat, the system shall report the defeat and the floor and tile the party fell on, and shall not alter the party further.
 - [x] **COMBAT-END-006**: When an encounter ends in escape or defeat, the system shall report no experience pot.
-- [ ] **COMBAT-END-007**: When an encounter ends in victory, the system shall report with the pot the gold and every item the defeated enemies yielded.
+- [x] **COMBAT-END-007**: When an encounter ends in victory, the system shall report with the pot the gold and every item the defeated enemies yielded.
 
 ## Deferred
 

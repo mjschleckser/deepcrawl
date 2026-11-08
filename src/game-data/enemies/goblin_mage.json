@@ -24,5 +24,6 @@
   "armour": 0,
   "potValue": 24,
   "forbidsEscape": false,
-  "portrait": "goblin_mage.png"
+  "portrait": "goblin_mage.png",
+  "loot": "goblin"
 }

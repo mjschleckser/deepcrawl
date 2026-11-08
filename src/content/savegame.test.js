@@ -3,7 +3,7 @@ import { makeRng } from '../sim/rng.js';
 import { actionForKey } from '../sim/input.js';
 import { perform, resolveConfirmation } from '../sim/exploration.js';
 import { TileFeature } from '../sim/floor.js';
-import { character, packOf, roster, takeOff } from '../sim/party.js';
+import { character, packOf, purseOf, roster, takeOff } from '../sim/party.js';
 import { readinessOf } from '../sim/combat.js';
 import {
   chooseOption, createFightController, playEnemyTurn, FightPhase,
@@ -282,6 +282,66 @@ describe('resuming', () => {
     expect(migrated.version).toBe(SAVE_FORMAT);
     expect(migrated.party.pack).toEqual([]);
     expect(packOf(resumed.party)).toEqual([]);
+  });
+
+  /** A save as version 3 wrote it: no purse, no opened chests, nothing carrying a table or a rarity. */
+  function versionThreeSave() {
+    const campaign = createCampaign({ seed: 5 });
+    const bram = roster(campaign.party)[0];
+    takeOff(campaign.party, bram.id, 'MAIN_HAND');
+    const saved = JSON.parse(encodeCampaign(campaign));
+    saved.version = 3;
+    delete saved.party.purse;
+    delete saved.exploration.openedChests;
+    for (const item of [...saved.party.pack, ...saved.party.members.flatMap((c) => Object.values(c.equipment))]) {
+      delete item.rarity;
+      delete item.effect;
+    }
+    for (const roamer of saved.exploration.roamers) {
+      for (const member of roamer.band.members) delete member.loot;
+    }
+    saved.encounter = {
+      enemies: { members: [{ id: 'GOBLIN_ARCHER-1', name: 'Goblin Archer' }, { id: 'WOLF-0', name: 'Wolf' }] },
+    };
+    return saved;
+  }
+
+  // @spec SAVE-READ-005
+  // @spec SAVE-READ-008
+  it('gives a version 3 save an empty purse and no chest opened', () => {
+    const migrated = migrate(versionThreeSave());
+
+    expect(migrated.version).toBe(SAVE_FORMAT);
+    expect(migrated.party.purse).toBe(0);
+    expect(migrated.exploration.openedChests).toEqual({});
+  });
+
+  // @spec SAVE-READ-009
+  it('gives enemies already placed the table their roster entry names, and none to a stranger', () => {
+    const migrated = migrate(versionThreeSave());
+
+    const members = migrated.exploration.roamers.flatMap((r) => r.band.members);
+    expect(members.length).toBeGreaterThan(0);
+    for (const member of members) expect(member.loot).toBe('goblin');
+    expect(migrated.encounter.enemies.members.map((e) => e.loot)).toEqual(['goblin', null]);
+  });
+
+  // @spec SAVE-READ-010
+  it('reads every item from before rarity as common', () => {
+    const migrated = migrate(versionThreeSave());
+
+    const items = [...migrated.party.pack, ...migrated.party.members.flatMap((c) => Object.values(c.equipment))];
+    expect(items.length).toBeGreaterThan(1);
+    for (const item of items) expect(item.rarity).toBe('COMMON');
+  });
+
+  // @spec SAVE-READ-008
+  it('resumes a version 3 save with the purse empty', () => {
+    const saved = versionThreeSave();
+    saved.encounter = null;
+
+    const resumed = createCampaign({ saved: migrate(saved) });
+    expect(purseOf(resumed.party)).toBe(0);
   });
 
   // @spec PARTY-SAVE-003

@@ -13,7 +13,7 @@ import {
 } from '../sim/exploration.js';
 import {
   Attribute, createParty, addCharacter, awardEncounter, partyStepCost,
-  restoreParty, serializeParty,
+  restoreParty, serializeParty, addGold, stow,
 } from '../sim/party.js';
 import {
   createRoamer, giveTicks, giveGround, forgetParty, occupantsFor,
@@ -23,6 +23,7 @@ import {
   restoreEncounter, serializeEncounter,
 } from '../sim/combat.js';
 import { startingCharacters } from './combatants.js';
+import { lootTables } from './loot.js';
 
 /** Bands standing on a freshly built floor, before anyone has disturbed it. */
 const BANDS_PER_FLOOR = 3;
@@ -62,6 +63,8 @@ export function createCampaign({ seed = Date.now() >>> 0, saved = null } = {}) {
   const plan = saved ? saved.plan : generatePlan({ seed });
   const descriptors = new Map(plan.floors.map((f) => [f.id, f]));
   const rng = makeRng(saved ? saved.rng : (seed ^ 0x9e3779b9) >>> 0);
+  // What a defeated enemy's drops are rolled on, read once for the whole campaign.
+  const tables = lootTables();
 
   const party = saved ? restoreParty(saved.party) : createStartingParty();
   const campaign = { plan, party, state: null, encounter: null };
@@ -163,6 +166,7 @@ export function createCampaign({ seed = Date.now() >>> 0, saved = null } = {}) {
       enemies: toEnemyGroup(met.band),
       rng: makeRng(rng.int(1, 1e9)),
       origin: { floorId, x: tile.x, y: tile.y },
+      lootTables: tables,
     });
     campaign.encounter.roamerId = met.id;
     setCombatActive(state, true);
@@ -231,7 +235,7 @@ export function createCampaign({ seed = Date.now() >>> 0, saved = null } = {}) {
 
   // @spec SAVE-READ-003
   if (saved?.encounter) {
-    campaign.encounter = restoreEncounter(saved.encounter, party);
+    campaign.encounter = restoreEncounter(saved.encounter, party, tables);
     setCombatActive(state, true);
   }
 
@@ -254,6 +258,10 @@ export function createCampaign({ seed = Date.now() >>> 0, saved = null } = {}) {
       for (const [actorId, skillsUsed] of result.skillsByActor ?? []) {
         awardEncounter(campaign.party, actorId, { pot: result.pot, skillsUsed });
       }
+      // What the warband dropped goes straight to the purse and the pack.
+      // @spec LOOT-DROP-001
+      addGold(campaign.party, result.finds?.gold ?? 0);
+      for (const item of result.finds?.items ?? []) stow(campaign.party, item);
       state.roamers = state.roamers.filter((r) => r.id !== encounter.roamerId);
     }
 

@@ -40,9 +40,9 @@ when it is read.
 - [x] **SAVE-READ-005**: When a save of an earlier version is read, the system shall migrate it one version at a time, in order, to the current version before resuming it.
 - [x] **SAVE-READ-006**: If a save cannot be read or carries a later version than the system knows, then the system shall move it unchanged to a key of its own, begin a new campaign, and report that this happened.
 - [x] **SAVE-READ-007**: The system shall never overwrite a save it could not read.
-- [ ] **SAVE-READ-008**: When a save from before the purse and opened chests is read, the system shall migrate it with an empty purse and no chest opened on any floor.
-- [ ] **SAVE-READ-009**: When a save holds enemies placed before enemies carried a loot table, whether roaming or in a fight, the system shall give each the loot table its roster entry names, matched by roster identifier, and none where no roster entry matches.
-- [ ] **SAVE-READ-010**: When a save holds items from before items carried a rarity, in a slot or in the pack, the system shall read each as common.
+- [x] **SAVE-READ-008**: When a save from before the purse and opened chests is read, the system shall migrate it with an empty purse and no chest opened on any floor.
+- [x] **SAVE-READ-009**: When a save holds enemies placed before enemies carried a loot table, whether roaming or in a fight, the system shall give each the loot table its roster entry names, matched by roster identifier, and none where no roster entry matches.
+- [x] **SAVE-READ-010**: When a save holds items from before items carried a rarity, in a slot or in the pack, the system shall read each as common.
 
 ## Beginning again
 

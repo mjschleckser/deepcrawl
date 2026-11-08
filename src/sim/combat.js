@@ -8,8 +8,9 @@
  */
 
 import {
-  Attribute, Condition, DEFAULT_ATTRIBUTES, applyDamage, character, equip, roster,
+  Attribute, Condition, DEFAULT_ATTRIBUTES, applyDamage, character, equip, roster, useItem,
 } from './party.js';
+import { mergeFinds, rollLoot } from './loot.js';
 import { accuracyWith, armourOf, baseDamageWith, defenceOf } from './items.js';
 import { makeRng } from './rng.js';
 
@@ -17,7 +18,7 @@ export const Band = { MISS: 'MISS', GRAZE: 'GRAZE', HIT: 'HIT', CRIT: 'CRIT' };
 
 export const Action = {
   ATTACK: 'ATTACK', CAST: 'CAST', ABILITY: 'ABILITY',
-  EQUIP: 'EQUIP', PASS: 'PASS',
+  EQUIP: 'EQUIP', USE: 'USE', PASS: 'PASS',
 };
 
 export const Outcome = {
@@ -115,7 +116,7 @@ export function damageFor(band, baseDamage, armour) {
 export function createEnemy({
   id, name, role = EnemyRole.MELEE, attributes = {}, ranks = {},
   maxHitPoints = 10, attack = null, armour = 0, portrait = null,
-  potValue = 10, forbidsEscape = false,
+  potValue = 10, forbidsEscape = false, loot = null,
 }) {
   return {
     id,
@@ -130,6 +131,9 @@ export function createEnemy({
     portrait,
     potValue,
     forbidsEscape,
+    // The loot table it drops from, by identifier, or none for an enemy with nothing on it.
+    // @spec ENEMY-ROSTER-012
+    loot,
     condition: Condition.OK,
   };
 }
@@ -152,12 +156,17 @@ const enemyStanding = (e) => e.condition === Condition.OK && e.hitPoints > 0;
  * @spec COMBAT-SURPRISE-003
  * @spec COMBAT-SURPRISE-010
  */
-export function beginEncounter({ party, enemies, rng, origin }) {
+export function beginEncounter({ party, enemies, rng, origin, lootTables = {} }) {
   const state = {
     party,
     enemies,
     origin,
     rng,
+    // The tables a defeated enemy's loot is rolled on, by identifier. Content, not
+    // state: it is handed in again when a saved fight is restored.
+    lootTables,
+    // What the fight yielded, rolled the first time its victory is read.
+    finds: null,
     // How full each combatant's bar is, by id. The fight's own clock, in beats, is
     // beside it; neither has anything to do with the exploration clock, which is
     // stopped for the whole encounter.
@@ -376,6 +385,7 @@ export function serializeEncounter(state) {
     skillsByActor: [...state.skillsByActor].map(([id, skills]) => [id, [...skills]]),
     escaped: state.escaped,
     potBanked: state.potBanked,
+    finds: state.finds ?? null,
     roamerId: state.roamerId ?? null,
   };
 }
@@ -384,10 +394,12 @@ export function serializeEncounter(state) {
  * @spec SAVE-READ-003
  * @spec SAVE-READ-004
  */
-export function restoreEncounter(saved, party) {
+export function restoreEncounter(saved, party, lootTables = {}) {
   return {
     ...saved,
     party,
+    lootTables,
+    finds: saved.finds ?? null,
     rng: makeRng(saved.rng),
     readiness: new Map(saved.readiness),
     skillsUsed: new Set(saved.skillsUsed),
@@ -433,6 +445,14 @@ export function takeAction(state, actorId, action) {
   if (action.kind === Action.EQUIP) {
     if (!character(state.party, actorId)) return null;
     if (!equip(state.party, actorId, action.item, action.slot)) return null;
+  }
+  // A drink is the same: the party's to refuse, before anything is spent, and it heals
+  // only whoever drinks it.
+  // @spec COMBAT-ACTION-013
+  // @spec COMBAT-ACTION-014
+  if (action.kind === Action.USE) {
+    if (!character(state.party, actorId)) return null;
+    if (!useItem(state.party, actorId, action.item)) return null;
   }
 
   state.readiness.set(actorId, readinessOf(state, actorId) - actionCost(action));
@@ -543,12 +563,37 @@ export function attemptFlee(state, actorId = null) {
 }
 
 /**
+ * What a won fight yielded: one roll for each defeated enemy, on its own table, from the
+ * fight's generator. Rolled the first time it is asked for and kept, so however often the
+ * outcome is read, and across a save, the fight paid out once.
+ *
+ * Only a victory asks. An escape leaves the band standing with its gold, and a defeat
+ * leaves nobody to carry anything.
+ *
+ * @spec LOOT-DROP-001
+ * @spec LOOT-DROP-002
+ * @spec LOOT-DROP-003
+ */
+function settleFinds(state) {
+  if (!state.finds) {
+    const finds = [];
+    for (const enemy of state.enemies.members) {
+      const table = enemy.loot ? state.lootTables?.[enemy.loot] : null;
+      if (table) finds.push(rollLoot(table, state.rng));
+    }
+    state.finds = mergeFinds(finds);
+  }
+  return state.finds;
+}
+
+/**
  * @spec COMBAT-END-001
  * @spec COMBAT-END-002
  * @spec COMBAT-END-003
  * @spec COMBAT-END-004
  * @spec COMBAT-END-005
  * @spec COMBAT-END-006
+ * @spec COMBAT-END-007
  */
 export function encounterOutcome(state) {
   if (state.escaped) return { outcome: Outcome.ESCAPED, returnTo: state.origin };
@@ -564,6 +609,7 @@ export function encounterOutcome(state) {
     return {
       outcome: Outcome.VICTORY,
       pot: state.potBanked,
+      finds: settleFinds(state),
       skillsUsed: [...state.skillsUsed],
       // Per actor, so a character advances the skills they used rather than the
       // party's whole repertoire.

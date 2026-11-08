@@ -3,9 +3,10 @@ import { createFloor, Direction } from '../sim/floor.js';
 import { createExploration, partyPosition, tickCount } from '../sim/exploration.js';
 import {
   createParty, createCharacter, addCharacter, character, packOf, stow, equip,
-  CharacterClass, Skill,
+  CharacterClass, Skill, addGold, applyDamage,
 } from '../sim/party.js';
-import { ItemKind, Slot, createItem } from '../sim/items.js';
+import { ItemKind, Rarity, Slot, createItem } from '../sim/items.js';
+import { RARITY_COLOURS } from './appconfig.js';
 import { beginEncounter, createEnemy, createEnemyGroup, readinessOf } from '../sim/combat.js';
 import { makeRng } from '../sim/rng.js';
 import { MIN_TAP_PX } from './geometry.js';
@@ -404,5 +405,177 @@ describe('the fight controller alone', () => {
     expect(fight.pending.items).toBe(true);
     // The row of four is inert while the screen holds the input.
     expect(chooseOption(fight, 0)).toBe(false);
+  });
+});
+
+const potion = (over = {}) => createItem({
+  id: 'minor_healing_potion', name: 'Minor Healing Potion', kind: ItemKind.CONSUMABLE,
+  effect: { heal: 8 }, ...over,
+});
+
+describe('gold, potions and rarity on the Items page', () => {
+  // @spec PRESENT-ITEMS-023
+  it('shows the gold in the purse on every page', () => {
+    const party = fourOf();
+    addGold(party, 37);
+
+    for (const page of [0, 1]) {
+      const plan = buildItemsPlan(party, viewport, { page });
+      expect(plan.gold).toBe(37);
+      expect(plan.entries.find((e) => e.kind === 'HEADING' && e.text === 'Pack').aside).toBe('37 gold');
+    }
+  });
+
+  // @spec PRESENT-ITEMS-024
+  it('lists potions sharing a name as one row with a count, and every piece of gear alone', () => {
+    const party = fourOf();
+    stow(party, potion());
+    stow(party, dagger());
+    stow(party, potion());
+    stow(party, potion());
+
+    const pack = buildItemsPlan(party, viewport, { page: 0 }).entries
+      .filter((e) => e.kind === 'ROW' && e.role === ItemsControl.PACK);
+
+    expect(pack.map((r) => r.name)).toEqual([
+      'Dagger', 'Chainmail', 'Minor Healing Potion ×3', 'Dagger',
+    ]);
+  });
+
+  // @spec PRESENT-ITEMS-025
+  // @spec PRESENT-ITEMS-027
+  it('says what a potion does, or greys it with why it cannot be drunk', () => {
+    const party = fourOf();
+    stow(party, potion());
+    const row = () => buildItemsPlan(party, viewport, { page: 0 }).entries
+      .find((e) => e.name === 'Minor Healing Potion');
+
+    expect(row()).toMatchObject({ greyed: true, available: false, detail: 'At full health' });
+
+    applyDamage(party, 'bram', 5);
+    expect(row()).toMatchObject({ greyed: false, available: true, detail: 'Heals 8' });
+
+    applyDamage(party, 'bram', 9999);
+    expect(row()).toMatchObject({ greyed: true, available: false, detail: 'Unconscious' });
+  });
+
+  // @spec PRESENT-ITEMS-026
+  // @spec PRESENT-ITEMS-028
+  it('drinks a potion pressed out of a fight, for a tick, leaving the screen open', () => {
+    const { controller, party, state } = harness();
+    stow(party, potion());
+    stow(party, potion());
+    applyDamage(party, 'bram', 10);
+    const hurt = character(party, 'bram').hitPoints;
+    pressKey(controller, 'i');
+    const ticks = tickCount(state);
+
+    tapRow(controller, 'Minor Healing Potion ×2');
+
+    expect(character(party, 'bram').hitPoints).toBe(hurt + 8);
+    expect(tickCount(state)).toBe(ticks + 1);
+    expect(screen(controller)).not.toBeNull();
+    expect(rowFor(controller, 'Minor Healing Potion')).toBeDefined();
+  });
+
+  // @spec PRESENT-ITEMS-027
+  it('does nothing when a greyed potion is pressed', () => {
+    const { controller, party, state } = harness();
+    stow(party, potion());
+    pressKey(controller, 'i');
+    const ticks = tickCount(state);
+
+    tapRow(controller, 'Minor Healing Potion');
+
+    expect(packOf(party).some((i) => i.id === 'minor_healing_potion')).toBe(true);
+    expect(tickCount(state)).toBe(ticks);
+  });
+
+  // @spec PRESENT-RARITY-001
+  // @spec PRESENT-RARITY-002
+  // @spec PRESENT-RARITY-003
+  it('colours a name by its rarity, and writes the tier under anything above common', () => {
+    const party = fourOf();
+    stow(party, createItem({ ...dagger(), id: 'runed', name: 'Runed Dagger', rarity: Rarity.EPIC }));
+    const entries = buildItemsPlan(party, viewport, { page: 0 }).entries;
+    const runed = entries.find((e) => e.name === 'Runed Dagger');
+    const plain = entries.find((e) => e.name === 'Dagger');
+
+    expect(runed.colour).toBe(RARITY_COLOURS[Rarity.EPIC]);
+    expect(runed.detail).toMatch(/^Epic · /);
+    expect(plain.colour).toBe(RARITY_COLOURS[Rarity.COMMON]);
+    expect(plain.detail).not.toMatch(/Common/);
+  });
+
+  // @spec PRESENT-RARITY-002
+  it('uses the colours players already know, one per tier', () => {
+    expect(new Set(Object.values(RARITY_COLOURS)).size).toBe(5);
+    const hue = (c) => {
+      const [r, g, b] = [(c >> 16) & 255, (c >> 8) & 255, c & 255];
+      return { r, g, b };
+    };
+    const { r: ur, g: ug, b: ub } = hue(RARITY_COLOURS[Rarity.UNCOMMON]);
+    const { r: rr, g: rg, b: rb } = hue(RARITY_COLOURS[Rarity.RARE]);
+    const { r: er, g: eg, b: eb } = hue(RARITY_COLOURS[Rarity.EPIC]);
+    const { r: lr, g: lg, b: lb } = hue(RARITY_COLOURS[Rarity.LEGENDARY]);
+    expect(ug).toBeGreaterThan(Math.max(ur, ub));
+    expect(rb).toBeGreaterThan(Math.max(rr, rg));
+    expect(er).toBeGreaterThan(eg);
+    expect(eb).toBeGreaterThan(eg);
+    expect(lr).toBeGreaterThan(lg);
+    expect(lg).toBeGreaterThan(lb);
+  });
+});
+
+describe('drinking in a fight', () => {
+  function hurtFight({ hurt = true } = {}) {
+    const floor = createFloor({ id: 'f1', width: 7, height: 7 });
+    const state = createExploration({
+      floors: [floor], floorId: 'f1', tile: { x: 3, y: 3 }, facing: Direction.NORTH,
+    });
+    const party = createParty();
+    addCharacter(party, createCharacter({
+      id: 'bram', name: 'Bram', characterClass: CharacterClass.FIGHTER, attributes: { DEXTERITY: 30 },
+      attack: { skill: Skill.BLADE, baseDamage: 5, accuracy: 20 },
+    }));
+    stow(party, potion());
+    if (hurt) applyDamage(party, 'bram', 10);
+    const encounter = beginEncounter({
+      party,
+      enemies: createEnemyGroup([createEnemy({ id: 'g1', name: 'Goblin', maxHitPoints: 40, potValue: 10, attributes: { DEXTERITY: 1 } })]),
+      rng: makeRng(3), origin: { floorId: 'f1', x: 3, y: 3 },
+    });
+    const campaign = {
+      encounter, state, party,
+      concludeEncounter: () => { campaign.encounter = null; }, fleeEncounter: () => {},
+    };
+    const controller = createController({ state, campaign, viewport, onDraw: vi.fn() });
+    return { controller, party };
+  }
+  const itemsKey = String(OPTION_SLOTS.findIndex((o) => o.action === FightAction.ITEMS) + 1);
+  const option = (controller) => controller.fight.pending.options.find((o) => o.action === FightAction.ITEMS);
+
+  // @spec PRESENT-ITEMS-029
+  // @spec COMBAT-ACTION-013
+  it('takes a drink as the turn, closes the screen, and goes on', () => {
+    const { controller, party } = hurtFight();
+    const before = character(party, 'bram').hitPoints;
+    pressKey(controller, itemsKey);
+
+    tapRow(controller, 'Minor Healing Potion');
+
+    expect(character(party, 'bram').hitPoints).toBe(before + 8);
+    expect(screen(controller)).toBeNull();
+    expect(controller.fight.turnsTaken).toBe(1);
+    expect(controller.fight.log.at(-1)).toMatch(/drinks the Minor Healing Potion/);
+  });
+
+  // @spec PRESENT-FIGHT-036
+  it('offers Items for a potion the character can drink, and not for one they cannot', () => {
+    expect(option(hurtFight().controller).available).toBe(true);
+
+    const full = option(hurtFight({ hurt: false }).controller);
+    expect(full.available).toBe(false);
+    expect(full.reason).toBe('Nothing to use');
   });
 });

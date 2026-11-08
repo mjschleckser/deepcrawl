@@ -9,8 +9,9 @@ import {
   beginEncounter, takeAction, nextActor, attackBand, damageFor, actingOrder, readinessOf,
   attackTargets, allyTargets, attemptFlee, fleeCertainToFail, createEnemy,
   createEnemyGroup, encounterOutcome, Band, Action, Outcome, MAX_ENEMY_GROUP,
-  MIN_DAMAGE_FRACTION, FULL_BAR,
+  MIN_DAMAGE_FRACTION, FULL_BAR, serializeEncounter, restoreEncounter,
 } from './combat.js';
+import { createLootTable } from './loot.js';
 
 /** Bring one combatant to a full bar without waiting out the beats. */
 const readyUp = (state, id) => state.readiness.set(id, FULL_BAR);
@@ -718,5 +719,128 @@ describe('what a turn reports', () => {
     expect(readinessOf(state, 'swift')).toBe(0);
     // The one who stayed put still has their turn to spend.
     expect(readinessOf(state, 'lame')).toBe(FULL_BAR);
+  });
+});
+
+describe('drinking in a fight', () => {
+  const potion = () => createItem({
+    id: 'potion', name: 'Potion', kind: ItemKind.CONSUMABLE, effect: { heal: 6 },
+  });
+
+  // @spec COMBAT-ACTION-013
+  it('heals the one who drinks, from the pack, for their full bar', () => {
+    const state = encounter({ members: [hero('a'), hero('b')], enemies: [orc('o1')] });
+    applyDamage(state.party, 'a', 10);
+    applyDamage(state.party, 'b', 10);
+    const drink = potion();
+    stow(state.party, drink);
+    readyUp(state, 'a');
+    const before = character(state.party, 'a').hitPoints;
+
+    const event = takeAction(state, 'a', { kind: Action.USE, item: drink });
+
+    expect(event.action).toBe(Action.USE);
+    expect(character(state.party, 'a').hitPoints).toBe(before + 6);
+    expect(character(state.party, 'b').hitPoints).toBe(character(state.party, 'b').maxHitPoints - 10);
+    expect(packOf(state.party)).toEqual([]);
+    expect(readinessOf(state, 'a')).toBe(0);
+  });
+
+  // @spec COMBAT-ACTION-014
+  it('spends nothing on a drink the party refuses', () => {
+    const state = encounter({ members: [hero('a')], enemies: [orc('o1')] });
+    const drink = potion();
+    stow(state.party, drink);
+    readyUp(state, 'a');
+
+    // Already at full health.
+    expect(takeAction(state, 'a', { kind: Action.USE, item: drink })).toBeNull();
+    expect(readinessOf(state, 'a')).toBe(FULL_BAR);
+    expect(packOf(state.party)).toEqual([drink]);
+  });
+});
+
+describe('what a victory yields', () => {
+  const potion = createItem({ id: 'potion', name: 'Potion', kind: ItemKind.CONSUMABLE, effect: { heal: 6 } });
+  const tables = {
+    pockets: createLootTable({
+      id: 'pockets', gold: { min: 3, max: 3 }, draws: { count: 1, chance: 1 }, items: [potion],
+    }),
+  };
+
+  function won({ enemies, lootTables = tables, seed = 7 } = {}) {
+    const state = beginEncounter({
+      party: party(hero('a')),
+      enemies: createEnemyGroup(enemies),
+      rng: makeRng(seed),
+      origin: { floorId: 'f1', x: 3, y: 4 },
+      lootTables,
+    });
+    for (const e of state.enemies.members) {
+      e.hitPoints = 0;
+      e.condition = Condition.DEAD;
+    }
+    return state;
+  }
+
+  // @spec LOOT-DROP-001
+  // @spec COMBAT-END-007
+  it('rolls each defeated enemy\'s own table and reports the finds with the pot', () => {
+    const state = won({ enemies: [orc('o1', { loot: 'pockets' }), orc('o2', { loot: 'pockets' })] });
+
+    const result = encounterOutcome(state);
+
+    expect(result.outcome).toBe(Outcome.VICTORY);
+    expect(result.finds.gold).toBe(6);
+    expect(result.finds.items.map((i) => i.id)).toEqual(['potion', 'potion']);
+  });
+
+  // @spec LOOT-DROP-001
+  it('rolls once, however often the outcome is read, and from the encounter\'s generator', () => {
+    const state = won({ enemies: [orc('o1', { loot: 'pockets' })] });
+    const before = state.rng.position();
+
+    const first = encounterOutcome(state).finds;
+    const after = state.rng.position();
+    const again = encounterOutcome(state).finds;
+
+    expect(after).not.toBe(before);
+    expect(state.rng.position()).toBe(after);
+    expect(again).toEqual(first);
+  });
+
+  // @spec LOOT-DROP-002
+  it('rolls nothing for an enemy that carries nothing', () => {
+    const state = won({ enemies: [orc('o1'), orc('o2', { loot: 'pockets' })] });
+    expect(encounterOutcome(state).finds.items).toHaveLength(1);
+  });
+
+  // @spec LOOT-DROP-003
+  it('rolls nothing on an escape or a defeat', () => {
+    const fled = encounter({ members: [hero('a')], enemies: [orc('o1', { loot: 'pockets' })] });
+    fled.escaped = true;
+    expect(encounterOutcome(fled).finds).toBeUndefined();
+
+    const lost = encounter({ members: [hero('a')], enemies: [orc('o1', { loot: 'pockets' })] });
+    applyDamage(lost.party, 'a', 9999);
+    expect(encounterOutcome(lost).finds).toBeUndefined();
+  });
+
+  // @spec LOOT-DROP-001
+  // @spec SAVE-HOLD-005
+  it('keeps what a victory yielded across a save and reload', () => {
+    const state = won({ enemies: [orc('o1', { loot: 'pockets' })] });
+    const finds = encounterOutcome(state).finds;
+
+    const restored = restoreEncounter(
+      JSON.parse(JSON.stringify(serializeEncounter(state))), state.party, tables,
+    );
+    expect(encounterOutcome(restored).finds).toEqual(finds);
+  });
+
+  // @spec ENEMY-ROSTER-012
+  it('lets an enemy name the table it drops from, or none', () => {
+    expect(orc('o1').loot).toBeNull();
+    expect(orc('o1', { loot: 'pockets' }).loot).toBe('pockets');
   });
 });

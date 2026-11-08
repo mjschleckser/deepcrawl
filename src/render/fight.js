@@ -9,7 +9,9 @@
  * it is the fight as the player perceives it, built from what each turn reported.
  */
 
-import { Condition, Skill, character, packOf, roster, totalLevel } from '../sim/party.js';
+import {
+  Condition, Skill, character, packOf, roster, totalLevel, useRefusal,
+} from '../sim/party.js';
 import { MIN_TAP_PX, ControlKind, uiScale, contentColumn } from './geometry.js';
 import {
   Action, Band, Outcome, attackTargets,
@@ -17,7 +19,8 @@ import {
   fleeCertainToFail, turnOrder, hitDamage,
 } from '../sim/combat.js';
 import { selectEnemyTarget } from '../sim/enemies.js';
-import { weaponOf, wieldableBy } from '../sim/items.js';
+import { isConsumable, weaponOf, wieldableBy } from '../sim/items.js';
+import { describeFind } from './findsplan.js';
 
 export const FightPhase = { ACTING: 'ACTING', ENDED: 'ENDED' };
 
@@ -80,6 +83,8 @@ const LOG_LINES = 5;
 const LOG_LINE_HEIGHT = 15;
 /** The line that names who is up, reserved whether or not anybody is. */
 const PROMPT_HEIGHT = 26;
+/** One line of what a victory found, on its banner. */
+const BANNER_LINE = 18;
 const SCROLLBAR_WIDTH = 6;
 
 /** A tile in the turn strip, and how much larger whoever acts now is drawn. */
@@ -309,17 +314,30 @@ export function buildFightPlan(
   // The fight is a centred surface, not a band across the whole screen: on a wide
   // window the corridor stays visible either side of it.
   const bounds = { x: column.x, y: viewport.height - height, width: column.width, height };
-  const bannerHeight = Math.max(MIN_TAP_PX * 2.6, 150) * scale;
+  // A victory lists what was found beneath what was learned, a line each, so the banner
+  // grows by those lines, never past most of the screen.
+  // @spec PRESENT-FIGHT-050
+  const finds = phase === FightPhase.ENDED && outcome?.outcome === Outcome.VICTORY
+    ? describeFind(outcome.finds)
+    : null;
+  const findLines = finds
+    ? (finds.gold ? 1 : 0) + finds.items.length + (finds.nothing ? 1 : 0)
+    : 0;
+  const bannerHeight = Math.min(
+    viewport.height * 0.9,
+    Math.max(MIN_TAP_PX * 2.6, 150) * scale + findLines * BANNER_LINE * scale,
+  );
   const bannerWidth = Math.min(column.width - 24, 420 * scale);
   const banner = phase === FightPhase.ENDED && outcome
     ? {
         outcome: outcome.outcome,
         pot: outcome.pot ?? null,
+        finds,
         // Its own panel: a banner reading through the formation behind it is a banner
         // nobody can read.
         bounds: {
           x: (viewport.width - bannerWidth) / 2,
-          y: bounds.y + (bounds.height - bannerHeight) / 2,
+          y: Math.max(0, Math.min(bounds.y + (bounds.height - bannerHeight) / 2, viewport.height - bannerHeight)),
           width: bannerWidth,
           height: bannerHeight,
         },
@@ -679,7 +697,7 @@ function optionsFor(encounter, characterId) {
 
 /**
  * Why this character has nothing to do on the Items screen, or null if they have. In a
- * fight the screen only puts things on, so it is the pack that decides.
+ * fight the screen puts things on and drinks things, so it is the pack that decides.
  *
  * @spec PRESENT-FIGHT-036
  */
@@ -687,7 +705,11 @@ function itemsReason(encounter, characterId) {
   const pack = packOf(encounter.party);
   if (pack.length === 0) return 'Pack is empty';
   const who = character(encounter.party, characterId);
-  return pack.some((item) => wieldableBy(item, who?.characterClass)) ? null : 'Nothing to wield';
+  const usable = pack.some((item) => (isConsumable(item)
+    ? useRefusal(encounter.party, characterId, item) === null
+    : wieldableBy(item, who?.characterClass)));
+  if (usable) return null;
+  return pack.some(isConsumable) ? 'Nothing to use' : 'Nothing to wield';
 }
 
 /**
@@ -818,6 +840,9 @@ function resolveOne(fight, actorId, action) {
   if (!event) return null;
   if (event.action === Action.EQUIP) {
     writeLog(fight, `${names(fight)[actorId]} takes up the ${action.item.name}.`);
+  }
+  if (event.action === Action.USE) {
+    writeLog(fight, `${names(fight)[actorId]} drinks the ${action.item.name}.`);
   }
   if (event && event.action === Action.ATTACK && event.targetId) {
     writeLog(fight, describeEvent(event, names(fight), event.targetId, event.felled === true));
@@ -1054,6 +1079,20 @@ export function goBack(fight) {
 export function equipInFight(fight, item) {
   if (fight.phase !== FightPhase.ACTING || !fight.pending?.items) return false;
   const event = resolveOne(fight, fight.pending.characterId, { kind: Action.EQUIP, item });
+  return Boolean(event);
+}
+
+/**
+ * Drink from the Items screen, as this character's turn. A refused drink leaves the
+ * screen open and the turn waiting.
+ *
+ * @spec PRESENT-ITEMS-029
+ * @spec COMBAT-ACTION-013
+ * @spec COMBAT-ACTION-014
+ */
+export function useInFight(fight, item) {
+  if (fight.phase !== FightPhase.ACTING || !fight.pending?.items) return false;
+  const event = resolveOne(fight, fight.pending.characterId, { kind: Action.USE, item });
   return Boolean(event);
 }
 

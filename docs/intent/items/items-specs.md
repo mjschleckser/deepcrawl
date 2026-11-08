@@ -59,7 +59,7 @@ are assembled into the three the fight resolves, and who may hold it.
 - [x] **ITEM-PACK-004**: If an item from the pack does not fit the slot or may not be wielded by the character, then the system shall refuse the change and leave the pack and every slot as they were.
 - [x] **ITEM-PACK-007**: When an item is stowed, the system shall add it to the end of the pack.
 - [x] **ITEM-PACK-005**: The system shall permit equipment to be changed on a character whatever their condition.
-- [ ] **ITEM-USE-001**: The system shall let a character use up a consumable from the pack, in a fight or out of one.
+- [x] **ITEM-USE-001**: The system shall let a character use up a consumable from the pack, in a fight or out of one.
 
 ## Deferred
 

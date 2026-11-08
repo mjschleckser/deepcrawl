@@ -29,9 +29,9 @@ where finds come from.
 
 ## Fight drops
 
-- [ ] **LOOT-DROP-001**: When an encounter ends in victory, the system shall roll once for each defeated enemy on that enemy's loot table, from the encounter's generator, and shall add each find's gold to the party's purse and its items to the pack.
-- [ ] **LOOT-DROP-002**: The system shall roll nothing for a defeated enemy that names no loot table.
-- [ ] **LOOT-DROP-003**: When an encounter ends in escape or defeat, the system shall roll no loot.
+- [x] **LOOT-DROP-001**: When an encounter ends in victory, the system shall roll once for each defeated enemy on that enemy's loot table, from the encounter's generator, and shall add each find's gold to the party's purse and its items to the pack.
+- [x] **LOOT-DROP-002**: The system shall roll nothing for a defeated enemy that names no loot table.
+- [x] **LOOT-DROP-003**: When an encounter ends in escape or defeat, the system shall roll no loot.
 
 ## Chests
 

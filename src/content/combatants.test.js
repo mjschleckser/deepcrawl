@@ -78,6 +78,25 @@ describe('reading an authored combatant', () => {
   });
 });
 
+describe('the loot an enemy carries', () => {
+  // @spec ENEMY-ROSTER-012
+  it('reads the table an enemy drops from, or none', () => {
+    expect(buildEnemy('goblin.json', goblinFile).loot).toBeNull();
+    expect(buildEnemy('goblin.json', { ...goblinFile, loot: 'goblin' }).loot).toBe('goblin');
+  });
+
+  // @spec LOOT-DATA-002
+  it('rejects an enemy naming a table nobody authored', () => {
+    expect(() => buildEnemy('goblin.json', { ...goblinFile, loot: 'hoard' }))
+      .toThrow(/goblin\.json: loot table "hoard"/);
+  });
+
+  // @spec ENEMY-ROSTER-012
+  it('gives every authored goblin the goblin table', () => {
+    for (const enemy of Object.values(enemyDefinitions())) expect(enemy.loot).toBe('goblin');
+  });
+});
+
 describe('the authored roster', () => {
   // @spec PARTY-DATA-001
   // @spec PARTY-DATA-002

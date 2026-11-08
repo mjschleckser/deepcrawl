@@ -650,6 +650,26 @@ function drawFight(container, plan) {
       learned.y = b.y + 46 * scale;
       container.addChild(learned);
     }
+
+    // What the band left, a line each, every item in its rarity's colour.
+    // @spec PRESENT-FIGHT-050
+    const finds = plan.banner.finds;
+    if (finds) {
+      const lines = [
+        ...(finds.gold ? [{ text: finds.gold, colour: FIGHT_COLOURS.banner }] : []),
+        ...finds.items.map((item) => ({ text: item.text, colour: item.colour })),
+        ...(finds.nothing ? [{ text: finds.nothing, colour: FIGHT_COLOURS.dim }] : []),
+      ];
+      let y = b.y + 72 * scale;
+      for (const line of lines) {
+        const t = label(line.text, Math.round(13 * scale), line.colour);
+        fitWithin(t, b.width - 24 * scale);
+        t.x = b.x + b.width / 2 - t.width / 2;
+        t.y = y;
+        container.addChild(t);
+        y += 18 * scale;
+      }
+    }
   }
 
   // The four first, then anything laid over them, so a Pass turn control covers the
@@ -874,6 +894,14 @@ function drawItems(container, plan) {
       t.x = box.x;
       t.y = box.y + (box.height - t.height) / 2;
       container.addChild(t);
+      // The purse, on the far side of the pack's heading.
+      // @spec PRESENT-ITEMS-023
+      if (entry.aside) {
+        const aside = label(entry.aside, small, FIGHT_COLOURS.banner);
+        aside.x = box.x + box.width - aside.width - inset;
+        aside.y = t.y;
+        container.addChild(aside);
+      }
       continue;
     }
     if (entry.kind === 'NOTE') {
@@ -901,7 +929,10 @@ function drawItems(container, plan) {
       slot.y = box.y + 4 * scale;
       container.addChild(slot);
     }
-    const itemName = label(entry.name ?? '—', text, entry.name ? tone : FIGHT_COLOURS.dim);
+    // A name in its rarity's colour, unless the row is greyed.
+    // @spec PRESENT-RARITY-001
+    const nameTone = !entry.name || entry.greyed ? FIGHT_COLOURS.dim : (entry.colour ?? tone);
+    const itemName = label(entry.name ?? '—', text, nameTone);
     fitWithin(itemName, box.x + box.width - inset - nameLeft);
     itemName.x = nameLeft;
     itemName.y = box.y + 4 * scale;

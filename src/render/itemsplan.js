@@ -7,8 +7,11 @@
  * those are the controller's.
  */
 
-import { packOf, roster } from '../sim/party.js';
-import { ItemKind, Slot, wieldableBy } from '../sim/items.js';
+import { packOf, purseOf, roster, useRefusal, UseRefusal } from '../sim/party.js';
+import {
+  Effect, ItemKind, Rarity, Slot, isConsumable, wieldableBy,
+} from '../sim/items.js';
+import { rarityColour } from './appconfig.js';
 import { MIN_TAP_PX, uiScale, contentColumn, stampRoom } from './geometry.js';
 import { pageFor } from './partyplan.js';
 
@@ -30,6 +33,9 @@ export const SLOT_LABELS = { [Slot.MAIN_HAND]: 'Main hand', [Slot.OFF_HAND]: 'Of
  * @spec PRESENT-ITEMS-007
  */
 export function itemDetail(item) {
+  // What a potion does is the whole of what there is to say about it.
+  // @spec PRESENT-ITEMS-025
+  if (isConsumable(item)) return withTier(item, `Heals ${item.effect?.[Effect.HEAL] ?? 0}`);
   const parts = [SLOT_LABELS[item.slot] ?? titled(item.slot)];
   if (item.kind === ItemKind.WEAPON) {
     if (item.skill) parts.push(titled(item.skill));
@@ -40,8 +46,32 @@ export function itemDetail(item) {
   } else if (item.kind === ItemKind.SHIELD) {
     parts.push(`defence ${item.defence}`);
   }
-  return parts.join(' · ');
+  return withTier(item, parts.join(' · '));
 }
+
+/**
+ * The tier written ahead of an item's line, for anything above common, so that rarity
+ * never rests on colour alone.
+ *
+ * @spec PRESENT-RARITY-003
+ */
+function withTier(item, line) {
+  if (!item.rarity || item.rarity === Rarity.COMMON) return line;
+  return `${titled(item.rarity)} · ${line}`;
+}
+
+/**
+ * Why a character cannot drink a potion, in place of what it does.
+ *
+ * @spec PRESENT-ITEMS-027
+ */
+const REFUSALS = {
+  [UseRefusal.FULL_HEALTH]: 'At full health',
+  [UseRefusal.UNCONSCIOUS]: 'Unconscious',
+  [UseRefusal.DEAD]: 'Dead',
+  [UseRefusal.ASHES]: 'Ashes',
+  [UseRefusal.LOST]: 'Lost',
+};
 
 /**
  * Who may wield an item, said in place of its numbers when the character on the page
@@ -51,7 +81,7 @@ export function itemDetail(item) {
  */
 export function wieldersOf(item) {
   const names = (item.classes ?? []).map(titled);
-  return `${SLOT_LABELS[item.slot] ?? titled(item.slot)} · ${names.join(', ')} only`;
+  return withTier(item, `${SLOT_LABELS[item.slot] ?? titled(item.slot)} · ${names.join(', ')} only`);
 }
 
 /**
@@ -59,7 +89,11 @@ export function wieldersOf(item) {
  * the plan and the controller, so the row a key reaches and the row drawn highlighted
  * are the same row.
  *
+ * Potions sharing an identifier are one row, where the first of them stands, carrying
+ * their count; a piece of equipment is always a row of its own.
+ *
  * @spec PRESENT-ITEMS-017
+ * @spec PRESENT-ITEMS-024
  */
 export function itemRows(party, characterId) {
   const c = roster(party).find((m) => m.id === characterId);
@@ -67,9 +101,17 @@ export function itemRows(party, characterId) {
   const worn = Object.values(Slot).map((slot) => ({
     role: ItemsControl.WORN, slot, item: c.equipment[slot] ?? null,
   }));
-  const carried = packOf(party).map((item, packIndex) => ({
-    role: ItemsControl.PACK, packIndex, item,
-  }));
+  const carried = [];
+  const stacks = new Map();
+  packOf(party).forEach((item, packIndex) => {
+    if (isConsumable(item) && stacks.has(item.id)) {
+      stacks.get(item.id).count += 1;
+      return;
+    }
+    const row = { role: ItemsControl.PACK, packIndex, item, count: 1 };
+    if (isConsumable(item)) stacks.set(item.id, row);
+    carried.push(row);
+  });
   return [...worn, ...carried];
 }
 
@@ -87,10 +129,25 @@ export function clampRow(rows, selected) {
  * @spec PRESENT-ITEMS-012
  * @spec PRESENT-ITEMS-016
  */
-export function rowActs(row, c, { inFight }) {
+export function rowActs(row, c, { inFight, party = null }) {
   if (!row.item) return false;
   if (row.role === ItemsControl.WORN) return !inFight;
+  // A potion is drunk by whoever's page it is, when they can drink it.
+  // @spec PRESENT-ITEMS-026
+  // @spec PRESENT-ITEMS-027
+  if (isConsumable(row.item)) return Boolean(party) && useRefusal(party, c.id, row.item) === null;
   return wieldableBy(row.item, c.characterClass);
+}
+
+/** The line beneath a row: its numbers, who may wield it, or why it cannot be drunk. */
+function rowDetail(row, c, party) {
+  if (!row.item) return null;
+  if (row.role === ItemsControl.PACK && isConsumable(row.item)) {
+    const refusal = useRefusal(party, c.id, row.item);
+    return refusal ? withTier(row.item, REFUSALS[refusal] ?? 'Cannot be used') : itemDetail(row.item);
+  }
+  const wieldable = row.role === ItemsControl.WORN || wieldableBy(row.item, c.characterClass);
+  return wieldable ? itemDetail(row.item) : wieldersOf(row.item);
 }
 
 /**
@@ -167,6 +224,10 @@ export function buildItemsPlan(party, viewport, { page = 0, characterId = null, 
   const rows = itemRows(party, c.id);
   const highlight = clampRow(rows, selected);
   const pack = packOf(party);
+  // The purse belongs to the party as the pack does, so it rides on the pack's heading.
+  // @spec PRESENT-ITEMS-023
+  const gold = purseOf(party);
+  const packHeading = (top) => ({ kind: 'HEADING', text: 'Pack', aside: `${gold} gold`, top, height: heading });
 
   // Laid out top to bottom as though there were room for all of it, then moved up just
   // far enough that the highlighted row is in view.
@@ -176,11 +237,12 @@ export function buildItemsPlan(party, viewport, { page = 0, characterId = null, 
   cursor += heading;
   rows.forEach((row, index) => {
     if (row.role === ItemsControl.PACK && row.packIndex === 0) {
-      laid.push({ kind: 'HEADING', text: 'Pack', top: cursor + gap / 2, height: heading });
+      laid.push(packHeading(cursor + gap / 2));
       cursor += heading + gap / 2;
     }
-    const acts = rowActs(row, c, { inFight });
-    const wieldable = row.role === ItemsControl.WORN || wieldableBy(row.item, c.characterClass);
+    const acts = rowActs(row, c, { inFight, party });
+    const usable = row.role === ItemsControl.WORN
+      || (isConsumable(row.item) ? acts : wieldableBy(row.item, c.characterClass));
     laid.push({
       kind: 'ROW',
       index,
@@ -188,12 +250,15 @@ export function buildItemsPlan(party, viewport, { page = 0, characterId = null, 
       slot: row.slot ?? row.item?.slot ?? null,
       packIndex: row.packIndex ?? null,
       label: row.role === ItemsControl.WORN ? SLOT_LABELS[row.slot] : null,
-      name: row.item?.name ?? null,
-      detail: row.item ? (wieldable ? itemDetail(row.item) : wieldersOf(row.item)) : null,
+      name: row.item ? (row.count > 1 ? `${row.item.name} ×${row.count}` : row.item.name) : null,
+      // @spec PRESENT-RARITY-001
+      rarity: row.item?.rarity ?? null,
+      colour: row.item ? rarityColour(row.item) : null,
+      detail: rowDetail(row, c, party),
       available: acts,
       // A worn item drawn in a fight is shown as it is, just not pressable; only an
-      // item the character cannot wield is greyed for what it is.
-      greyed: !wieldable,
+      // item the character cannot wield or drink is greyed for what it is.
+      greyed: !usable,
       selected: index === highlight,
       top: cursor,
       height: rowHeight,
@@ -201,7 +266,7 @@ export function buildItemsPlan(party, viewport, { page = 0, characterId = null, 
     cursor += rowHeight;
   });
   if (pack.length === 0) {
-    laid.push({ kind: 'HEADING', text: 'Pack', top: cursor + gap / 2, height: heading });
+    laid.push(packHeading(cursor + gap / 2));
     cursor += heading + gap / 2;
     laid.push({ kind: 'NOTE', text: 'Nothing carried', top: cursor, height: heading });
     cursor += heading;
@@ -231,6 +296,7 @@ export function buildItemsPlan(party, viewport, { page = 0, characterId = null, 
     characterId: c.id,
     page: at,
     inFight,
+    gold,
     scale,
     bounds,
     title,
