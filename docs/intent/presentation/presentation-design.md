@@ -238,9 +238,9 @@ top of it.
 │  └──┘ ░░░░░░░░ 0/9         └──┘ ████████ 20/20                    │
 │         ↑ enemies, left            ↑ the party, right             │
 ├───────────────────────────────────────────────────────────────────┤
-│ Wren grazes Goblin for 3.                                         │
+│ Wren hits Goblin for 3.                                           │
 │ Goblin hits Bram for 6.                                           │ ← the log
-│ Tam crits Goblin for 14. Goblin falls.                            │
+│ Tam hits Goblin for 6. Goblin falls.                              │
 ├───────────────────────────────────────────────────────────────────┤
 │ Bram is ready to act!                                             │ ← who is up
 │  [1] Attack   [2] Magic   [3] Items       [4] Flee                │ ← the controls
@@ -408,7 +408,7 @@ judder, so without a record the player would see only the state that came out th
 side and never learn what happened in between.
 
 The log is therefore not decoration. It is the fight, as perceived: one line per
-resolved action, naming who acted, what band the attack fell in, what it cost, and
+resolved action, naming who acted, whom they struck, what it cost, and
 what it killed. It is built from the event log a resolved action already returns, so the
 renderer invents nothing and reports only what the simulation actually did.
 
@@ -516,11 +516,10 @@ the press that raised it, rather than the row turning into a different row.
 **A menu entry for a combatant carries their hit points**, because a tall menu covers the
 cards the player would otherwise read to decide.
 
-**A target's entry says what a hit would deal.** The figure is the one the simulation
-reports for a plain hit on that target, armour taken off, so a choice of whom to strike
-can be made from the numbers: a blow worth at least the hit points beside it finishes
-the job, if it lands as a hit. It says nothing about grazes, crits or misses. It is a
-guide to the ordinary result, and the log reports what actually happened.
+**A target's entry says what the attack will deal.** The figure is the one the
+simulation reports for an attack on that target, armour taken off, and an attack deals
+exactly that, so a choice of whom to strike can be made from the numbers: a blow worth
+at least the hit points beside it finishes the job.
 
 **An entry reads as a blow against a body:** the name, then the damage, then a symbol of
 the weapon striking it, then the target's hit points. The symbol sits between the two
@@ -954,7 +953,7 @@ screen the player can see but the game cannot have.
 | Telling enemies of one name apart | By position: a menu lists targets in column order | A letter after the name, wherever the fight names them | Fights are small enough that order settles which is which, and a letter is one more thing on every card, tile and log line for the player to read past. The cost is that the strip and the log cannot say which of several goblins they mean. A letter is the answer if larger groups make that matter. |
 | How an entry is laid out | Name, damage, weapon symbol, hit points, with no key number | Labelling the figures (`6 dmg`, `9/9 HP`); hit points before damage; printing each entry's key | A symbol between two figures says which is which without a word of label, which keeps a phone-width line short and quick to scan. A printed key is a third figure competing with the two that decide the choice, and it serves only the keyboard, where counting down a short list is easy. |
 | Weapon symbols | Drawn in code, one per weapon skill | Emoji or font glyphs; an image file per weapon | Glyphs for weapons vary by device or are missing from a monospace font, so the same entry would read differently from phone to phone. Four small shapes need no art pipeline, and the map's marks already work this way. |
-| What a target's entry predicts | The damage of a plain hit, armour taken off | A range from graze to crit; an average weighted by the chance of each band; no prediction | One number is what a phone-width entry can carry and what a player can compare at a glance. A range or an average would need reading, and the point is to choose quickly. Showing the ordinary result keeps the bands a surprise worth having. |
+| What a target's entry shows | The damage the attack will deal, armour taken off | No prediction; a range or an average | One number is what a phone-width entry can carry and what a player can compare at a glance, and since an attack deals exactly what it previews, the number is the result rather than a guess at it. |
 | The panel's regions | Fixed: combatants, log, prompt line, controls, each keeping its place and size all encounter | Sizing each region to its content, so the panel grows and shrinks as the fight goes | A fight is read under time pressure. A prompt that pushed the formation up as it appeared would move what the player is reading at the moment they are reading it. Fixed regions cost some empty space in a small fight and buy a screen that can be read at a glance every time. |
 | Where a further choice appears | A menu opening off the pressed button, rising as far as the turn strip | Replacing the four options with the choices; a separate screen; tapping the target's card | Replacing the row changes what is under the thumb and loses sight of what was asked. A menu keeps the question attached to the press that raised it, and needs no room reserved in the row. It rises rather than falls because the row sits at the foot of the screen. |
 | One legal target | The menu opens anyway, holding one entry | The first press strikes it | Skipping the question saves one press but changes what a press on Attack does partway through a fight, so a thumb already reaching for the menu lands on something else. One rhythm on every turn is worth more than a press saved at the end of a fight. |

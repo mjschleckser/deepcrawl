@@ -14,7 +14,7 @@ import {
 } from '../sim/party.js';
 import { MIN_TAP_PX, ControlKind, uiScale, contentColumn } from './geometry.js';
 import {
-  Action, Band, Outcome, attackTargets,
+  Action, Outcome, attackTargets,
   encounterOutcome, nextActor, takeAction, attemptFlee,
   fleeCertainToFail, turnOrder, hitDamage,
 } from '../sim/combat.js';
@@ -213,7 +213,7 @@ function layOutColumn(cards, column, top, scale, { height = ROW_HEIGHT * scale }
 
 /**
  * What an attack trains: the skill of the weapon being used, which is the same weapon
- * that decides the damage and the accuracy.
+ * that decides the damage.
  *
  * @spec COMBAT-ACTION-008
  * @spec COMBAT-ACTION-010
@@ -644,10 +644,7 @@ function fightControls({ bounds, pending, banner, metrics, top, ceiling, scale }
 export function describeEvent(event, names, targetId, felled) {
   const actor = names[event.actorId] ?? event.actorId;
   const target = names[targetId] ?? targetId;
-  if (event.band === Band.MISS) return `${actor} misses ${target}.`;
-
-  const verb = { [Band.GRAZE]: 'grazes', [Band.HIT]: 'hits', [Band.CRIT]: 'crits' }[event.band];
-  const blow = `${actor} ${verb} ${target} for ${event.damage}.`;
+  const blow = `${actor} hits ${target} for ${event.damage}.`;
   return felled ? `${blow} ${target} falls.` : blow;
 }
 

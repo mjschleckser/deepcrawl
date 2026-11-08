@@ -8,7 +8,7 @@ import {
   beginEncounter, createEnemy, createEnemyGroup,
   advanceBeats, nextActor, takeAction, readinessOf, actionCost,
   turnOrder, hitDamage,
-  Action, Band, FULL_BAR,
+  Action, FULL_BAR,
 } from './combat.js';
 
 const hero = (id, dexterity, over = {}) =>
@@ -274,23 +274,19 @@ describe('what a hit would deal', () => {
   });
 
   // @spec COMBAT-ATTACK-013
-  it('reports exactly what a real hit then deals', () => {
-    let hits = 0;
+  it('reports exactly what the attack then deals, every time', () => {
     for (let seed = 1; seed <= 40; seed++) {
       const state = encounter({ members: [swinger()], enemies: [armoured(2)], seed });
       const forecast = hitDamage(state, 'bram', 'o1');
 
       const event = takeAction(state, 'bram', attack('o1'));
 
-      if (event.band !== Band.HIT) continue;
-      hits += 1;
       expect(event.damage).toBe(forecast);
     }
-    expect(hits).toBeGreaterThan(0);
   });
 
   // @spec COMBAT-ATTACK-013
-  it("takes the target's armour off, and never reports less than a landed blow's minimum", () => {
+  it("takes the target's armour off, and never reports less than a blow's minimum", () => {
     const bare = encounter({ members: [swinger()], enemies: [armoured(0)] });
     const plated = encounter({ members: [swinger()], enemies: [armoured(3)] });
     const walled = encounter({ members: [swinger()], enemies: [armoured(999)] });

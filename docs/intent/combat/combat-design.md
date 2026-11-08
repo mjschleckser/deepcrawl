@@ -25,11 +25,12 @@ with what — so every turn is a choice of where to spend it rather than a check
 the fight permits. Reach and exposure return later as properties of weapons and
 abilities, which are decisions made inside the fight rather than before it.
 
-**A bad roll should cost damage, not a turn.** An attack resolves into four bands
-rather than two. Missing outright is reserved for a character badly outmatched by what
-they are swinging at; ordinarily a poor roll grazes. A turn that produces nothing is a
-turn the player did not get to play, and combat is short enough that losing one hurts
-out of proportion to its arithmetic.
+**An attack does what it said it would.** Nothing is rolled when a blow is struck:
+every attack lands, and deals exactly the damage the fight showed before it was
+chosen. A turn is a decision about where to spend a known quantity, so the player is
+choosing between outcomes rather than between odds, and no turn evaporates into a
+miss. The fight's uncertainty lives in its opening and in what the enemies choose to
+do, never in whether a chosen blow does what it promised.
 
 **Nothing accrues for staying longer.** The exploration clock is stopped, so hunger
 does not advance. That is a constraint on this segment rather
@@ -144,64 +145,28 @@ combatant's opening and nobody else's, and it works the same on either side.
 
 ## Resolving an Attack
 
-One roll decides both whether an attack landed and how well.
+Nothing is rolled. An attack always lands, and what it deals is fixed by the attacker
+and the target alone:
 
 ```
-outcome = roll + accuracy − defence
+dealt = max(minimum, round(base damage − target armour))
 ```
 
-The result falls into one of four bands:
+The same attacker striking the same target deals the same damage every time, on
+either side alike. Enemies strike exactly as characters do, so the damage a goblin
+does to a given character is as fixed as the damage that character does back.
 
-| Band | Effect |
-|---|---|
-| **Miss** | nothing lands |
-| **Graze** | reduced damage |
-| **Hit** | full damage |
-| **Crit** | increased damage |
+**Minimum damage.** An attack always deals at least a twentieth of its base damage,
+rounded up, and never less than one. Heavy armour can reduce a blow to almost nothing,
+but a blow is never worth nothing: a turn spent attacking always moves the fight.
 
-The band thresholds are content data. What the design fixes is their shape: the miss
-band is **narrow**, so a character only whiffs when badly outmatched by what they are
-attacking, and the crit band is **far out**, so reliable critical hits require an
-accuracy advantage that a campaign does not casually produce. Between them sits a wide
-middle where the ordinary result of a fair fight is a hit, and the ordinary result of
-an unfavourable one is a graze.
-
-This is the whole reason for four bands. A binary system makes an unfavourable matchup
-produce *nothing*, so the player watches turns evaporate; a graded one makes it produce
-*less*, so the fight is still being played while it is being lost.
-
-**Minimum damage.** An attack that lands always deals at least a twentieth of its base
-damage, rounded up, and never less than one. Heavy armour can reduce a blow to almost
-nothing, but a blow that connected is never worth nothing — that is what the miss band
-is for, and having two different ways to deal zero would make the bands meaningless.
-
-### Accuracy, Defence, and Armour
-
-Accuracy is **practice and eyesight**: the weapon in hand, the rank behind it, and how
-much the wielder notices.
-
-```
-accuracy = weapon.accuracy + 5 × weapon skill rank + 2 × (Perception − 10)
-```
-
-Defence is what it takes to avoid being hit, and is a different thing entirely from
-what it takes to survive being hit:
-
-```
-defence = 20 + 2 × (Dexterity − 10) + 3 × armour skill rank + shield
-```
-
-**Armour never makes anyone harder to hit.** It reduces the damage of a blow that
-landed, and does nothing else. Letting one number do both jobs makes heavy armour
-doubly good and light armour doubly bad, and it squeezes the accuracy bands until
-every point of armour is worth more than a rank of practice.
+### Base damage and armour
 
 Damage is **practice and force**, and the attribute is the weapon's to name:
 
 ```
 base damage = weapon.damage × (1 + 0.10 × weapon skill rank)
                             × (1 + 0.04 × (governing attribute − 10))
-dealt        = round(base damage × band multiplier − target armour)
 ```
 
 Might governs by default; a weapon with the *finesse* property names Dexterity
@@ -209,35 +174,34 @@ instead, and still trains the same weapon skill. This is why the governing attri
 a property of the weapon rather than of the skill: a dagger and a longsword are both
 Blade, and they are not the same argument for what makes a character dangerous.
 
-### What a hit would deal
+**Armour is subtracted from every blow**, and that is the whole of what armour does.
 
-Combat reports what a plain hit by one combatant on another would deal: the attacker's
-base damage at the hit band, less the target's armour, held to the same minimum as any
-landed blow. It is the sum a real blow runs through, so a preview and a result can only
-differ by the band. Asking rolls nothing and changes nothing.
+Accuracy and defence are assembled by the items segment but take no part in resolving
+an attack: with nothing rolled there is nothing for them to shift. They wait on a
+deterministic use (see Deferred).
+
+### What an attack will deal
+
+Combat reports what an attack by one combatant on another will deal: the attacker's
+base damage less the target's armour, held to the minimum. It is the very sum a
+resolved attack runs through, so the preview and the result are always the same
+number. Asking draws nothing and changes nothing.
 
 ### What the numbers come out at
 
 The calibration anchor is a fresh party against a floor-one goblin, as the game's own
 files author them.
 
-| | Accuracy | Defence | Base damage | Armour | Hit points |
-|---|---|---|---|---|---|
-| Bram: shortsword, shield, chainmail | 32 | 37 | 10.8 | 5 | 30 |
-| Isolde: quarterstaff, robe | 21 | 27 | 7 | 0 | 18 |
-| Goblin | 22 | 14 | 4.6 | 2 | 9 |
+| | Base damage | Armour | Hit points |
+|---|---|---|---|
+| Bram: shortsword, shield, chainmail | 10.8 | 5 | 30 |
+| Isolde: quarterstaff, robe | 7 | 0 | 18 |
+| Goblin | 4.6 | 2 | 9 |
 
-A plain hit from Bram finishes a goblin, and one from Isolde takes two. A goblin's hit
+An attack from Bram finishes a goblin, and one from Isolde takes two. A goblin's attack
 is worth 1 against Bram's armour and 5 against Isolde's robe, so a goblin's danger falls
-on whoever wears the least.
-
-An attacker sitting **+10** over what it is attacking gets 4% miss, 35% graze, 50% hit,
-11% crit on the band thresholds. Missing is rare, as it should be; crits are frequent
-enough to hope for and far too rare to plan around; and guaranteeing them would take an
-advantage of +99, which no campaign casually produces. Floor one is gentler than that on
-the party: Bram sits +18 over a goblin and never misses it, and a goblin sits −15 under
-him and misses 29% of the time. Each rank is worth +5 accuracy and +10% damage, so enemy
-defence has to climb by about five per floor tier for parity to hold.
+on whoever wears the least — and the player can see exactly how much before any blow
+is struck.
 
 ## Targeting
 
@@ -386,11 +350,9 @@ trouble. One character calls the retreat; the whole party leaves or nobody does.
 
 | Decision | Chosen | Alternatives Considered | Rationale |
 |---|---|---|---|
-| Defence and armour | Two separate stats: defence decides the band, armour reduces damage | One armour number serving as both | One number doing both jobs makes heavy armour doubly good and light armour doubly bad, and it forces the accuracy bands to stay compressed so that plate does not become untouchable. Splitting them is also what lets a nimble unarmoured thief be hard to hit and easy to hurt, which is a character worth being able to build. |
-| What accuracy is made of | Weapon, weapon skill rank, and Perception | The weapon's governing attribute, as damage uses; nothing but skill and weapon | Tying to-hit to the governing attribute would mean Might raised both how often you hit and how hard, compounding one attribute twice in the same swing. Perception keeps its exploration job and gains a reason to exist in a fight, without becoming the universal attribute that flattens every build. |
-| Rank value | +5 accuracy and +10% damage per rank | +3/+6%, so gear leads; +8/+15%, so skill dominates | Practice should be the main axis in a game whose progression is practice, while still leaving a found weapon and the right attribute able to decide a fight between two similar characters. |
-| Attack resolution | One roll into four bands: miss, graze, hit, crit | Binary hit or miss; always-hit with variable damage | A binary result makes an unfavourable matchup produce nothing at all, so the player watches turns evaporate. Four bands make it produce less, so a losing fight is still being played. |
-| Band widths | Narrow miss, wide middle, distant crit | Even bands | A miss should mean badly outmatched, not unlucky; a reliable crit should mean a real accuracy advantage rather than a good afternoon. |
+| Defence and armour | Armour alone shapes an attack, by subtraction; defence is not read | Defence and armour both read, defence deciding a roll's band | With no roll there is no band for defence to decide. Armour subtracting from a fixed blow keeps the result one sum the player can read. |
+| Rank value | +10% damage per rank (and +5 accuracy, assembled but not yet read) | +3/+6%, so gear leads; +8/+15%, so skill dominates | Practice should be the main axis in a game whose progression is practice, while still leaving a found weapon and the right attribute able to decide a fight between two similar characters. |
+| Attack resolution | No roll: every attack lands for exactly the damage previewed | One roll into four bands (miss, graze, hit, crit); binary hit or miss; always-hit with variable damage | Any roll puts a gap between the number the player chose on and the number that happened, so a turn becomes a bet rather than a decision. A fixed result makes the preview the truth and makes every choice of target a choice between known outcomes; a fight stays uncertain through its random opening and the enemies' choices of target. |
 | The order of acting | A readiness that fills with the fight's own time; whoever fills first acts, alone | A round in which everyone acts once, resolved in descending Dexterity | A round makes a quick combatant and a slow one differ only in who moves first, which wastes the attribute already deciding speed everywhere else, and it caps the difference between them at one place in a queue. A bar lets the quick act twice while the slow act once, which is the difference actually worth building an attribute on. |
 | What the player is told about the order | A projected turn order, with readiness itself kept inside the simulation | Reporting each combatant's readiness for a bar to be drawn from; true rounds, whose order needs no projecting | A bar has to be watched filling, and a player comparing bars is working out the turn order by eye. Reporting that order directly answers the question for them and lets the fight's time pass without being shown. True rounds would make the list trivial but give up the difference between a quick combatant and a slow one. |
 | Who projects the turn order | Combat, by the rules that resolve the fight | The presentation layer, reading readiness and Dexterity | A second copy of the arithmetic could drift from the first, and a queue that names the wrong combatant is worse than no queue. |
@@ -414,8 +376,8 @@ trouble. One character calls the retreat; the whole party leaves or nobody does.
 
 ### Resolved
 
-1. ✅ **One roll, four bands** — miss, graze, hit, crit — with a narrow miss and a distant crit.
-2. ✅ **A landed blow always deals at least a twentieth of its base damage**, never less than one.
+1. ✅ **Nothing is rolled in an attack**: every attack lands for exactly the damage previewed, on both sides.
+2. ✅ **A blow always deals at least a twentieth of its base damage**, never less than one.
 3. ✅ **Each combatant chooses and resolves in the same instant**, when their readiness fills.
 4. ✅ **There is no reach rule**: every standing combatant may be acted on by every other.
 5. ✅ **A body shields nobody**, there being nothing for it to stand in front of.
@@ -437,7 +399,7 @@ trouble. One character calls the retreat; the whole party leaves or nobody does.
 21. ✅ **Fleeing is one attempt for the whole party**, costing only the bar of the character who attempted it, and impossible against something far faster or something that forbids escape.
 22. ✅ **A defeated party stays where it fell**, to be abandoned or recovered by a fresh party.
 23. ✅ **Combat reports a projected turn order**, by its own rules and without changing anything, and readiness stays inside the simulation.
-24. ✅ **Combat reports what a plain hit would deal**, by the sum a real blow runs through, without rolling or changing anything.
+24. ✅ **Combat reports what an attack will deal**, by the sum the attack itself runs through, without drawing or changing anything.
 25. ✅ **A victory yields one loot roll per defeated enemy**, from the fight's generator, reported on the outcome.
 26. ✅ **Using an item is an action**, costing the full bar, and only the acting character drinks.
 
@@ -450,7 +412,8 @@ trouble. One character calls the retreat; the whole party leaves or nobody does.
 5. **Enemy behaviour beyond choosing a legal target.** Focus fire, retreat, protecting casters — all later.
 6. **Status effects.** Poison, fear, paralysis and the rest have no model here.
 7. **Recovering a fallen party.** That a wiped party stays where it fell and can be recovered by a fresh one is settled; a stranded roster, bodies on a floor, and hiring at a tavern all need segments that do not exist.
-8. **The numbers.** Band thresholds and the graze and crit multipliers are placeholders in code, waiting to move to content data and be tuned against more than one floor.
+8. **The numbers.** The minimum-damage fraction is a placeholder in code, waiting to move to content data and be tuned against more than one floor.
+9. **What accuracy and defence are for.** Both are still assembled from weapons, ranks, attributes and shields, but nothing in an attack reads them. Whether they fold into the fixed damage sum, become inputs to abilities, or are retired from items is an open decision.
 
 ## References
 

@@ -139,7 +139,7 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-MENU-011**: While a fight menu is open, when the player presses an option marked unavailable, the system shall leave the menu open and do nothing else.
 - [x] **PRESENT-MENU-014**: When the player presses Flee while it is available, the system shall attempt the escape at once and open no menu.
 - [x] **PRESENT-MENU-015**: While a fight menu is open, when the player turns the wheel, the system shall scroll the log and leave the menu open.
-- [x] **PRESENT-MENU-016**: The system shall draw on a fight menu entry for an attack target, in this order: the target's name, the damage the simulation reports for a plain hit on that target, a weapon symbol, and the target's hit points.
+- [x] **PRESENT-MENU-016**: The system shall draw on a fight menu entry for an attack target, in this order: the target's name, the damage the simulation reports for an attack on that target, a weapon symbol, and the target's hit points.
 - [x] **PRESENT-MENU-018**: The system shall draw on an attack target's entry the symbol for the skill of the weapon the acting character is using, with a distinct symbol for each of Blade, Blunt, Polearm and Bow.
 - [x] **PRESENT-MENU-017**: The system shall list attack targets in a fight menu in the order their column lists them.
 
@@ -192,7 +192,7 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-FIGHT-008**: When a character's action is chosen, the system shall resolve it at once and pass on to whoever comes ready next.
 - [x] **PRESENT-FIGHT-009**: When the player backs out while a fight menu is open, the system shall close that menu and return to that character's open choice, never to an earlier character, and shall do nothing when no menu is open.
 - [x] **PRESENT-FIGHT-010**: The system shall build the combat log from the events a resolved action reports, and shall report nothing the simulation did not do.
-- [x] **PRESENT-FIGHT-011**: The system shall name, for each resolved attack, who acted, which band the attack fell in, the damage it dealt, and whether it felled its target.
+- [x] **PRESENT-FIGHT-011**: The system shall name, for each resolved attack, who acted, whom they struck, the damage it dealt, and whether it felled its target.
 - [x] **PRESENT-FIGHT-012**: While an encounter is running, the system shall accept no exploration movement verb or party action.
 - [x] **PRESENT-FIGHT-013**: The system shall resolve a numbered key and a tap on the same option or menu entry to the same choice, carrying no record of which was used.
 - [x] **PRESENT-FIGHT-014**: When an encounter ends in victory or defeat, the system shall draw a banner naming the outcome and, on a victory, what it was worth.

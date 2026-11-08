@@ -11,10 +11,8 @@ import {
   Attribute, Condition, DEFAULT_ATTRIBUTES, applyDamage, character, equip, roster, useItem,
 } from './party.js';
 import { mergeFinds, rollLoot } from './loot.js';
-import { accuracyWith, armourOf, baseDamageWith, defenceOf } from './items.js';
+import { armourOf, baseDamageWith } from './items.js';
 import { makeRng } from './rng.js';
-
-export const Band = { MISS: 'MISS', GRAZE: 'GRAZE', HIT: 'HIT', CRIT: 'CRIT' };
 
 export const Action = {
   ATTACK: 'ATTACK', CAST: 'CAST', ABILITY: 'ABILITY',
@@ -25,17 +23,8 @@ export const Outcome = {
   ONGOING: 'ONGOING', VICTORY: 'VICTORY', DEFEAT: 'DEFEAT', ESCAPED: 'ESCAPED',
 };
 
-/**
- * Band thresholds on `roll + accuracy - defence`. Content data in waiting; what the
- * design fixes is their shape — a narrow miss, a wide middle, and a distant crit.
- */
-export const BANDS = { graze: 15, hit: 50, crit: 100 };
-
-/** A landed blow is never worth nothing; that is what the miss band is for. */
+/** A blow is never worth nothing, however heavy the armour it meets. */
 export const MIN_DAMAGE_FRACTION = 0.05;
-
-export const GRAZE_MULTIPLIER = 0.5;
-export const CRIT_MULTIPLIER = 1.5;
 
 /** A swarm is a shape the game can express, not an unbounded number. */
 export const MAX_ENEMY_GROUP = 20;
@@ -73,35 +62,16 @@ export function actionCost(action) {
 }
 
 /**
- * One roll decides both whether an attack landed and how well.
+ * What an attack deals. Nothing is rolled and nothing multiplies it: the attacker's
+ * base damage, less the target's armour, held to a floor.
  *
- * @spec COMBAT-ATTACK-001
- * @spec COMBAT-ATTACK-002
- * @spec COMBAT-ATTACK-006
- */
-export function attackBand(roll, accuracyMinusDefence) {
-  const outcome = roll + accuracyMinusDefence;
-  if (outcome >= BANDS.crit) return Band.CRIT;
-  if (outcome >= BANDS.hit) return Band.HIT;
-  if (outcome >= BANDS.graze) return Band.GRAZE;
-  return Band.MISS;
-}
-
-/**
- * @spec COMBAT-ATTACK-003
- * @spec COMBAT-ATTACK-004
  * @spec COMBAT-ATTACK-005
+ * @spec COMBAT-ATTACK-015
  */
-export function damageFor(band, baseDamage, armour) {
-  if (band === Band.MISS) return 0;
-
-  const multiplier =
-    band === Band.GRAZE ? GRAZE_MULTIPLIER : band === Band.CRIT ? CRIT_MULTIPLIER : 1;
-  const reduced = baseDamage * multiplier - armour;
-  // Heavy armour can crush a blow down to almost nothing, but a blow that connected
-  // is never worth nothing.
+export function damageFor(baseDamage, armour) {
+  // Heavy armour can crush a blow down to almost nothing, but never to nothing.
   const floor = Math.max(1, Math.ceil(baseDamage * MIN_DAMAGE_FRACTION));
-  return Math.max(floor, Math.round(reduced));
+  return Math.max(floor, Math.round(baseDamage - armour));
 }
 
 /**
@@ -408,8 +378,8 @@ export function restoreEncounter(saved, party, lootTables = {}) {
 }
 
 /**
- * What a plain hit by one combatant on another would deal. The sum a resolved blow runs
- * through, so a preview and a result can only differ by the band; nothing is rolled and
+ * What an attack by one combatant on another will deal. The very sum a resolved attack
+ * runs through, so the preview and the result are the same number; nothing is drawn and
  * nothing changes.
  *
  * @spec COMBAT-ATTACK-013
@@ -418,7 +388,7 @@ export function hitDamage(state, actorId, targetId) {
   const swinger = recordOf(state, actorId);
   const target = findTarget(state, targetId);
   if (!swinger || !target) return 0;
-  return damageFor(Band.HIT, baseDamageWith(swinger), armourOf(target));
+  return damageFor(baseDamageWith(swinger), armourOf(target));
 }
 
 /**
@@ -482,18 +452,12 @@ export function takeAction(state, actorId, action) {
   // holding nothing, from the attack they were authored with.
   // @spec COMBAT-ACTION-008
   const swinger = recordOf(state, actorId);
-  const accuracy = action.accuracy ?? accuracyWith(swinger);
   const baseDamage = action.baseDamage ?? baseDamageWith(swinger);
 
-  const roll = state.rng.int(1, 100);
-  // The band is resolved against defence, never against armour: being hard to hit and
-  // being hard to hurt are different things, and one number doing both would make
-  // heavy armour doubly good and squeeze the bands until armour outweighed practice.
-  // @spec COMBAT-ATTACK-010
-  const band = attackBand(roll, accuracy - defenceOf(target));
-  // Armour comes off afterwards, which is the whole of what armour does.
-  // @spec COMBAT-ATTACK-012
-  const damage = damageFor(band, baseDamage, armourOf(target));
+  // Nothing is rolled: every attack lands, for exactly what the fight previewed.
+  // @spec COMBAT-ATTACK-014
+  // @spec COMBAT-ATTACK-016
+  const damage = damageFor(baseDamage, armourOf(target));
 
   let felled = false;
   if (character(state.party, target.id)) {
@@ -514,7 +478,7 @@ export function takeAction(state, actorId, action) {
     }
   }
 
-  return { actorId, action: action.kind, targetId: target.id, band, damage, felled };
+  return { actorId, action: action.kind, targetId: target.id, damage, felled };
 }
 
 /**

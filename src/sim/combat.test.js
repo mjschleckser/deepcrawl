@@ -6,9 +6,9 @@ import {
 } from './party.js';
 import { ItemKind, Slot, createItem } from './items.js';
 import {
-  beginEncounter, takeAction, nextActor, attackBand, damageFor, actingOrder, readinessOf,
+  beginEncounter, takeAction, nextActor, damageFor, actingOrder, readinessOf, hitDamage,
   attackTargets, allyTargets, attemptFlee, fleeCertainToFail, createEnemy,
-  createEnemyGroup, encounterOutcome, Band, Action, Outcome, MAX_ENEMY_GROUP,
+  createEnemyGroup, encounterOutcome, Action, Outcome, MAX_ENEMY_GROUP,
   MIN_DAMAGE_FRACTION, FULL_BAR, serializeEncounter, restoreEncounter,
 } from './combat.js';
 import { createLootTable } from './loot.js';
@@ -37,87 +37,24 @@ function encounter({ members, enemies, seed = 7 } = {}) {
   });
 }
 
-describe('attack bands', () => {
-  // @spec COMBAT-ATTACK-002
-  it('resolves every attack into exactly one of four bands', () => {
-    const bands = new Set();
-    for (let roll = 1; roll <= 100; roll++) {
-      for (const delta of [-60, -20, 0, 20, 60, 120]) {
-        bands.add(attackBand(roll, delta));
-      }
-    }
-    for (const band of bands) expect(Object.values(Band)).toContain(band);
-    expect(bands.size).toBe(4);
-  });
-
-  // @spec COMBAT-ATTACK-006
-  it('never produces a worse band for a greater accuracy advantage on the same roll', () => {
-    for (let roll = 1; roll <= 100; roll += 7) {
-      const order = [Band.MISS, Band.GRAZE, Band.HIT, Band.CRIT];
-      let previous = -1;
-      for (let delta = -80; delta <= 120; delta += 10) {
-        const rank = order.indexOf(attackBand(roll, delta));
-        expect(rank).toBeGreaterThanOrEqual(previous);
-        previous = rank;
-      }
-    }
-  });
-
-  // @spec COMBAT-ATTACK-002
-  it('misses only when badly outmatched, so a fair fight rarely whiffs', () => {
-    const even = [];
-    for (let roll = 1; roll <= 100; roll++) even.push(attackBand(roll, 0));
-    const misses = even.filter((b) => b === Band.MISS).length;
-
-    // An evenly matched attacker whiffs on a small minority of rolls.
-    expect(misses).toBeGreaterThan(0);
-    expect(misses).toBeLessThan(25);
-  });
-
-  // @spec COMBAT-ATTACK-002
-  it('needs a large accuracy advantage before crits become common', () => {
-    const slight = [];
-    const huge = [];
-    for (let roll = 1; roll <= 100; roll++) {
-      slight.push(attackBand(roll, 10));
-      huge.push(attackBand(roll, 95));
-    }
-
-    // A small edge crits occasionally; only a large one crits reliably.
-    expect(slight.filter((b) => b === Band.CRIT).length).toBeLessThan(15);
-    expect(huge.filter((b) => b === Band.CRIT).length).toBeGreaterThan(50);
-  });
-});
-
 describe('damage', () => {
-  // @spec COMBAT-ATTACK-003
-  it('deals nothing at all on a miss', () => {
-    expect(damageFor(Band.MISS, 40, 0)).toBe(0);
-    expect(damageFor(Band.MISS, 40, 999)).toBe(0);
-  });
-
-  // @spec COMBAT-ATTACK-004
-  it('grazes for less than it hits, and crits for more', () => {
-    const graze = damageFor(Band.GRAZE, 40, 0);
-    const hit = damageFor(Band.HIT, 40, 0);
-    const crit = damageFor(Band.CRIT, 40, 0);
-
-    expect(graze).toBeLessThan(hit);
-    expect(crit).toBeGreaterThan(hit);
+  // @spec COMBAT-ATTACK-015
+  it('deals base damage less armour, with no multiplier', () => {
+    expect(damageFor(40, 0)).toBe(40);
+    expect(damageFor(20, 5)).toBe(15);
+    expect(damageFor(10.8, 2)).toBe(9);
   });
 
   // @spec COMBAT-ATTACK-005
-  it('never reduces a landed blow to nothing, however heavy the armour', () => {
-    for (const band of [Band.GRAZE, Band.HIT, Band.CRIT]) {
-      const crushed = damageFor(band, 40, 9999);
-      expect(crushed).toBeGreaterThanOrEqual(1);
-      expect(crushed).toBeGreaterThanOrEqual(Math.ceil(40 * MIN_DAMAGE_FRACTION));
-    }
+  it('never reduces a blow to nothing, however heavy the armour', () => {
+    const crushed = damageFor(40, 9999);
+    expect(crushed).toBeGreaterThanOrEqual(1);
+    expect(crushed).toBe(Math.ceil(40 * MIN_DAMAGE_FRACTION));
   });
 
   // @spec COMBAT-ATTACK-005
   it('floors at one even for a feeble attack against nothing at all', () => {
-    expect(damageFor(Band.GRAZE, 1, 9999)).toBe(1);
+    expect(damageFor(1, 9999)).toBe(1);
   });
 });
 
@@ -429,59 +366,59 @@ describe('ending', () => {
 });
 
 describe('what a blow is resolved against', () => {
-  // @spec COMBAT-ATTACK-010
-  it('resolves the band against defence, and lets armour do nothing to it', () => {
-    const soft = encounter({
-      members: [hero('a')],
-      enemies: [orc('o1', { maxHitPoints: 400, armour: 0 })],
+  // @spec COMBAT-ATTACK-014
+  // @spec COMBAT-ATTACK-016
+  it('lands every attack for the same damage, whatever the seed', () => {
+    const dealt = new Set();
+    for (let seed = 1; seed <= 60; seed++) {
+      const state = encounter({
+        members: [hero('a')],
+        enemies: [orc('o1', { maxHitPoints: 400, armour: 3, attributes: { DEXTERITY: 40 } })],
+        seed,
+      });
+      readyUp(state, 'a');
+      const event = takeAction(state, 'a', { kind: Action.ATTACK, targetId: 'o1', baseDamage: 20 });
+      expect(event.damage).toBeGreaterThan(0);
+      dealt.add(event.damage);
+    }
+    expect([...dealt]).toEqual([17]);
+  });
+
+  // @spec COMBAT-ATTACK-016
+  it('draws nothing from the fight\'s generator to resolve an attack', () => {
+    const state = encounter({ members: [hero('a')], enemies: [orc('o1', { maxHitPoints: 400 })] });
+    const before = state.rng.position();
+    readyUp(state, 'a');
+    takeAction(state, 'a', { kind: Action.ATTACK, targetId: 'o1' });
+    expect(state.rng.position()).toEqual(before);
+  });
+
+  // @spec COMBAT-ATTACK-016
+  it('lets an enemy strike for a fixed amount too', () => {
+    const dealt = new Set();
+    for (let seed = 1; seed <= 30; seed++) {
+      const state = encounter({
+        members: [hero('a', { attributes: { DEXTERITY: 40 } })],
+        enemies: [orc('o1', { attack: { baseDamage: 6 } })],
+        seed,
+      });
+      readyUp(state, 'o1');
+      dealt.add(takeAction(state, 'o1', { kind: Action.ATTACK, targetId: 'a' }).damage);
+    }
+    expect(dealt.size).toBe(1);
+  });
+
+  // @spec COMBAT-ATTACK-013
+  it('deals exactly what it previews, on either side', () => {
+    const state = encounter({
+      members: [hero('a', { attack: { baseDamage: 9 } })],
+      enemies: [orc('o1', { maxHitPoints: 400, armour: 2, attack: { baseDamage: 5 } })],
     });
-    const plated = encounter({
-      members: [hero('a')],
-      enemies: [orc('o1', { maxHitPoints: 400, armour: 30 })],
-    });
-
-    // Same seed, same roll, same defence: armour changed the damage, never the band.
-    readyUp(soft, 'a'); readyUp(plated, 'a');
-    const swing = { kind: Action.ATTACK, targetId: 'o1', baseDamage: 60, accuracy: 40 };
-    const bare = takeAction(soft, 'a', swing);
-    const thick = takeAction(plated, 'a', swing);
-
-    expect(thick.band).toBe(bare.band);
-    expect(thick.damage).toBeLessThan(bare.damage);
-  });
-
-  // @spec COMBAT-ATTACK-010
-  it('makes a nimbler target harder to hit', () => {
-    const bands = (dexterity) => {
-      let crits = 0;
-      for (let seed = 1; seed <= 60; seed++) {
-        const state = encounter({
-          members: [hero('a')],
-          enemies: [orc('o1', { maxHitPoints: 400, attributes: { DEXTERITY: dexterity } })],
-          seed,
-        });
-        readyUp(state, 'a');
-        const event = takeAction(state, 'a', { kind: Action.ATTACK, targetId: 'o1' });
-        if (event.band === Band.CRIT || event.band === Band.HIT) crits += 1;
-      }
-      return crits;
-    };
-
-    expect(bands(20)).toBeLessThan(bands(4));
-  });
-
-  // @spec COMBAT-ATTACK-012
-  it('takes armour off after the band multiplied the blow, never before', () => {
-    // A graze halves the blow; armour comes off what is left, so a grazed blow against
-    // armour lands lower than half of what an unarmoured one would.
-    expect(damageFor(Band.HIT, 20, 5)).toBe(15);
-    expect(damageFor(Band.GRAZE, 20, 5)).toBe(5);
-    expect(damageFor(Band.CRIT, 20, 5)).toBe(25);
-  });
-
-  // @spec COMBAT-ATTACK-012
-  it('never lets armour take a landed blow below the floor', () => {
-    expect(damageFor(Band.HIT, 20, 9999)).toBe(Math.max(1, Math.ceil(20 * 0.05)));
+    const forecast = hitDamage(state, 'a', 'o1');
+    const reply = hitDamage(state, 'o1', 'a');
+    readyUp(state, 'a'); readyUp(state, 'o1');
+    expect(takeAction(state, 'a', { kind: Action.ATTACK, targetId: 'o1' }).damage).toBe(forecast);
+    expect(takeAction(state, 'o1', { kind: Action.ATTACK, targetId: 'a' }).damage).toBe(reply);
   });
 });
 
@@ -572,28 +509,6 @@ describe('taking a turn', () => {
     expect(readinessOf(state, 'a')).toBeLessThan(FULL_BAR);
   });
 
-  // @spec COMBAT-ATTACK-001
-  it('resolves an attack from one roll set against accuracy and defence', () => {
-    // Defence is what moves the band, and Dexterity is what moves defence.
-    const feeble = encounter({
-      members: [hero('a')],
-      enemies: [orc('nimble', { hitPoints: 99, attributes: { DEXTERITY: 40 } })], seed: 3,
-    });
-    readyUp(feeble, 'a');
-    const weak = takeAction(feeble, 'a', { kind: Action.ATTACK, targetId: 'nimble', baseDamage: 40, accuracy: 0 });
-
-    const sharp = encounter({
-      members: [hero('a')],
-      enemies: [orc('slow', { hitPoints: 99, attributes: { DEXTERITY: 10 } })], seed: 3,
-    });
-    readyUp(sharp, 'a');
-    const strong = takeAction(sharp, 'a', { kind: Action.ATTACK, targetId: 'slow', baseDamage: 40, accuracy: 200 });
-
-    // Same roll, opposite circumstances: accuracy and defence decide the band.
-    expect(weak.band).toBe(Band.MISS);
-    expect(strong.band).toBe(Band.CRIT);
-  });
-
   // @spec COMBAT-ACTION-006
   // @spec PARTY-OP-001
   it('changes a character through the party operations, so the condition chain applies', () => {
@@ -632,7 +547,7 @@ describe('taking a turn', () => {
 
 describe('what a blow is worth', () => {
   // @spec COMBAT-ACTION-008
-  it('takes damage and accuracy from whoever swung, on either side alike', () => {
+  it('takes damage from whoever swung, on either side alike', () => {
     const heavy = hero('heavy', { attack: { baseDamage: 20, accuracy: 100 } });
     const state = encounter({
       members: [heavy],

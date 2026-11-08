@@ -37,7 +37,7 @@ to flow if content is to be addable.
 | Item definitions | what an item is: slot, kind, numbers, who may wield it | — |
 | Slots | which slots exist, and what each admits | the party records what occupies them |
 | Wielding rules | whether this class may hold this item in this slot | the party's `equip` enforces the answer |
-| Derived combat numbers | how accuracy, defence and base damage are assembled | combat resolves the roll they feed |
+| Derived combat numbers | how accuracy, defence and base damage are assembled | combat resolves the attack base damage feeds; it reads no accuracy or defence |
 | The pack | what it holds, and what moving an item in or out of it means | the party holds it, beside the slots |
 | Rarity | each item's tier, and the colour it is shown in | loot rolls by tier; presentation draws the colour |
 | Consumables | what a consumable is and what its effect does | the party's `useItem` applies it; combat and exploration charge for it |
@@ -134,6 +134,11 @@ of a blow that landed and does nothing else. One number doing both jobs makes he
 armour doubly good and light armour doubly bad, and squeezes the bands until a point of
 armour outweighs a rank of practice. A shield is the exception that proves it: a shield
 is in the defence line because turning a blow aside is the whole of what a shield does.
+
+**Combat reads base damage and armour only.** An attack rolls nothing and always lands
+(see the combat segment), so accuracy and defence are assembled here but nothing reads
+them yet. They stay on items and in these sums until a deterministic use for them is
+decided.
 
 **Every term degrades to nothing.** No weapon is accuracy zero and damage zero; no
 armour skill is rank zero; an empty slot contributes nothing rather than failing. A
@@ -252,4 +257,4 @@ by name, as a combatant file is. A typo in content should fail where it was type
 - `docs/high-level-design.md` — the loot and items component, and the content-is-data rule.
 - `docs/intent/loot/loot-design.md` — tables and finds, which roll on an item's rarity and fill the pack.
 - `docs/intent/party/party-design.md` — the slots this segment fills and the `equip` operation that enforces its rules.
-- `docs/intent/combat/combat-design.md` — the bands these numbers are resolved against.
+- `docs/intent/combat/combat-design.md` — the attack these numbers are resolved in.

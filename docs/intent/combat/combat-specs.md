@@ -2,9 +2,9 @@
 
 Specs for the combat segment. Design: `combat-design.md`.
 
-Band thresholds, graze and crit multipliers, and how accuracy and
-defence are assembled from skill, attribute and equipment are all content data. These
-specs fix the structure those numbers are fed into.
+The minimum-damage fraction, and how base damage and armour are assembled from skill,
+attribute and equipment, are content data. These specs fix the structure those numbers
+are fed into.
 
 ## The fight's time
 
@@ -43,15 +43,11 @@ specs fix the structure those numbers are fed into.
 
 ## Resolving an attack
 
-- [x] **COMBAT-ATTACK-001**: The system shall resolve an attack from a single roll combined with the attacker's accuracy and the target's defence.
-- [x] **COMBAT-ATTACK-002**: The system shall resolve every attack into exactly one of four bands: miss, graze, hit, or crit.
-- [x] **COMBAT-ATTACK-003**: The system shall deal no damage on a miss.
-- [x] **COMBAT-ATTACK-004**: The system shall deal reduced damage on a graze, full damage on a hit, and increased damage on a crit.
-- [x] **COMBAT-ATTACK-005**: The system shall deal at least one twentieth of an attack's base damage, rounded up and never below one, whenever that attack lands.
-- [x] **COMBAT-ATTACK-006**: The system shall raise the band as the attacker's accuracy rises relative to the target's defence, so that a greater advantage never produces a worse band on the same roll.
-- [x] **COMBAT-ATTACK-010**: The system shall resolve an attack's band against the target's defence and shall not let the target's armour affect which band the attack falls into.
-- [x] **COMBAT-ATTACK-012**: The system shall subtract the target's armour from the damage of a landed attack, after the band's multiplier and before the minimum.
-- [x] **COMBAT-ATTACK-013**: The system shall report the damage one combatant's plain hit would deal another, by the calculation a resolved hit uses, without making a roll or changing the encounter.
+- [x] **COMBAT-ATTACK-014**: The system shall land every attack on its target, with no miss.
+- [x] **COMBAT-ATTACK-015**: The system shall deal, for every attack, the attacker's base damage less the target's armour, rounded to the nearest whole point, with no multiplier.
+- [x] **COMBAT-ATTACK-016**: The system shall draw no random number when resolving an attack, so that the same attacker striking the same target deals the same damage every time, on either side alike.
+- [x] **COMBAT-ATTACK-005**: The system shall deal at least one twentieth of an attack's base damage, rounded up and never below one, whatever the target's armour.
+- [x] **COMBAT-ATTACK-013**: The system shall report the damage one combatant's attack on another will deal, by the calculation that resolving that attack uses, without drawing a random number or changing the encounter.
 
 ## Targeting
 
@@ -67,7 +63,7 @@ specs fix the structure those numbers are fed into.
 - [ ] **COMBAT-ACTION-002**: The system shall not restore a spell slot during an encounter.
 - [x] **COMBAT-ACTION-009**: When a combatant passes their turn, the system shall spend a full bar of their readiness and shall resolve no action.
 - [x] **COMBAT-ACTION-006**: The system shall apply every change to a character's hit points or condition through the party segment's operations.
-- [x] **COMBAT-ACTION-008**: The system shall take an attack's base damage and accuracy from the combatant that is acting, and the armour reducing it from the combatant struck, on either side alike.
+- [x] **COMBAT-ACTION-008**: The system shall take an attack's base damage from the combatant that is acting, and the armour reducing it from the combatant struck, on either side alike.
 - [x] **COMBAT-ACTION-011**: When a character equips an item from the pack in a fight, the system shall make the change through the party segment's operation and shall spend a full bar of their readiness.
 - [x] **COMBAT-ACTION-012**: If a change of equipment in a fight is refused, then the system shall spend none of the character's readiness.
 - [x] **COMBAT-ACTION-010**: When a character attacks, the system shall record as the skill used the skill of the weapon they are using, rather than the skill of the attack they were authored with.

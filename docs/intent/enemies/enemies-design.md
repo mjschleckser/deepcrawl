@@ -99,7 +99,8 @@ turn on is the whole decision: the mage is the danger, the bodies are the damage
 nothing protects either.
 
 An enemy has **defence** and **armour** as separate numbers, exactly as a character
-does: defence decides whether a blow lands, armour decides what it is worth. Defence is
+does: armour decides what a blow against it is worth, and defence waits, unread, on
+whatever use combat finds for it (an attack always lands). Defence is
 assembled from its Dexterity by the formula a character's is, so it is not authored;
 armour is. A goblin is easy to hit and lightly protected; something in plate later will
 be the reverse of one and not the other.

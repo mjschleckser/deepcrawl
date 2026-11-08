@@ -6,7 +6,7 @@ import {
 } from '../sim/party.js';
 import {
   beginEncounter, createEnemy, createEnemyGroup, readinessOf, turnOrder, hitDamage,
-  FULL_BAR, Outcome, Band,
+  FULL_BAR, Outcome,
 } from '../sim/combat.js';
 import { MIN_TAP_PX } from './geometry.js';
 import { weaponSymbol } from './symbols.js';
@@ -828,21 +828,16 @@ describe('a turn with nothing in it', () => {
 describe('the log', () => {
   // @spec PRESENT-FIGHT-010
   // @spec PRESENT-FIGHT-011
-  it('names who acted, the band, the damage, and what fell', () => {
+  it('names who acted, whom they struck, the damage, and what fell', () => {
     expect(describeEvent(
-      { actorId: 'bram', band: Band.CRIT, damage: 14, fizzled: false },
+      { actorId: 'bram', damage: 14, fizzled: false },
       { bram: 'Bram', g1: 'Goblin' }, 'g1', true,
-    )).toBe('Bram crits Goblin for 14. Goblin falls.');
+    )).toBe('Bram hits Goblin for 14. Goblin falls.');
 
     expect(describeEvent(
-      { actorId: 'tam', band: Band.GRAZE, damage: 3, fizzled: false },
+      { actorId: 'tam', damage: 3, fizzled: false },
       { tam: 'Tam', g1: 'Goblin' }, 'g1', false,
-    )).toBe('Tam grazes Goblin for 3.');
-
-    expect(describeEvent(
-      { actorId: 'tam', band: Band.MISS, damage: 0, fizzled: false },
-      { tam: 'Tam', g1: 'Goblin' }, 'g1', false,
-    )).toBe('Tam misses Goblin.');
+    )).toBe('Tam hits Goblin for 3.');
   });
 
   // @spec PRESENT-FIGHT-010
@@ -1420,7 +1415,7 @@ describe('the action menu', () => {
   });
 
   // @spec PRESENT-MENU-016
-  it('puts what a plain hit would deal on each target\'s entry', () => {
+  it('puts what the attack will deal on each target\'s entry', () => {
     const fight = controller();
     fight.encounter.enemies.members[2].armour = 3;
     const whose = fight.pending.characterId;

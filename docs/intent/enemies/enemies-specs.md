@@ -16,7 +16,7 @@ are fed into.
 - [x] **ENEMY-ROSTER-010**: The system shall report an enemy's total level as the sum of its skill ranks, by the same summation it uses for a character.
 - [x] **ENEMY-ROSTER-004**: The system shall hold the goblin, the goblin archer, and the goblin mage in the first floor's roster, as a melee enemy, a ranged enemy, and a caster respectively.
 - [x] **ENEMY-ROSTER-005**: The system shall read every enemy from its own authored file, and shall hold no behaviour particular to any named enemy.
-- [ ] **ENEMY-ROSTER-007**: The system shall give every enemy a defence and an armour as separate values, defence deciding whether a blow lands and armour what it is worth.
+- [ ] **ENEMY-ROSTER-007**: The system shall give every enemy a defence and an armour as separate values, armour reducing what a blow against it is worth.
 - [ ] **ENEMY-ROSTER-008**: The system shall set an ordinary enemy's pot value at about twelve for each floor tier of its depth, and a dangerous one's at up to twice that.
 - [x] **ENEMY-ROSTER-012**: The system shall carry on every roster entry the loot table it drops from when defeated, or none.
 
