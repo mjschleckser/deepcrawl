@@ -5,7 +5,7 @@
  * answers what may be shown; the presentation segment decides what that looks like.
  */
 
-import { Direction, STEP_DELTA, contains, getTile } from './floor.js';
+import { Direction, STEP_DELTA, chestOpenedIn, contains, getTile } from './floor.js';
 
 /**
  * How many tiles of corridor are ever drawn. A limit on the drawing rather than on
@@ -44,6 +44,7 @@ const RIGHT_OF = {
  * @spec EXPLORE-VIEW-010
  * @spec EXPLORE-VIEW-011
  * @spec EXPLORE-VIEW-012
+ * @spec EXPLORE-VIEW-013
  */
 export function buildCorridorAhead(
   state,
@@ -68,6 +69,8 @@ export function buildCorridorAhead(
     const slice = {
       depth,
       feature: getTile(floor, x, y).feature,
+      // Opened or not, for a chest; nothing for anything else.
+      chestOpened: chestOpenedIn(state.openedChests, floor.id, getTile(floor, x, y)),
       walledLeft: isOpaque(floor, x, y, LEFT_OF[facing]),
       walledRight: isOpaque(floor, x, y, RIGHT_OF[facing]),
       closedAhead: false,

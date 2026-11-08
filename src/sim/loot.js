@@ -11,6 +11,7 @@
  */
 
 import { Rarity, RARITY_ORDER, createItem } from './items.js';
+import { makeRng } from './rng.js';
 
 /** The tiers a draw tries, in the order it tries them. Common is what remains. */
 export const TIERS_TOP_DOWN = [Rarity.LEGENDARY, Rarity.EPIC, Rarity.RARE, Rarity.UNCOMMON];
@@ -93,4 +94,20 @@ export function mergeFinds(finds) {
     gold: finds.reduce((sum, find) => sum + find.gold, 0),
     items: finds.flatMap((find) => find.items),
   };
+}
+
+/**
+ * The generator a chest's contents are rolled from: the floor's seed and the chest's
+ * number, and nothing else. Whatever else the campaign has drawn, and whenever the chest
+ * is opened, it holds the same thing, so a reload can't fish for a better one.
+ *
+ * @spec LOOT-CHEST-001
+ * @spec LOOT-CHEST-002
+ */
+export function chestRng(floorSeed, number) {
+  let h = (Number(floorSeed) ^ 0x85ebca6b) >>> 0;
+  h = Math.imul(h ^ (number + 1), 0x9e3779b1) >>> 0;
+  h = Math.imul(h ^ (h >>> 15), 0x2c1b3c6d) >>> 0;
+  h ^= h >>> 13;
+  return makeRng(h >>> 0);
 }

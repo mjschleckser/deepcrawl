@@ -12,10 +12,13 @@ import {
   automapView,
   corridorAhead,
   perform,
+  currentFloor,
   resolveConfirmation,
   setMenuOpen,
   PartyAction,
 } from '../sim/exploration.js';
+import { TileFeature, chestOpenedIn, getTile } from '../sim/floor.js';
+import { buildChestReportPlan } from './findsplan.js';
 import { character, equip, roster, takeOff, useItem } from '../sim/party.js';
 import { isConsumable } from '../sim/items.js';
 import { buildPartyPlan, pageFor, PartyControl } from './partyplan.js';
@@ -69,6 +72,8 @@ export function createController({ state, viewport, onDraw, campaign = null, onB
     expanded: false, fight: null,
     // Anything worth saying about the save, beside the stamp.
     saveNote: null,
+    // What the chest just opened held, while its report is up.
+    chestFind: null,
     // Whether a newer build is installed and waiting for the player to refresh.
     newBuild: false,
     // The party screen, when open: which character's page is showing. A view of the
@@ -129,6 +134,35 @@ export function setNewBuild(controller) {
   controller.newBuild = true;
   redraw(controller);
 }
+
+/**
+ * What a control would do where the party stands. The use control opens a chest still
+ * to be opened, and says so.
+ *
+ * @spec PRESENT-PROMPT-007
+ */
+function controlLabels(state) {
+  const floor = currentFloor(state);
+  const tile = floor ? getTile(floor, state.party.tile.x, state.party.tile.y) : null;
+  if (tile?.feature === TileFeature.CHEST && chestOpenedIn(state.openedChests, floor.id, tile) === false) {
+    return { INTERACT_PROMPT: 'Open' };
+  }
+  return {};
+}
+
+/**
+ * Put the report of an opened chest away. Everything it reports is already in the pack
+ * and the purse, so there is nothing to decide and nothing changes.
+ *
+ * @spec PRESENT-CHEST-002
+ */
+function closeChestReport(controller) {
+  controller.chestFind = null;
+  redraw(controller);
+  return true;
+}
+
+const CHEST_DISMISS_KEYS = ['Enter', 'Escape', 'e', 'E', ' '];
 
 /** Placed just above the stamp, so it moves with it and never lands on a control. */
 function noteFor(controller, stamp) {
@@ -206,6 +240,7 @@ export function layers(controller) {
       { name: 'fight', plan: fightPlan },
       { name: 'party', plan: null },
       { name: 'items', plan: itemsOverFight },
+      { name: 'chest', plan: null },
       {
         name: 'hud',
         plan: {
@@ -221,14 +256,15 @@ export function layers(controller) {
   }
   const sheet = partyPlan(controller);
   const items = itemsPlan(controller);
-  const screen = sheet ?? items;
+  const report = buildChestReportPlan(controller.chestFind, viewport);
+  const screen = sheet ?? items ?? report;
   // Nothing to walk toward while a prompt stands or a screen is up, so the walking
   // controls and the action bar go.
   // @spec PRESENT-PARTY-006
   // @spec PRESENT-ITEMS-004
   const controls = state.pendingConfirmation || screen
     ? []
-    : controlsFor(viewport, { pressedRegion: controller.pressedRegion });
+    : controlsFor(viewport, { pressedRegion: controller.pressedRegion, labels: controlLabels(state) });
   const stamp = stampFor(controller, screen ? [screen.bounds] : controls);
   // A question asked by the party screen is the view's own, about ending the campaign;
   // anything else on screen is the simulation's pending confirmation.
@@ -242,6 +278,7 @@ export function layers(controller) {
     { name: 'fight', plan: null },
     { name: 'party', plan: sheet },
     { name: 'items', plan: items },
+    { name: 'chest', plan: report },
     // The prompt is read from the simulation's pending confirmation, so one can never
     // be shown for a confirmation that is not actually pending.
     {
@@ -601,7 +638,14 @@ function applyAction(controller, action) {
   if (action.partyAction === PartyAction.ITEMS) return openItemsScreen(controller);
 
   const before = stateSignature(controller.state);
-  perform(controller.state, action);
+  const result = perform(controller.state, action);
+  // A chest was opened: what it held is reported over the view.
+  // @spec PRESENT-CHEST-001
+  if (result?.found !== undefined) {
+    controller.chestFind = result.found ?? { gold: 0, items: [] };
+    redraw(controller);
+    return true;
+  }
   // A step can walk the party into a warband, which is a change no signature catches.
   syncFight(controller);
   if (!controller.fight && stateSignature(controller.state) === before) return false;
@@ -705,6 +749,9 @@ export function pressKey(controller, key) {
     if (DECLINE_KEYS.includes(key)) return answerPrompt(controller, false);
     return false;
   }
+  // A chest's report holds the keyboard until it is put away.
+  // @spec PRESENT-CHEST-002
+  if (controller.chestFind) return CHEST_DISMISS_KEYS.includes(key) ? closeChestReport(controller) : false;
   if (controller.partyScreen) return pressKeyOnPartyScreen(controller, key);
   if (controller.itemsScreen) return pressKeyOnItemsScreen(controller, key);
   return applyAction(controller, actionForKey(key));
@@ -783,6 +830,9 @@ export function pressPointer(controller, px, py) {
     return answerPrompt(controller, control.accepted);
   }
 
+  // Anywhere at all puts a chest's report away: there is nothing on it to press.
+  // @spec PRESENT-CHEST-002
+  if (controller.chestFind) return closeChestReport(controller);
   // A tap outside the page lands on nothing: a stray thumb must not dismiss it.
   if (controller.partyScreen) return pressPointerOnPartyScreen(controller, px, py);
   if (controller.itemsScreen) return pressPointerOnItemsScreen(controller, px, py);

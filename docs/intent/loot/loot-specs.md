@@ -14,8 +14,8 @@ where finds come from.
 ## Authoring
 
 - [x] **LOOT-DATA-001**: When an authored loot table names an item that does not exist, gives odds or a draw chance outside 0 to 1, gives a gold range or draw count below zero or a gold range whose minimum exceeds its maximum, or holds no common item, the system shall reject that file by name and the value it could not read.
-- [ ] **LOOT-DATA-002**: When an enemy roster entry or an archetype names a loot table that does not exist, the system shall reject that file by name and the table it named.
-- [ ] **LOOT-DATA-003**: The system shall hold every archetype's chest table richer than the table of every enemy that can be placed on a floor of that archetype: odds no lower in every tier above common and higher in at least one, at least as many draws at no lower chance, and a gold range no lower at either end.
+- [x] **LOOT-DATA-002**: When an enemy roster entry or an archetype names a loot table that does not exist, the system shall reject that file by name and the table it named.
+- [x] **LOOT-DATA-003**: The system shall hold every archetype's chest table richer than the table of every enemy that can be placed on a floor of that archetype: odds no lower in every tier above common and higher in at least one, at least as many draws at no lower chance, and a gold range no lower at either end.
 
 ## Rolling a find
 
@@ -35,9 +35,9 @@ where finds come from.
 
 ## Chests
 
-- [ ] **LOOT-CHEST-001**: When a chest is opened, the system shall roll its floor's chest table from a generator seeded from the floor's seed and the chest's number, and shall add the find's gold to the party's purse and its items to the pack.
-- [ ] **LOOT-CHEST-002**: The system shall yield the same find from a chest whenever it is opened, whatever else has happened in the campaign before it and across a save and reload.
-- [ ] **LOOT-CHEST-003**: The system shall yield a find from a chest at most once.
+- [x] **LOOT-CHEST-001**: When a chest is opened, the system shall roll its floor's chest table from a generator seeded from the floor's seed and the chest's number, and shall add the find's gold to the party's purse and its items to the pack.
+- [x] **LOOT-CHEST-002**: The system shall yield the same find from a chest whenever it is opened, whatever else has happened in the campaign before it and across a save and reload.
+- [x] **LOOT-CHEST-003**: The system shall yield a find from a chest at most once.
 
 ## Deferred
 

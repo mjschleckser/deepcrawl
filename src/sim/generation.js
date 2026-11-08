@@ -10,6 +10,7 @@ import {
   createFloor,
   setEdge,
   setTileFeature,
+  getTile,
   getEdge,
   contains,
   Direction,
@@ -38,6 +39,9 @@ export const DEFAULT_ARCHETYPE = {
   lockedChance: 0.12,
   secretChance: 0.45,
   traps: { min: 3, max: 7 },
+  // @spec GEN-PLACE-013
+  chests: { min: 1, max: 3 },
+  chestTable: 'chest',
 };
 
 const STEP = {
@@ -378,11 +382,47 @@ export function generateFloor({
     traps.push({ x: spot.x, y: spot.y });
   }
 
+  // Chests last, from a generator of their own taken after everything else, so how
+  // many a floor gets changes nothing generated before them.
+  // @spec GEN-PLACE-010
+  placeChests(floor, deriveRng(rng), { rooms, taken, thresholds, archetype });
+
   floor.rooms = rooms;
   floor.traps = traps;
   floor.secretEdges = secretEdges;
   floor.seed = seed;
   return floor;
+}
+
+/**
+ * Lay a floor's chests on room tiles nothing else has claimed and that no doorway runs
+ * through, numbered in the order they go down. A floor with fewer such tiles than the
+ * chests drawn lays as many as fit. What a chest holds is not decided here: loot rolls
+ * it from the floor's seed and the chest's number when it is opened.
+ *
+ * @spec GEN-PLACE-007
+ * @spec GEN-PLACE-010
+ * @spec GEN-PLACE-011
+ * @spec GEN-PLACE-012
+ */
+function placeChests(floor, rng, { rooms, taken, thresholds, archetype }) {
+  const range = archetype.chests ?? { min: 0, max: 0 };
+  const count = rng.int(range.min, range.max);
+  const free = [];
+  for (let y = 0; y < floor.height; y++) {
+    for (let x = 0; x < floor.width; x++) {
+      const k = key(x, y);
+      if (!inAnyRoom(rooms, x, y) || taken.has(k) || thresholds.has(k)) continue;
+      if (getTile(floor, x, y).feature !== TileFeature.NONE) continue;
+      free.push({ x, y });
+    }
+  }
+  const spots = rng.shuffle(free).slice(0, count);
+  spots.forEach((spot, number) => {
+    const tile = setTileFeature(floor, spot.x, spot.y, TileFeature.CHEST);
+    tile.chest = number;
+    tile.table = archetype.chestTable ?? null;
+  });
 }
 
 /**

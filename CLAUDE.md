@@ -7,7 +7,7 @@ Deepcrawl is a 2D dungeon-crawling RPG, built as a progressive web app.
 - **Stack:** Vite + PixiJS + vite-plugin-pwa
 - **Live app:** https://mjschleckser.github.io/deepcrawl/
 - **Deploy:** every push to `main` triggers `.github/workflows/deploy.yml`, which builds and publishes to GitHub Pages automatically (usually live within about a minute)
-- **Status:** a party of four explores generated floors, fights roaming bands, advances skills by use, changes equipment through a shared pack on the Items screen, and the campaign saves itself; loot, consumables, spells, traps, camp, hunger and the town are unbuilt
+- **Status:** a party of four explores generated floors, fights roaming bands, advances skills by use, finds gold and gear rolled by rarity from won fights and chests, drinks healing potions, changes equipment through a shared pack on the Items screen, and the campaign saves itself; affixes, spells, traps, camp, hunger and the town are unbuilt
 
 ## Repo structure
 
@@ -19,7 +19,7 @@ src/
   sim/               # simulation core - no renderer, no DOM
   render/            # draw plans (pure, tested) + a thin PixiJS adapter
   content/           # composition root: wires a campaign, reads authored data, saves
-  game-data/         # authored JSON: players, enemies, items, portraits
+  game-data/         # authored JSON: players, enemies, items, loot tables, portraits
   style.css
 docs/                # the arrow of intent: HLD, design tree, EARS specs
 public/              # static assets, PWA icons

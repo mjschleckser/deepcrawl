@@ -19,7 +19,20 @@ export const TileFeature = {
   STAIRS_UP: 'STAIRS_UP',
   STAIRS_DOWN: 'STAIRS_DOWN',
   PIT: 'PIT',
+  // A container, opened deliberately and once. It is passable, and stepping onto it
+  // does nothing.
+  // @spec EXPLORE-FLOOR-006
+  CHEST: 'CHEST',
 };
+
+/**
+ * Whether the chest on a tile has been opened, from exploration's record of opened
+ * chests. The floor itself never changes, so this is never asked of the tile alone.
+ */
+export function chestOpenedIn(openedChests, floorId, tile) {
+  if (tile?.feature !== TileFeature.CHEST) return null;
+  return Boolean(openedChests?.get(floorId)?.has(tile.chest));
+}
 
 export const Direction = {
   NORTH: 'NORTH',

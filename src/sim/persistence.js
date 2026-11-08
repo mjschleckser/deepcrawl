@@ -49,6 +49,8 @@ export function serialize(state) {
   const floors = [];
   const discovery = {};
   const knownTraps = {};
+  // @spec EXPLORE-SAVE-008
+  const openedChests = {};
 
   for (const [id, floor] of state.floors) {
     floors.push({
@@ -71,6 +73,8 @@ export function serialize(state) {
     );
     const traps = state.knownTraps.get(id);
     if (traps && traps.size > 0) knownTraps[id] = [...traps];
+    const opened = state.openedChests?.get(id);
+    if (opened && opened.size > 0) openedChests[id] = [...opened];
   }
 
   return {
@@ -81,6 +85,7 @@ export function serialize(state) {
     floors,
     discovery,
     knownTraps,
+    openedChests,
     // Secret doors the party has found, and the edges sight has recorded.
     discoveredEdges: [...state.discoveredEdges],
     departedAt: Object.fromEntries(state.departedAt),
@@ -154,6 +159,11 @@ export function restore(saved, createExploration, { floorProvider = null, hooks 
     );
     if (saved.knownTraps[floor.id]) {
       state.knownTraps.set(floor.id, new Set(saved.knownTraps[floor.id]));
+    }
+    // A save from before chests opens none of them.
+    // @spec EXPLORE-SAVE-008
+    if (saved.openedChests?.[floor.id]) {
+      state.openedChests.set(floor.id, new Set(saved.openedChests[floor.id]));
     }
   }
 

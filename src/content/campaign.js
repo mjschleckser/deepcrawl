@@ -23,7 +23,8 @@ import {
   restoreEncounter, serializeEncounter,
 } from '../sim/combat.js';
 import { startingCharacters } from './combatants.js';
-import { lootTables } from './loot.js';
+import { checkArchetype, lootTables } from './loot.js';
+import { chestRng, rollLoot } from '../sim/loot.js';
 
 /** Bands standing on a freshly built floor, before anyone has disturbed it. */
 const BANDS_PER_FLOOR = 3;
@@ -65,6 +66,9 @@ export function createCampaign({ seed = Date.now() >>> 0, saved = null } = {}) {
   const rng = makeRng(saved ? saved.rng : (seed ^ 0x9e3779b9) >>> 0);
   // What a defeated enemy's drops are rolled on, read once for the whole campaign.
   const tables = lootTables();
+  // Every archetype in the plan must name a chest table that exists.
+  // @spec LOOT-DATA-002
+  for (const descriptor of plan.floors) checkArchetype(descriptor.archetype, tables);
 
   const party = saved ? restoreParty(saved.party) : createStartingParty();
   const campaign = { plan, party, state: null, encounter: null };
@@ -193,6 +197,22 @@ export function createCampaign({ seed = Date.now() >>> 0, saved = null } = {}) {
     ];
   }
 
+  /**
+   * A chest is opened: roll the floor's chest table from the floor's seed and the chest's
+   * number, and put what it held in the purse and the pack.
+   *
+   * @spec LOOT-CHEST-001
+   * @spec LOOT-CHEST-002
+   */
+  function onOpenChest({ floor, number, table }) {
+    const rolledOn = table ? tables[table] : null;
+    if (!rolledOn) return { gold: 0, items: [] };
+    const find = rollLoot(rolledOn, chestRng(floor.seed ?? 0, number));
+    addGold(party, find.gold);
+    for (const item of find.items) stow(party, item);
+    return find;
+  }
+
   const wiring = {
     floorProvider,
     stepCost: () => partyStepCost(party),
@@ -201,6 +221,7 @@ export function createCampaign({ seed = Date.now() >>> 0, saved = null } = {}) {
       onContactCheck,
       isTileOccupied,
       onRestock: ({ floorId, elapsed }) => restockFloor(floorId, elapsed),
+      onOpenChest,
     },
   };
 

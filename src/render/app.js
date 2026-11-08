@@ -8,10 +8,11 @@
  */
 
 import { Application, Assets, Container, Graphics, Sprite, Text } from 'pixi.js';
-import { Direction, EdgeKind, TileFeature } from '../sim/floor.js';
+import { Direction, EdgeKind } from '../sim/floor.js';
 import { PIXI_APP_OPTIONS, PALETTE, shade } from './appconfig.js';
 import { weaponSymbol } from './symbols.js';
 import { STAMP_NOTICE_GAP } from './geometry.js';
+import { MapMark } from './mapplan.js';
 
 const WALL_KINDS = new Set(['leftWall', 'rightWall', 'frontWall']);
 
@@ -79,6 +80,70 @@ function drawFigure(graphics, shape) {
   for (const eye of shape.eyes) graphics.circle(eye.x, eye.y, eye.radius).fill(tones.eye);
 }
 
+/**
+ * A chest on the floor: a box of timber with a gold band, and a lid shut on it or thrown
+ * back to show the dark inside.
+ *
+ * @spec PRESENT-VIEW-016
+ */
+function drawChest(graphics, shape) {
+  const tones = tonesFor(shape);
+  const { x, y, width, height } = shape.body;
+  const edge = Math.max(1, width * 0.04);
+  if (shape.opened) {
+    graphics.poly(shape.lid).fill(tones.chestInside);
+    graphics.poly(shape.lid).stroke({ width: edge, color: tones.chestBand });
+  }
+  graphics.rect(x, y, width, height).fill(tones.chest);
+  graphics.rect(x, y + height * 0.42, width, height * 0.14).fill(tones.chestBand);
+  graphics.rect(x, y, width, height).stroke({ width: edge, color: tones.doorFrame });
+  if (!shape.opened) {
+    graphics.poly(shape.lid).fill(tones.chest);
+    graphics.poly(shape.lid).stroke({ width: edge, color: tones.doorFrame });
+    graphics.circle(x + width / 2, y, Math.max(1.5, width * 0.05)).fill(tones.chestBand);
+  }
+}
+
+/**
+ * What an opened chest held, in a panel over the view: the gold and each item in its
+ * rarity's colour. Any key or press puts it away.
+ *
+ * @spec PRESENT-CHEST-001
+ */
+function drawChestReport(container, plan) {
+  const scale = plan.scale ?? 1;
+  const b = plan.bounds;
+  const panel = new Graphics();
+  panel.roundRect(b.x, b.y, b.width, b.height, 6 * scale).fill({ color: FIGHT_COLOURS.panel, alpha: 0.97 });
+  panel.roundRect(b.x, b.y, b.width, b.height, 6 * scale).stroke({ width: 2, color: FIGHT_COLOURS.banner });
+  container.addChild(panel);
+
+  const title = label(plan.title, Math.round(18 * scale), FIGHT_COLOURS.banner);
+  title.x = b.x + b.width / 2 - title.width / 2;
+  title.y = b.y + 16 * scale;
+  container.addChild(title);
+
+  const lines = [
+    ...(plan.find.gold ? [{ text: plan.find.gold, colour: FIGHT_COLOURS.banner }] : []),
+    ...plan.find.items.map((item) => ({ text: item.text, colour: item.colour })),
+    ...(plan.find.nothing ? [{ text: plan.find.nothing, colour: FIGHT_COLOURS.dim }] : []),
+  ];
+  let y = b.y + 52 * scale;
+  for (const line of lines) {
+    const t = label(line.text, Math.round(14 * scale), line.colour);
+    fitWithin(t, b.width - 24 * scale);
+    t.x = b.x + b.width / 2 - t.width / 2;
+    t.y = y;
+    container.addChild(t);
+    y += plan.lineHeight;
+  }
+
+  const hint = label(plan.hint, Math.round(11 * scale), FIGHT_COLOURS.dim);
+  hint.x = b.x + b.width / 2 - hint.width / 2;
+  hint.y = b.y + b.height - hint.height - 10 * scale;
+  container.addChild(hint);
+}
+
 function drawView(container, plan) {
   const graphics = new Graphics();
   // The plan is already ordered furthest-first, so emitting it in sequence gives
@@ -86,6 +151,7 @@ function drawView(container, plan) {
   for (const shape of plan.shapes) {
     if (shape.kind === 'door') drawDoor(graphics, shape);
     else if (shape.kind === 'figure') drawFigure(graphics, shape);
+    else if (shape.kind === 'chest') drawChest(graphics, shape);
     else graphics.poly(shape.points).fill(shapeColour(shape));
   }
   container.addChild(graphics);
@@ -105,16 +171,22 @@ function drawMap(container, plan) {
       graphics.circle(cell.px + size / 2, cell.py + size / 2, size * 0.18).fill(PALETTE.map.trap);
     }
     // A staircase is something to walk to and a pit is something to walk round, so
-    // they are not one mark: a square for the one, a ring for the other.
+    // they are not one mark: a square for the one, a ring for the other. A chest is a
+    // low box of its own colour, solid until opened and hollow after.
     // @spec PRESENT-MAP-008
-    if (cell.feature === TileFeature.PIT) {
+    // @spec PRESENT-MAP-012
+    if (cell.mark === MapMark.PIT) {
       graphics
         .circle(cell.px + size / 2, cell.py + size / 2, size * 0.3)
         .stroke({ width: Math.max(1, size * 0.14), color: PALETTE.map.door });
-    } else if (cell.feature !== TileFeature.NONE) {
+    } else if (cell.mark === MapMark.STAIRS) {
       graphics
         .rect(cell.px + size * 0.3, cell.py + size * 0.3, size * 0.4, size * 0.4)
         .fill(PALETTE.map.door);
+    } else if (cell.mark === MapMark.CHEST || cell.mark === MapMark.OPENED_CHEST) {
+      const box = [cell.px + size * 0.2, cell.py + size * 0.34, size * 0.6, size * 0.36];
+      if (cell.mark === MapMark.CHEST) graphics.rect(...box).fill(PALETTE.map.chest);
+      else graphics.rect(...box).stroke({ width: Math.max(1, size * 0.1), color: PALETTE.map.chest });
     }
   }
 
@@ -330,12 +402,13 @@ export async function createRenderer(mount) {
     fight: new Container(),
     party: new Container(),
     items: new Container(),
+    chest: new Container(),
     hud: new Container(),
   };
   // Added in order, so the view sits beneath everything and the HUD above it.
   app.stage.addChild(
     layerContainers.view, layerContainers.map, layerContainers.fight,
-    layerContainers.party, layerContainers.items, layerContainers.hud,
+    layerContainers.party, layerContainers.items, layerContainers.chest, layerContainers.hud,
   );
 
   const draw = (layers) => {
@@ -349,6 +422,7 @@ export async function createRenderer(mount) {
       if (name === 'fight') drawFight(container, plan);
       if (name === 'party') drawParty(container, plan);
       if (name === 'items') drawItems(container, plan);
+      if (name === 'chest') drawChestReport(container, plan);
       if (name === 'hud') drawHud(container, plan);
     }
     app.render();

@@ -76,3 +76,46 @@ export function lootTables() {
 export function lootTableById(id) {
   return lootTables()[id] ?? null;
 }
+
+/**
+ * An archetype's chest table has to be one somebody authored, or the archetype is
+ * rejected by name. An archetype that lays no chests needs none.
+ *
+ * @spec LOOT-DATA-002
+ */
+export function checkArchetype(archetype, tables) {
+  const name = archetype?.chestTable;
+  if (name === undefined || name === null) return;
+  if (!tables[name]) {
+    throw new Error(`archetype "${archetype.name ?? '?'}": loot table "${name}" does not exist`);
+  }
+}
+
+/**
+ * Every way a chest table fails to pay better than the tables of the enemies sharing
+ * its floors. A chest is found once and never refills, so it has to be the find worth
+ * walking to: odds no lower in any tier and higher in one, as many draws at no lower
+ * chance, and a gold range no lower at either end. Empty when it does.
+ *
+ * @spec LOOT-DATA-003
+ */
+export function chestOutpaysDrops(chest, drops) {
+  const problems = [];
+  for (const drop of drops) {
+    let better = false;
+    for (const tier of TIERS_TOP_DOWN) {
+      if (chest.odds[tier] < drop.odds[tier]) {
+        problems.push(`${chest.id}: ${tier} odds ${chest.odds[tier]} are below ${drop.id}'s ${drop.odds[tier]}`);
+      }
+      if (chest.odds[tier] > drop.odds[tier]) better = true;
+    }
+    if (!better) problems.push(`${chest.id}: no tier has better odds than ${drop.id}`);
+    if (chest.draws.count < drop.draws.count || chest.draws.chance < drop.draws.chance) {
+      problems.push(`${chest.id}: draws are fewer or less likely than ${drop.id}'s`);
+    }
+    if (chest.gold.min < drop.gold.min || chest.gold.max < drop.gold.max) {
+      problems.push(`${chest.id}: gold is below ${drop.id}'s at one end`);
+    }
+  }
+  return problems;
+}

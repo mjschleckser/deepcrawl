@@ -52,6 +52,36 @@ function figureShape(frame, band) {
   };
 }
 
+/** How much of the frame a chest takes: low and wide, sitting on the floor. */
+const CHEST_WIDTH = 0.34;
+const CHEST_HEIGHT = 0.2;
+
+/**
+ * A chest standing on the floor of a frame: a box, and a lid that is shut on top of it
+ * or thrown back behind it once the chest is opened.
+ *
+ * @spec PRESENT-VIEW-016
+ */
+function chestShape(frame, band, opened) {
+  const width = frame.width * CHEST_WIDTH;
+  const height = frame.height * CHEST_HEIGHT;
+  const ground = frame.y + frame.height;
+  const x = frame.x + (frame.width - width) / 2;
+  const top = ground - height;
+  const lidHeight = height * 0.38;
+  const lid = opened
+    // Thrown back: leaning away behind the box, its open mouth showing.
+    ? [x + width * 0.06, top - lidHeight * 1.2, x + width * 0.94, top - lidHeight * 1.2, x + width, top, x, top]
+    : [x, top - lidHeight, x + width, top - lidHeight, x + width, top, x, top];
+  return {
+    ...band,
+    kind: 'chest',
+    opened: Boolean(opened),
+    body: { x, y: top, width, height },
+    lid,
+  };
+}
+
 /** How much of the frame a door takes: narrower than the corridor, and not as tall. */
 const DOOR_WIDTH = 0.66;
 const DOOR_HEIGHT = 0.86;
@@ -155,7 +185,9 @@ export function buildViewPlan(slices, viewport) {
       points: quad(near.topRight, far.topRight, far.bottomRight, near.bottomRight),
     });
 
-    if (feature !== TileFeature.NONE) {
+    // A chest stands on the floor rather than being marked on it; it is drawn with the
+    // things standing at this depth, below.
+    if (feature !== TileFeature.NONE && feature !== TileFeature.CHEST) {
       shapes.push({
         ...band,
         kind: 'feature',
@@ -179,6 +211,9 @@ export function buildViewPlan(slices, viewport) {
 
     // Last of this depth's shapes, so the creature stands in front of the tile it is
     // on rather than behind it. Nearer depths still paint over it, being drawn later.
+    if (feature === TileFeature.CHEST) {
+      shapes.push(chestShape(frames[slice.depth + 1], band, slice.chestOpened));
+    }
     if (slice.enemyHere) {
       shapes.push(figureShape(frames[slice.depth + 1], band));
     }

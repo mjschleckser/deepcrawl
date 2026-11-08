@@ -33,7 +33,7 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-VIEW-013**: When the simulation reports an open door on the edge ahead at a depth, the system shall draw that door's frame on that depth's far frame and shall leave what lies beyond it visible through the opening.
 - [x] **PRESENT-VIEW-014**: When the simulation reports a roaming enemy at a depth, the system shall draw a figure standing on the floor at that depth, scaled to that depth's frame.
 - [x] **PRESENT-VIEW-015**: The system shall draw the figure for an enemy in the corridor with the same horned head it marks that enemy with on the automap.
-- [ ] **PRESENT-VIEW-016**: The system shall draw a chest the simulation reports at a depth standing on that depth's floor, scaled to that depth's frame, and shall draw an opened chest distinguishably from an unopened one.
+- [x] **PRESENT-VIEW-016**: The system shall draw a chest the simulation reports at a depth standing on that depth's floor, scaled to that depth's frame, and shall draw an opened chest distinguishably from an unopened one.
 
 ## Automap
 
@@ -47,7 +47,7 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-MAP-009**: The system shall draw an enemy marker for each enemy the simulation reports, and for no other position.
 - [x] **PRESENT-MAP-010**: The system shall draw a door the simulation reports as open distinguishably from one it reports as closed.
 - [x] **PRESENT-MAP-011**: The system shall draw every enemy with one shared creature marker, distinguishable in shape from the party marker and from a trap mark.
-- [ ] **PRESENT-MAP-012**: The system shall mark tiles holding a discovered chest, an unopened chest distinguishably from an opened one, and both distinguishably from stairs, pits and traps.
+- [x] **PRESENT-MAP-012**: The system shall mark tiles holding a discovered chest, an unopened chest distinguishably from an opened one, and both distinguishably from stairs, pits and traps.
 
 ## Input
 
@@ -151,7 +151,7 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-PROMPT-004**: When the player confirms or declines a prompt drawn from a pending confirmation, the system shall pass the answer to the simulation and redraw.
 - [x] **PRESENT-PROMPT-005**: The system shall bind confirm to Enter and to the affirmative on-screen control, and decline to Escape and to the negative on-screen control.
 - [x] **PRESENT-PROMPT-006**: The system shall word a staircase prompt by the way the staircase leads, up or down.
-- [ ] **PRESENT-PROMPT-007**: The system shall word the `INTERACT` control for an unopened chest as Open.
+- [x] **PRESENT-PROMPT-007**: The system shall word the `INTERACT` control for an unopened chest as Open.
 
 ## Combat
 
@@ -260,8 +260,8 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 
 ## Opening a chest
 
-- [ ] **PRESENT-CHEST-001**: When a chest is opened, the system shall draw over the view a report naming the gold the chest held when there is any, and every item it held, each named in its rarity's colour and identical items named once with their count, or saying that it held nothing.
-- [ ] **PRESENT-CHEST-002**: While a chest report is drawn, the system shall discard every movement verb and party action, and when the player presses `Enter`, `Escape` or `E`, or presses anywhere, shall close the report and change nothing else.
+- [x] **PRESENT-CHEST-001**: When a chest is opened, the system shall draw over the view a report naming the gold the chest held when there is any, and every item it held, each named in its rarity's colour and identical items named once with their count, or saying that it held nothing.
+- [x] **PRESENT-CHEST-002**: While a chest report is drawn, the system shall discard every movement verb and party action, and when the player presses `Enter`, `Escape` or `E`, or presses anywhere, shall close the report and change nothing else.
 
 ## Rarity
 

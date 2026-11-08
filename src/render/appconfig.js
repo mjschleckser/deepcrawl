@@ -34,6 +34,7 @@ export const PALETTE = {
     wall: 0x6b5640, floor: 0x2e2418, ceiling: 0x17120c, opening: 0x090705,
     door: 0x7a4a22, doorFrame: 0x3d2510, handle: 0xd8b46a,
     figure: 0x8f3a28, figureEdge: 0x2a120c, eye: 0xf0d48a,
+    chest: 0x8a5524, chestBand: 0xd8b46a, chestInside: 0x120c07,
   },
   feature: 0xd8b46a,
   map: {
@@ -45,6 +46,7 @@ export const PALETTE = {
     party: 0xe8d9a8,
     enemy: 0xc0503a,
     trap: 0xc06a4a,
+    chest: 0x5fb3a0,
     backdrop: 0x000000,
   },
 };

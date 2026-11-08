@@ -7,7 +7,7 @@
  */
 
 import {
-  Direction, EdgeKind, edgeDetail, edgeKey, getTile, isEdgeOpen,
+  Direction, EdgeKind, chestOpenedIn, edgeDetail, edgeKey, getTile, isEdgeOpen,
 } from './floor.js';
 
 const ALL_DIRECTIONS = Object.values(Direction);
@@ -46,6 +46,7 @@ function drawnEdge(state, floor, x, y, direction) {
  * @spec EXPLORE-MAP-012
  * @spec EXPLORE-MAP-013
  * @spec EXPLORE-MAP-009
+ * @spec EXPLORE-MAP-014
  */
 export function buildAutomapView(
   state,
@@ -64,6 +65,7 @@ export function buildAutomapView(
       x,
       y,
       feature: getTile(floor, x, y).feature,
+      chestOpened: chestOpenedIn(state.openedChests, floor.id, getTile(floor, x, y)),
       trapKnown: traps.has(key),
       edges,
     });

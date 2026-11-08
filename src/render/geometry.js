@@ -265,10 +265,12 @@ export function tapRegionsFor(viewport) {
  * @spec PRESENT-CTRL-003
  * @spec PRESENT-CTRL-004
  */
-export function controlsFor(viewport, { pressedRegion = null } = {}) {
+export function controlsFor(viewport, { pressedRegion = null, labels = {} } = {}) {
   return tapRegionsFor(viewport).map((area) => ({
     ...area,
     ...CONTROL_LABELS[area.region],
+    // A control can say what it would do here: Open, standing on a chest.
+    ...(labels[area.region] ? { label: labels[area.region] } : {}),
     // Drawn as a bare label until a finger is on it: a panel big enough to tap is a
     // panel big enough to hide the corridor.
     pressed: area.region === pressedRegion,

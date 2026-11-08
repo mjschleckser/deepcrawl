@@ -14,12 +14,12 @@ tuning the game does not rewrite its specs.
 - [x] **EXPLORE-FLOOR-003**: The system shall set every edge on the outermost ring of a floor to `wall`.
 - [x] **EXPLORE-FLOOR-004**: The system shall give every edge exactly one kind from: `open`, `wall`, `door`, `lockedDoor`, `secretDoor`.
 - [x] **EXPLORE-FLOOR-005**: The system shall record an open-or-closed state for every `door` and `lockedDoor` edge.
-- [ ] **EXPLORE-FLOOR-006**: The system shall give every tile exactly one feature from: `none`, `stairsUp`, `stairsDown`, `pit`, `chest`.
+- [x] **EXPLORE-FLOOR-006**: The system shall give every tile exactly one feature from: `none`, `stairsUp`, `stairsDown`, `pit`, `chest`.
 - [x] **EXPLORE-FLOOR-008**: The system shall identify each floor by a stable id, and each connector (stairs or pit) shall name its destination by target floor id and an arrival rule rather than a target tile, since the destination floor may not exist yet.
 - [x] **EXPLORE-FLOOR-012**: When the party needs a floor the simulation does not hold, the system shall request it once from the floor provider it was given, and shall hold and save it thereafter.
 - [x] **EXPLORE-FLOOR-009**: Where a floor's depth is shown to the player, the system shall display a stored label rather than a value computed from the floor id.
 - [x] **EXPLORE-FLOOR-011**: The system shall permit a connector to exist with no return connector at its destination, so a `pit` may drop the party onto a tile offering no way back.
-- [ ] **EXPLORE-FLOOR-013**: The system shall let the party step onto a tile whose feature is `chest`, and shall resolve nothing for the chest on that step.
+- [x] **EXPLORE-FLOOR-013**: The system shall let the party step onto a tile whose feature is `chest`, and shall resolve nothing for the chest on that step.
 - [D] **EXPLORE-FLOOR-010**: The system shall support tile features that alter the party's facing or position without a step (spinners, teleporters).
 
 ## The clock
@@ -59,9 +59,9 @@ tuning the game does not rewrite its specs.
 - [x] **EXPLORE-MOVE-011**: When a step relocates the party through a `pit`, the system shall charge the party's step cost once for the whole step.
 - [x] **EXPLORE-MOVE-012**: If a relocation lands the party on a tile whose feature is also a `pit`, then the system shall not resolve that pit until the party's next step, which it claims in place of a move.
 - [x] **EXPLORE-MOVE-013**: When the party moves between floors by any connector, the system shall preserve its facing.
-- [ ] **EXPLORE-MOVE-024**: While the party occupies a tile holding an unopened chest, however they came to be standing on it, the system shall offer that chest as an `INTERACT` target.
-- [ ] **EXPLORE-MOVE-025**: When the player selects `INTERACT` on an unopened chest, the system shall open it, advance the clock by one tick, hand its find to the party, and record the chest as opened.
-- [ ] **EXPLORE-MOVE-026**: The system shall offer an opened chest as no `INTERACT` target.
+- [x] **EXPLORE-MOVE-024**: While the party occupies a tile holding an unopened chest, however they came to be standing on it, the system shall offer that chest as an `INTERACT` target.
+- [x] **EXPLORE-MOVE-025**: When the player selects `INTERACT` on an unopened chest, the system shall open it, advance the clock by one tick, hand its find to the party, and record the chest as opened.
+- [x] **EXPLORE-MOVE-026**: The system shall offer an opened chest as no `INTERACT` target.
 - [D] **EXPLORE-MOVE-014**: When the player selects a discovered tile on the automap, the system shall walk the party there, interrupting on an encounter or a trap.
 
 ## Sight and discovery
@@ -89,7 +89,7 @@ tuning the game does not rewrite its specs.
 - [x] **EXPLORE-VIEW-010**: The system shall report a `wall` and an undiscovered `secretDoor` on the edge ahead as no door at all.
 - [x] **EXPLORE-VIEW-011**: The system shall report, for each depth ahead of the party, whether a roaming enemy stands on the tile at that depth.
 - [x] **EXPLORE-VIEW-012**: The system shall decide whether a roaming enemy is reported in the corridor by the same rule the automap draws one by, so the two views cannot disagree about the same tile.
-- [ ] **EXPLORE-VIEW-013**: The system shall report, for a chest at any depth ahead of the party, whether it has been opened.
+- [x] **EXPLORE-VIEW-013**: The system shall report, for a chest at any depth ahead of the party, whether it has been opened.
 
 ## Automap
 
@@ -103,7 +103,7 @@ tuning the game does not rewrite its specs.
 - [x] **EXPLORE-MAP-008**: The system shall make the automap available without requiring any item, spell, or character class.
 - [x] **EXPLORE-MAP-009**: The system shall draw the automap and the first-person view from the same party tile and facing, so the two can never disagree.
 - [x] **EXPLORE-MAP-011**: The system shall report, for each door edge drawn on the automap, whether that door stands open.
-- [ ] **EXPLORE-MAP-014**: The system shall report, for every discovered chest on the automap, whether it has been opened.
+- [x] **EXPLORE-MAP-014**: The system shall report, for every discovered chest on the automap, whether it has been opened.
 - [D] **EXPLORE-MAP-010**: The system shall allow the player to place notes and icons on the automap.
 
 ## Returning to a floor
@@ -127,7 +127,7 @@ tuning the game does not rewrite its specs.
 - [x] **EXPLORE-SAVE-004**: The system shall save the party's current floor, tile, and facing, and the tick counter.
 - [x] **EXPLORE-SAVE-007**: When loading a save that carries tile light levels or light sources, the system shall load it and ignore those fields.
 - [x] **EXPLORE-SAVE-006**: The system shall store each floor's tile discovery record as one bit per tile.
-- [ ] **EXPLORE-SAVE-008**: The system shall save, for each floor, which of its chests have been opened.
+- [x] **EXPLORE-SAVE-008**: The system shall save, for each floor, which of its chests have been opened.
 
 ## Party actions
 

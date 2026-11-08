@@ -5,7 +5,7 @@
  * made by exploration; this decides only where it lands and how big it is.
  */
 
-import { Direction, EdgeKind } from '../sim/floor.js';
+import { Direction, EdgeKind, TileFeature } from '../sim/floor.js';
 import { hornedHead } from './geometry.js';
 
 const COLLAPSED_FRACTION = 0.22;
@@ -66,6 +66,25 @@ function enemyMarker(px, py, size) {
  * @spec PRESENT-MAP-010
  * @spec PRESENT-MAP-011
  */
+/**
+ * The mark a cell carries for what stands on it. A staircase is something to walk to and
+ * a pit something to walk round; a chest still to open is something to come back for,
+ * and an opened one a record of having been.
+ *
+ * @spec PRESENT-MAP-008
+ * @spec PRESENT-MAP-012
+ */
+export const MapMark = {
+  STAIRS: 'STAIRS', PIT: 'PIT', CHEST: 'CHEST', OPENED_CHEST: 'OPENED_CHEST',
+};
+
+function markFor(tile) {
+  if (tile.feature === TileFeature.PIT) return MapMark.PIT;
+  if (tile.feature === TileFeature.STAIRS_UP || tile.feature === TileFeature.STAIRS_DOWN) return MapMark.STAIRS;
+  if (tile.feature === TileFeature.CHEST) return tile.chestOpened ? MapMark.OPENED_CHEST : MapMark.CHEST;
+  return null;
+}
+
 export function buildMapPlan(view, viewport, { expanded = false } = {}) {
   const fraction = expanded ? EXPANDED_FRACTION : COLLAPSED_FRACTION;
   const available = Math.min(viewport.width, viewport.height) * fraction;
@@ -86,6 +105,7 @@ export function buildMapPlan(view, viewport, { expanded = false } = {}) {
     y: tile.y,
     ...place(tile.x, tile.y),
     feature: tile.feature,
+    mark: markFor(tile),
     trapKnown: tile.trapKnown,
   }));
 

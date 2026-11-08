@@ -10,6 +10,7 @@ import {
   Direction,
   EdgeKind,
   TileFeature,
+  chestOpenedIn,
   FACINGS,
   STEP_DELTA,
   contains,
@@ -66,6 +67,7 @@ export const StepEvent = {
   CLOCK_ADVANCED: 'CLOCK_ADVANCED',
   FEATURE_RESOLVED: 'FEATURE_RESOLVED',
   RESTOCKED: 'RESTOCKED',
+  CHEST_OPENED: 'CHEST_OPENED',
   TRAP_TRIGGERED: 'TRAP_TRIGGERED',
   SIGHT_RECOMPUTED: 'SIGHT_RECOMPUTED',
   ROAMERS_MOVED: 'ROAMERS_MOVED',
@@ -88,6 +90,8 @@ const NO_HOOKS = {
   isTileOccupied: () => false,
   onSight: () => {},
   onPartyAction: () => {},
+  // What a chest holds is loot's to roll; exploration only asks, and hands it on.
+  onOpenChest: () => null,
 };
 
 export function createExploration({
@@ -115,6 +119,10 @@ export function createExploration({
     discoveredEdges: new Set(),
     discoveredTiles: new Map(),
     knownTraps: new Map(),
+    // floorId -> the numbers of the chests opened there. The floor never changes, so
+    // this record is the only thing that does.
+    // @spec EXPLORE-SAVE-008
+    openedChests: new Map(),
     // Positions are owned by the roaming-enemy segment; exploration only reads them.
     roamers: roamers.map((roamer) => ({ ...roamer })),
     // floorId -> tick at which the party last left it
@@ -623,12 +631,28 @@ export function resolveConfirmation(state, accepted) {
  */
 function partyAction(state, action, commit) {
   if (action === PartyAction.INTERACT) {
-    const tile = getTile(currentFloor(state), state.party.tile.x, state.party.tile.y);
+    const floor = currentFloor(state);
+    const tile = getTile(floor, state.party.tile.x, state.party.tile.y);
+    // An opened chest is still a chest, and offers nothing.
+    // @spec EXPLORE-MOVE-026
+    const spent = chestOpenedIn(state.openedChests, floor.id, tile) === true;
     const targets =
-      tile.feature === TileFeature.NONE
+      tile.feature === TileFeature.NONE || spent
         ? []
         : [{ feature: tile.feature, target: tile.target, tile: { ...state.party.tile } }];
     state.hooks.onPartyAction({ action, committed: Boolean(commit), targets });
+    // Choosing a chest is opening it: there is nothing to confirm, and nothing to undo.
+    // @spec EXPLORE-MOVE-024
+    // @spec EXPLORE-MOVE-025
+    if (tile.feature === TileFeature.CHEST && !spent) {
+      const opened = state.openedChests.get(floor.id) ?? new Set();
+      opened.add(tile.chest);
+      state.openedChests.set(floor.id, opened);
+      advance(state, 1, { committed: true });
+      const found = state.hooks.onOpenChest({ floor, number: tile.chest, table: tile.table ?? null });
+      return { targets, events: [StepEvent.CHEST_OPENED], found };
+    }
+    if (tile.feature === TileFeature.CHEST) return { targets, events: [] };
     // A staircase is exploration's own connector, so this one is answered here, by the
     // same question stepping onto it asks.
     // @spec EXPLORE-MOVE-023

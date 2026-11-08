@@ -6,7 +6,7 @@
  */
 
 import { createCampaign } from './campaign.js';
-import { ArrivalRule } from '../sim/generation.js';
+import { ArrivalRule, DEFAULT_ARCHETYPE } from '../sim/generation.js';
 import { TileFeature } from '../sim/floor.js';
 import { enemyDefinitions } from './combatants.js';
 
@@ -99,8 +99,27 @@ function addLoot(save) {
   const common = (item) => (item ? { ...item, rarity: item.rarity ?? 'COMMON' } : item);
   const { party, exploration, encounter } = save;
 
+  // A plan holds each floor's archetype whole, so floors not yet built take the chests
+  // an archetype lays today.
+  const plan = save.plan
+    ? {
+        ...save.plan,
+        floors: save.plan.floors.map((f) => ({
+          ...f,
+          archetype: f.archetype
+            ? {
+                ...f.archetype,
+                chests: f.archetype.chests ?? DEFAULT_ARCHETYPE.chests,
+                chestTable: f.archetype.chestTable ?? DEFAULT_ARCHETYPE.chestTable,
+              }
+            : f.archetype,
+        })),
+      }
+    : save.plan;
+
   return {
     ...save,
+    plan,
     party: {
       ...party,
       purse: party.purse ?? 0,
