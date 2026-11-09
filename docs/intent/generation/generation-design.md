@@ -209,6 +209,14 @@ floor's own seed combined with a re-stocking counter, so the same floor re-stock
 twice after the same absence gives the same result, and a floor visited repeatedly does
 not converge on one arrangement.
 
+Given the re-stocking's strength, in a fixed order: every warband still on the floor
+moves to a room, when a number drawn for it falls under the strength; then each warband
+the floor is short of — against the three it was stocked with — returns, when a number
+drawn for it falls under the strength. Where the moved and returning warbands stand is
+drawn after every decision, from the same generator, so the decisions for a given
+re-stocking count are the same whatever the strength. A floor never holds more warbands
+than it began with.
+
 ## Decisions & Alternatives
 
 | Decision | Chosen | Alternatives Considered | Rationale |
@@ -248,7 +256,7 @@ not converge on one arrangement.
 
 1. **Themed floors.** Archetypes currently bound quantities, not character — no crypts that differ from caverns in anything but numbers.
 2. **Set pieces.** A hand-authored room dropped into a generated floor — a boss chamber, a vault — has no mechanism.
-3. **Re-stocking density.** Generation asks the enemies segment which bands refill a room and reports them with their positions. How many a room is worth, and how that scales with the floor's tier, is untuned. A re-stocking draws from the campaign's own generator today; deriving it from the floor's seed and a counter is not built.
+3. **Re-stocking density.** A floor refills toward the three warbands it was stocked with. How many a floor is worth, and how that scales with its tier, is untuned.
 4. **Archetype progression.** Nothing decides which archetype a floor at a given depth should use, or how a campaign escalates. Different loot on different floors waits on this, since a floor's chest table is its archetype's.
 5. **Floor size versus drawn depth.** A long straight corridor beyond the maximum drawn depth is invisible past its limit; whether archetypes should avoid sightlines that long is untested.
 6. **Traps and secret doors.** Neither is laid. Returning them would need a reason to look for them (a search action and the skill behind it) and a rule that a secret never seals a region, as locks already have.

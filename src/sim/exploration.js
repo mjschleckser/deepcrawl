@@ -22,6 +22,7 @@ import {
   openEdge,
 } from './floor.js';
 import { canSee, isOpaque } from './sight.js';
+import { closeDoors, restockRng, restockStrength } from './restock.js';
 import {
   computeSight as runSight,
   isEdgeKnown,
@@ -121,6 +122,8 @@ export function createExploration({
     roamers: roamers.map((roamer) => ({ ...roamer })),
     // floorId -> tick at which the party last left it
     departedAt: new Map(),
+    // floorId -> how many times it has been re-stocked, which seeds the next one
+    restockCounts: new Map(),
     pendingConfirmation: null,
     // A pit the party was dropped onto without resolving; it claims the next step.
     pendingFall: null,
@@ -411,7 +414,9 @@ function relocate(state, rawTarget) {
  * restored on arrival rather than simulated in the background.
  *
  * @spec EXPLORE-RETURN-003
+ * @spec EXPLORE-RETURN-004
  * @spec EXPLORE-RETURN-007
+ * @spec EXPLORE-RETURN-011
  */
 function maybeRestock(state, events) {
   const departed = state.departedAt.get(state.party.floorId);
@@ -420,8 +425,16 @@ function maybeRestock(state, events) {
   const elapsed = state.ticks - departed;
   if (elapsed < state.restockMinElapsedTicks) return;
 
-  state.departedAt.delete(state.party.floorId);
-  state.hooks.onRestock({ floorId: state.party.floorId, elapsed });
+  const floorId = state.party.floorId;
+  state.departedAt.delete(floorId);
+  const floor = currentFloor(state);
+  const count = state.restockCounts.get(floorId) ?? 0;
+  state.restockCounts.set(floorId, count + 1);
+  const strength = restockStrength(elapsed);
+  const rng = restockRng(floor.seed, count);
+  // Doors first, then the warbands, from the same generator: the fixed order.
+  closeDoors(floor, strength, rng);
+  state.hooks.onRestock({ floorId, elapsed, strength, rng, count });
   events.push(StepEvent.RESTOCKED);
 }
 

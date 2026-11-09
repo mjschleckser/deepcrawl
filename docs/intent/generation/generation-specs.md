@@ -63,9 +63,9 @@ guarantees it with.
 ## Re-stocking
 
 - [x] **GEN-STOCK-001**: When exploration re-stocks a floor, the system shall return the room contents to place, and shall change no edge and no tile feature.
-- [ ] **GEN-STOCK-002**: The system shall derive a re-stocking from the floor's own seed combined with a re-stocking counter, so the same floor re-stocked the same number of times gives the same result.
-- [ ] **GEN-STOCK-003**: The system shall produce a different arrangement for successive re-stockings of the same floor, so that a floor visited repeatedly does not settle into one layout of occupants.
-- [ ] **GEN-STOCK-004**: The system shall scale how much a re-stocking changes with the ticks the party was absent.
+- [x] **GEN-STOCK-002**: The system shall derive a re-stocking from the floor's own seed combined with a re-stocking counter, so the same floor re-stocked the same number of times after the same absence gives the same result.
+- [x] **GEN-STOCK-003**: The system shall produce a different arrangement for successive re-stockings of the same floor, so that a floor visited repeatedly does not settle into one layout of occupants.
+- [x] **GEN-STOCK-004**: The system shall move each standing warband to a room, and return each warband the floor is short of against the three it was stocked with, each when a number drawn for it in a fixed order falls under the re-stocking's strength, and shall never hold more warbands on a floor than it was stocked with.
 
 ## Deferred
 

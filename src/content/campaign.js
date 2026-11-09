@@ -30,9 +30,13 @@ import { applyTestKit } from './testkit.js';
 import { camp, CampOutcome } from '../sim/camp.js';
 import { passHunger, cookPot } from '../sim/meals.js';
 import { chestRng, rollLoot } from '../sim/loot.js';
+import { planWarbands, restockRng, restockStrength } from '../sim/restock.js';
 
 /** Bands standing on a freshly built floor, before anyone has disturbed it. */
 const BANDS_PER_FLOOR = 3;
+// An absence shorter than this changes nothing on a floor.
+// @spec EXPLORE-RETURN-007
+const RESTOCK_MIN_ELAPSED_TICKS = 100;
 
 /**
  * The party a campaign opens with, read from its own authored files.
@@ -88,20 +92,21 @@ export function createCampaign({ seed = Date.now() >>> 0, saved = null, testing 
   // The spells are content, held here so every screen reads the same catalogue.
   const campaign = { plan, party, state: null, encounter: null, spells, testing: Boolean(testing && !saved) };
 
-  function stockFloor(floor, count = BANDS_PER_FLOOR) {
+  function stockFloor(floor, count = BANDS_PER_FLOOR, { from = rng, idPrefix } = {}) {
     // Nothing is stocked onto the party, so a floor re-stocking around a standing
     // party cannot put a warband where they are.
     const avoid = campaign.state && campaign.state.party.floorId === floor.id
       ? { ...campaign.state.party.tile }
       : null;
 
-    return occupantsFor({ floorId: floor.id, rooms: floor.rooms ?? [], rng, count, avoid }).map((occupant) =>
-      createRoamer({
-        ...occupant,
-        dexterity: occupant.band.members[0].attributes[Attribute.DEXTERITY],
-        rng: makeRng(rng.int(1, 1e9)),
-      }),
-    );
+    return occupantsFor({ floorId: floor.id, rooms: floor.rooms ?? [], rng: from, count, avoid, idPrefix })
+      .map((occupant) =>
+        createRoamer({
+          ...occupant,
+          dexterity: occupant.band.members[0].attributes[Attribute.DEXTERITY],
+          rng: makeRng(from.int(1, 1e9)),
+        }),
+      );
   }
 
   // Floors are built lazily and cached by exploration, so a campaign never pays to
@@ -200,16 +205,44 @@ export function createCampaign({ seed = Date.now() >>> 0, saved = null, testing 
    * @spec EXPLORE-RETURN-006
    * @spec GEN-STOCK-001
    */
-  function restockFloor(floorId, elapsed) {
+  function restockWarbands({ floorId, strength, rng: from, count }) {
     const state = campaign.state;
     const floor = state.getFloor(floorId);
-    // A longer absence brings more back.
-    const extra = Math.min(BANDS_PER_FLOOR, Math.round(elapsed / 200));
+    const standing = state.roamers.filter((r) => r.floorId === floorId);
 
-    state.roamers = [
-      ...state.roamers.filter((r) => r.floorId !== floorId),
-      ...stockFloor(floor, BANDS_PER_FLOOR + extra),
-    ];
+    // Every decision first, then every position, so the decisions for a count are the
+    // same whatever the strength.
+    // @spec GEN-STOCK-004
+    const plan = planWarbands({ standing: standing.map((r) => r.id), stocked: BANDS_PER_FLOOR, strength, rng: from });
+    const moving = new Set(plan.move);
+    const places = stockFloor(floor, moving.size, { from, idPrefix: `${floorId}-moved-${count}-` });
+    const returning = stockFloor(floor, plan.returning, { from, idPrefix: `${floorId}-roamer-r${count}-` });
+
+    // A moved warband keeps who it is and forgets the party.
+    let next = 0;
+    const kept = standing.map((roamer) => {
+      if (!moving.has(roamer.id)) return roamer;
+      const place = places[next++];
+      return place ? { ...roamer, x: place.x, y: place.y, awareness: 0, contacted: false } : roamer;
+    });
+
+    state.roamers = [...state.roamers.filter((r) => r.floorId !== floorId), ...kept, ...returning];
+  }
+
+  /**
+   * Re-stock a floor's warbands as a return after `elapsed` ticks would. For tests and
+   * tools; a real return goes through exploration, which closes doors first.
+   */
+  function restockFloor(floorId, elapsed) {
+    const state = campaign.state;
+    const count = state.restockCounts.get(floorId) ?? 0;
+    state.restockCounts.set(floorId, count + 1);
+    restockWarbands({
+      floorId,
+      strength: restockStrength(elapsed),
+      rng: restockRng(state.getFloor(floorId).seed, count),
+      count,
+    });
   }
 
   /**
@@ -230,12 +263,13 @@ export function createCampaign({ seed = Date.now() >>> 0, saved = null, testing 
 
   const wiring = {
     floorProvider,
+    restockMinElapsedTicks: RESTOCK_MIN_ELAPSED_TICKS,
     stepCost: () => partyStepCost(party),
     hooks: {
       onRoamersMove,
       onContactCheck,
       isTileOccupied,
-      onRestock: ({ floorId, elapsed }) => restockFloor(floorId, elapsed),
+      onRestock: restockWarbands,
       onOpenChest,
       // Hunger runs on the exploration clock, and its notices go back through it.
       // @spec FOOD-HUNGER-001

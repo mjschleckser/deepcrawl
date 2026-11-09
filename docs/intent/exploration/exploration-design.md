@@ -193,23 +193,43 @@ proportional to the length of the campaign, for changes nobody is present to see
 A frozen dungeon is a dead one, so the life is restored on arrival rather than
 maintained in the background. Every floor records the tick at which the party last
 left it. On return, exploration compares that against the current tick and applies a
-**re-stocking** scaled to how much time has passed:
+**re-stocking** scaled to how much time has passed.
 
-- roaming enemies are repositioned
-- doors are opened and closed
-- some previously cleared rooms are refilled
+**An absence under 100 ticks changes nothing.** Stepping down a staircase and straight
+back up produces no re-stocking — the threshold is elapsed ticks, not the act of
+arriving.
 
-A long absence produces a thorough re-stocking. Stepping down a staircase and straight
-back up produces none — the threshold is elapsed ticks, not the act of arriving.
+**Past that, a re-stocking has a strength**, rising with the absence and complete at a
+thousand ticks — a long trip with a camp in it:
+
+```
+strength = min(1, ticks away / 1000)
+```
+
+and the strength is the chance of each change:
+
+- every warband still standing moves to a room of its own, at the strength
+- the floor refills toward the warbands it was stocked with: each one missing returns,
+  at the strength, and the floor never holds more than it began with
+- every door the party opened closes again, at half the strength; a closed door stays
+  closed
+
+**Every change draws one number, in a fixed order**, and happens when its number falls
+under the strength. A re-stocking is drawn from the floor's own seed and a count of how
+many times that floor has been re-stocked, so the same return gives the same result, a
+floor visited again and again does not settle into one arrangement, and a longer absence
+always changes at least what a shorter one would have: the same numbers, compared with a
+larger strength.
 
 **Re-stocking never touches the discovery record.** The map the party drew stays theirs
 permanently; what changes is what is standing in it. A returning party finds its own map
 accurate as a map and unreliable as intelligence, which is the point. Re-stocking
 rearranges the living contents of a floor, not its construction.
 
-Exploration owns the trigger, the per-floor last-left tick, and the door changes,
-since it already owns door state. Repositioning and refilling are delegated to the
-segments that own roaming enemies and generation.
+Exploration owns the trigger, the per-floor last-left tick and re-stocking count, the
+strength, the generator a re-stocking draws from, and the door changes, since it already
+owns door state. Moving and refilling warbands are delegated to the segments that own
+roaming enemies and generation, which draw from the same generator after the doors.
 
 ## Movement
 
@@ -602,7 +622,7 @@ map; tapping the control expands the map to full screen.
 
 ### Deferred
 
-1. **Re-stocking magnitude.** How far enemies move, which rooms refill, and how many ticks of absence separate a slight rearrangement from a thorough one are all untuned. The trigger and the inputs are settled; the curve is not. A re-stocking replaces a floor's roamers today and does not yet open or close its doors.
+1. **Re-stocking's curve.** A re-stocking's strength rises in a straight line to full at a thousand ticks, and doors close at half of it. Both are first guesses, to be tuned against how long a floor actually takes.
 2. **Skill-dependent sight.** The party sees four tiles, and enemies within it. Party skill was raised as a future modifier on that range; the mechanism is unspecified.
 3. **Auto-travel** — tap a discovered automap tile and walk there. Must interrupt on an encounter. Not in v1.
 4. **Player map annotations** — Etrian-style notes and icons. Out of scope.

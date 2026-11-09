@@ -465,3 +465,43 @@ describe('food in a campaign', () => {
     expect(rations()).toHaveLength(5);
   });
 });
+
+describe('re-stocking a campaign floor', () => {
+  // @spec GEN-STOCK-004
+  it('moves standing warbands unaware, keeping who they are, and refills to three at most', () => {
+    const campaign = booted();
+    const state = campaign.state;
+    const home = state.party.floorId;
+    const before = state.roamers.filter((r) => r.floorId === home);
+    const survivor = before[0];
+    state.roamers = state.roamers.filter((r) => r.floorId !== home || r.id === survivor.id);
+    state.roamers = state.roamers.map((r) => (r.id === survivor.id ? { ...r, awareness: 3 } : r));
+
+    campaign.restockFloor(home, 5000);
+
+    const after = state.roamers.filter((r) => r.floorId === home);
+    expect(after).toHaveLength(3);
+    const moved = after.find((r) => r.id === survivor.id);
+    expect(moved.band).toBe(survivor.band);
+    expect(moved.awareness).toBe(0);
+    expect(new Set(after.map((r) => r.id)).size).toBe(3);
+
+    campaign.restockFloor(home, 5000);
+    expect(state.roamers.filter((r) => r.floorId === home)).toHaveLength(3);
+  });
+
+  // @spec EXPLORE-RETURN-007
+  it('waits out a hundred ticks before a return re-stocks', () => {
+    expect(booted().state.restockMinElapsedTicks).toBe(100);
+  });
+
+  // @spec EXPLORE-RETURN-003
+  it('changes nothing after a short absence', () => {
+    const campaign = booted();
+    const state = campaign.state;
+    const home = state.party.floorId;
+    const before = JSON.stringify(state.roamers.filter((r) => r.floorId === home).map(({ rng, ...r }) => r));
+    campaign.restockFloor(home, 0);
+    expect(JSON.stringify(state.roamers.filter((r) => r.floorId === home).map(({ rng, ...r }) => r))).toBe(before);
+  });
+});
