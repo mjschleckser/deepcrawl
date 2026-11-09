@@ -159,7 +159,6 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-PROMPT-004**: When the player confirms or declines a prompt drawn from a pending confirmation, the system shall pass the answer to the simulation and redraw.
 - [x] **PRESENT-PROMPT-005**: The system shall bind confirm to Enter and to the affirmative on-screen control, and decline to Escape and to the negative on-screen control.
 - [x] **PRESENT-PROMPT-006**: The system shall word a staircase prompt by the way the staircase leads, up or down.
-- [x] **PRESENT-PROMPT-007**: The system shall word the `INTERACT` control for an unopened chest as Open.
 
 ## Combat
 
@@ -282,7 +281,7 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 
 ## Camping
 
-- [x] **PRESENT-CAMP-001**: The system shall draw a Camp control on the action bar, between Spells and Use, that performs `CAMP`.
+- [x] **PRESENT-CAMP-001**: The system shall draw a Camp control on the action bar, after Spells, that performs `CAMP`, and shall draw no control for using what stands on a tile.
 - [x] **PRESENT-CAMP-002**: When a camp is refused with an enemy in sight, the system shall draw over the view a report saying so.
 - [x] **PRESENT-CAMP-003**: While a camp report is drawn, the system shall discard every movement verb and party action, and when the player presses `Enter`, `Escape` or `R`, or presses anywhere, shall dismiss it and change nothing.
 - [x] **PRESENT-CAMP-004**: When a camp rests, the system shall open the camp screen, saying what the rest did and naming what was foraged, and shall hold the input while it is open.
@@ -300,7 +299,7 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 ## Opening a chest
 
 - [x] **PRESENT-CHEST-001**: When a chest is opened, the system shall draw over the view a report naming the gold the chest held when there is any, and every item it held, each named in its rarity's colour and identical items named once with their count, or saying that it held nothing.
-- [x] **PRESENT-CHEST-002**: While a chest report is drawn, the system shall discard every movement verb and party action, and when the player presses `Enter`, `Escape` or `E`, or presses anywhere, shall close the report and change nothing else.
+- [x] **PRESENT-CHEST-002**: While a chest report is drawn, the system shall discard every movement verb and party action, and when the player presses `Enter` or `Escape`, or presses anywhere, shall close the report and change nothing else.
 
 ## Rarity
 

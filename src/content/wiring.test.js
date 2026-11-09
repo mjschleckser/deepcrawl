@@ -192,7 +192,7 @@ describe('walking into a warband', () => {
     const ticks = tickCount(campaign.state);
 
     perform(campaign.state, { verb: Verb.STEP_FORWARD });
-    perform(campaign.state, { partyAction: PartyAction.INTERACT, commit: true });
+    perform(campaign.state, { partyAction: PartyAction.ITEMS, commit: true });
     advanceForCamp(campaign.state, 5);
 
     expect(tickCount(campaign.state)).toBe(ticks);

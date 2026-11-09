@@ -50,7 +50,7 @@ describe('the clock', () => {
     setCombatActive(state, true);
 
     perform(state, { verb: Verb.STEP_FORWARD });
-    perform(state, { partyAction: PartyAction.INTERACT, commit: true });
+    perform(state, { partyAction: PartyAction.ITEMS, commit: true });
 
     expect(tickCount(state)).toBe(0);
   });
@@ -169,9 +169,9 @@ describe('party actions and the clock', () => {
   });
 
   // @spec EXPLORE-ACTION-001
-  it('accepts exactly the six defined party actions', () => {
+  it('accepts exactly the five defined party actions', () => {
     expect(Object.values(PartyAction).sort()).toEqual(
-      ['PARTY', 'ITEMS', 'SPELLS', 'CAMP', 'INTERACT', 'TOGGLE_MAP'].sort(),
+      ['PARTY', 'ITEMS', 'SPELLS', 'CAMP', 'TOGGLE_MAP'].sort(),
     );
   });
 
@@ -181,7 +181,7 @@ describe('party actions and the clock', () => {
     setCombatActive(state, true);
 
     expect(perform(state, { verb: Verb.STEP_FORWARD }).rejected).toBe(true);
-    expect(perform(state, { partyAction: PartyAction.INTERACT }).rejected).toBe(true);
+    expect(perform(state, { partyAction: PartyAction.ITEMS }).rejected).toBe(true);
   });
 
   // @spec EXPLORE-BOUND-009

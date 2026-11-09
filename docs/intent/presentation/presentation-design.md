@@ -187,9 +187,9 @@ viewport, not pixels, so they hold their proportions on any screen:
 │turn│               │ turn       │
 │left│               │ right      │
 │    └───────────────┘            │
-│ ┌─────┬─────┬──────┬────┬────┐  │
-│ │party│items│spells│camp│use │  │ ← party action bar
-│ └─────┴─────┴──────┴────┴────┘  │
+│  ┌──────┬──────┬──────┬──────┐  │
+│  │party │items │spells│ camp │  │ ← party action bar
+│  └──────┴──────┴──────┴──────┘  │
 └─────────────────────────────────┘
 ```
 
@@ -827,7 +827,7 @@ slot, and the page returns to the list of spells with the slot spent. Close, `Es
 
 ## Camping
 
-The action bar carries **Camp**, between Spells and Use, and `R` does the same. Pressing
+The action bar carries **Camp**, after Spells, and `R` does the same. Pressing
 it camps at once: the rest is a commitment, not a question.
 
 **A camp refused is reported over the view**, the way a chest's find is: *An enemy is in
@@ -861,11 +861,11 @@ they carry, if any, with what it does.
 
 ## Opening a Chest
 
-Standing on an unopened chest offers it as an `INTERACT`, the same control that offers
-a staircase, worded *Open*. Opening it costs a tick and draws a report over the view:
+Stepping onto an unopened chest opens it. Opening it costs a tick and draws a report over
+the view:
 *The chest held*, then the gold and each item by name in its rarity's colour. The find
 is already in the pack and purse by the time the report shows. The report holds the
-input until it is dismissed by `Enter`, `Escape`, `E` or a press anywhere, and dismissing
+input until it is dismissed by `Enter`, `Escape` or a press anywhere, and dismissing
 it changes nothing, because there is nothing left to decide.
 
 ## Rarity

@@ -85,7 +85,17 @@ function corridor({ hooks = {} } = {}) {
   return { state, floor };
 }
 
-const interact = (state, commit = false) => perform(state, { partyAction: PartyAction.INTERACT, commit });
+/** Walk the two tiles from the corridor's foot onto the chest. */
+const walkOnto = (state) => {
+  perform(state, { verb: Verb.STEP_FORWARD });
+  return perform(state, { verb: Verb.STEP_FORWARD });
+};
+
+/** Step off the chest and back onto it. */
+const stepOffAndOn = (state) => {
+  perform(state, { verb: Verb.STEP_BACKWARD });
+  return perform(state, { verb: Verb.STEP_FORWARD });
+};
 
 describe('a chest underfoot', () => {
   // @spec EXPLORE-FLOOR-006
@@ -94,77 +104,54 @@ describe('a chest underfoot', () => {
   });
 
   // @spec EXPLORE-FLOOR-013
-  it('lets the party step onto it, and resolves nothing for it on the way', () => {
-    const onOpenChest = vi.fn();
-    const { state } = corridor({ hooks: { onOpenChest } });
-    perform(state, { verb: Verb.STEP_FORWARD });
-
-    const result = perform(state, { verb: Verb.STEP_FORWARD });
-
-    expect(partyPosition(state).tile).toEqual({ x: 1, y: 3 });
-    expect(result.confirmationRequired).toBeUndefined();
-    expect(state.pendingConfirmation).toBeNull();
-    expect(onOpenChest).not.toHaveBeenCalled();
-  });
-
   // @spec EXPLORE-MOVE-024
-  // @spec EXPLORE-MOVE-025
   // @spec LOOT-CHEST-001
-  it('is offered to INTERACT, and opening it costs a tick and hands the find over', () => {
+  it('is opened by stepping onto it, for a tick beyond the step, handing the find over', () => {
     const find = { gold: 9, items: [] };
     const onOpenChest = vi.fn(() => find);
     const { state, floor } = corridor({ hooks: { onOpenChest } });
     perform(state, { verb: Verb.STEP_FORWARD });
-    perform(state, { verb: Verb.STEP_FORWARD });
     const ticks = tickCount(state);
 
-    const result = interact(state);
+    const result = perform(state, { verb: Verb.STEP_FORWARD });
 
-    expect(result.targets).toEqual([expect.objectContaining({ feature: TileFeature.CHEST })]);
+    expect(partyPosition(state).tile).toEqual({ x: 1, y: 3 });
     expect(result.events).toContain(StepEvent.CHEST_OPENED);
     expect(result.found).toBe(find);
-    expect(tickCount(state)).toBe(ticks + 1);
+    // The step's own tick, and the one opening took.
+    expect(tickCount(state)).toBe(ticks + 2);
     expect(onOpenChest).toHaveBeenCalledWith({ floor, number: 0, table: 'chest' });
+    expect(state.pendingConfirmation).toBeNull();
   });
 
   // @spec EXPLORE-MOVE-026
   // @spec LOOT-CHEST-003
-  it('offers nothing once opened, and is never opened twice', () => {
+  it('is floor once opened, and is never opened twice', () => {
     const onOpenChest = vi.fn(() => ({ gold: 1, items: [] }));
     const { state } = corridor({ hooks: { onOpenChest } });
-    perform(state, { verb: Verb.STEP_FORWARD });
-    perform(state, { verb: Verb.STEP_FORWARD });
-    interact(state);
+    walkOnto(state);
     const ticks = tickCount(state);
 
-    const again = interact(state);
+    const again = stepOffAndOn(state);
 
-    expect(again.targets).toEqual([]);
     expect(again.found).toBeUndefined();
+    expect(again.events).not.toContain(StepEvent.CHEST_OPENED);
     expect(onOpenChest).toHaveBeenCalledTimes(1);
-    expect(tickCount(state)).toBe(ticks);
-  });
-
-  // @spec EXPLORE-MOVE-024
-  it('is offered however the party came to stand on it', () => {
-    const { state } = corridor();
-    state.party.tile = { x: 1, y: 3 };
-
-    expect(interact(state).targets[0].feature).toBe(TileFeature.CHEST);
+    // Two steps, and nothing more.
+    expect(tickCount(state)).toBe(ticks + 2);
   });
 
   // @spec EXPLORE-SAVE-008
   it('stays opened across a save and reload, and an old save opens none', () => {
-    const { state } = corridor({ hooks: { onOpenChest: () => ({ gold: 1, items: [] }) } });
-    state.party.tile = { x: 1, y: 3 };
-    interact(state);
+    const onOpenChest = vi.fn(() => ({ gold: 1, items: [] }));
+    const { state } = corridor({ hooks: { onOpenChest } });
+    walkOnto(state);
 
     const saved = JSON.parse(JSON.stringify(serialize(state)));
-    const restored = deserialize(saved);
-    expect(interact(restored).targets).toEqual([]);
+    expect(stepOffAndOn(deserialize(saved, { hooks: { onOpenChest } })).found).toBeUndefined();
 
     delete saved.openedChests;
-    expect(interact(deserialize(saved)).targets[0].feature).toBe(TileFeature.CHEST);
+    expect(stepOffAndOn(deserialize(saved, { hooks: { onOpenChest } })).found).toBeDefined();
   });
 });
 
@@ -176,9 +163,9 @@ describe('a chest in view', () => {
 
     expect(slice()).toMatchObject({ depth: 2, chestOpened: false });
 
-    state.party.tile = { x: 1, y: 3 };
-    interact(state);
-    state.party.tile = { x: 1, y: 5 };
+    walkOnto(state);
+    perform(state, { verb: Verb.STEP_BACKWARD });
+    perform(state, { verb: Verb.STEP_BACKWARD });
     expect(slice().chestOpened).toBe(true);
   });
 
@@ -189,8 +176,7 @@ describe('a chest in view', () => {
 
     expect(cell()).toMatchObject({ chestOpened: false });
 
-    state.party.tile = { x: 1, y: 3 };
-    interact(state);
+    walkOnto(state);
     expect(cell().chestOpened).toBe(true);
     expect(getTile(state.getFloor('f1'), 1, 3).feature).toBe(TileFeature.CHEST);
   });

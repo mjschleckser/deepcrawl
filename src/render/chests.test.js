@@ -77,21 +77,18 @@ function harness({ find = { gold: 12, items: [] } } = {}) {
 
 const hud = (controller) => layers(controller).find((l) => l.name === 'hud').plan;
 const report = (controller) => layers(controller).find((l) => l.name === 'chest')?.plan ?? null;
-const interactLabel = (controller) => hud(controller).controls.find((c) => c.region === 'INTERACT_PROMPT')?.label;
 
 describe('opening a chest', () => {
-  // @spec PRESENT-PROMPT-007
-  it('words the use control Open while the party stands on an unopened chest', () => {
-    const { controller } = harness();
-    expect(interactLabel(controller)).toBe('Use');
+  // @spec PRESENT-CAMP-001
+  it('opens the chest walked onto, with no control for using it', () => {
+    const { controller, onOpenChest } = harness();
+    expect(hud(controller).controls.map((c) => c.region)).not.toContain('INTERACT_PROMPT');
 
     pressKey(controller, 'w');
     pressKey(controller, 'w');
-    expect(interactLabel(controller)).toBe('Open');
 
-    pressKey(controller, 'e');
-    pressKey(controller, 'Enter');
-    expect(interactLabel(controller)).toBe('Use');
+    expect(onOpenChest).toHaveBeenCalledTimes(1);
+    expect(report(controller).title).toBe('The chest held');
   });
 
   // @spec PRESENT-CHEST-001
@@ -100,8 +97,6 @@ describe('opening a chest', () => {
     const { controller } = harness({ find: { gold: 12, items: [blade] } });
     pressKey(controller, 'w');
     pressKey(controller, 'w');
-
-    pressKey(controller, 'e');
 
     const plan = report(controller);
     expect(plan.title).toBe('The chest held');
@@ -114,18 +109,16 @@ describe('opening a chest', () => {
     const { controller } = harness({ find: { gold: 0, items: [] } });
     pressKey(controller, 'w');
     pressKey(controller, 'w');
-    pressKey(controller, 'e');
 
     expect(report(controller).find).toMatchObject({ gold: null, items: [], nothing: 'Nothing' });
   });
 
   // @spec PRESENT-CHEST-002
   it('holds the input until dismissed, and dismissing changes nothing', () => {
-    for (const dismiss of ['Enter', 'Escape', 'e', 'tap']) {
+    for (const dismiss of ['Enter', 'Escape', 'tap']) {
       const { controller, state } = harness();
       pressKey(controller, 'w');
       pressKey(controller, 'w');
-      pressKey(controller, 'e');
       const where = partyPosition(state);
       const ticks = tickCount(state);
 

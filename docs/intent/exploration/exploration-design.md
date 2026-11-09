@@ -75,14 +75,20 @@ Tile features (on the tile, not the edge):
 - `none`
 - `stairsUp`, `stairsDown` — connectors to another floor, taken deliberately
 - `pit` — a one-way connector downward, taken involuntarily
-- `chest` — a container, opened deliberately with `INTERACT`, once
+- `chest` — a container, opened by walking onto it, once
 
-A chest is passable, and stepping onto one does nothing. It is opened with `INTERACT`
-while the party stands on it, which costs a tick, as committing any party action does.
-Exploration hands the find to the party and records the chest as opened, and loot
-decides what the find is. An opened chest is still a `chest` tile: the floor's features
-never change, so whether a chest is opened lives in a per-floor record beside the door
-flags. An opened chest offers nothing to `INTERACT`.
+**Things are used by walking into them.** There is no button for using what stands in the
+dungeon: a door opens as the party steps through it, a staircase asks whether to take it
+as the party steps onto it, and a chest opens as the party steps onto it. A phone has room
+for few controls, and a control that only says *do the obvious thing here* is room spent
+on nothing.
+
+A chest is passable. Stepping onto an unopened one opens it, which costs a tick on top of
+the step, as committing any party action does. Exploration hands the find to the party and
+records the chest as opened, and loot decides what the find is. An opened chest is still a
+`chest` tile: the floor's features never change, so whether a chest is opened lives in a
+per-floor record beside the door flags. Stepping onto an opened chest is stepping onto
+floor.
 
 Each tile also carries a discovery record (see *Sight and Discovery*).
 
@@ -123,9 +129,9 @@ Declining has to leave the party *on* the staircase rather than in front of it,
 because a staircase that cannot be crossed is a wall with a prompt on it: a floor that
 puts one in a corridor seals off everything beyond it. A party standing on a
 staircase — having declined it, having arrived on it, or having been dropped there by a
-pit, which does not chain — is simply standing on it, and takes it with an `INTERACT`,
-which asks the same question. Declining that one changes nothing, there being no step
-left to finish.
+pit, which does not chain — is simply standing on it. To take it they step off and back
+on, which asks the same question again: the staircase is used by walking onto it, like
+everything else in the dungeon.
 
 **A staircase with nowhere to go asks nothing.** The stairs up on the entrance lead out
 of the dungeon, and nothing lies out there yet, so they name no destination and are
@@ -394,7 +400,7 @@ Rules beyond that line belong to the other segment.
 | Hunger | every tick | the ticks elapsed; it hands back any notice that a character grew hungrier | fullness, stages, penalties, starving |
 | Roaming enemies | after discovery on each step | floor and party tile | movement behavior, roster, respawn |
 | Floor re-stocking | the party arrives on a floor it has visited before | the floor and the ticks elapsed since it was last left | how far enemies move, which rooms refill |
-| Opening a chest | the player commits `INTERACT` on an unopened chest | the floor, its seed and archetype, and the chest's number | what the chest holds |
+| Opening a chest | the party steps onto an unopened chest | the floor, its seed and archetype, and the chest's number | what the chest holds |
 | Encounter | the party and a roamer reach one another — either one attempting the other's tile | the encounter payload — see *The Combat Handoff* | all of combat |
 | Camp | the player commits `CAMP` | the clock's advance by the camp's ticks, roaming enemies' movement on them, the contact check after, and what the party can see | whether a camp may begin, and what it restores |
 
@@ -495,15 +501,14 @@ for the same one step's ticks, since turns are free.
 | `ITEMS` — equip and use items | `I` | Items button | loot and items |
 | `SPELLS` — cast a spell out of a fight | `C` | Spells button | magic |
 | `CAMP` — stop and rest | `R` | Camp button | camp |
-| `INTERACT` — dungeon features on the current tile | `E` | use control | varies by feature; a staircase is exploration's own |
 | `TOGGLE_MAP` — step the automap between expanded, minimap and hidden | `M` | map control | exploration |
 
 Exploration owns none of these but `TOGGLE_MAP`: it routes each to the segment that
 owns it and charges the clock. **Opening a party action costs nothing; committing to
 one costs a tick.** Reading the roster, browsing the Items screen, and reading the map are
 free, because a game that charges for looking punishes the player for playing
-carefully. Equipping the armour, drinking the potion, casting the spell, and working
-the lever each cost a tick. Camping is the one commitment that costs more: the camp's
+carefully. Equipping the armour, drinking the potion, and casting the spell each cost a
+tick. Camping is the one commitment that costs more: the camp's
 whole stretch of ticks, spent as walking would spend them, with roaming enemies moving
 through it and contact checked after.
 
@@ -537,6 +542,7 @@ map; tapping the control expands the map to full screen.
 | Step cost | Several ticks, set by the party's average Dexterity | A flat one tick per step | Speed becomes a property of the party rather than a combat statistic, and pursuit becomes a contest a party can win or lose by who they brought rather than by how they turn. |
 | Turning | Free, never ticks | Turning costs a tick | Free turning keeps the first-person view scannable, which matters most on a phone where looking around is the primary orientation gesture. |
 | Wall bump | No movement, no tick | Bumping costs a tick | A misjudged step should not cost food. |
+| Using what stands in the dungeon | Walking into it: a door opens on the step through it, a staircase asks on the step onto it, a chest opens on the step onto it | A Use button for whatever is on the party's tile | A Use button is a control spent on doing the obvious thing, on a screen that has room for few controls. Walking into things makes the dungeon itself the interface. The cost is that a staircase declined has to be stepped off and back onto to be asked again. |
 | Stepping into an occupied tile | Barred: the encounter begins and the party stays where it is | Take the step, then check contact on arrival | Arriving on top of a warband leaves the two sharing a tile, and a fight broken off from there re-opens on the party's next step, since whatever they fled is standing on them. Barring the step makes meeting a thing that happens between tiles, so fleeing buys distance rather than a single step's reprieve. |
 | Movement verbs | Forward, backward, turn L/R, turn 180° | Forward and turns alone, withdrawing by turning about | Turning to leave is not the same act as backing away: it gives up sight of whatever they are retreating from, and the party walks the corridor behind them blind. The objection that a backward step enters a tile the facing never revealed costs nothing after all, since the party maps the tile it stands on however it arrived there. |
 | The corridor's door report | The edge ahead is reported as a door, open or closed, or as nothing | Reporting only whether the way on is blocked | A closed door and a dead end are otherwise the same report, so the view cannot tell a way on from the end of a passage. Open doors are reported for the reverse reason: a doorway already walked through is what distinguishes one corridor from another. |
@@ -592,7 +598,7 @@ map; tapping the control expands the map to full screen.
 25. ✅ **Re-stocking resolves immediately after relocation**, before sight is recomputed.
 26. ✅ **Exploration hands combat an explicit payload**; party state is owned by the party segment and changed through its operations by both.
 27. ✅ **The party sees four tiles, and everything within them** that a line of sight reaches; nothing is ever dark.
-28. ✅ **A chest is opened with `INTERACT`, once**, for a tick. Whether it is opened is exploration's record, never a change to the floor.
+28. ✅ **A chest is opened by stepping onto it, once**, for a tick on top of the step. Whether it is opened is exploration's record, never a change to the floor.
 
 ### Deferred
 

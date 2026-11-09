@@ -141,8 +141,8 @@ authored.
 ### A chest
 
 A chest is a tile feature, laid by generation within the archetype's chest budget on
-room tiles nothing else has claimed. It is opened with `INTERACT` while
-the party stands on it, which costs a tick, as committing any party action does.
+room tiles nothing else has claimed. It is opened by stepping onto it, which costs a tick
+on top of the step, as committing any party action does.
 
 **What a chest holds is fixed by the floor, not by the moment it is opened.** Its find
 is rolled from a generator seeded from the floor's seed and the chest's index on the
@@ -220,7 +220,7 @@ visible from one place.
 | Enemies | an optional `loot` table id on each roster entry |
 | Combat | per-enemy rolls on victory, stowed and added to the outcome; a **Use** action that costs the full bar |
 | Generation | archetype fields `chests` (a range) and `chestTable`; chests laid at generation on room tiles no connector has claimed, and never added or removed afterwards (GEN-PLACE-007) |
-| Exploration | a `chest` tile feature; `INTERACT` on an unopened chest opens it, costs a tick and hands its find to the party; a per-floor record of opened chests, saved |
+| Exploration | a `chest` tile feature; stepping onto an unopened chest opens it, costs a tick and hands its find to the party; a per-floor record of opened chests, saved |
 | Persistence | save format 4: the party's purse and each floor's opened chests, with a migration from format 3 that starts the purse at zero and every chest unopened |
 | Presentation | the victory banner lists gold and items found; opening a chest shows a report over the view, dismissed by a press; the Items screen shows the purse, draws each item's name in its rarity's colour, and offers consumables as rows that use them; the corridor and the automap draw a chest, open or closed |
 | Content | two loot tables under `src/game-data/loot`, the goblins' drops and a richer chest table; a few items above common; potions in two or three sizes |
@@ -268,7 +268,7 @@ or archetype naming a table that doesn't exist is rejected the same way.
 
 1. **Affixes.** Varying an item within its kind wants enemy armour on a curve to balance against (ENEMY-ROSTER-007, -008).
 2. **A pack limit** (ITEM-PACK-006), and with it a reason to choose what to take.
-3. **Locked chests.** A chest is opened with `INTERACT` rather than by stepping onto it so that something about a chest can later make opening a decision.
+3. **Locked chests.** A chest opens the moment it is stepped onto. A chest that should be a decision — locked, or trapped — would need asking before it opens, as a staircase asks.
 4. **Different loot on each floor**, through richer tables named by deeper archetypes and enemies (GEN-PLAN-008).
 5. **Spending gold**, in a town.
 
@@ -278,4 +278,4 @@ or archetype naming a table that doesn't exist is rejected the same way.
 - `docs/intent/items/items-design.md`: what an item is, the pack.
 - `docs/intent/party/party-design.md`: `stow`, `applyHealing`, the condition chain.
 - `docs/intent/generation/generation-design.md`: determinism, connectors, archetypes.
-- `docs/intent/exploration/exploration-design.md`: `INTERACT`, the cost of committing a party action.
+- `docs/intent/exploration/exploration-design.md`: opening by walking, the cost of committing a party action.

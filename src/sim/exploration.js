@@ -53,7 +53,6 @@ export const PartyAction = {
   ITEMS: 'ITEMS',
   SPELLS: 'SPELLS',
   CAMP: 'CAMP',
-  INTERACT: 'INTERACT',
   TOGGLE_MAP: 'TOGGLE_MAP',
 };
 
@@ -463,6 +462,9 @@ function resolveStepEffects(state, events, { alreadyRelocated = false } = {}) {
   }
   events.push(StepEvent.FEATURE_RESOLVED);
 
+  // A chest is opened by walking onto it, for a tick beyond the step.
+  const found = openChestUnderfoot(state, events);
+
   maybeRestock(state, events);
 
   // Everything downstream acts on wherever the party actually ended up.
@@ -479,7 +481,33 @@ function resolveStepEffects(state, events, { alreadyRelocated = false } = {}) {
 
   state.hooks.onContactCheck(here);
   events.push(StepEvent.CONTACT_CHECKED);
+  return found;
 }
+
+/**
+ * Open the chest the party has just walked onto, if it is unopened: a tick, the find
+ * handed to the party, and the chest recorded as opened. An opened chest is floor.
+ *
+ * @spec EXPLORE-MOVE-024
+ * @spec EXPLORE-MOVE-026
+ */
+function openChestUnderfoot(state, events) {
+  const floor = currentFloor(state);
+  const tile = getTile(floor, state.party.tile.x, state.party.tile.y);
+  if (tile.feature !== TileFeature.CHEST) return undefined;
+  if (chestOpenedIn(state.openedChests, floor.id, tile) === true) return undefined;
+  const opened = state.openedChests.get(floor.id) ?? new Set();
+  opened.add(tile.chest);
+  state.openedChests.set(floor.id, opened);
+  advance(state, 1, { committed: true });
+  events.push(StepEvent.CHEST_OPENED);
+  return state.hooks.onOpenChest({ floor, number: tile.chest, table: tile.table ?? null });
+}
+
+/** A step's answer, carrying what a chest walked onto held when there was one. */
+const stepped = (events, found, extra = {}) => (found === undefined
+  ? { blocked: false, events, ...extra }
+  : { blocked: false, events, found, ...extra });
 
 /**
  * @spec EXPLORE-MOVE-002
@@ -516,8 +544,7 @@ function takeStep(state, heading) {
     const events = [];
     relocate(state, target);
     events.push(StepEvent.MOVED);
-    resolveStepEffects(state, events, { alreadyRelocated: true });
-    return { blocked: false, events };
+    return stepped(events, resolveStepEffects(state, events, { alreadyRelocated: true }));
   }
 
   const from = state.party.tile;
@@ -573,9 +600,7 @@ function takeStep(state, heading) {
   const events = [];
   state.party.tile = target;
   events.push(StepEvent.MOVED);
-  resolveStepEffects(state, events);
-
-  return { blocked: false, events };
+  return stepped(events, resolveStepEffects(state, events));
 }
 
 /**
@@ -587,7 +612,6 @@ function takeStep(state, heading) {
  * @spec EXPLORE-MOVE-016
  * @spec EXPLORE-MOVE-017
  * @spec EXPLORE-MOVE-013
- * @spec EXPLORE-MOVE-023
  */
 export function resolveConfirmation(state, accepted) {
   const pending = state.pendingConfirmation;
@@ -595,21 +619,17 @@ export function resolveConfirmation(state, accepted) {
   state.pendingConfirmation = null;
 
   const events = [];
-  // Asked of a party already on the staircase, so no step is waiting to be finished.
-  if (!accepted && pending.standing) return { blocked: false, events, declined: true };
   if (!accepted) {
-    // The staircase is under their feet now and is taken with an INTERACT, so the
-    // step resolves like any other and the prompt does not come round again.
+    // The staircase is under their feet now; to take it they step off and on again, so
+    // the step resolves like any other and the prompt does not come round again.
     state.party.tile = { ...pending.tile };
     events.push(StepEvent.MOVED);
-    resolveStepEffects(state, events, { alreadyRelocated: true });
-    return { blocked: false, events, declined: true };
+    return stepped(events, resolveStepEffects(state, events, { alreadyRelocated: true }), { declined: true });
   }
 
   relocate(state, pending.target);
   events.push(StepEvent.MOVED);
-  resolveStepEffects(state, events, { alreadyRelocated: true });
-  return { blocked: false, events };
+  return stepped(events, resolveStepEffects(state, events, { alreadyRelocated: true }));
 }
 
 /**
@@ -623,51 +643,9 @@ export function resolveConfirmation(state, accepted) {
  * @spec EXPLORE-ACTION-002
  * @spec EXPLORE-ACTION-003
  * @spec EXPLORE-ACTION-004
- * @spec EXPLORE-ACTION-005
  * @spec EXPLORE-BOUND-009
- * @spec EXPLORE-MOVE-018
  */
 function partyAction(state, action, commit) {
-  if (action === PartyAction.INTERACT) {
-    const floor = currentFloor(state);
-    const tile = getTile(floor, state.party.tile.x, state.party.tile.y);
-    // An opened chest is still a chest, and offers nothing.
-    // @spec EXPLORE-MOVE-026
-    const spent = chestOpenedIn(state.openedChests, floor.id, tile) === true;
-    const targets =
-      tile.feature === TileFeature.NONE || spent
-        ? []
-        : [{ feature: tile.feature, target: tile.target, tile: { ...state.party.tile } }];
-    state.hooks.onPartyAction({ action, committed: Boolean(commit), targets });
-    // Choosing a chest is opening it: there is nothing to confirm, and nothing to undo.
-    // @spec EXPLORE-MOVE-024
-    // @spec EXPLORE-MOVE-025
-    if (tile.feature === TileFeature.CHEST && !spent) {
-      const opened = state.openedChests.get(floor.id) ?? new Set();
-      opened.add(tile.chest);
-      state.openedChests.set(floor.id, opened);
-      advance(state, 1, { committed: true });
-      const found = state.hooks.onOpenChest({ floor, number: tile.chest, table: tile.table ?? null });
-      return { targets, events: [StepEvent.CHEST_OPENED], found };
-    }
-    if (tile.feature === TileFeature.CHEST) return { targets, events: [] };
-    // A staircase is exploration's own connector, so this one is answered here, by the
-    // same question stepping onto it asks.
-    // @spec EXPLORE-MOVE-023
-    if (!commit && leadsSomewhere(tile)) {
-      state.pendingConfirmation = {
-        kind: 'STAIRS',
-        feature: tile.feature,
-        target: tile.target,
-        tile: { ...state.party.tile },
-        standing: true,
-      };
-      return { targets, events: [], confirmationRequired: state.pendingConfirmation };
-    }
-    if (commit) advance(state, 1, { committed: true });
-    return { targets, events: [] };
-  }
-
   state.hooks.onPartyAction({ action, committed: Boolean(commit) });
 
   // Camping is the camp segment's, and spends its own stretch of ticks rather than one.

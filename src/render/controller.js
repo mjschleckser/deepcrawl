@@ -18,7 +18,6 @@ import {
   takeNotices,
   PartyAction,
 } from '../sim/exploration.js';
-import { TileFeature, chestOpenedIn, getTile } from '../sim/floor.js';
 import { buildChestReportPlan, buildCampReportPlan, buildMealReportPlan } from './findsplan.js';
 import { buildCampPlan, CampControl, foodKinds, potItems } from './campplan.js';
 import { buildSpellsPlan, openingSpellsPage, SpellsControl } from './spellsplan.js';
@@ -160,20 +159,6 @@ export function setNewBuild(controller) {
   redraw(controller);
 }
 
-/**
- * What a control would do where the party stands. The use control opens a chest still
- * to be opened, and says so.
- *
- * @spec PRESENT-PROMPT-007
- */
-function controlLabels(state) {
-  const floor = currentFloor(state);
-  const tile = floor ? getTile(floor, state.party.tile.x, state.party.tile.y) : null;
-  if (tile?.feature === TileFeature.CHEST && chestOpenedIn(state.openedChests, floor.id, tile) === false) {
-    return { INTERACT_PROMPT: 'Open' };
-  }
-  return {};
-}
 
 /**
  * Put the report of an opened chest away. Everything it reports is already in the pack
@@ -189,7 +174,7 @@ function closeChestReport(controller) {
   return true;
 }
 
-const CHEST_DISMISS_KEYS = ['Enter', 'Escape', 'e', 'E', ' '];
+const CHEST_DISMISS_KEYS = ['Enter', 'Escape', ' '];
 /** @spec PRESENT-CAMP-003 */
 const CAMP_DISMISS_KEYS = ['Enter', 'Escape', 'r', 'R', ' '];
 
@@ -308,7 +293,7 @@ export function layers(controller) {
   // @spec PRESENT-ITEMS-004
   const controls = state.pendingConfirmation || screen
     ? []
-    : controlsFor(viewport, { pressedRegion: controller.pressedRegion, labels: controlLabels(state) });
+    : controlsFor(viewport, { pressedRegion: controller.pressedRegion });
   const stamp = stampFor(controller, screen ? [screen.bounds] : controls);
   // A question asked by the party screen is the view's own, about ending the campaign;
   // anything else on screen is the simulation's pending confirmation.

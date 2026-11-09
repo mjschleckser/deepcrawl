@@ -458,7 +458,7 @@ describe('the two kinds of control', () => {
 
   // @spec PRESENT-CTRL-010
   it('makes everything else a button, which keeps its panel', () => {
-    for (const region of ['MAP', 'PARTY_BAR', 'ITEMS', 'SPELL_ICON', 'CAMP_CONTROL', 'INTERACT_PROMPT']) {
+    for (const region of ['MAP', 'PARTY_BAR', 'ITEMS', 'SPELL_ICON', 'CAMP_CONTROL']) {
       expect(byRegion(region).kind).toBe(ControlKind.BUTTON);
     }
   });
@@ -549,13 +549,13 @@ describe('scaling to the screen', () => {
 
 describe('the Camp control', () => {
   // @spec PRESENT-CAMP-001
-  it('sits on the action bar between Spells and Use, and performs CAMP', () => {
+  it('sits on the action bar after Spells, performs CAMP, and there is no Use control', () => {
     const row = tapRegionsFor(phone)
-      .filter((r) => ['PARTY_BAR', 'ITEMS', 'SPELL_ICON', 'CAMP_CONTROL', 'INTERACT_PROMPT'].includes(r.region))
+      .filter((r) => ['PARTY_BAR', 'ITEMS', 'SPELL_ICON', 'CAMP_CONTROL'].includes(r.region))
       .sort((a, b) => a.x - b.x)
       .map((r) => r.region);
 
-    expect(row).toEqual(['PARTY_BAR', 'ITEMS', 'SPELL_ICON', 'CAMP_CONTROL', 'INTERACT_PROMPT']);
+    expect(row).toEqual(['PARTY_BAR', 'ITEMS', 'SPELL_ICON', 'CAMP_CONTROL']);
     expect(actionForTouch('CAMP_CONTROL')).toEqual({ partyAction: PartyAction.CAMP });
   });
 });

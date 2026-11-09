@@ -287,7 +287,7 @@ describe('the automap draw plan', () => {
     const tall = { ...view, width: 12, height: 30 };
     const overlaps = (a, b) => a.x < b.x + b.width && a.x + a.width > b.x
       && a.y < b.y + b.height && a.y + a.height > b.y;
-    const hidesUnder = new Set(['MAP', 'PARTY_BAR', 'ITEMS', 'SPELL_ICON', 'INTERACT_PROMPT']);
+    const hidesUnder = new Set(['MAP', 'PARTY_BAR', 'ITEMS', 'SPELL_ICON']);
 
     for (const screen of [
       { width: 1258, height: 1279 }, { width: 390, height: 844 }, { width: 375, height: 667 },

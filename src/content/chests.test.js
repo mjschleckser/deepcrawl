@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { TileFeature } from '../sim/floor.js';
-import { perform, PartyAction, computeSight } from '../sim/exploration.js';
+import { TileFeature, EdgeKind, FACINGS, STEP_DELTA, getEdge, contains } from '../sim/floor.js';
+import { perform, Verb, computeSight } from '../sim/exploration.js';
 import { packOf, purseOf } from '../sim/party.js';
 import { DEFAULT_ARCHETYPE } from '../sim/generation.js';
 import { createLootTable } from '../sim/loot.js';
@@ -26,15 +26,36 @@ const SEED = (() => {
   throw new Error('no seed with two chests');
 })();
 
-/** The campaign's first floor, with the party standing on one of its chests. */
+/**
+ * The campaign's first floor, with the party standing beside one of its chests and facing
+ * it, nobody else about, so the next step forward walks onto the chest.
+ */
 function onAChest(which = 0, campaign = createCampaign({ seed: SEED })) {
+  const { state } = campaign;
+  const floor = state.getFloor(state.party.floorId);
   const { x, y } = chestsOf(campaign)[which];
-  campaign.state.party.tile = { x, y };
-  computeSight(campaign.state);
-  return campaign;
+  state.roamers = [];
+  for (const facing of FACINGS) {
+    const { dx, dy } = STEP_DELTA[facing];
+    const from = { x: x - dx, y: y - dy };
+    if (!contains(floor, from.x, from.y) || getEdge(floor, from.x, from.y, facing) === EdgeKind.WALL) continue;
+    if (floor.tiles[from.y * floor.width + from.x].feature !== TileFeature.NONE) continue;
+    state.party.tile = from;
+    state.party.facing = facing;
+    computeSight(state);
+    return campaign;
+  }
+  throw new Error('no way onto the chest');
 }
 
-const open = (campaign) => perform(campaign.state, { partyAction: PartyAction.INTERACT, commit: true });
+/** Walk onto the chest the party is facing. */
+const open = (campaign) => perform(campaign.state, { verb: Verb.STEP_FORWARD });
+
+/** Step off the chest and onto it again. */
+const reopen = (campaign) => {
+  perform(campaign.state, { verb: Verb.STEP_BACKWARD });
+  return open(campaign);
+};
 
 describe('opening a chest in a campaign', () => {
   // @spec LOOT-CHEST-001
@@ -57,6 +78,7 @@ describe('opening a chest in a campaign', () => {
     const busy = onAChest(0);
     open(busy);
     expect(open(onAChest(1, busy)).found).toEqual(first);
+    // @spec EXPLORE-MOVE-024
 
     const reloaded = createCampaign({ saved: JSON.parse(encodeCampaign(createCampaign({ seed: SEED }))) });
     expect(open(onAChest(1, reloaded)).found).toEqual(first);
@@ -67,7 +89,7 @@ describe('opening a chest in a campaign', () => {
     const campaign = onAChest();
     const { found } = open(campaign);
 
-    expect(open(campaign).found).toBeUndefined();
+    expect(reopen(campaign).found).toBeUndefined();
     expect(purseOf(campaign.party)).toBe(found.gold);
   });
 });

@@ -19,7 +19,7 @@ tuning the game does not rewrite its specs.
 - [x] **EXPLORE-FLOOR-012**: When the party needs a floor the simulation does not hold, the system shall request it once from the floor provider it was given, and shall hold and save it thereafter.
 - [x] **EXPLORE-FLOOR-009**: Where a floor's depth is shown to the player, the system shall display a stored label rather than a value computed from the floor id.
 - [x] **EXPLORE-FLOOR-011**: The system shall permit a connector to exist with no return connector at its destination, so a `pit` may drop the party onto a tile offering no way back.
-- [x] **EXPLORE-FLOOR-013**: The system shall let the party step onto a tile whose feature is `chest`, and shall resolve nothing for the chest on that step.
+- [x] **EXPLORE-FLOOR-013**: The system shall let the party step onto a tile whose feature is `chest`, as onto any passable tile.
 - [D] **EXPLORE-FLOOR-010**: The system shall support tile features that alter the party's facing or position without a step (spinners, teleporters).
 
 ## The clock
@@ -51,15 +51,12 @@ tuning the game does not rewrite its specs.
 - [x] **EXPLORE-MOVE-022**: When the party steps onto a staircase that names no destination, the system shall raise no confirmation and shall resolve the step as it would any other.
 - [x] **EXPLORE-MOVE-016**: When the player confirms a staircase prompt, the system shall relocate the party to that connector's destination floor, at the tile its arrival rule resolves to on that floor.
 - [x] **EXPLORE-MOVE-017**: If the player declines a staircase prompt, then the system shall complete the step onto the staircase's tile without taking the connector, resolving that step's effects as it would any other step's.
-- [x] **EXPLORE-MOVE-018**: While the party occupies a tile whose feature is `stairsUp` or `stairsDown`, however they came to be standing on it, the system shall offer that staircase as an `INTERACT` target.
-- [x] **EXPLORE-MOVE-023**: When the player selects `INTERACT` on a staircase that names a destination, the system shall raise the staircase's confirmation; confirming shall take the connector, and declining shall leave the party's tile and the clock unchanged.
 - [x] **EXPLORE-MOVE-010**: When a relocation occurs mid-step, the system shall resolve re-stocking, sight, roaming enemy movement, and contact check against the floor and tile the party occupies after relocating.
 - [x] **EXPLORE-MOVE-011**: When a step relocates the party through a `pit`, the system shall charge the party's step cost once for the whole step.
 - [x] **EXPLORE-MOVE-012**: If a relocation lands the party on a tile whose feature is also a `pit`, then the system shall not resolve that pit until the party's next step, which it claims in place of a move.
 - [x] **EXPLORE-MOVE-013**: When the party moves between floors by any connector, the system shall preserve its facing.
-- [x] **EXPLORE-MOVE-024**: While the party occupies a tile holding an unopened chest, however they came to be standing on it, the system shall offer that chest as an `INTERACT` target.
-- [x] **EXPLORE-MOVE-025**: When the player selects `INTERACT` on an unopened chest, the system shall open it, advance the clock by one tick, hand its find to the party, and record the chest as opened.
-- [x] **EXPLORE-MOVE-026**: The system shall offer an opened chest as no `INTERACT` target.
+- [x] **EXPLORE-MOVE-024**: When a step ends on a tile holding an unopened chest, the system shall open it, advance the clock by one tick beyond the step's own, hand its find to the party, and record the chest as opened.
+- [x] **EXPLORE-MOVE-026**: When a step ends on a tile holding an opened chest, the system shall resolve it as a step onto any other tile.
 - [D] **EXPLORE-MOVE-014**: When the player selects a discovered tile on the automap, the system shall walk the party there, interrupting on an encounter.
 
 ## Sight and discovery
@@ -123,17 +120,16 @@ tuning the game does not rewrite its specs.
 
 ## Party actions
 
-- [x] **EXPLORE-ACTION-001**: The system shall accept six party actions during exploration: `PARTY`, `ITEMS`, `SPELLS`, `CAMP`, `INTERACT`, and `TOGGLE_MAP`.
+- [x] **EXPLORE-ACTION-001**: The system shall accept five party actions during exploration: `PARTY`, `ITEMS`, `SPELLS`, `CAMP`, and `TOGGLE_MAP`, and no action for using what stands on a tile.
 - [x] **EXPLORE-ACTION-002**: When the player opens a party action, the system shall not advance the clock.
-- [x] **EXPLORE-ACTION-003**: When the player commits to a party action — equipping or using an item, casting a spell, or working a dungeon feature — the system shall advance the clock by one tick, and when the player commits to `CAMP`, by the camp's ticks instead.
+- [x] **EXPLORE-ACTION-003**: When the player commits to a party action — equipping or using an item, or casting a spell — the system shall advance the clock by one tick, and when the player commits to `CAMP`, by the camp's ticks instead.
 - [x] **EXPLORE-ACTION-004**: The system shall not advance the clock for `TOGGLE_MAP` under any circumstance.
-- [x] **EXPLORE-ACTION-005**: When the player selects `INTERACT`, the system shall offer only features present on the party's current tile.
 - [x] **EXPLORE-ACTION-007**: When the player commits to `CAMP`, the system shall route it to the camp segment, and for a camp that begins shall give roaming enemies on the floor the camp's ticks to move by and check contact after.
 - [x] **EXPLORE-ACTION-006**: While the party is in combat, the system shall not accept any exploration movement verb or party action.
 
 ## Input
 
-- [x] **EXPLORE-INPUT-001**: The system shall give every movement verb and every party action — `STEP_FORWARD`, `STEP_BACKWARD`, `TURN_LEFT`, `TURN_RIGHT`, `TURN_AROUND`, `PARTY`, `ITEMS`, `SPELLS`, `CAMP`, `INTERACT`, `TOGGLE_MAP` — a keyboard path.
+- [x] **EXPLORE-INPUT-001**: The system shall give every movement verb and every party action — `STEP_FORWARD`, `STEP_BACKWARD`, `TURN_LEFT`, `TURN_RIGHT`, `TURN_AROUND`, `PARTY`, `ITEMS`, `SPELLS`, `CAMP`, `TOGGLE_MAP` — a keyboard path.
 - [x] **EXPLORE-INPUT-004**: The system shall leave every movement verb and party action achievable by touch, whether through a control of its own or through repeating another.
 - [x] **EXPLORE-INPUT-002**: The system shall produce an identical action for a given verb whether it originated from keyboard or from touch.
 - [x] **EXPLORE-INPUT-003**: The system shall not expose to the simulation which input device produced an action.
@@ -148,4 +144,4 @@ tuning the game does not rewrite its specs.
 - [x] **EXPLORE-BOUND-003**: The system shall change character hit points, status, and death state only through the party segment's operations, from exploration and from combat alike.
 - [x] **EXPLORE-BOUND-004**: The system shall not mutate a floor's dimensions, edge kinds, or tile features after generation produces them.
 - [x] **EXPLORE-BOUND-006**: When the clock advances, the system shall notify the food segment of the number of ticks elapsed, and shall pass on any hunger notice it returns.
-- [x] **EXPLORE-BOUND-009**: The system shall route each party action to the segment that owns it and shall hold no rules of its own for `PARTY`, `ITEMS`, `SPELLS`, `CAMP`, or `INTERACT`.
+- [x] **EXPLORE-BOUND-009**: The system shall route each party action to the segment that owns it and shall hold no rules of its own for `PARTY`, `ITEMS`, `SPELLS`, or `CAMP`.

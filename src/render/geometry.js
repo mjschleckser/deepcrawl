@@ -181,7 +181,6 @@ const CONTROL_LABELS = {
   SPELL_ICON: { label: 'Spells', hint: 'C', kind: ControlKind.BUTTON },
   // @spec PRESENT-CAMP-001
   CAMP_CONTROL: { label: 'Camp', hint: 'R', kind: ControlKind.BUTTON },
-  INTERACT_PROMPT: { label: 'Use', hint: 'E', kind: ControlKind.BUTTON },
   MAP: { label: 'Map', hint: 'M', kind: ControlKind.BUTTON },
 };
 
@@ -201,11 +200,12 @@ export const Anchor = { VIEWPORT: 'VIEWPORT', COLUMN: 'COLUMN' };
 
 export const TouchLayout = [
   { region: 'MAP', fx: 0.78, fy: 0.02, fw: 0.2, fh: 0.1, anchor: Anchor.VIEWPORT },
-  { region: 'PARTY_BAR', fx: 0.02, fy: 0.86, fw: 0.176, fh: 0.12, anchor: Anchor.COLUMN },
-  { region: 'ITEMS', fx: 0.216, fy: 0.86, fw: 0.176, fh: 0.12, anchor: Anchor.COLUMN },
-  { region: 'SPELL_ICON', fx: 0.412, fy: 0.86, fw: 0.176, fh: 0.12, anchor: Anchor.COLUMN },
-  { region: 'CAMP_CONTROL', fx: 0.608, fy: 0.86, fw: 0.176, fh: 0.12, anchor: Anchor.COLUMN },
-  { region: 'INTERACT_PROMPT', fx: 0.804, fy: 0.86, fw: 0.176, fh: 0.12, anchor: Anchor.COLUMN },
+  // No control for using what stands on a tile: things are used by walking into them.
+  // @spec PRESENT-CAMP-001
+  { region: 'PARTY_BAR', fx: 0.02, fy: 0.86, fw: 0.225, fh: 0.12, anchor: Anchor.COLUMN },
+  { region: 'ITEMS', fx: 0.265, fy: 0.86, fw: 0.225, fh: 0.12, anchor: Anchor.COLUMN },
+  { region: 'SPELL_ICON', fx: 0.51, fy: 0.86, fw: 0.225, fh: 0.12, anchor: Anchor.COLUMN },
+  { region: 'CAMP_CONTROL', fx: 0.755, fy: 0.86, fw: 0.225, fh: 0.12, anchor: Anchor.COLUMN },
   { region: 'TURN_LEFT', fx: 0.0, fy: 0.18, fw: 0.26, fh: 0.66, anchor: Anchor.VIEWPORT },
   { region: 'TURN_RIGHT', fx: 0.74, fy: 0.18, fw: 0.26, fh: 0.66, anchor: Anchor.VIEWPORT },
   // The whole centre walks on. Stepping back is rare beside it, so it has no zone: the

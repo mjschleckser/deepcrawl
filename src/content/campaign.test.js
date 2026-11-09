@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { EdgeKind, FACINGS, TileFeature, getEdge, getTile } from '../sim/floor.js';
+import { EdgeKind, FACINGS, STEP_DELTA, TileFeature, getEdge, getTile } from '../sim/floor.js';
 import {
   computeSight,
   perform,
@@ -103,7 +103,6 @@ describe('descending', () => {
   });
 
   // @spec EXPLORE-MOVE-016
-  // @spec EXPLORE-MOVE-023
   // @spec GEN-PLAN-010
   it('climbs back to the very staircase it came down', () => {
     const { state, plan } = booted();
@@ -114,13 +113,29 @@ describe('descending', () => {
 
     const at = entrance.tiles.findIndex((t) => t.feature === TileFeature.STAIRS_DOWN);
     const stairs = { x: at % entrance.width, y: Math.floor(at / entrance.width) };
-    state.party.tile = { ...stairs };
+    // Stand beside the stairs, facing them, and walk on.
+    const walkOnto = (floor, at) => {
+      for (const facing of FACINGS) {
+        const { dx, dy } = STEP_DELTA[facing];
+        const from = { x: at.x - dx, y: at.y - dy };
+        if (from.x < 0 || from.y < 0 || from.x >= floor.width || from.y >= floor.height) continue;
+        if (getEdge(floor, from.x, from.y, facing) === EdgeKind.WALL) continue;
+        state.party.floorId = floor.id;
+        state.party.tile = from;
+        state.party.facing = facing;
+        return perform(state, { verb: Verb.STEP_FORWARD });
+      }
+      throw new Error('no way onto the stairs');
+    };
 
-    perform(state, { partyAction: PartyAction.INTERACT });
+    walkOnto(entrance, stairs);
     resolveConfirmation(state, true);
     expect(partyPosition(state).floorId).toBe(below);
 
-    perform(state, { partyAction: PartyAction.INTERACT });
+    // Arriving on the stairs back up, the party steps off them and on again.
+    const lower = state.getFloor(below);
+    const arrived = { ...partyPosition(state).tile };
+    walkOnto(lower, arrived);
     resolveConfirmation(state, true);
     expect(partyPosition(state).floorId).toBe(entrance.id);
     expect(partyPosition(state).tile).toEqual(stairs);
