@@ -17,7 +17,7 @@ are fed into.
 - [x] **ENEMY-ROSTER-004**: The system shall hold the goblin, the goblin archer, and the goblin mage in the first floor's roster, as a melee enemy, a ranged enemy, and a caster respectively.
 - [x] **ENEMY-ROSTER-005**: The system shall read every enemy from its own authored file, and shall hold no behaviour particular to any named enemy.
 - [x] **ENEMY-ROSTER-007**: The system shall give every enemy an authored armour, reducing what every blow against it is worth.
-- [ ] **ENEMY-ROSTER-008**: The system shall set an ordinary enemy's pot value at about twelve for each floor tier of its depth, and a dangerous one's at up to twice that.
+- [ ] **ENEMY-ROSTER-008**: The system shall set an ordinary enemy's pot value at about twenty-four for each floor tier of its depth, and a dangerous one's at up to twice that.
 - [x] **ENEMY-ROSTER-012**: The system shall carry on every roster entry the loot table it drops from when defeated, or none.
 
 ## Bands
@@ -58,7 +58,7 @@ are fed into.
 
 ## Behaviour in a fight
 
-- [x] **ENEMY-FIGHT-005**: When an enemy selects a target, the system shall draw it at random from every character able to act.
+- [ ] **ENEMY-FIGHT-005**: When an enemy selects a target, the system shall draw it at random from every character able to act, each weighted by their weight as a target as the party segment reports it.
 - [x] **ENEMY-FIGHT-006**: The system shall draw an enemy's target from the encounter's own seeded generator, so that an encounter replayed from the same seed picks the same targets.
 - [x] **ENEMY-FIGHT-007**: The system shall never let an enemy select a target that is unable to act.
 

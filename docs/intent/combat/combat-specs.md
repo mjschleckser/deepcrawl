@@ -45,8 +45,11 @@ are fed into.
 ## Resolving an attack
 
 - [x] **COMBAT-ATTACK-014**: The system shall land every attack on its target, with no miss.
-- [x] **COMBAT-ATTACK-015**: The system shall deal, for every attack, the attacker's base damage less the target's armour, rounded to the nearest whole point, with no multiplier.
+- [ ] **COMBAT-ATTACK-015**: The system shall deal, for every attack, the attacker's base damage — multiplied by Backstab where it applies — less the target's armour, rounded to the nearest whole point, with no other multiplier.
 - [x] **COMBAT-ATTACK-016**: The system shall draw no random number when resolving an attack, so that the same attacker striking the same target deals the same damage every time, on either side alike.
+- [ ] **COMBAT-ATTACK-017**: When a thief makes a weapon attack on an enemy that has not yet acted in the encounter, the system shall multiply the attack's base damage by the thief's Backstab multiplier before armour is subtracted.
+- [ ] **COMBAT-ATTACK-018**: The system shall apply Backstab to no spell, item, or attack on an enemy that has taken an action in the encounter.
+- [ ] **COMBAT-ATTACK-019**: The system shall record, for every enemy in an encounter, whether it has yet taken an action, and shall report an attack's damage by the same reckoning the attack uses, Backstab included.
 - [x] **COMBAT-ATTACK-005**: The system shall deal at least one twentieth of an attack's base damage, rounded up and never below one, whatever the target's armour.
 - [x] **COMBAT-ATTACK-013**: The system shall report the damage one combatant's attack on another will deal, by the calculation that resolving that attack uses, without drawing a random number or changing the encounter.
 
@@ -105,6 +108,7 @@ are fed into.
 - [x] **COMBAT-END-005**: When an encounter ends in defeat, the system shall report the defeat and the floor and tile the party fell on, and shall not alter the party further.
 - [x] **COMBAT-END-006**: When an encounter ends in escape or defeat, the system shall report no experience pot.
 - [x] **COMBAT-END-007**: When an encounter ends in victory, the system shall report with the pot the gold and every item the defeated enemies yielded.
+- [ ] **COMBAT-END-008**: The system shall count a class skill as used in an encounter by the character who holds it when it takes effect there: Ironclad when an enemy's attack strikes the fighter, Backstab when it multiplies an attack, Overchannel when a cast is paid in hit points, Intercession when it spends a charge.
 
 ## Deferred
 

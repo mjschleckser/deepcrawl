@@ -106,8 +106,10 @@ entirely, down to the floor every blow is held to.
 ### What an enemy is worth
 
 `potValue` is authored, not computed, and the guideline is that an **ordinary enemy of
-floor tier N is worth about 12 × N**, with a dangerous one worth up to twice that. A
-floor-one goblin at 14, an archer at 18 and a mage at 24 are that rule applied.
+floor tier N is worth about 24 × N**, with a dangerous one worth up to twice that. A
+floor-one goblin at 28, an archer at 36 and a mage at 48 are that rule applied. The
+figure is set for a game in which every skill advances at one rate, so a pot reaches a
+character's skill undiluted by any class multiplier.
 
 The pot scaling with the floor is the other half of the rank curve. A rank costs more
 than the last one did, and a deeper enemy is worth more than a shallower one, so
