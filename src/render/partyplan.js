@@ -10,6 +10,18 @@ import {
 } from '../sim/party.js';
 import { Slot } from '../sim/items.js';
 import { MIN_TAP_PX, uiScale, contentColumn, stampRoom } from './geometry.js';
+import { hungerStage, HungerStage } from '../sim/food.js';
+import { buffText } from './campplan.js';
+
+/** How each stage is named on a character's page. */
+const STAGE_NAMES = {
+  [HungerStage.FED]: 'Fed',
+  [HungerStage.HUNGRY]: 'Hungry',
+  [HungerStage.VERY_HUNGRY]: 'Very hungry',
+  [HungerStage.FAMISHED]: 'Famished',
+  [HungerStage.RAVENOUS]: 'Ravenous',
+  [HungerStage.STARVING]: 'Starving',
+};
 
 /** What a control on the page does. None of them changes a character. */
 export const PartyControl = {
@@ -118,7 +130,16 @@ export function buildPartyPlan(party, viewport, { page = 0 } = {}) {
   };
   y += line;
   health.bar = { x: inner.x, y, width: inner.width, height: 10 * scale };
-  y += 10 * scale + gap;
+  y += 10 * scale + gap / 2;
+
+  // How hungry they are, and what their last meal still does for them.
+  // @spec PRESENT-HUNGER-002
+  const hunger = {
+    stage: STAGE_NAMES[hungerStage(c)],
+    buffs: (c.buffs ?? []).map(buffText),
+    box: { x: inner.x, y, width: inner.width, height: line },
+  };
+  y += line + gap / 2;
 
   // The attributes, two to a row.
   const half = (inner.width - gap) / 2;
@@ -200,6 +221,7 @@ export function buildPartyPlan(party, viewport, { page = 0 } = {}) {
     bounds,
     heading,
     health,
+    hunger,
     attributes,
     skills,
     equipment,

@@ -1,0 +1,11 @@
+{
+  "id": "ironcap",
+  "name": "Ironcap",
+  "kind": "FOOD",
+  "rarity": "UNCOMMON",
+  "nourish": 150,
+  "heal": 4,
+  "traits": {
+    "tough": 3
+  }
+}

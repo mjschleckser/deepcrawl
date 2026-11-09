@@ -1,0 +1,11 @@
+{
+  "id": "cave_moss",
+  "name": "Cave Moss",
+  "kind": "FOOD",
+  "nourish": 200,
+  "heal": 6,
+  "traits": {
+    "hale": 1,
+    "warming": 1
+  }
+}

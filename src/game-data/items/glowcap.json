@@ -1,0 +1,11 @@
+{
+  "id": "glowcap",
+  "name": "Glowcap",
+  "kind": "FOOD",
+  "rarity": "UNCOMMON",
+  "nourish": 150,
+  "heal": 2,
+  "traits": {
+    "arcane": 3
+  }
+}

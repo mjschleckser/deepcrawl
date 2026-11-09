@@ -1,0 +1,12 @@
+{
+  "id": "smoked_sausage",
+  "name": "Smoked Sausage",
+  "kind": "FOOD",
+  "rarity": "UNCOMMON",
+  "nourish": 700,
+  "heal": 6,
+  "traits": {
+    "hearty": 2,
+    "warming": 2
+  }
+}

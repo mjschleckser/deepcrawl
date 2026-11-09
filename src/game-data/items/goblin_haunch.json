@@ -1,0 +1,10 @@
+{
+  "id": "goblin_haunch",
+  "name": "Goblin Haunch",
+  "kind": "FOOD",
+  "nourish": 450,
+  "heal": 8,
+  "traits": {
+    "hearty": 3
+  }
+}

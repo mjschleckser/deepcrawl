@@ -13,6 +13,7 @@ import {
 import { mergeFinds, rollLoot } from './loot.js';
 import { armourOf, baseDamageWith } from './items.js';
 import { makeRng } from './rng.js';
+import { dexterityBonus } from './food.js';
 import {
   CastWhere, SpellEffect, SpellTarget, castOnAlly, castRefusal, healPreview, payForCast, spellMagnitude,
 } from './magic.js';
@@ -174,7 +175,9 @@ export function beginEncounter({ party, enemies, rng, origin, lootTables = {}, s
  * @spec COMBAT-ENEMY-006
  */
 function combatants(state) {
-  const speed = (c) => c.attributes[Attribute.DEXTERITY];
+  // A nimble meal quickens a character's turns.
+  // @spec COMBAT-TIME-016
+  const speed = (c) => c.attributes[Attribute.DEXTERITY] + dexterityBonus(c);
   const party = roster(state.party)
     .filter((c) => c.condition === Condition.OK)
     .map((c, index) => ({ id: c.id, side: 'PARTY', order: index, dexterity: speed(c) }));

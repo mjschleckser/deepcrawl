@@ -191,8 +191,14 @@ describe('who may hold what', () => {
 
 describe('the vocabulary an item is built from', () => {
   // @spec ITEM-DEF-002
-  it('offers four kinds and no others', () => {
-    expect(Object.keys(ItemKind).sort()).toEqual(['ARMOUR', 'CONSUMABLE', 'SHIELD', 'WEAPON']);
+  it('offers five kinds and no others', () => {
+    expect(Object.keys(ItemKind).sort()).toEqual(['ARMOUR', 'CONSUMABLE', 'FOOD', 'SHIELD', 'WEAPON']);
+  });
+
+  // @spec ITEM-WIELD-004
+  it('fits food to no slot, so it can never be equipped', () => {
+    const ration = createItem({ id: 'r', name: 'R', kind: ItemKind.FOOD, nourish: 600 });
+    for (const slot of Object.values(Slot)) expect(fitsSlot(ration, slot)).toBe(false);
   });
 
   // @spec ITEM-DEF-012

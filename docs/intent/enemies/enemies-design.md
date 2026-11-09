@@ -90,7 +90,7 @@ The first floor's inhabitants, and the shape every later roster follows.
 | Enemy | Role | Notes |
 |---|---|---|
 | **Goblin** | melee | the ordinary body in a warband; weak alone, a problem in numbers |
-| **Goblin Archer** | ranged | quick and accurate, and no tougher than the bodies around it |
+| **Goblin Archer** | ranged | quick, and no tougher than the bodies around it; drops from a table of its own that carries spit-roast rat |
 | **Goblin Mage** | caster | frail, dangerous, and worth the most; drops from a table of its own that carries a tome |
 
 The archer and the mage are what make a goblin band a question of priorities rather

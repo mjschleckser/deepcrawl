@@ -1,4 +1,5 @@
 import { Effect, fitsSlot, isConsumable, wieldableBy } from './items.js';
+import { FULLNESS_MAX } from './food.js';
 /**
  * The party: characters, what they can do, and what has happened to them.
  *
@@ -256,6 +257,13 @@ export function createCharacter({
     // @spec MAGIC-SLOT-006
     learnedSpells: [],
     spentSlots: {},
+    // How many ticks of food are in them, the buffs their last meal left, and the hit
+    // points a hale buff lent. Starts full: nobody sets off hungry.
+    // @spec FOOD-HUNGER-001
+    // @spec PARTY-SAVE-005
+    fullness: FULLNESS_MAX,
+    buffs: [],
+    hale: 0,
   };
 }
 
@@ -369,6 +377,19 @@ export function applyDamage(party, id, amount) {
 
   c.hitPoints = Math.max(0, c.hitPoints - amount);
   if (c.hitPoints === 0) c.condition = Condition.UNCONSCIOUS;
+  return true;
+}
+
+/**
+ * Take hit points away without ever taking the last one, and without changing the
+ * condition: the toll of starving, which weakens but never fells.
+ *
+ * @spec FOOD-HUNGER-005
+ */
+export function drainHitPoints(party, id, amount) {
+  const c = character(party, id);
+  if (!c || c.condition !== Condition.OK) return false;
+  c.hitPoints = Math.max(Math.min(1, c.hitPoints), c.hitPoints - amount);
   return true;
 }
 
@@ -644,6 +665,7 @@ export function serializeParty(party) {
       ...c, attributes: { ...c.attributes }, ranks: { ...c.ranks }, skillExperience: { ...c.skillExperience },
       equipment: { ...c.equipment }, trainable: [...c.trainable],
       learnedSpells: [...(c.learnedSpells ?? [])], spentSlots: { ...(c.spentSlots ?? {}) },
+      buffs: (c.buffs ?? []).map((b) => ({ ...b })),
     })),
     pack: packOf(party).map((item) => ({ ...item })),
   };
@@ -657,6 +679,7 @@ export function restoreParty(saved) {
   return {
     members: saved.members.map((c) => ({
       ...c, learnedSpells: [...(c.learnedSpells ?? [])], spentSlots: { ...(c.spentSlots ?? {}) },
+      fullness: c.fullness ?? FULLNESS_MAX, buffs: (c.buffs ?? []).map((b) => ({ ...b })), hale: c.hale ?? 0,
     })),
     pack: (saved.pack ?? []).map((item) => ({ ...item })),
     purse: saved.purse ?? 0,

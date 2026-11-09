@@ -9,7 +9,7 @@ are fed into.
 ## The fight's time
 
 - [x] **COMBAT-TIME-001**: The system shall give every combatant a readiness that rises by their Dexterity for each beat of the fight's time.
-- [ ] **COMBAT-TIME-016**: The system shall raise a character's Dexterity for readiness by their nimble buff, as the food segment sets it.
+- [x] **COMBAT-TIME-016**: The system shall raise a character's Dexterity for readiness by their nimble buff, as the food segment sets it.
 - [x] **COMBAT-TIME-002**: The system shall raise a combatant's readiness by at least one for each beat, however low their Dexterity.
 - [x] **COMBAT-TIME-003**: While no combatant is ready, the system shall advance the fight's time one beat at a time until at least one combatant is ready.
 - [x] **COMBAT-TIME-004**: The system shall not advance the fight's time while a combatant's action is awaiting the player.

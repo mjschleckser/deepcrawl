@@ -1,0 +1,7 @@
+{
+  "id": "ration",
+  "name": "Ration",
+  "kind": "FOOD",
+  "nourish": 600,
+  "heal": 2
+}

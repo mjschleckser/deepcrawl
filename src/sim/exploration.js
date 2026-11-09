@@ -110,6 +110,8 @@ export function createExploration({
     stepCost,
     combatActive: false,
     menuOpen: false,
+    // What the clock's hooks had to say, waiting to be shown.
+    notices: [],
     discoveredEdges: new Set(),
     discoveredTiles: new Map(),
     // floorId -> the numbers of the chests opened there. The floor never changes, so
@@ -310,8 +312,23 @@ function advance(state, n, { committed = false } = {}) {
   // one, such as putting on armour, costs its tick like anything else.
   if (state.combatActive || (state.menuOpen && !committed) || n <= 0) return 0;
   state._advanceTicks(n);
-  state.hooks.onTick(n);
+  // Hunger runs on the clock, and says who it made hungrier; those notices are kept for
+  // whatever draws the dungeon to take.
+  // @spec EXPLORE-BOUND-006
+  const notices = state.hooks.onTick(n);
+  if (Array.isArray(notices) && notices.length > 0) state.notices.push(...notices);
   return n;
+}
+
+/**
+ * The notices the clock has gathered since they were last taken, handed over once.
+ *
+ * @spec EXPLORE-BOUND-006
+ */
+export function takeNotices(state) {
+  const taken = state.notices;
+  state.notices = [];
+  return taken;
 }
 
 /**

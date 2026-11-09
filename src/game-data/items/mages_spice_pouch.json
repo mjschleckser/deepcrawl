@@ -1,0 +1,12 @@
+{
+  "id": "mages_spice_pouch",
+  "name": "Mage's Spice Pouch",
+  "kind": "FOOD",
+  "rarity": "RARE",
+  "nourish": 0,
+  "heal": 0,
+  "traits": {
+    "arcane": 4,
+    "warming": 2
+  }
+}

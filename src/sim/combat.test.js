@@ -883,3 +883,21 @@ describe('casting in a fight', () => {
     expect(takeAction(back, 'isolde', cast('magic_missile', 'o1')).damage).toBe(7);
   });
 });
+
+describe('a meal in a fight', () => {
+  // @spec COMBAT-TIME-016
+  it('fills a nimble eater\'s bar faster, by their Dexterity raised', () => {
+    const state = encounter({
+      members: [hero('quick', { attributes: { DEXTERITY: 10 } }), hero('slow', { attributes: { DEXTERITY: 10 } })],
+      enemies: [orc('o1', { attributes: { DEXTERITY: 1 } })],
+    });
+    character(state.party, 'quick').buffs = [{ trait: 'nimble', points: 8 }];
+    state.readiness.set('quick', 0);
+    state.readiness.set('slow', 0);
+
+    advanceBeats(state, 1);
+
+    expect(readinessOf(state, 'quick')).toBe(14);
+    expect(readinessOf(state, 'slow')).toBe(10);
+  });
+});

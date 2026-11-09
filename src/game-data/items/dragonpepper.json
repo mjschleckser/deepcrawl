@@ -1,0 +1,12 @@
+{
+  "id": "dragonpepper",
+  "name": "Dragonpepper",
+  "kind": "FOOD",
+  "rarity": "RARE",
+  "nourish": 50,
+  "heal": 0,
+  "traits": {
+    "hearty": 4,
+    "warming": 3
+  }
+}

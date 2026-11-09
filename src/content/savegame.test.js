@@ -10,6 +10,7 @@ import {
 } from '../render/fight.js';
 import { createCampaign } from './campaign.js';
 import { itemById } from './items.js';
+import { enemyDefinitions } from './combatants.js';
 import {
   SAVE_FORMAT, SAVE_KEY, SAVING, WRITE_DELAY_MS, createAutosave, encodeCampaign, migrate, openCampaign,
   startCampaign,
@@ -324,8 +325,9 @@ describe('resuming', () => {
 
     const members = migrated.exploration.roamers.flatMap((r) => r.band.members);
     expect(members.length).toBeGreaterThan(0);
-    for (const member of members) expect(member.loot).toBe('goblin');
-    expect(migrated.encounter.enemies.members.map((e) => e.loot)).toEqual(['goblin', null]);
+    const roster = enemyDefinitions();
+    for (const member of members) expect(member.loot).toBe(roster[member.id]?.loot ?? roster[member.id.replace(/-\d+$/, '')].loot);
+    expect(migrated.encounter.enemies.members.map((e) => e.loot)).toEqual(['goblin_archer', null]);
   });
 
   // @spec SAVE-READ-010
@@ -409,7 +411,8 @@ describe('resuming', () => {
     const resumed = createCampaign({ saved: JSON.parse(encodeCampaign(campaign)) });
 
     expect(packOf(resumed.party).map((i) => i.id)).toEqual(packOf(campaign.party).map((i) => i.id));
-    expect(packOf(resumed.party)).toHaveLength(1);
+    // Six rations to start, and the sword taken off.
+    expect(packOf(resumed.party)).toHaveLength(7);
   });
 
   // @spec SAVE-READ-006

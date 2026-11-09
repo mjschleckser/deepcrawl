@@ -1,0 +1,10 @@
+{
+  "id": "fleetroot",
+  "name": "Fleetroot",
+  "kind": "FOOD",
+  "nourish": 150,
+  "heal": 3,
+  "traits": {
+    "nimble": 2
+  }
+}

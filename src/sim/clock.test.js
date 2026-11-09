@@ -5,6 +5,7 @@ import {
   perform,
   tickCount,
   advanceForCamp,
+  takeNotices,
   setCombatActive,
   setMenuOpen,
   Verb,
@@ -122,6 +123,17 @@ describe('the clock', () => {
 
     expect(onTick).toHaveBeenNthCalledWith(1, 1);
     expect(onTick).toHaveBeenNthCalledWith(2, 6);
+  });
+
+  // @spec EXPLORE-BOUND-006
+  it('passes on the hunger notices the food segment hands back, once', () => {
+    const notice = { id: 'bram', name: 'Bram', stage: 'HUNGRY' };
+    const state = explorationAt({ x: 1, y: 1 }, { hooks: { onTick: () => [notice] } });
+
+    perform(state, { verb: Verb.STEP_FORWARD });
+
+    expect(takeNotices(state)).toEqual([notice]);
+    expect(takeNotices(state)).toEqual([]);
   });
 });
 

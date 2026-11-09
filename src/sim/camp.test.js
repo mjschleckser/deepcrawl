@@ -7,6 +7,9 @@ import {
   createParty, createCharacter, addCharacter, character, applyDamage, CharacterClass, Condition,
 } from './party.js';
 import { spendSlot } from './magic.js';
+import { createItem, ItemKind } from './items.js';
+import { makeRng } from './rng.js';
+import { packOf } from './party.js';
 import { camp, enemyInSight, CampOutcome, CAMP_TICKS } from './camp.js';
 
 function party() {
@@ -61,7 +64,7 @@ describe('a camp', () => {
     const p = party();
     const { state } = scene({ hooks: { onRoamersMove } });
 
-    expect(camp(state, p)).toEqual({ outcome: CampOutcome.RESTED });
+    expect(camp(state, p)).toEqual({ outcome: CampOutcome.RESTED, foraged: [] });
 
     expect(tickCount(state)).toBe(CAMP_TICKS);
     expect(onRoamersMove).toHaveBeenCalledWith({ floorId: 'f1', ticks: CAMP_TICKS });
@@ -118,5 +121,48 @@ describe('camping from exploration', () => {
     expect(onCamp).toHaveBeenCalledTimes(1);
     expect(result.camp).toEqual({ outcome: CampOutcome.RESTED });
     expect(tickCount(state)).toBe(0);
+  });
+});
+
+describe('food at camp', () => {
+  const leaf = createItem({ id: 'bitterleaf', name: 'Bitterleaf', kind: ItemKind.FOOD, nourish: 100, heal: 10, traits: { tough: 2 } });
+
+  // @spec CAMP-FOOD-001
+  // @spec CAMP-FOOD-002
+  it('clears meal buffs and forages when the camp is not broken', () => {
+    const p = party();
+    for (const c of p.members) c.buffs = [{ trait: 'hearty', points: 3 }];
+    const { state } = scene();
+
+    const result = camp(state, p, { forageList: [leaf], rng: makeRng(2) });
+
+    expect(result.outcome).toBe(CampOutcome.RESTED);
+    for (const c of p.members) expect(c.buffs).toEqual([]);
+    expect(result.foraged.map((i) => i.id)).toEqual(['bitterleaf']);
+    expect(packOf(p).map((i) => i.id)).toEqual(['bitterleaf']);
+  });
+
+  // @spec CAMP-FOOD-001
+  it('keeps the buffs, and finds nothing, when the camp is broken', () => {
+    const p = party();
+    for (const c of p.members) c.buffs = [{ trait: 'hearty', points: 3 }];
+    let state;
+    ({ state } = scene({ hooks: { onContactCheck: () => setCombatActive(state, true) } }));
+
+    camp(state, p, { forageList: [leaf], rng: makeRng(2) });
+
+    for (const c of p.members) expect(c.buffs).toHaveLength(1);
+    expect(packOf(p)).toEqual([]);
+  });
+
+  // @spec CAMP-HUNGER-001
+  it('spends the camp\'s ticks on hunger as the party rests', () => {
+    const p = party();
+    let state;
+    ({ state } = scene({ hooks: { onTick: (n) => { for (const c of p.members) c.fullness -= n; return []; } } }));
+
+    camp(state, p);
+
+    for (const c of p.members) expect(c.fullness).toBe(2000 - CAMP_TICKS);
   });
 });

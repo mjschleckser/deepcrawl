@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildItem, itemDefinitions, itemById } from './items.js';
+import { buildItem, itemDefinitions, itemById, forageList } from './items.js';
 import { ItemKind, Slot, Rarity } from '../sim/items.js';
 import { Attribute, CharacterClass, Skill } from '../sim/party.js';
 
@@ -143,5 +143,29 @@ describe('the wand', () => {
     expect(() => buildItem('robe.json', {
       id: 'r', name: 'R', kind: 'ARMOUR', slot: 'BODY', skill: 'MAGIC', armour: 1,
     })).toThrow(/robe\.json: skill "MAGIC"/);
+  });
+});
+
+describe('the authored food', () => {
+  // @spec FOOD-ITEM-002
+  it('holds the twelve ingredients, as food with what they add to the pot', () => {
+    const ids = ['ration', 'goblin_haunch', 'spit_roast_rat', 'glowcap', 'mages_spice_pouch', 'bitterleaf',
+      'fleetroot', 'cave_moss', 'ironcap', 'smoked_sausage', 'honeycomb', 'dragonpepper'];
+    for (const id of ids) expect(itemById(id)?.kind).toBe(ItemKind.FOOD);
+    expect(itemById('goblin_haunch')).toMatchObject({ nourish: 450, heal: 8, traits: { hearty: 3 } });
+    expect(itemById('ration').traits).toEqual({});
+  });
+
+  // @spec FOOD-ITEM-001
+  it('refuses a trait or an amount it does not recognise, and says which', () => {
+    expect(() => buildItem('f.json', { id: 'f', name: 'F', kind: 'FOOD', nourish: 1, traits: { spicy: 2 } }))
+      .toThrow(/f\.json: trait "spicy"/);
+    expect(() => buildItem('g.json', { id: 'g', name: 'G', kind: 'FOOD', nourish: -5 }))
+      .toThrow(/g\.json: nourish -5/);
+  });
+
+  // @spec FOOD-FORAGE-001
+  it('reads the forage list as items', () => {
+    expect(forageList().map((item) => item.id)).toEqual(['bitterleaf', 'fleetroot', 'cave_moss', 'ironcap', 'glowcap']);
   });
 });

@@ -134,15 +134,14 @@ describe('the Spells screen', () => {
 });
 
 describe('camping', () => {
-  // @spec PRESENT-CAMP-002
-  it('reports a rest over the view', () => {
+  // @spec PRESENT-CAMP-004
+  it('restores slots and opens the camp screen on a rest', () => {
     const { controller, party, state } = harness();
     character(party, 'wren').spentSlots = { 1: 2 };
 
     pressKey(controller, 'r');
 
-    expect(plan(controller, 'chest').title).toBe('Camp');
-    expect(plan(controller, 'chest').find.items[0].text).toBe('The party rests. Spell slots are restored.');
+    expect(plan(controller, 'camp').title.position).toBe('The party rests. Spell slots are restored.');
     expect(character(party, 'wren').spentSlots).toEqual({});
     expect(tickCount(state)).toBeGreaterThan(0);
   });
@@ -159,7 +158,7 @@ describe('camping', () => {
 
   // @spec PRESENT-CAMP-003
   it('holds the input until it is put away, then changes nothing', () => {
-    const { controller, state } = harness();
+    const { controller, state } = harness({ roamers: [{ id: 'r1', floorId: 'f1', x: 6, y: 4, band: { members: [] } }] });
     pressKey(controller, 'r');
     const ticks = tickCount(state);
 

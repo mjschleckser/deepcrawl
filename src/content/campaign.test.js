@@ -12,6 +12,7 @@ import {
 } from '../sim/exploration.js';
 import { createController, pressKey, layers } from '../render/controller.js';
 import { createCampaign } from './campaign.js';
+import { packOf, roster } from '../sim/party.js';
 
 const viewport = { width: 800, height: 600 };
 
@@ -147,5 +148,14 @@ describe('descending', () => {
 
     const floor = state.getFloor(pit.toFloorId);
     expect(floor.rooms.length).toBeGreaterThan(0);
+  });
+});
+
+describe('the starting supply', () => {
+  // @spec FOOD-ITEM-003
+  it('starts the campaign with six rations in the pack, and everybody full', () => {
+    const campaign = createCampaign({ seed: 3 });
+    expect(packOf(campaign.party).filter((item) => item.id === 'ration')).toHaveLength(6);
+    for (const c of roster(campaign.party)) expect(c.fullness).toBe(2000);
   });
 });

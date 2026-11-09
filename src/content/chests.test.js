@@ -40,12 +40,13 @@ describe('opening a chest in a campaign', () => {
   // @spec LOOT-CHEST-001
   it('rolls the floor\'s chest table and puts the find in the purse and the pack', () => {
     const campaign = onAChest();
+    const carried = packOf(campaign.party).map((i) => i.id);
 
     const { found } = open(campaign);
 
     expect(found.gold).toBeGreaterThan(0);
     expect(purseOf(campaign.party)).toBe(found.gold);
-    expect(packOf(campaign.party).map((i) => i.id)).toEqual(found.items.map((i) => i.id));
+    expect(packOf(campaign.party).map((i) => i.id)).toEqual([...carried, ...found.items.map((i) => i.id)]);
   });
 
   // @spec LOOT-CHEST-002

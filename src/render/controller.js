@@ -15,10 +15,12 @@ import {
   currentFloor,
   resolveConfirmation,
   setMenuOpen,
+  takeNotices,
   PartyAction,
 } from '../sim/exploration.js';
 import { TileFeature, chestOpenedIn, getTile } from '../sim/floor.js';
-import { buildChestReportPlan, buildCampReportPlan } from './findsplan.js';
+import { buildChestReportPlan, buildCampReportPlan, buildMealReportPlan } from './findsplan.js';
+import { buildCampPlan, CampControl, foodKinds, potItems } from './campplan.js';
 import { buildSpellsPlan, openingSpellsPage, SpellsControl } from './spellsplan.js';
 import { CastWhere, castOnAlly, readTome, tomeSpell } from '../sim/magic.js';
 import { character, equip, roster, takeOff, useItem } from '../sim/party.js';
@@ -28,7 +30,7 @@ import {
   buildItemsPlan, clampRow, itemRows, rowActs, ItemsControl,
 } from './itemsplan.js';
 import { Outcome } from '../sim/combat.js';
-import { hitTest, controlsFor, uiScale, versionStamp } from './geometry.js';
+import { hitTest, controlsFor, uiScale, versionStamp, contentColumn, tapRegionsFor } from './geometry.js';
 import { APP_VERSION } from '../version.js';
 import { buildPromptPlan } from './promptplan.js';
 import { buildViewPlan } from './viewplan.js';
@@ -80,6 +82,13 @@ export function createController({ state, viewport, onDraw, campaign = null, onB
     chestFind: null,
     // How the last camp ended, while its report is up.
     campReport: null,
+    // The camp screen while it is open: what is in the pot, the highlighted row, and
+    // what was foraged.
+    campScreen: null,
+    // The last meal, while its report is up.
+    mealReport: null,
+    // Who just grew hungrier, until the player next acts.
+    hungerNotice: null,
     // The Spells screen, when open: whose page, which row, and a spell awaiting a target.
     // @spec PRESENT-SPELLS-003
     spellsScreen: null,
@@ -114,6 +123,9 @@ export function replaceCampaign(controller, campaign) {
   controller.itemsScreen = null;
   controller.spellsScreen = null;
   controller.campReport = null;
+  controller.campScreen = null;
+  controller.mealReport = null;
+  controller.hungerNotice = null;
   controller.mapMode = MapMode.EXPANDED;
   syncFight(controller);
   redraw(controller);
@@ -170,6 +182,7 @@ function controlLabels(state) {
 function closeChestReport(controller) {
   controller.chestFind = null;
   controller.campReport = null;
+  controller.mealReport = null;
   redraw(controller);
   return true;
 }
@@ -264,6 +277,7 @@ export function layers(controller) {
       { name: 'party', plan: null },
       { name: 'items', plan: itemsOverFight },
       { name: 'spells', plan: null },
+      { name: 'camp', plan: null },
       { name: 'chest', plan: null },
       {
         name: 'hud',
@@ -281,9 +295,11 @@ export function layers(controller) {
   const sheet = partyPlan(controller);
   const items = itemsPlan(controller);
   const spellsScreen = spellsPlan(controller);
+  const campScreen = campPlan(controller);
   const report = buildChestReportPlan(controller.chestFind, viewport)
-    ?? buildCampReportPlan(controller.campReport, viewport);
-  const screen = sheet ?? items ?? spellsScreen ?? report;
+    ?? buildCampReportPlan(controller.campReport, viewport)
+    ?? buildMealReportPlan(controller.mealReport, viewport);
+  const screen = sheet ?? items ?? spellsScreen ?? campScreen ?? report;
   // Nothing to walk toward while a prompt stands or a screen is up, so the walking
   // controls and the action bar go.
   // @spec PRESENT-PARTY-006
@@ -309,6 +325,7 @@ export function layers(controller) {
     { name: 'party', plan: sheet },
     { name: 'items', plan: items },
     { name: 'spells', plan: spellsScreen },
+    { name: 'camp', plan: campScreen },
     { name: 'chest', plan: report },
     // The prompt is read from the simulation's pending confirmation, so one can never
     // be shown for a confirmation that is not actually pending.
@@ -322,9 +339,131 @@ export function layers(controller) {
         controls,
         stamp,
         note: noteFor(controller, stamp),
+        // @spec PRESENT-HUNGER-001
+        notice: noticeFor(controller),
       },
     },
   ];
+}
+
+/** How a stage reads in a sentence about somebody. */
+const STAGE_WORDS = {
+  HUNGRY: 'hungry', VERY_HUNGRY: 'very hungry', FAMISHED: 'famished', RAVENOUS: 'ravenous', STARVING: 'starving',
+};
+
+/**
+ * Who grew hungrier, in a sentence a stage at a time: *Bram, Tam are hungry.*
+ *
+ * @spec PRESENT-HUNGER-001
+ */
+function hungerSentence(notices) {
+  const byStage = new Map();
+  for (const n of notices) byStage.set(n.stage, [...(byStage.get(n.stage) ?? []), n.name]);
+  return [...byStage].map(([stage, names]) =>
+    `${names.join(', ')} ${names.length > 1 ? 'are' : 'is'} ${STAGE_WORDS[stage] ?? stage.toLowerCase()}.`).join(' ');
+}
+
+/** The hunger notice across the top of the view, clear of the Map control. */
+function noticeFor(controller) {
+  if (!controller.hungerNotice) return null;
+  const { viewport } = controller;
+  const scale = uiScale(viewport);
+  const column = contentColumn(viewport);
+  const map = tapRegionsFor(viewport).find((r) => r.region === 'MAP');
+  return {
+    text: controller.hungerNotice,
+    scale,
+    box: { x: column.x + 8 * scale, y: map.y + map.height + 6 * scale, width: column.width - 16 * scale, height: 24 * scale },
+  };
+}
+
+/** The camp screen's plan, or nothing while it is shut. */
+function campPlan(controller) {
+  const party = partyOf(controller);
+  if (!party || !controller.campScreen) return null;
+  const { pot, selected, foraged } = controller.campScreen;
+  return buildCampPlan(party, controller.viewport, { pot, selected, foraged });
+}
+
+/**
+ * Put one more of a food in the pot, or one fewer; pressing a row past all of it goes
+ * back to none.
+ *
+ * @spec PRESENT-CAMP-005
+ * @spec PRESENT-CAMP-006
+ */
+function changePot(controller, index, by, { wrap = false } = {}) {
+  const party = partyOf(controller);
+  const kind = foodKinds(party)[index];
+  if (!kind) return false;
+  const screen = controller.campScreen;
+  const now = screen.pot[kind.item.id] ?? 0;
+  let next = now + by;
+  if (next > kind.carried) next = wrap ? 0 : kind.carried;
+  if (next < 0) next = 0;
+  screen.selected = index;
+  if (next === now) return false;
+  screen.pot = { ...screen.pot, [kind.item.id]: next };
+  redraw(controller);
+  return true;
+}
+
+/**
+ * Cook what is in the pot: the meal is the food segment's, through the campaign, which
+ * offers the pot once per camp. The screen closes and the meal is reported.
+ *
+ * @spec PRESENT-CAMP-008
+ */
+function cookCamp(controller) {
+  const party = partyOf(controller);
+  const items = potItems(party, controller.campScreen.pot);
+  if (items.length === 0) return false;
+  const meal = controller.campaign.cook(items);
+  controller.campScreen = null;
+  setMenuOpen(controller.state, false);
+  controller.mealReport = meal;
+  redraw(controller);
+  return true;
+}
+
+/** @spec PRESENT-CAMP-009 */
+function leaveCamp(controller) {
+  controller.campaign.leaveCamp?.();
+  controller.campScreen = null;
+  setMenuOpen(controller.state, false);
+  redraw(controller);
+  return true;
+}
+
+/** @spec PRESENT-CAMP-006 */
+function pressKeyOnCampScreen(controller, key) {
+  const screen = controller.campScreen;
+  const count = foodKinds(partyOf(controller)).length;
+  if (key === 'Escape') return leaveCamp(controller);
+  if (key === 'Enter' || key === ' ') return cookCamp(controller);
+  if (keyIs(key, 'ArrowUp', 'w')) {
+    if (screen.selected <= 0) return false;
+    screen.selected -= 1;
+    redraw(controller);
+    return true;
+  }
+  if (keyIs(key, 'ArrowDown', 's')) {
+    if (screen.selected >= count - 1) return false;
+    screen.selected += 1;
+    redraw(controller);
+    return true;
+  }
+  if (keyIs(key, 'ArrowRight', 'd')) return changePot(controller, screen.selected, 1);
+  if (keyIs(key, 'ArrowLeft', 'a')) return changePot(controller, screen.selected, -1);
+  return false;
+}
+
+function pressPointerOnCampScreen(controller, px, py) {
+  const control = hit(campPlan(controller)?.controls, px, py);
+  if (!control) return false;
+  if (control.role === CampControl.COOK) return cookCamp(controller);
+  if (control.role === CampControl.LEAVE) return leaveCamp(controller);
+  return changePot(controller, control.index, 1, { wrap: true });
 }
 
 /**
@@ -774,6 +913,17 @@ function pressPointerOnItemsScreen(controller, px, py) {
 }
 
 /**
+ * Take whatever the clock had to say about hunger. A notice that arrives is shown until
+ * the player next acts.
+ *
+ * @spec PRESENT-HUNGER-001
+ */
+function gatherNotices(controller) {
+  const notices = takeNotices(controller.state);
+  if (notices.length > 0) controller.hungerNotice = hungerSentence(notices);
+}
+
+/**
  * Run an action and redraw only if it moved the world.
  *
  * @spec PRESENT-SCENE-003
@@ -781,6 +931,11 @@ function pressPointerOnItemsScreen(controller, px, py) {
  */
 function applyAction(controller, action) {
   if (!action) return false;
+  // A notice stays until the player next acts; this is that action.
+  // @spec PRESENT-HUNGER-001
+  const hadNotice = Boolean(controller.hungerNotice);
+  controller.hungerNotice = null;
+  if (hadNotice) redraw(controller);
 
   // The map is the one action that changes how things are drawn rather than what is
   // true, so the controller answers it rather than the simulation.
@@ -801,13 +956,22 @@ function applyAction(controller, action) {
   if (action.partyAction === PartyAction.CAMP) {
     const { camp } = perform(controller.state, { partyAction: PartyAction.CAMP, commit: true });
     syncFight(controller);
-    if (camp && !controller.fight) controller.campReport = camp.outcome;
+    gatherNotices(controller);
+    // A rest opens the camp screen and its pot; a refusal is reported over the view.
+    // @spec PRESENT-CAMP-004
+    if (camp?.outcome === 'RESTED' && !controller.fight) {
+      controller.campScreen = { pot: {}, selected: 0, foraged: camp.foraged ?? [] };
+      setMenuOpen(controller.state, true);
+    } else if (camp && !controller.fight) {
+      controller.campReport = camp.outcome;
+    }
     redraw(controller);
     return true;
   }
 
   const before = stateSignature(controller.state);
   const result = perform(controller.state, action);
+  gatherNotices(controller);
   // A chest was opened: what it held is reported over the view.
   // @spec PRESENT-CHEST-001
   if (result?.found !== undefined) {
@@ -923,6 +1087,8 @@ export function pressKey(controller, key) {
   if (controller.chestFind) return CHEST_DISMISS_KEYS.includes(key) ? closeChestReport(controller) : false;
   // @spec PRESENT-CAMP-003
   if (controller.campReport) return CAMP_DISMISS_KEYS.includes(key) ? closeChestReport(controller) : false;
+  if (controller.mealReport) return CAMP_DISMISS_KEYS.includes(key) ? closeChestReport(controller) : false;
+  if (controller.campScreen) return pressKeyOnCampScreen(controller, key);
   if (controller.partyScreen) return pressKeyOnPartyScreen(controller, key);
   if (controller.itemsScreen) return pressKeyOnItemsScreen(controller, key);
   if (controller.spellsScreen) return pressKeyOnSpellsScreen(controller, key);
@@ -1004,7 +1170,8 @@ export function pressPointer(controller, px, py) {
 
   // Anywhere at all puts a chest's report away: there is nothing on it to press.
   // @spec PRESENT-CHEST-002
-  if (controller.chestFind || controller.campReport) return closeChestReport(controller);
+  if (controller.chestFind || controller.campReport || controller.mealReport) return closeChestReport(controller);
+  if (controller.campScreen) return pressPointerOnCampScreen(controller, px, py);
   // A tap outside the page lands on nothing: a stray thumb must not dismiss it.
   if (controller.partyScreen) return pressPointerOnPartyScreen(controller, px, py);
   if (controller.itemsScreen) return pressPointerOnItemsScreen(controller, px, py);

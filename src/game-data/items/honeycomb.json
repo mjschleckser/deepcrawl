@@ -1,0 +1,11 @@
+{
+  "id": "honeycomb",
+  "name": "Honeycomb",
+  "kind": "FOOD",
+  "rarity": "UNCOMMON",
+  "nourish": 300,
+  "heal": 16,
+  "traits": {
+    "hale": 2
+  }
+}

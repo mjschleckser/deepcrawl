@@ -11,6 +11,7 @@ import {
   Attribute, Condition, character, applyHealing, packOf, skillRank, trainSkill,
 } from './party.js';
 import { Effect } from './items.js';
+import { spellFactor } from './food.js';
 
 export const SpellTarget = { ENEMY: 'ENEMY', ALLY: 'ALLY' };
 export const CastWhere = { COMBAT: 'COMBAT', EXPLORATION: 'EXPLORATION' };
@@ -103,7 +104,10 @@ export function spellMagnitude(caster, spell) {
   const intellect = caster.attributes?.[Attribute.INTELLECT] ?? 10;
   const grown = base
     * (1 + MAGNITUDE_PER_RANK * skillRank(caster, spell.school))
-    * (1 + MAGNITUDE_PER_INTELLECT * (intellect - 10));
+    * (1 + MAGNITUDE_PER_INTELLECT * (intellect - 10))
+    // Hunger weakens a spell; an arcane meal strengthens it.
+    // @spec MAGIC-CAST-010
+    * spellFactor(caster);
   return Math.max(1, Math.round(grown));
 }
 

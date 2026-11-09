@@ -1,0 +1,10 @@
+{
+  "id": "bitterleaf",
+  "name": "Bitterleaf",
+  "kind": "FOOD",
+  "nourish": 100,
+  "heal": 10,
+  "traits": {
+    "tough": 2
+  }
+}

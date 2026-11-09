@@ -14,6 +14,8 @@
 import { Attribute, CharacterClass, Skill } from '../sim/party.js';
 import { Effect, ItemKind, MAGIC_SKILL, Rarity, Slot, createItem } from '../sim/items.js';
 import { spellDefinitions } from './spells.js';
+import { Trait } from '../sim/food.js';
+import FORAGE from '../game-data/forage.json';
 
 const ITEM_FILES = import.meta.glob('../game-data/items/*.json', { eager: true, import: 'default' });
 
@@ -44,6 +46,8 @@ export function buildItem(file, data) {
     if (data?.[required] === undefined) throw new Error(`${file}: no ${required}`);
   }
   const kind = oneOf(file, 'kind', data.kind, ItemKind);
+  // Food goes into the pot, never into a hand, so it is read on its own terms.
+  if (kind === ItemKind.FOOD) return buildFood(file, data);
   const consumable = kind === ItemKind.CONSUMABLE;
   if (consumable && data.slot !== undefined) throw new Error(`${file}: a consumable has no slot`);
   if (!consumable && data.slot === undefined) throw new Error(`${file}: no slot`);
@@ -74,6 +78,36 @@ export function buildItem(file, data) {
     classes: data.classes
       ? data.classes.map((name) => oneOf(file, 'class', name, CharacterClass))
       : null,
+  });
+}
+
+const TRAIT_NAMES = Object.fromEntries(Object.values(Trait).map((t) => [t, t]));
+
+/** A whole number of at least nothing, or the file says which field is wrong. */
+function amount(file, field, value) {
+  if (!Number.isInteger(value) || value < 0) throw new Error(`${file}: ${field} ${value} is not a whole number of at least 0`);
+  return value;
+}
+
+/**
+ * A food item: what it adds to the pot, and nothing a hand could hold.
+ *
+ * @spec FOOD-ITEM-001
+ */
+function buildFood(file, data) {
+  if (data.slot !== undefined) throw new Error(`${file}: food has no slot`);
+  const traits = {};
+  for (const [trait, points] of Object.entries(data.traits ?? {})) {
+    traits[oneOf(file, 'trait', trait, TRAIT_NAMES)] = amount(file, trait, points);
+  }
+  return createItem({
+    id: data.id,
+    name: data.name,
+    kind: ItemKind.FOOD,
+    rarity: data.rarity === undefined ? Rarity.COMMON : oneOf(file, 'rarity', data.rarity, Rarity),
+    nourish: amount(file, 'nourish', data.nourish ?? 0),
+    heal: amount(file, 'heal', data.heal ?? 0),
+    traits,
   });
 }
 
@@ -121,4 +155,18 @@ export function itemDefinitions() {
  */
 export function itemById(id) {
   return itemDefinitions()[id] ?? null;
+}
+
+
+/**
+ * What a forager can find, as items.
+ *
+ * @spec FOOD-FORAGE-001
+ */
+export function forageList() {
+  return FORAGE.items.map((id) => {
+    const item = itemById(id);
+    if (!item) throw new Error(`forage.json: "${id}" is not an item anybody authored`);
+    return item;
+  });
 }

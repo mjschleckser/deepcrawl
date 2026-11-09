@@ -60,7 +60,7 @@ describe('the authored tables', () => {
   it('reads every table file, keyed by what it calls itself', () => {
     const tables = lootTables();
 
-    expect(Object.keys(tables).sort()).toEqual(['chest', 'goblin', 'goblin_mage']);
+    expect(Object.keys(tables).sort()).toEqual(['chest', 'goblin', 'goblin_archer', 'goblin_mage']);
     expect(lootTableById('goblin').id).toBe('goblin');
     expect(lootTableById('nothing')).toBeNull();
   });
@@ -94,5 +94,20 @@ describe('where wands are found', () => {
     for (const id of ['goblin', 'goblin_mage', 'chest']) {
       expect(lootTableById(id).items.map((item) => item.id)).toContain('wand');
     }
+  });
+});
+
+describe('where food is found', () => {
+  // @spec LOOT-DATA-006
+  it('puts the foods in the tables the design names', () => {
+    const ids = (table) => lootTableById(table).items.map((item) => item.id);
+    for (const id of ['ration', 'smoked_sausage', 'honeycomb', 'dragonpepper']) expect(ids('chest')).toContain(id);
+    for (const table of ['goblin', 'goblin_archer', 'goblin_mage']) {
+      expect(ids(table)).toContain('ration');
+      expect(ids(table)).toContain('goblin_haunch');
+    }
+    expect(ids('goblin_archer')).toContain('spit_roast_rat');
+    expect(ids('goblin')).not.toContain('spit_roast_rat');
+    for (const id of ['glowcap', 'mages_spice_pouch']) expect(ids('goblin_mage')).toContain(id);
   });
 });

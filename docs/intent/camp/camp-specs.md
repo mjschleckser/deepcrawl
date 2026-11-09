@@ -16,7 +16,7 @@ camp may happen, what it costs, and what it restores.
 
 ## The meal
 
-- [ ] **CAMP-FOOD-001**: When a camp is not broken, the system shall ask the food segment to clear every meal buff still running, before the pot is offered.
-- [ ] **CAMP-FOOD-002**: When a camp is not broken, the system shall ask the food segment to forage, and then offer the pot: the player chooses which food goes in and may cook it or leave without eating.
-- [ ] **CAMP-FOOD-003**: The system shall let the pot be cooked at most once per camp, and only while the camp is offering it.
-- [ ] **CAMP-HUNGER-001**: The system shall spend a camp's ticks on hunger as the party rests, before it eats.
+- [x] **CAMP-FOOD-001**: When a camp is not broken, the system shall ask the food segment to clear every meal buff still running, before the pot is offered.
+- [x] **CAMP-FOOD-002**: When a camp is not broken, the system shall ask the food segment to forage, and then offer the pot: the player chooses which food goes in and may cook it or leave without eating.
+- [x] **CAMP-FOOD-003**: The system shall let the pot be cooked at most once per camp, and only while the camp is offering it.
+- [x] **CAMP-HUNGER-001**: The system shall spend a camp's ticks on hunger as the party rests, before it eats.

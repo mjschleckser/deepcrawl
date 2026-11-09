@@ -760,7 +760,9 @@ it is empty. **Pack** lists everything the party carries, in the pack's own orde
 that it is empty. Above it the page shows the party's gold, which belongs to the party as
 the pack does.
 
-**Identical consumables share one row**, with a count: *Healing Potion ×3*. A row is
+**Identical consumables and food share one row**, with a count: *Healing Potion ×3*,
+*Ration ×6*. Food says what it adds to the pot — *fullness 600 · heals 2* — and pressing it
+does nothing, since food is eaten only at camp. A row is
 listed where the first of them stands in the pack. Equipment is never grouped, since two
 of the same sword can be worn by two characters and each is something to press. A pack
 that found eight potions is a pack with one potion row, not eight rows to scroll past. Every item, worn or carried, shows its name and beneath it the numbers
@@ -839,8 +841,8 @@ was foraged, by name. Below it is the pot: every kind of food the pack holds, a 
 with how many are carried and how many are in the pot. Pressing a row puts one more in,
 and from all of them back to none; `D` and `→` add one to the highlighted row, `A` and `←`
 take one out, and `W`, `S` and the arrows move the highlight. Beneath the rows the screen
-says what the pot would make — *Each of 3 eats: +900 food, heals 8. Hearty: +13% damage
-until the next camp.* — worked out by the food segment, so the preview is the meal.
+says what the pot would make — *Each eats: +1155 food, heals 11. Hearty: +7% damage until
+the next camp.* — worked out by the food segment, so the preview is the meal.
 
 Along the foot are **Cook** (`Enter`) and **Leave** (`Escape`). Cooking makes the meal,
 closes the screen and reports who ate and what it did. Leaving closes it without eating;

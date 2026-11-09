@@ -18,7 +18,7 @@ where finds come from.
 - [x] **LOOT-DATA-003**: The system shall hold every archetype's chest table richer than the table of every enemy that can be placed on a floor of that archetype: odds no lower in every tier above common and higher in at least one, at least as many draws at no lower chance, and a gold range no lower at either end.
 - [x] **LOOT-DATA-004**: The system shall hold the tome of Fire Bolt, authored at rare, in the chest table and in the goblin mage's table, and shall give the goblin mage a table of its own.
 - [x] **LOOT-DATA-005**: The system shall hold the Wand in the goblin, goblin mage and chest tables.
-- [ ] **LOOT-DATA-006**: The system shall hold Rations in the chest and goblin tables, Goblin Haunches in the goblin tables, and Glowcaps in the goblin mage's table.
+- [x] **LOOT-DATA-006**: The system shall hold Rations, Smoked Sausage, Honeycomb and Dragonpepper in the chest table; Rations and Goblin Haunches in the goblin, goblin archer and goblin mage tables; Spit-roast Rat in the goblin archer's table, which is its own; and Glowcaps and Mage's Spice Pouches in the goblin mage's table.
 
 ## Rolling a find
 

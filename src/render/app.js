@@ -338,6 +338,20 @@ function drawHud(container, plan) {
       container.addChild(news);
     }
   }
+  // Who just grew hungrier, across the top of the view until the next action.
+  // @spec PRESENT-HUNGER-001
+  if (plan.notice) {
+    const { box, text: words } = plan.notice;
+    const size = Math.round(13 * (plan.notice.scale ?? 1));
+    const t = label(words, size, FIGHT_COLOURS.wounded);
+    fitWithin(t, box.width - 16);
+    const plate = new Graphics();
+    plate.roundRect(box.x, box.y, box.width, box.height, 4).fill({ color: 0x0b0906, alpha: 0.85 });
+    container.addChild(plate);
+    t.x = box.x + (box.width - t.width) / 2;
+    t.y = box.y + (box.height - t.height) / 2;
+    container.addChild(t);
+  }
   // Only there when something is wrong with the save, so it can afford to stand out.
   // @spec PRESENT-SAVE-001
   // @spec PRESENT-SAVE-002
@@ -368,13 +382,13 @@ function drawHud(container, plan) {
   graphics.rect(bounds.x, bounds.y, bounds.width, bounds.height).stroke({ width: 2, color: PALETTE.map.door });
   container.addChild(graphics);
 
-  const label = new Text({
+  const question = new Text({
     text,
     style: { fill: 0xe8d9a8, fontSize: Math.round(17 * scale), fontFamily: 'monospace', align: 'center' },
   });
-  label.x = bounds.x + bounds.width / 2 - label.width / 2;
-  label.y = bounds.y + 20 * scale;
-  container.addChild(label);
+  question.x = bounds.x + bounds.width / 2 - question.width / 2;
+  question.y = bounds.y + 20 * scale;
+  container.addChild(question);
 
   for (const control of controls) drawControl(container, control, { alpha: 0.75, scale });
 }
@@ -395,13 +409,15 @@ export async function createRenderer(mount) {
     party: new Container(),
     items: new Container(),
     spells: new Container(),
+    camp: new Container(),
     chest: new Container(),
     hud: new Container(),
   };
   // Added in order, so the view sits beneath everything and the HUD above it.
   app.stage.addChild(
     layerContainers.view, layerContainers.map, layerContainers.fight,
-    layerContainers.party, layerContainers.items, layerContainers.spells, layerContainers.chest,
+    layerContainers.party, layerContainers.items, layerContainers.spells, layerContainers.camp,
+    layerContainers.chest,
     layerContainers.hud,
   );
 
@@ -419,6 +435,9 @@ export async function createRenderer(mount) {
       // The Spells screen is laid out in the Items screen's shape, and drawn by the same hand.
       // @spec PRESENT-SPELLS-002
       if (name === 'spells') drawItems(container, plan);
+      // So is the camp screen and its pot.
+      // @spec PRESENT-CAMP-004
+      if (name === 'camp') drawItems(container, plan);
       if (name === 'chest') drawChestReport(container, plan);
       if (name === 'hud') drawHud(container, plan);
     }
@@ -881,6 +900,22 @@ function drawParty(container, plan) {
   const hpColour = health.share > 0.5 ? FIGHT_COLOURS.healthy
     : health.share > 0.25 ? FIGHT_COLOURS.wounded : FIGHT_COLOURS.critical;
   if (health.share > 0) graphics.rect(bar.x, bar.y, bar.width * health.share, bar.height).fill(hpColour);
+
+  // Hunger, and the meal's buffs beside it.
+  // @spec PRESENT-HUNGER-002
+  if (plan.hunger) {
+    const { hunger } = plan;
+    const fed = hunger.stage === 'Fed';
+    const stage = put(hunger.stage, text, fed ? FIGHT_COLOURS.dim : FIGHT_COLOURS.wounded, hunger.box.x, hunger.box.y);
+    stage.y = middle(hunger.box, stage);
+    if (hunger.buffs.length > 0) {
+      const buffs = label(hunger.buffs.join(' · '), Math.round(11 * scale), FIGHT_COLOURS.banner);
+      fitWithin(buffs, hunger.box.width - stage.width - 12 * scale);
+      buffs.x = hunger.box.x + hunger.box.width - buffs.width;
+      buffs.y = middle(hunger.box, buffs);
+      container.addChild(buffs);
+    }
+  }
 
   for (const a of plan.attributes) {
     const t = put(a.label, text, FIGHT_COLOURS.dim, a.box.x, a.box.y);

@@ -1,0 +1,11 @@
+{
+  "id": "spit_roast_rat",
+  "name": "Spit-roast Rat",
+  "kind": "FOOD",
+  "nourish": 250,
+  "heal": 4,
+  "traits": {
+    "nimble": 2,
+    "hearty": 1
+  }
+}

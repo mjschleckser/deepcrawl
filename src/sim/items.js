@@ -11,6 +11,7 @@
  */
 
 import { Attribute, Skill, skillRank } from './party.js';
+import { armourBonus, damageFactor } from './food.js';
 
 /**
  * A consumable is the one kind that is used up rather than worn, and so the one kind
@@ -19,7 +20,7 @@ import { Attribute, Skill, skillRank } from './party.js';
  * @spec ITEM-DEF-002
  */
 export const ItemKind = {
-  WEAPON: 'WEAPON', ARMOUR: 'ARMOUR', SHIELD: 'SHIELD', CONSUMABLE: 'CONSUMABLE',
+  WEAPON: 'WEAPON', ARMOUR: 'ARMOUR', SHIELD: 'SHIELD', CONSUMABLE: 'CONSUMABLE', FOOD: 'FOOD',
 };
 
 /**
@@ -72,9 +73,10 @@ const DAMAGE_PER_ATTRIBUTE = 0.04;
 export function createItem({
   id, name, kind, slot = null, rarity = Rarity.COMMON,
   skill = null, damage = 0, governs = Attribute.MIGHT,
-  armour = 0, classes = null, effect = null,
+  armour = 0, classes = null, effect = null, nourish = 0, heal = 0, traits = null,
 }) {
-  const consumable = kind === ItemKind.CONSUMABLE;
+  // Neither a consumable nor food is worn, so neither names a slot.
+  const consumable = kind === ItemKind.CONSUMABLE || kind === ItemKind.FOOD;
   return {
     id,
     name,
@@ -95,7 +97,10 @@ export function createItem({
     // @spec ITEM-DATA-004
     classes: classes ? [...classes] : null,
     // What using it does: only a consumable has one.
-    effect: consumable && effect ? { ...effect } : null,
+    effect: kind === ItemKind.CONSUMABLE && effect ? { ...effect } : null,
+    // What food adds to the pot.
+    // @spec FOOD-ITEM-001
+    ...(kind === ItemKind.FOOD ? { nourish, heal, traits: { ...(traits ?? {}) } } : {}),
   };
 }
 
@@ -142,7 +147,8 @@ export function armourOf(combatant) {
   // Only a shield adds; a second weapon in the same slot turns nothing.
   const offHand = held(combatant, Slot.OFF_HAND);
   const shield = offHand?.kind === ItemKind.SHIELD ? (offHand.armour ?? 0) : 0;
-  return body + shield;
+  // A tough meal turns blows too.
+  return body + shield + armourBonus(combatant);
 }
 
 const score = (combatant, attribute) => combatant?.attributes?.[attribute] ?? 10;
@@ -190,7 +196,10 @@ export function baseDamageWith(combatant) {
 
   return weapon.damage
     * (1 + DAMAGE_PER_RANK * skillRank(combatant, weaponSkill(combatant, weapon)))
-    * (1 + DAMAGE_PER_ATTRIBUTE * (score(combatant, weapon.governs) - 10));
+    * (1 + DAMAGE_PER_ATTRIBUTE * (score(combatant, weapon.governs) - 10))
+    // Hunger weakens a blow; a hearty meal strengthens it.
+    // @spec ITEM-NUM-008
+    * damageFactor(combatant);
 }
 
 /**

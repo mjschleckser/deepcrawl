@@ -166,8 +166,9 @@ a town; until then, gold is a score that will later become a currency.
 
 ## Food
 
-Food is found the way any item is. Chests carry rations, goblins drop rations and haunches,
-and the goblin mage's table carries glowcaps. Food is authored at common or uncommon, so it
+Food is found the way any item is. Chests carry rations and the richer foods — smoked
+sausage, honeycomb, dragonpepper; goblins drop rations and haunches; the goblin archer's
+table adds spit-roast rat; and the goblin mage's carries glowcaps and spice. Food is mostly authored at common or uncommon, so it
 turns up often enough to keep a careful party fed, and never often enough that hunger stops
 mattering. Foraging at camp is the other source, and belongs to the food segment.
 

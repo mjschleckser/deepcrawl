@@ -37,6 +37,8 @@ export function itemDetail(item) {
   // What a potion does is the whole of what there is to say about it.
   // @spec PRESENT-ITEMS-025
   if (isConsumable(item)) return withTier(item, `Heals ${item.effect?.[Effect.HEAL] ?? 0}`);
+  // Food says what it adds to the pot, which is the only place it goes.
+  if (item.kind === ItemKind.FOOD) return withTier(item, foodDetail(item));
   const parts = [SLOT_LABELS[item.slot] ?? titled(item.slot)];
   if (item.kind === ItemKind.WEAPON) {
     if (item.skill) parts.push(titled(item.skill));
@@ -48,6 +50,14 @@ export function itemDetail(item) {
     parts.push(`armour ${item.armour}`);
   }
   return withTier(item, parts.join(' · '));
+}
+
+/** What a food item adds to the pot, in a line. */
+export function foodDetail(item) {
+  const parts = [`fullness ${item.nourish ?? 0}`];
+  if (item.heal) parts.push(`heals ${item.heal}`);
+  for (const [trait, points] of Object.entries(item.traits ?? {})) parts.push(`${trait} ${points}`);
+  return parts.join(' · ');
 }
 
 /**
@@ -104,13 +114,15 @@ export function itemRows(party, characterId) {
   }));
   const carried = [];
   const stacks = new Map();
+  // Potions and food stack; equipment never does.
+  const stacks_ = (item) => isConsumable(item) || item.kind === ItemKind.FOOD;
   packOf(party).forEach((item, packIndex) => {
-    if (isConsumable(item) && stacks.has(item.id)) {
+    if (stacks_(item) && stacks.has(item.id)) {
       stacks.get(item.id).count += 1;
       return;
     }
     const row = { role: ItemsControl.PACK, packIndex, item, count: 1 };
-    if (isConsumable(item)) stacks.set(item.id, row);
+    if (stacks_(item)) stacks.set(item.id, row);
     carried.push(row);
   });
   return [...worn, ...carried];
@@ -133,6 +145,8 @@ export function clampRow(rows, selected) {
 export function rowActs(row, c, { inFight, party = null, spells = {} }) {
   if (!row.item) return false;
   if (row.role === ItemsControl.WORN) return !inFight;
+  // Food is eaten at camp, from the pot, and never from here.
+  if (row.item.kind === ItemKind.FOOD) return false;
   // A tome is read by whoever's page it is, out of a fight, if they could cast its spell.
   if (tomeSpell(row.item, spells)) return Boolean(party) && readRefusal(party, c.id, row.item, spells, { inFight }) === null;
   // A potion is drunk by whoever's page it is, when they can drink it.

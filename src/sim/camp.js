@@ -4,13 +4,14 @@
  * Camping takes a long stretch of the exploration clock, during which roaming enemies
  * move as they would had the party walked; it is refused with an enemy in sight, and an
  * enemy that reaches the party while it rests breaks the camp. A camp that is not broken
- * restores spell slots. Food, its buffs, and the hit points it restores come with cooking.
+ * restores spell slots, clears the last meal's buffs, and forages; the pot is offered after.
  */
 
 import { canSee } from './sight.js';
 import { restForCamp } from './exploration.js';
 import { Condition } from './party.js';
 import { restoreSlots } from './magic.js';
+import { clearBuffs, forage } from './meals.js';
 
 /** How long a rest takes, in ticks: many steps' worth. A placeholder to tune. */
 export const CAMP_TICKS = 120;
@@ -41,13 +42,20 @@ export function enemyInSight(state) {
  * @spec CAMP-REST-005
  * @spec CAMP-REST-006
  */
-export function camp(state, party, { ticks = CAMP_TICKS } = {}) {
+export function camp(state, party, { ticks = CAMP_TICKS, forageList = [], rng = null } = {}) {
   if (enemyInSight(state)) return { outcome: CampOutcome.REFUSED };
 
+  // The rest's hunger is spent as the party sleeps, through the clock's own hook.
+  // @spec CAMP-HUNGER-001
   restForCamp(state, ticks);
   // Something walked in while the party slept: the fight is on and the rest is lost.
   if (state.combatActive) return { outcome: CampOutcome.BROKEN };
 
   for (const c of party.members) if (rests(c)) restoreSlots(c);
-  return { outcome: CampOutcome.RESTED };
+  // The last meal's buffs are gone; the pot is what replaces them.
+  // @spec CAMP-FOOD-001
+  clearBuffs(party);
+  // @spec CAMP-FOOD-002
+  const foraged = rng ? forage(party, forageList, rng) : [];
+  return { outcome: CampOutcome.RESTED, foraged };
 }

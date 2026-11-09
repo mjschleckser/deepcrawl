@@ -254,26 +254,28 @@ describe('winning a fight', () => {
     const campaign = booted();
     stepIntoContact(campaign);
     const tables = campaign.encounter.enemies.members.map((e) => e.loot);
+    const carried = packOf(campaign.party).map((i) => i.id);
 
     const result = fightToTheEnd(campaign);
     campaign.concludeEncounter();
 
     // Every goblin carries a table, and each drops some gold.
-    expect(tables.every((t) => t === 'goblin')).toBe(true);
+    expect(tables.every((t) => ['goblin', 'goblin_archer', 'goblin_mage'].includes(t))).toBe(true);
     expect(result.finds.gold).toBeGreaterThan(0);
     expect(purseOf(campaign.party)).toBe(result.finds.gold);
-    expect(packOf(campaign.party).map((i) => i.id)).toEqual(result.finds.items.map((i) => i.id));
+    expect(packOf(campaign.party).map((i) => i.id)).toEqual([...carried, ...result.finds.items.map((i) => i.id)]);
   });
 
   // @spec LOOT-DROP-003
   it('hands over nothing when the party escapes', () => {
     const campaign = booted();
     stepIntoContact(campaign);
+    const carried = packOf(campaign.party).map((i) => i.id);
 
     campaign.fleeEncounter();
 
     expect(purseOf(campaign.party)).toBe(0);
-    expect(packOf(campaign.party)).toEqual([]);
+    expect(packOf(campaign.party).map((i) => i.id)).toEqual(carried);
   });
 
   it('lets the party walk again, with the warband gone from the floor', () => {
@@ -365,7 +367,7 @@ describe('camping in a campaign', () => {
 
     const result = perform(state, { partyAction: PartyAction.CAMP, commit: true });
 
-    expect(result.camp).toEqual({ outcome: 'RESTED' });
+    expect(result.camp).toMatchObject({ outcome: 'RESTED' });
     expect(isolde.spentSlots).toEqual({});
     expect(tickCount(state)).toBeGreaterThan(0);
   });
@@ -416,5 +418,50 @@ describe('what a campaign never changes', () => {
     fight.readiness.set(wren.id, 100);
     expect(takeAction(fight, wren.id, { kind: Action.CAST, spellId: 'heal', targetId: isolde.id })).toBeNull();
     expect(isolde.condition).toBe(Condition.UNCONSCIOUS);
+  });
+});
+
+describe('food in a campaign', () => {
+  // @spec FOOD-HUNGER-001
+  // @spec EXPLORE-BOUND-006
+  it('grows the party hungrier as it walks', () => {
+    const campaign = booted();
+    campaign.state.roamers = [];
+    walkUntil(campaign, () => tickCount(campaign.state) > 100);
+    for (const c of roster(campaign.party)) expect(c.fullness).toBe(2000 - tickCount(campaign.state));
+  });
+
+  // @spec FOOD-HUNGER-002
+  it('takes no fullness while a fight is running', () => {
+    const campaign = booted();
+    stepIntoContact(campaign);
+    const before = roster(campaign.party).map((c) => c.fullness);
+
+    perform(campaign.state, { verb: Verb.STEP_FORWARD });
+    advanceForCamp(campaign.state, 50);
+    const fight = campaign.encounter;
+    for (let i = 0; i < 5; i++) {
+      const actor = nextActor(fight);
+      if (!actor) break;
+      takeAction(fight, actor.id, { kind: Action.PASS });
+    }
+
+    expect(roster(campaign.party).map((c) => c.fullness)).toEqual(before);
+  });
+
+  // @spec CAMP-FOOD-003
+  it('cooks the pot once per camp, and only after a camp has rested', () => {
+    const campaign = booted();
+    const state = campaign.state;
+    state.roamers = [];
+    const rations = () => packOf(campaign.party).filter((i) => i.id === 'ration');
+
+    expect(campaign.cook(rations().slice(0, 1))).toBeNull();
+
+    perform(state, { partyAction: PartyAction.CAMP, commit: true });
+    expect(campaign.cook(rations().slice(0, 1))).not.toBeNull();
+    expect(rations()).toHaveLength(5);
+    expect(campaign.cook(rations().slice(0, 1))).toBeNull();
+    expect(rations()).toHaveLength(5);
   });
 });

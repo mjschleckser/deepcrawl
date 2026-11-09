@@ -25,7 +25,9 @@ import {
 import { startingCharacters } from './combatants.js';
 import { checkArchetype, lootTables } from './loot.js';
 import { spellDefinitions } from './spells.js';
-import { camp } from '../sim/camp.js';
+import { itemById, forageList } from './items.js';
+import { camp, CampOutcome } from '../sim/camp.js';
+import { passHunger, cookPot } from '../sim/meals.js';
 import { chestRng, rollLoot } from '../sim/loot.js';
 
 /** Bands standing on a freshly built floor, before anyone has disturbed it. */
@@ -36,9 +38,14 @@ const BANDS_PER_FLOOR = 3;
  *
  * @spec PARTY-DATA-002
  */
+/** Nobody sets off without food. */
+const STARTING_RATIONS = 6;
+
+/** @spec FOOD-ITEM-003 */
 function createStartingParty() {
   const party = createParty();
   for (const c of startingCharacters()) addCharacter(party, c);
+  for (let i = 0; i < STARTING_RATIONS; i++) stow(party, { ...itemById('ration') });
   return party;
 }
 
@@ -226,8 +233,17 @@ export function createCampaign({ seed = Date.now() >>> 0, saved = null } = {}) {
       isTileOccupied,
       onRestock: ({ floorId, elapsed }) => restockFloor(floorId, elapsed),
       onOpenChest,
+      // Hunger runs on the exploration clock, and its notices go back through it.
+      // @spec FOOD-HUNGER-001
+      onTick: (ticks) => passHunger(party, ticks),
+      // A camp that rests offers the pot, once.
       // @spec CAMP-REST-006
-      onCamp: () => camp(campaign.state, party),
+      // @spec CAMP-FOOD-002
+      onCamp: () => {
+        const result = camp(campaign.state, party, { forageList: forageList(), rng });
+        campaign.potOffered = result.outcome === CampOutcome.RESTED;
+        return result;
+      },
     },
   };
 
@@ -330,6 +346,22 @@ export function createCampaign({ seed = Date.now() >>> 0, saved = null } = {}) {
     party: serializeParty(party),
     encounter: campaign.encounter ? serializeEncounter(campaign.encounter) : null,
   });
+
+  /**
+   * Cook the pot the camp offered, from food in the pack. Once per camp, and only while
+   * it is offered.
+   *
+   * @spec CAMP-FOOD-003
+   */
+  campaign.cook = (items) => {
+    if (!campaign.potOffered) return null;
+    campaign.potOffered = false;
+    return cookPot(party, items);
+  };
+  /** Leave camp without eating. */
+  campaign.leaveCamp = () => {
+    campaign.potOffered = false;
+  };
 
   campaign.restockFloor = restockFloor;
   campaign.floorProvider = floorProvider;
