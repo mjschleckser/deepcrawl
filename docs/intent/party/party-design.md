@@ -20,8 +20,9 @@ enforced in exactly one place, no matter what caused the change.
 
 **Characters are what they have done.** Progression is not a number awarded for
 surviving; it is a record of use. A character who has spent a campaign picking locks
-is good at picking locks, and class governs what they may learn and how fast, not what
-they are. This is why class can change and skill cannot be undone.
+is good at picking locks, and every skill advances at the same rate for everyone who
+uses it. Class decides what a character may hold and cast, the body they start with,
+and the one skill only their class can have — never how fast they learn.
 
 **Advancement always costs something scarce.** In combat the clock is stopped, so
 advancement is bounded by what the enemy was worth. Outside it the clock runs, so
@@ -34,6 +35,7 @@ action worth taking.
 | | Owned by the party | Owned elsewhere |
 |---|---|---|
 | Characters | attributes, skills, condition, class, total level | — |
+| Classes | what a class is, and reading each from its authored file | content holds the files |
 | Equipment | which item sits in which slot, and the pack the party carries the rest in | items define what an item *is*, and what moving one in or out of the pack means |
 | The purse | how much gold the party carries, held for the party as a whole | loot decides how much a find adds |
 | Skills | ranks, advancement, what is unlocked | combat resolves what an ability does |
@@ -57,13 +59,20 @@ Five scores, fixed at creation and moved only by rare effects.
 | **Might** | +4% damage per point over 10, for any weapon that names it |
 | **Constitution** | hit points; resisting poison and disease |
 | **Dexterity** | step cost, turn order, fleeing; +4% damage per point over 10 for a finesse weapon |
-| **Intellect** | spell slots at the lower ranks; spell magnitude and duration |
-| **Resolve** | resisting fear and charm; holding a spell when struck mid-cast |
+| **Intellect** | a mage's spell slots and spell magnitude |
+| **Resolve** | a cleric's spell slots and spell magnitude; later, resisting fear and charm |
 
 Each attribute has its own contribution rather than a blanket rule applied to whichever
 one a weapon names. Might is the damage attribute by default, but *which* attribute a
 weapon draws on for damage is a property of the weapon: a dagger with the *finesse*
 property names Dexterity, and still trains Blade.
+
+**Each casting class casts from its own attribute.** A class names the attribute its
+magic draws on — Intellect for the mage's arcane schools, Resolve for the cleric's divine
+ones — and that one attribute buys the caster's slots and grows their spells. Arcane
+magic is study; divine magic is conviction. Splitting them gives each caster a score
+that is theirs, and gives Resolve a job in every fight rather than only against effects
+the game does not yet have.
 
 There is no attribute for noticing things. Should finding hidden things ever enter the
 game, it belongs to the Detection skill, which is practised and grows, rather than to a
@@ -77,6 +86,8 @@ are what a character *is*; skills are what they have done.
 ```
 maximum hit points = class base × (1 + 0.05 × (Constitution − 10))
 ```
+
+The base is authored in the class's file:
 
 | Class | Base |
 |---|---|
@@ -107,12 +118,17 @@ passive. Skills are grouped for presentation only; nothing depends on the groupi
 
 | Group | Skills |
 |---|---|
+| Class | Ironclad, Backstab, Overchannel, Intercession — one per class, below |
 | Weapon | Blade, Blunt, Polearm, Bow |
-| Defence | Heavy Armour, Light Armour, Shield |
 | Arcane | Evocation, Alteration |
 | Divine | Healing, Restoration |
 | Stealth | Detection, Disarm, Locks |
 | Survival | Cartography, Cooking, Foraging |
+
+**There are no armour skills.** Armour is gear: what a body wears and a shield in the
+off hand turn a blow by a fixed amount, and practice does not change it. A skill for
+wearing armour would have nothing to do — there are no penalties for it to reduce — and
+being good at wearing armour is what the fighter's Ironclad is for.
 
 Several of these are the missing owners of behaviour other segments already describe.
 **Restoration**
@@ -170,6 +186,13 @@ disaster, which is when it should be available.
 Outside combat a skill advances through use, bounded by the clock: cooking and
 mapping both cost ticks, and ticks cost food.
 
+**Every skill advances at the same rate for everyone.** There is no class multiplier and
+no skill a class is barred from practising. What a character may *do* is bounded instead
+by what their class may hold and cast: a fighter never trains Evocation because a
+fighter never casts, not because a table forbids it. A mage who spends a campaign
+swinging a mace gets as good with it as anyone who swung it as often. The one exception
+is a class skill, which only its own class can hold at all.
+
 #### What a rank costs
 
 Ranks run from 1 to **10**, and each one costs more than the last:
@@ -186,8 +209,8 @@ experience to go from rank r to rank r + 1 = 300 × r
 | 9 → 10 | 2,700 | 13,500 |
 
 A rising cost is what makes farming decay on its own. A floor-one warband is worth
-about 42 to the pot, which reaches a fighter's Blade as roughly 84 once the class rate
-is applied — some seven warbands for rank 2 → 3, and thirty-two for rank 9 → 10. The
+about 84 to the pot, which reaches a fighter's Blade whole when Blade is all they used —
+some seven warbands for rank 2 → 3, and thirty-two for rank 9 → 10. The
 same rank against floor-appropriate enemies costs seven or eight fights at any point in
 the campaign, because the pot grows with the floor while the cost grows with the rank.
 Early floors therefore stay *available* to a party that is underlevelled or rebuilding
@@ -204,22 +227,151 @@ The cap of 10 is what lets content be calibrated at all: it fixes the top of the
 damage curve, so the deepest floor can be built against a known ceiling
 rather than an open-ended one.
 
-### Class
+## Class
 
-A class is not what a character *is*. It governs which skills they may learn and how
-fast each advances — a rate multiplier per skill, and a set they cannot train at all.
+A class is four things, and nothing else:
 
-| Class | Trains fastest | Cannot train |
-|---|---|---|
-| Fighter | weapons, heavy armour, shield | arcane, divine |
-| Mage | evocation, alteration | heavy armour, shield |
-| Cleric | healing, restoration, blunt | arcane, blade |
-| Thief | detection, disarm, locks, blade | heavy armour, divine |
+- **the body a character starts with** — the hit-point base Constitution is applied to;
+- **what they may hold** — the item categories they may wield or wear;
+- **what they may cast** — the schools of magic open to them, and the attribute their
+  casting draws on;
+- **the class skill** — one skill no other class can ever have.
 
-A character may change class at a trainer on meeting its requirements. **Ranks already
-earned are kept**, including in skills the new class cannot train — they simply stop
-advancing. A character is the sum of what they have done, and changing career does not
-unmake it.
+It also sets which skills a fresh character opens with, so that nobody's first hour is
+spent unable to do their job.
+
+**A character's class is fixed for life.** It is chosen once, at creation, and nothing
+changes it. A class skill belongs to the class, so a class that could change would
+either strand that skill or hand it to a career it was never meant for.
+
+### Where a class is written down
+
+**Each class is one JSON file** under `src/game-data/classes`, and that file is the
+whole of the class: every property listed above is in it and nowhere else. Reading one
+file answers everything a class means. Nothing in code holds a class's numbers or lists,
+and nothing branches on a class's name.
+
+```json
+{
+  "id": "FIGHTER",
+  "name": "Fighter",
+  "hitPoints": 30,
+  "classSkill": "IRONCLAD",
+  "startingRanks": { "IRONCLAD": 1, "BLADE": 2, "BLUNT": 1, "POLEARM": 1 },
+  "wields": ["LIGHT_WEAPON", "MARTIAL_BLADE", "MARTIAL_BLUNT", "LIGHT_ARMOUR", "HEAVY_ARMOUR", "SHIELD"],
+  "schools": [],
+  "castsWith": null
+}
+```
+
+| Field | Means |
+|---|---|
+| `id`, `name` | identity |
+| `hitPoints` | the hit-point base, before Constitution |
+| `classSkill` | the class's own skill |
+| `startingRanks` | the ranks a fresh character opens with, on top of the base skills every class shares; always includes the class skill at rank 1 |
+| `wields` | the item categories this class may wield or wear; an item names its category |
+| `schools` | the schools of magic whose spells this class may know and cast |
+| `castsWith` | the attribute that buys this class's spell slots and grows its spells, or nothing for a class that does not cast |
+
+The four classes as authored:
+
+| | Fighter | Mage | Cleric | Thief |
+|---|---|---|---|---|
+| Hit points | 30 | 18 | 26 | 22 |
+| Class skill | Ironclad | Overchannel | Intercession | Backstab |
+| Starts with | Blade 2, Blunt 1, Polearm 1 | Evocation 2, Alteration 2, Blade 1 | Healing 2, Restoration 1, Blunt 1 | Detection 2, Disarm 2, Locks 2, Blade 1 |
+| Wields | light and martial weapons, light and heavy armour, shields | light weapons, wands, light armour | light weapons, martial blunt weapons, wands, light and heavy armour, shields | light weapons, martial blades, light armour |
+| Schools | — | Evocation, Alteration | Healing, Restoration | — |
+| Casts with | — | Intellect | Resolve | — |
+
+Permission to hold something flows through categories rather than item names, so that
+content keeps flowing one way: a new weapon names its category and every class that
+wields that category may hold it, without any class file being edited.
+
+### Class skills
+
+Each class has exactly one class skill, and **no other class can ever have it** — not
+by practice, not from a tome, not authored onto a character of another class. A class
+skill is otherwise an ordinary skill: it holds a rank from 1 to 10, costs the same to
+advance, counts toward total level, and advances from the encounter pot when it was used
+in a fight. Every class skill grows with its rank.
+
+Enemies have no class, so no enemy holds a class skill.
+
+#### Ironclad — Fighter
+
+The fighter is the one the enemy hits, and the one built to take it.
+
+```
+armour            = worn armour × (1 + 0.05 × Ironclad rank)
+weight as a target = 1 + 0.2 × Ironclad rank
+```
+
+At rank 1 armour turns a twentieth more and the fighter is 1.2 times as likely to be
+picked as any other character; at rank 10, half again as much armour and three times as
+likely. An enemy's choice of target is still a draw among every standing character —
+Ironclad weights the draw, never decides it, so a fighter cannot make the rest of the
+party untouchable.
+
+Ironclad is used whenever an enemy attack strikes the fighter.
+
+#### Backstab — Thief
+
+The thief strikes before the enemy has found its feet.
+
+```
+damage multiplier = 1.9 + 0.1 × Backstab rank      (×2 at rank 1, ×2.9 at rank 10)
+```
+
+A thief's **weapon attack** on an enemy that has not yet acted in this fight multiplies
+the attack's base damage, before armour is subtracted. Spells, items and anything else
+are untouched. Once an enemy has taken its first action, Backstab no longer applies to
+it. A fast thief — Dexterity fills the bar — reaches more enemies before they move,
+which is the attribute and the skill pulling the same way.
+
+Backstab is used whenever an attack it multiplies is made.
+
+#### Overchannel — Mage
+
+The mage can spend themselves when the slots run out.
+
+```
+hit points per spell rank = 7 − ⌈Overchannel rank ÷ 2⌉     (6 at rank 1, 2 at rank 10)
+```
+
+When a mage has no slot of a spell's rank left, they may still cast it by paying its
+rank times that many hit points instead. The cost is paid, not dealt: it is not damage,
+nothing reduces it, and it never knocks the mage out — a cast whose cost would bring the
+mage to zero hit points or below is refused and costs nothing. Slots are always spent
+first; Overchannel is only ever what happens after.
+
+Magic stays attrition, because the hit points spent are the cleric's slots and the
+party's potions spent later. What Overchannel adds is a choice at the bottom of the
+slots: a mage with nothing left can still act like a mage, at a price the frailest body
+in the party feels most.
+
+Overchannel is used whenever a cast is paid for with hit points.
+
+#### Intercession — Cleric
+
+The cleric stands between a friend and the dark.
+
+```
+charges = 1 + ⌊Intercession rank ÷ 4⌋      (1 at ranks 1–3, 2 at 4–7, 3 at 8–10)
+```
+
+When damage would bring a conscious party member — the cleric included — to zero hit
+points, and a conscious cleric in the party has a charge left, the member is left at
+one hit point instead and the cleric spends a charge. It happens on its own: there is
+no prompt and no turn spent. It catches only the fall into unconsciousness; damage to a
+character already unconscious goes on through the condition chain untouched.
+
+Charges are attrition like slots: spent charges are recorded on the cleric and restored
+only by camping. With more than one cleric able to intercede, the first in the party's
+order with a charge left spends one.
+
+Intercession is used whenever it spends a charge.
 
 ## Condition
 
@@ -266,17 +418,18 @@ segment writes a character field. The operations are few on purpose.
 
 | Operation | Called by | Enforces |
 |---|---|---|
-| `applyDamage` | combat | the floor at zero, and the slide into unconsciousness or death |
+| `applyDamage` | combat | the floor at zero, a cleric's Intercession, and the slide into unconsciousness or death |
+| `payHitPoints` | magic, for an Overchannelled cast | that the cost is paid, not dealt — never reaching zero, never interceded, never a condition change |
 | `applyHealing` | combat, exploration | the ceiling at maximum, and waking the unconscious |
 | `attemptRevival` | camp, town, a hired cleric, a consumed scroll | the condition chain, and degrading on failure |
-| `equip` | the player | slot rules, and what a class may wield; the item comes from the pack and whatever it displaces goes there |
+| `equip` | the player | slot rules, and that the item's category is one the class wields; the item comes from the pack and whatever it displaces goes there |
 | `takeOff` | the player | the item goes to the pack |
 | `stow` | loot, and the authoring of a starting pack | the item goes to the end of the pack |
 | `addGold` | loot | gold is a count that only rises, never below zero |
 | `useItem` | the player, out of a fight and in one | the item comes from the pack and is used up; it heals only the character using it, through `applyHealing`, and is refused, using nothing, for a character at full health or one who is not conscious |
 | `awardEncounter` | combat | the pot divided equally among skills used |
-| `trainSkill` | camp | the clock's cost, and what a class may train |
-| `changeClass` | town | requirements met, ranks kept |
+| `trainSkill` | camp, exploration | the clock's cost, and that no class skill advances for a character of another class |
+| `restoreCharges` | camp | every spent Intercession charge restored |
 
 ### Who can bring someone back
 
@@ -325,7 +478,9 @@ charged, because the player is told no before anything moves, as with a refused 
 ## Persistence
 
 The whole roster is saved: every character's attributes, skills and ranks, condition,
-equipment slots, class, and accumulated skill experience, with the pack and the purse. A lost character is
+equipment slots, class, accumulated skill experience and spent Intercession charges,
+with the pack and the purse. A class is saved by its id; what the class means is read
+from its file, never from the save. A lost character is
 kept in the save as a record rather than deleted, because a campaign should be able to
 show what it cost.
 
@@ -339,16 +494,25 @@ show what it cost.
 | Rank cost | 300 × r to leave rank r, capped at rank 10 | A flat cost per rank; a geometric curve | A flat cost makes floor one exactly as efficient at rank 9 as at rank 2, so nothing ever pulls a party downward. A geometric curve makes the last ranks a grind measured in hundreds of fights. A linear-cost curve decays farming gently while leaving it available. |
 | Rank ceiling | 10 | Uncapped ranks | Without a ceiling there is no top to the damage curve, and the deepest floor cannot be built against anything. |
 | Who writes character state | Only this segment, through named operations | Combat and exploration writing fields directly | Both legitimately change hit points. One owner means the zero floor, the death chain and the roster limits are enforced once rather than in every caller. |
-| Progression | Skill ranks earned by use | Experience points and character levels | A character should be what they have done. It also makes class a governor rather than an identity, which is what allows changing class without discarding a character. |
+| Progression | Skill ranks earned by use | Experience points and character levels | A character should be what they have done. |
+| Training speed | One rate for every skill and every class; nothing a class cannot practise | A rate multiplier per class per skill, and a set each class cannot train | A rate table made class a second, invisible progression system, and its only real effect was the yes/no of which skills a class could train. What a class may hold and cast already bounds what it practises, so the table bought nothing that wielding and schools do not. |
+| Where a class is defined | One JSON file per class holding every property of it | A table in code; properties spread across item and spell files naming their classes | A class should be readable in one place. A table in code puts authoring inside a programming language, and lists on items and spells mean no single file says what a fighter is. |
+| What a class may hold | Item categories, listed by the class and named by the item | Items listing their classes; classes listing item ids | Categories keep content flowing one way — a new weapon names a category and edits no class — while letting the class file state its permissions whole. A list of item ids would need every class edited for every find. |
+| Class change | None: class is fixed at creation | Changing class at a trainer, keeping ranks | A class skill belongs to its class. Changing class would either strand a skill the character can no longer use or carry it into a class it was never meant for. |
+| A class skill | One per class, unique to it, ranked and advanced like any skill | Several per class; abilities with no rank; class skills learnable by others from tomes | One is enough to make each class plain at a glance. Ranking it like any skill keeps one progression system. Exclusivity is what makes it the class's identity rather than a head start. |
+| Armour skills | None; armour is gear | Heavy Armour, Light Armour and Shield as skills raising armour by rank | With no penalty for wearing armour there is nothing for a skill to reduce, and raising armour by rank would make every class tank alike. Ironclad gives that axis to the one class it belongs to. |
+| Spell attribute | Named by the class: Intellect for the mage, Resolve for the cleric | Intellect for every caster | One attribute for every caster leaves the cleric with a score that does nothing and Resolve with nothing to do. |
+| Ironclad's draw on enemies | A weight on the target draw | Enemies always attacking the fighter; a taunt action | A weight protects without deciding. A guaranteed target would make the rest of the party untouchable and every fight the same fight. |
+| Intercession's trigger | Automatic, on the fall into unconsciousness, from charges restored at camp | A prompt the player answers; per fight; also catching death | A prompt would stop the fight at the worst moment for a choice with one answer. Per fight makes it free; charges make it attrition like slots. Catching only the first fall keeps death a real threat. |
+| Overchannel's cost | Hit points per spell rank, falling with rank, never to zero | A chance of failure; a cost in readiness | A fixed cost keeps the preview honest. Hit points are the scarcest thing a mage has, which makes the choice real, and refusing a cast that would knock the caster out keeps the cost a price rather than a trap. |
 | Combat advancement | A pot per enemy, growing with distinct skills used up to a ceiling, split equally | Per-action gain; a flat pot split equally; diminishing returns per action | A pot fixed by the enemy is what makes prolonging a fight worthless. Growing it with distinct skills stops a flat split punishing a party for using its whole kit; the ceiling stops a party inflating it by dragging the fight out until everyone has touched everything. |
 | A missed attack | Counts as use of the skill | Only successful use counting | Trying and failing is how anyone learns. Requiring success would also make advancement fastest against the weakest enemies, which is the opposite of what the pot is for. |
 | Starting ranks | Shared base skills at rank 1, plus class skills at rank 1 or better | Everything beginning at zero | A party that cannot detect, heal or fight on its first descent has no first hour. |
 | Reviving without a Cleric | Town temples, wandering clerics, and one-use scrolls | Restoration being the only route | Losing the only Cleric would otherwise spiral into an unrecoverable campaign, which the tenet forbids at the campaign level. |
 | An unconscious character | Stays where they are; only healing changes anything | Swapping them out of a front rank for an action, as a positional combat would need | With no positions in a fight there is nowhere to move a body to and nothing exposure could mean. Going down costs the party that character's turns until somebody spends one reviving them, which is the whole of the cost and needs no rule of its own. |
 | Low-level farming | Allowed, and unrewarding on its own terms | Forbidding it with a level cutoff | A small pot is its own disincentive, and the option should stay open to a party rebuilding after a disaster — which is exactly when a cutoff would bite hardest. |
-| Attributes and skills | Deliberately unbound; weapons declare what they draw on | Each skill governed by a fixed attribute | Binding them flattens the difference between a dagger and a mace. A finesse weapon drawing on Dexterity while still using Blade is the kind of nuance that makes equipment interesting. |
+| Attributes and skills | Deliberately unbound; weapons declare what they draw on, classes what they cast with | Each skill governed by a fixed attribute | Binding them flattens the difference between a dagger and a mace. A finesse weapon drawing on Dexterity while still using Blade is the kind of nuance that makes equipment interesting. |
 | Death chain | Unconscious, dead, ashes, lost, with failure degrading | Always-recoverable death; a chain with no final stage | Skills earned by use make a loss unbuyable, so the threat has real weight. The tenet holds at the campaign level: losing a character is a setback, not erasure. |
-| Class change | Keeps every rank, including untrainable ones | Resetting or penalising skills on change | A character is the sum of what they have done. Ranks in skills the new class cannot train simply stop advancing. |
 | A lost character | Kept in the save as a record | Deleted from the roster | A campaign should be able to show what it cost. |
 | Gold | One purse for the party | A purse per character | The same argument as the shared pack: splitting it makes the player track who carries what, for no decision. |
 | Who a potion heals | Only the character using it, who must be conscious | Any character, including the unconscious | A potion is drunk. Tending someone else, and waking the unconscious, is what healing magic is for, which keeps that a reason to bring a cleric. |
@@ -365,8 +529,8 @@ show what it cost.
 6. ✅ **A miss counts as use.** Trying and failing still teaches.
 7. ✅ **A rank costs 300 × r to leave rank r**, and ranks cap at 10.
 8. ✅ **Class sets starting ranks**: shared base skills at 1, plus its own at 1 or higher.
-9. ✅ **Class governs availability and rate**, and changing it keeps every rank already earned.
-10. ✅ **Attributes are not bound to skills**; weapons declare which attribute they draw on.
+9. ✅ **Class governs what a character may hold and cast**, never how fast they learn; every skill advances at one rate.
+10. ✅ **Attributes are not bound to skills**; weapons declare which attribute they draw on, and classes which one they cast with.
 11. ✅ **Hit points never grow through play** — class base and Constitution, fixed for life.
 12. ✅ **The death chain degrades on failed recovery**, and a character can be lost.
 13. ✅ **An unconscious character stays where they are**; with no positions there is nothing to move them out of.
@@ -374,15 +538,20 @@ show what it cost.
 15. ✅ **A lost character stays in the save** as a record.
 16. ✅ **The party shares one purse**, beside the pack.
 17. ✅ **A consumable heals only whoever uses it**, and only while they are conscious.
+18. ✅ **Each class is one JSON file** holding every property of the class, and nothing in code holds a class's numbers.
+19. ✅ **Class is fixed for life**; nothing changes it.
+20. ✅ **Each class has one class skill** no other class can ever hold: Ironclad, Backstab, Overchannel, Intercession.
+21. ✅ **There are no armour skills**; armour is gear.
+22. ✅ **A caster casts from the attribute their class names**: Intellect for the mage, Resolve for the cleric.
 
 ### Deferred
 
 1. **Ability definitions.** Ranks unlock abilities, and what an ability *does* is combat's to resolve — but no ability is authored. The unlock mechanism is designed; the abilities are not.
-2. **Class rate multipliers.** What a rank costs is settled at 300 × r. What each class's rate multiplier on each skill actually is remains unauthored content data.
+2. **Class skill tuning.** The four class skills' formulas are first numbers, untuned against play.
 3. **Enemy pot values.** What an enemy is worth belongs with enemies, which authors it per roster entry. Only the first floor's roster is written.
 4. **Character creation.** How attributes are set at the start — rolled, allocated, or fixed by class — is unspecified.
 5. **The pot ceiling.** That the pot stops growing past a handful of distinct skills is settled; where the ceiling sits is content data and untuned.
-6. **Trainers and towns.** Class change and training need a place to happen; no town segment exists.
+6. **Trainers and towns.** Buying attributes needs a place to happen; no town segment exists.
 7. **Carrying the dead.** A dead character is carried, but whether that costs the party anything — weight, speed, morale — is unaddressed.
 
 ## References

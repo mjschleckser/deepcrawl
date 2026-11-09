@@ -8,7 +8,8 @@ prefix: CAMP
 ## Context and Design Philosophy
 
 Camp is where the party stops in the dungeon to recover what it has spent. It is the one
-place spell slots come back, and the place food is prepared. This segment decides when the
+place spell slots and a cleric's Intercession charges come back, and the place food is
+prepared. This segment decides when the
 party may camp, what camping costs, and what it restores. Magic owns slots and says how
 they are restored; exploration owns the clock camping advances; roaming enemies keep
 moving while the party rests.
@@ -34,7 +35,7 @@ of the scene arrives with cooking.
 |---|---|---|
 | Whether the party may camp | the refusal with an enemy in sight | exploration says what the party can see |
 | What camping costs | the ticks a rest takes; clearing food buffs | exploration advances the clock; roaming enemies move on it |
-| What camping restores | asking magic to restore slots | magic owns slots |
+| What camping restores | asking magic to restore slots, and the party to restore Intercession charges | magic owns slots; the party owns charges |
 | Cooking and food | the food prepared at camp, and the buffs it gives | — (deferred) |
 
 ## Camping
@@ -51,7 +52,8 @@ order:
 3. **If an enemy reaches the party during the rest, the camp is broken.** The fight begins
    where the party lies, and nothing is restored: the time is spent and the slots are not.
 4. **Otherwise the party wakes rested.** Every character who is still alive has every spent
-   spell slot restored, and any food buff still running is cleared.
+   spell slot and every spent Intercession charge restored, and any food buff still
+   running is cleared.
 
 The party learns how the camp went: rested, broken by an enemy, or refused because one was
 in sight.
@@ -76,7 +78,7 @@ come back through potions and Heal.
 
 ### Resolved
 
-1. ✅ **Camping restores spell slots, and nothing else yet.**
+1. ✅ **Camping restores spell slots and Intercession charges, and nothing else yet.**
 2. ✅ **Camping is refused with an enemy in sight**, by the automap's rule of sight.
 3. ✅ **A camp takes a long stretch of ticks**, and roaming enemies move through it.
 4. ✅ **An enemy reaching the party mid-rest breaks the camp**, and nothing is restored.
