@@ -20,7 +20,7 @@
     "baseDamage": 8
   },
   "armour": 0,
-  "potValue": 24,
+  "potValue": 48,
   "forbidsEscape": false,
   "portrait": "goblin_mage.png",
   "loot": "goblin_mage"

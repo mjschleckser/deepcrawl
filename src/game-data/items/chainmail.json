@@ -3,10 +3,6 @@
   "name": "Chainmail",
   "kind": "ARMOUR",
   "slot": "BODY",
-  "skill": "HEAVY_ARMOUR",
-  "armour": 5,
-  "classes": [
-    "FIGHTER",
-    "CLERIC"
-  ]
+  "category": "HEAVY_ARMOUR",
+  "armour": 5
 }

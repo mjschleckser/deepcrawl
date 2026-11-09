@@ -1,0 +1,20 @@
+{
+  "id": "THIEF",
+  "name": "Thief",
+  "hitPoints": 22,
+  "classSkill": "BACKSTAB",
+  "startingRanks": {
+    "BACKSTAB": 1,
+    "DETECTION": 2,
+    "DISARM": 2,
+    "LOCKS": 2,
+    "BLADE": 1
+  },
+  "wields": [
+    "LIGHT_WEAPON",
+    "MARTIAL_BLADE",
+    "LIGHT_ARMOUR"
+  ],
+  "schools": [],
+  "castsWith": null
+}

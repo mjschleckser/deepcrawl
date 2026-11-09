@@ -3,6 +3,7 @@
   "name": "Elder Staff",
   "kind": "WEAPON",
   "slot": "MAIN_HAND",
+  "category": "LIGHT_WEAPON",
   "rarity": "EPIC",
   "skill": "POLEARM",
   "damage": 11,

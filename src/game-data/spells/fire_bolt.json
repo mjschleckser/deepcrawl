@@ -3,7 +3,6 @@
   "name": "Fire Bolt",
   "school": "EVOCATION",
   "rank": 1,
-  "classes": ["MAGE"],
   "target": "ENEMY",
   "effect": { "damage": 10 },
   "where": ["COMBAT"],

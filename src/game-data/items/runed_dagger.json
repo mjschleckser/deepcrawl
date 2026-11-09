@@ -3,6 +3,7 @@
   "name": "Runed Dagger",
   "kind": "WEAPON",
   "slot": "MAIN_HAND",
+  "category": "LIGHT_WEAPON",
   "rarity": "EPIC",
   "skill": "BLADE",
   "damage": 10,

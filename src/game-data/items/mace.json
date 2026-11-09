@@ -3,6 +3,7 @@
   "name": "Mace",
   "kind": "WEAPON",
   "slot": "MAIN_HAND",
+  "category": "LIGHT_WEAPON",
   "skill": "BLUNT",
   "damage": 10,
   "governs": "MIGHT"

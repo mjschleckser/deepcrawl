@@ -3,12 +3,9 @@
   "name": "Wand",
   "kind": "WEAPON",
   "slot": "MAIN_HAND",
+  "category": "WAND",
   "rarity": "UNCOMMON",
   "skill": "MAGIC",
   "damage": 7,
-  "governs": "INTELLECT",
-  "classes": [
-    "MAGE",
-    "CLERIC"
-  ]
+  "governs": "CASTING"
 }

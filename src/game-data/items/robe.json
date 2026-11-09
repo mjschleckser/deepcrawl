@@ -3,6 +3,6 @@
   "name": "Robe",
   "kind": "ARMOUR",
   "slot": "BODY",
-  "skill": "LIGHT_ARMOUR",
+  "category": "LIGHT_ARMOUR",
   "armour": 0
 }

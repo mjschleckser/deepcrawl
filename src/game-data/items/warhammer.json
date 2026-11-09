@@ -3,12 +3,9 @@
   "name": "Warhammer",
   "kind": "WEAPON",
   "slot": "MAIN_HAND",
+  "category": "MARTIAL_BLUNT",
   "rarity": "RARE",
   "skill": "BLUNT",
   "damage": 14,
-  "governs": "MIGHT",
-  "classes": [
-    "FIGHTER",
-    "CLERIC"
-  ]
+  "governs": "MIGHT"
 }

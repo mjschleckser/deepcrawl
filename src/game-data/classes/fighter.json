@@ -1,0 +1,22 @@
+{
+  "id": "FIGHTER",
+  "name": "Fighter",
+  "hitPoints": 30,
+  "classSkill": "IRONCLAD",
+  "startingRanks": {
+    "IRONCLAD": 1,
+    "BLADE": 2,
+    "BLUNT": 1,
+    "POLEARM": 1
+  },
+  "wields": [
+    "LIGHT_WEAPON",
+    "MARTIAL_BLADE",
+    "MARTIAL_BLUNT",
+    "LIGHT_ARMOUR",
+    "HEAVY_ARMOUR",
+    "SHIELD"
+  ],
+  "schools": [],
+  "castsWith": null
+}

@@ -3,10 +3,7 @@
   "name": "Kite Shield",
   "kind": "SHIELD",
   "slot": "OFF_HAND",
+  "category": "SHIELD",
   "rarity": "UNCOMMON",
-  "armour": 2,
-  "classes": [
-    "FIGHTER",
-    "CLERIC"
-  ]
+  "armour": 2
 }
