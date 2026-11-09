@@ -1768,6 +1768,7 @@ describe('casting from the Magic menu', () => {
     expect(fight.pending.targets[0]).toMatchObject({ available: true, detail: '3/3' });
   });
 
+  // @spec PRESENT-MENU-013
   // @spec PRESENT-MENU-017
   it('asks whom next, with what the cast will do, and casts on the one chosen', () => {
     const fight = askedFor(casting(), 'isolde');

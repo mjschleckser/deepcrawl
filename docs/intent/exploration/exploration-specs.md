@@ -145,7 +145,7 @@ tuning the game does not rewrite its specs.
 - [x] **EXPLORE-BOUND-010**: While a step is barred by a roaming enemy, the system shall leave the party's tile, facing, and clock unchanged and resolve no tile feature or re-stocking.
 - [x] **EXPLORE-BOUND-011**: When a roaming enemy reaches the party while spending the ticks a step consumed, the system shall begin an encounter at that step's contact check.
 - [x] **EXPLORE-BOUND-002**: When an encounter begins, the system shall hand combat a payload naming the enemy group and the floor and tile the encounter began on, and carrying nothing about which side noticed the other.
-- [ ] **EXPLORE-BOUND-003**: The system shall change character hit points, status, and death state only through the party segment's operations, from exploration and from combat alike.
-- [ ] **EXPLORE-BOUND-004**: The system shall not mutate a floor's dimensions, edge kinds, or tile features after generation produces them.
+- [x] **EXPLORE-BOUND-003**: The system shall change character hit points, status, and death state only through the party segment's operations, from exploration and from combat alike.
+- [x] **EXPLORE-BOUND-004**: The system shall not mutate a floor's dimensions, edge kinds, or tile features after generation produces them.
 - [x] **EXPLORE-BOUND-006**: When the clock advances, the system shall notify the hunger segment of the number of ticks elapsed.
 - [x] **EXPLORE-BOUND-009**: The system shall route each party action to the segment that owns it and shall hold no rules of its own for `PARTY`, `ITEMS`, `SPELLS`, `CAMP`, or `INTERACT`.

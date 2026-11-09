@@ -370,3 +370,51 @@ describe('camping in a campaign', () => {
     expect(tickCount(state)).toBeGreaterThan(0);
   });
 });
+
+describe('what a campaign never changes', () => {
+  // @spec EXPLORE-BOUND-004
+  it('leaves a floor\'s size, edge kinds and tile features as generation made them', () => {
+    const campaign = booted();
+    const state = campaign.state;
+    const home = state.party.floorId;
+    const shape = (floor) => JSON.stringify({
+      width: floor.width,
+      height: floor.height,
+      // Doors may open and shut; what kind of edge each one is may not change.
+      edges: [...floor.horizontalEdges, ...floor.verticalEdges].map((e) => e.kind),
+      features: floor.tiles.map((t) => t.feature),
+    });
+    const before = shape(state.getFloor(home));
+
+    // Walk, fight nothing, re-stock, camp: everything that touches a floor.
+    state.roamers = state.roamers.filter((r) => r.floorId !== home);
+    walkUntil(campaign, () => false, 300);
+    campaign.restockFloor(home, 500);
+    state.roamers = state.roamers.filter((r) => r.floorId !== home);
+    perform(state, { partyAction: PartyAction.CAMP, commit: true });
+
+    expect(shape(state.getFloor(home))).toBe(before);
+  });
+
+  // @spec EXPLORE-BOUND-003
+  it('changes hit points and condition only by the party\'s rules, from a fight and from a spell', () => {
+    const campaign = booted();
+    const isolde = roster(campaign.party).find((c) => c.characterClass === CharacterClass.MAGE);
+    const wren = roster(campaign.party).find((c) => c.characterClass === CharacterClass.CLERIC);
+    stepIntoContact(campaign);
+    const fight = campaign.encounter;
+
+    // A blow that would take a character below nothing leaves them at nothing and
+    // unconscious, which is the party's floor and its chain, not combat's arithmetic.
+    for (const foe of fight.enemies.members) foe.attack = { skill: Skill.BLADE, baseDamage: 999 };
+    fight.readiness.set(fight.enemies.members[0].id, 100);
+    takeAction(fight, fight.enemies.members[0].id, { kind: Action.ATTACK, targetId: isolde.id });
+    expect(isolde.hitPoints).toBe(0);
+    expect(isolde.condition).toBe(Condition.UNCONSCIOUS);
+
+    // A heal on her is refused by the same rules: a spell does not wake the fallen.
+    fight.readiness.set(wren.id, 100);
+    expect(takeAction(fight, wren.id, { kind: Action.CAST, spellId: 'heal', targetId: isolde.id })).toBeNull();
+    expect(isolde.condition).toBe(Condition.UNCONSCIOUS);
+  });
+});
