@@ -282,8 +282,19 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 ## Camping
 
 - [x] **PRESENT-CAMP-001**: The system shall draw a Camp control on the action bar, between Spells and Use, that performs `CAMP`.
-- [x] **PRESENT-CAMP-002**: When a camp ends rested, or is refused with an enemy in sight, the system shall draw over the view a report saying which.
+- [ ] **PRESENT-CAMP-002**: When a camp is refused with an enemy in sight, the system shall draw over the view a report saying so.
 - [x] **PRESENT-CAMP-003**: While a camp report is drawn, the system shall discard every movement verb and party action, and when the player presses `Enter`, `Escape` or `R`, or presses anywhere, shall dismiss it and change nothing.
+- [ ] **PRESENT-CAMP-004**: When a camp rests, the system shall open the camp screen, saying what the rest did and naming what was foraged, and shall hold the input while it is open.
+- [ ] **PRESENT-CAMP-005**: The system shall draw on the camp screen a row for each kind of food in the pack, with how many are carried and how many are in the pot, and shall put one more in when a row is pressed, going back to none from all of them.
+- [ ] **PRESENT-CAMP-006**: While the camp screen is open, when the player presses `D` or the right arrow, the system shall put one more of the highlighted food in the pot, and when the player presses `A` or the left arrow, take one out.
+- [ ] **PRESENT-CAMP-007**: The system shall draw on the camp screen what the pot would make, as the food segment reports it: each eater's nourishment and healing, and the buff.
+- [ ] **PRESENT-CAMP-008**: When the player presses Cook or `Enter` on the camp screen, the system shall cook the pot through the food segment, close the screen, and report who ate and what the meal did.
+- [ ] **PRESENT-CAMP-009**: When the player presses Leave or `Escape` on the camp screen, the system shall close it without cooking.
+
+## Hunger
+
+- [ ] **PRESENT-HUNGER-001**: When the food segment reports that characters grew hungrier, the system shall draw across the top of the view a notice naming each and the stage they reached, and shall clear it when the player next acts.
+- [ ] **PRESENT-HUNGER-002**: The system shall draw on a character's party page their hunger stage and the meal buff they carry, with what it does.
 
 ## Opening a chest
 

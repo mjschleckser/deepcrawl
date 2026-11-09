@@ -39,6 +39,7 @@ action worth taking.
 | Skills | ranks, advancement, what is unlocked | combat resolves what an ability does |
 | Condition | the state machine and its transitions | combat and exploration cause transitions |
 | Attributes | the five scores | weapons decide which score they draw on |
+| Fullness and meal buff | held on each character and saved with them | food decides how they change and what they do |
 
 ## The Roster
 

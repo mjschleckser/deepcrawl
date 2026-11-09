@@ -166,6 +166,7 @@ flowchart TB
         loot["Loot and items — generation, inventory, equipment"]
         magic["Magic — spells, spell slots, casting"]
         camp["Camp — resting, and what it restores"]
+        food["Food — hunger, ingredients, the pot"]
     end
 
     content["Content definitions — authored data: archetypes, tables, rules"]
@@ -190,6 +191,9 @@ flowchart TB
     explore --> magic
     explore --> camp
     camp --> magic
+    camp --> food
+    explore --> food
+    food --> party
     magic --> party
     content --> magic
     sim <--> save
@@ -244,9 +248,16 @@ an attrition resource, spent across fights and restored only by camping. What a 
 does is fixed, never rolled, so its preview is its result.
 
 **Camp.** Where the party stops to recover. Camping restores spent spell slots, and is
-where food is prepared: cooking gives buffs, and camping clears whatever buffs are still
-running, so each camp is a decision to give up what was cooked last. Camping is refused
-with an enemy in sight and costs time, so roaming enemies move while the party rests.
+where food is cooked and eaten: camping clears whatever buffs are still running, so each
+camp is a decision to give up what was cooked last. Camping is refused with an enemy in
+sight and costs time, so roaming enemies move while the party rests.
+
+**Food.** Hunger, and what feeds it. Every character grows hungrier with every tick
+outside a fight: fed for a long while after a meal, then hungry by steps that weaken them,
+then starving, which drains hit points but never kills. Food is found as loot, dropped by
+enemies, foraged at camp, and carried from the start. It is eaten only at camp, from one
+pot whose ingredients decide the meal: what dominates the pot decides the buff it gives,
+and the cook's skill decides how strong.
 
 **Content definitions.** The authored guidelines generation runs inside — floor
 archetypes, encounter budgets, loot tables, spells, ability definitions — and the combatants

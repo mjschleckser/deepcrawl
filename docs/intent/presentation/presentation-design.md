@@ -825,12 +825,37 @@ slot, and the page returns to the list of spells with the slot spent. Close, `Es
 
 ## Camping
 
-The action bar carries **Camp**, between Spells and Use, and `R` does the same. Camping
-is a commitment, not a screen: pressing it camps at once. What happened is reported over
-the view, the way a chest's find is: *The party rests. Spell slots are restored.*, or
-*An enemy is in sight. The party cannot camp here.* Either report holds the input until
-it is dismissed by `Enter`, `Escape`, `R` or a press anywhere. A camp broken by an enemy
-needs no report of its own: the fight that begins is the report.
+The action bar carries **Camp**, between Spells and Use, and `R` does the same. Pressing
+it camps at once: the rest is a commitment, not a question.
+
+**A camp refused is reported over the view**, the way a chest's find is: *An enemy is in
+sight. The party cannot camp here.* It holds the input until it is dismissed by `Enter`,
+`Escape`, `R` or a press anywhere. A camp broken by an enemy needs no report of its own:
+the fight that begins is the report.
+
+**A camp that rests opens the camp screen**, in the centred column like the Items screen.
+Its head says what the rest did — *The party rests. Spell slots are restored.* — and what
+was foraged, by name. Below it is the pot: every kind of food the pack holds, a row each
+with how many are carried and how many are in the pot. Pressing a row puts one more in,
+and from all of them back to none; `D` and `→` add one to the highlighted row, `A` and `←`
+take one out, and `W`, `S` and the arrows move the highlight. Beneath the rows the screen
+says what the pot would make — *Each of 3 eats: +900 food, heals 8. Hearty: +13% damage
+until the next camp.* — worked out by the food segment, so the preview is the meal.
+
+Along the foot are **Cook** (`Enter`) and **Leave** (`Escape`). Cooking makes the meal,
+closes the screen and reports who ate and what it did. Leaving closes it without eating;
+the rest is not undone. The screen holds the input while it is open.
+
+## Hunger
+
+**A character growing hungrier is announced** in a short notice across the top of the
+view: *Isolde is hungry*, *Isolde is very hungry*, *Bram is starving*. It names everyone
+who stepped down on the same tick, and it stays until the player next acts, so a notice
+that arrived mid-walk is still there to read. It holds no input and covers no control.
+
+**The party page shows each character's hunger and meal**, beneath their hit points: the
+stage — *Fed*, *Hungry*, *Very hungry*, *Famished*, *Ravenous*, *Starving* — and the buff
+they carry, if any, with what it does.
 
 ## Opening a Chest
 
@@ -1046,6 +1071,8 @@ screen the player can see but the game cannot have.
 | How the map is shown | Three states stepped through by one control — expanded, minimap, hidden — and back to expanded | Two states, expanded and collapsed; a separate control for each state | A minimap is worth keeping in view while walking, and a corridor with nothing over it is worth having too, so two states force a choice that three do not. One control stepping smaller and then back to full keeps every state one or two presses away without spending room on more buttons. |
 | Casting out of a fight | A Spells screen paged like the Items screen, asking *whom* on its own rows | A menu off the Spells button; casting from the party screen | A screen paged by character reads the same as the two screens beside it and shows slots without a separate view. Asking *whom* on the same rows keeps the choice where the thumb already is. |
 | Where Camp lives | A button of its own on the action bar | Inside the party screen; inside the Spells screen | Camp is about the whole party and about more than spells once food arrives, so it belongs beside the other party actions rather than inside a screen about one of them. |
+| How the pot is filled | A row per kind of food, pressed to add one and cycling back to none | Dragging items into a pot; a separate screen per ingredient | One press per portion is the fewest that can say *how many*, and cycling back means a mistake is undone by pressing on. Keys add and remove one at a time for a keyboard. |
+| Where hunger is announced | A notice across the top of the view until the next action | A report that holds the input; a line in a log | A report that stops the walk for every step of hunger would be a nag, and exploration has no log. A notice that waits for the next action is read without being in the way. |
 | Party screen layout | One character a page, paged with wrap-around, opening on the first | Four compact rows with the selected character's sheet beneath; all four sheets in one scrolling column | Four sheets do not fit a phone held upright at a readable size, and a roster-and-detail split spends a third of the screen repeating what the sheet already says. A scrolling column moves under the thumb. A page each gives every sheet the whole column, and with four characters wrap-around paging puts any one within two presses. |
 | Where a page's controls sit | Previous, Close and next in one row along the foot, the name across the head | Arrows either side of the name with Close at the top right | The top of a phone is out of a thumb's reach, and paging and closing are the most frequent presses on these screens. The name stays at the head, where reading starts and where it has the full width. |
 | Paging keys | The arrow keys, `A` and `D`, and `1` to `4` | Arrow keys alone; a dedicated pair of keys | `A` and `D` are the turn keys and free while the screen holds the input, so a keyboard player pages without moving their hand. The number keys match how fights already address a slot by number. |

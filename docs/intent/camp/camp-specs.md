@@ -11,11 +11,12 @@ camp may happen, what it costs, and what it restores.
 - [x] **CAMP-REST-002**: When the party camps, the system shall advance the exploration clock by the camp's ticks and give roaming enemies on the floor those ticks to move by.
 - [x] **CAMP-REST-003**: If a roaming enemy reaches the party while the camp's ticks are spent, then the system shall begin that encounter and restore nothing.
 - [x] **CAMP-REST-004**: When a camp is not broken, the system shall ask the magic segment to restore the spell slots of every character who is not dead, ashes or lost.
-- [x] **CAMP-REST-005**: The system shall restore no hit points and wake no unconscious character by camping.
+- [x] **CAMP-REST-005**: The system shall restore no hit points and wake no unconscious character by camping, apart from what the meal restores.
 - [x] **CAMP-REST-006**: The system shall report how a camp ended: rested, broken by an encounter, or refused with an enemy in sight.
 
-## Deferred
+## The meal
 
-- [D] **CAMP-FOOD-001**: When the party camps, the system shall clear every food buff still running.
-- [D] **CAMP-FOOD-002**: The system shall let the party prepare food at camp, giving buffs and restoring hit points by what is eaten.
-- [D] **CAMP-HUNGER-001**: The system shall feed the ticks of a camp to hunger.
+- [ ] **CAMP-FOOD-001**: When a camp is not broken, the system shall ask the food segment to clear every meal buff still running, before the pot is offered.
+- [ ] **CAMP-FOOD-002**: When a camp is not broken, the system shall ask the food segment to forage, and then offer the pot: the player chooses which food goes in and may cook it or leave without eating.
+- [ ] **CAMP-FOOD-003**: The system shall let the pot be cooked at most once per camp, and only while the camp is offering it.
+- [ ] **CAMP-HUNGER-001**: The system shall spend a camp's ticks on hunger as the party rests, before it eats.

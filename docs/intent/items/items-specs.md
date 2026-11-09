@@ -9,7 +9,7 @@ are assembled into the two the fight resolves, and who may hold it.
 ## What an item is
 
 - [x] **ITEM-DEF-001**: The system shall give every item an identifier, a name, a kind and a rarity, and every item but a consumable the slot it occupies.
-- [x] **ITEM-DEF-002**: The system shall offer these kinds and no others: weapon, armour, shield, consumable.
+- [ ] **ITEM-DEF-002**: The system shall offer these kinds and no others: weapon, armour, shield, consumable, food.
 - [x] **ITEM-DEF-003**: The system shall offer these slots and no others: main hand, off hand, body.
 - [x] **ITEM-DEF-004**: The system shall carry on a weapon the skill it trains, its damage, and the attribute its damage draws on.
 - [x] **ITEM-DEF-005**: The system shall carry on a piece of armour the armour skill it is worn under and the damage it turns.
@@ -40,6 +40,7 @@ are assembled into the two the fight resolves, and who may hold it.
 ## The numbers
 
 - [x] **ITEM-NUM-003**: The system shall assemble a combatant's base damage from their weapon's damage, a tenth more per rank of that weapon's skill, and four hundredths more or less per point of the weapon's governing attribute above or below ten.
+- [ ] **ITEM-NUM-008**: The system shall scale a character's base damage by their hunger penalty and hearty buff, and their armour by their tough buff, as the food segment sets them.
 - [x] **ITEM-NUM-007**: The system shall assemble the base damage of a weapon whose skill is `MAGIC` from the wielder's rank in the school it resolves to, and shall record that school as the skill an attack with it uses.
 - [x] **ITEM-NUM-006**: The system shall assemble base damage and armour for a combatant holding nothing in any slot, contributing nothing for each empty slot rather than failing.
 
@@ -48,7 +49,7 @@ are assembled into the two the fight resolves, and who may hold it.
 - [x] **ITEM-WIELD-001**: The system shall report an item as fitting a slot only when the item names that slot.
 - [x] **ITEM-WIELD-002**: The system shall report an item as wieldable by a class when the item names that class, or when the item names no classes at all.
 - [x] **ITEM-WIELD-003**: The system shall decide what a class may hold from the item alone, and not from the skills that class can train.
-- [x] **ITEM-WIELD-004**: The system shall report a consumable as fitting no slot, so that it can never be equipped.
+- [ ] **ITEM-WIELD-004**: The system shall report a consumable or a food item as fitting no slot, so that it can never be equipped.
 
 ## The pack
 

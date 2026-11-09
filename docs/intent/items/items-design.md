@@ -67,6 +67,7 @@ and then, by kind:
 | **Armour** | `skill`, `armour` | the armour skill it is worn under, and the damage it turns |
 | **Shield** | `armour` | the damage it turns, on top of what the body wears |
 | **Consumable** | `effect` | what using it does: `heal`, a fixed number of hit points, or `teach`, the spell a tome teaches |
+| **Food** | `nourish`, `heal`, `traits` | what it adds to the pot at camp; never equipped and never used from the pack (see the food segment) |
 
 **Rarity is a property of the item.** A legendary blade is legendary wherever it turns
 up: in any loot table, in the pack, in a hand. The tier is what loot rolls on and what
@@ -222,6 +223,7 @@ by name, as a combatant file is. A typo in content should fail where it was type
 | Affixes | None yet; an item is exactly its file | Rolled affixes on found items | Affixes are a balance design, and there is nothing tuned to balance them against while enemy damage is flat and the armour curve is unbuilt. Numbers invented before the thing they answer to are numbers invented twice. |
 | Where rarity lives | On the item | On a loot table's entry | A tier on the entry would let one sword be common in one table and legendary in another, and the colour on the screen would stop meaning anything. |
 | Consumables and slots | A fourth kind, with no slot, never equipped | A consumable slot, or a belt of them per character | A slot for potions is a second inventory beside the pack, and choosing which potions to belt is bookkeeping that decides little. The shared pack already holds everything carried. |
+| Food | A fifth kind, with no slot, used only in the pot | Food as a consumable eaten from the pack | Food is eaten only at camp, from a pot shared by the party. A consumable is used by one character from the pack, which is the wrong shape for a shared meal. |
 
 ## Open Questions & Future Decisions
 

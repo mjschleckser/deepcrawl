@@ -177,6 +177,11 @@ Blade, and they are not the same argument for what makes a character dangerous.
 **Armour is subtracted from every blow**, and that is the whole of what armour does. A
 combatant's armour is what their body wears plus any shield in their off hand.
 
+**What a character ate is in the numbers.** A hungry character's base damage is cut by
+their hunger penalty, and a meal's buff raises damage, armour or Dexterity until the next
+camp. The food segment sets both; combat reads the result, so a preview always includes
+them.
+
 ### What an attack will deal
 
 Combat reports what an attack by one combatant on another will deal: the attacker's

@@ -147,5 +147,5 @@ tuning the game does not rewrite its specs.
 - [x] **EXPLORE-BOUND-002**: When an encounter begins, the system shall hand combat a payload naming the enemy group and the floor and tile the encounter began on, and carrying nothing about which side noticed the other.
 - [x] **EXPLORE-BOUND-003**: The system shall change character hit points, status, and death state only through the party segment's operations, from exploration and from combat alike.
 - [x] **EXPLORE-BOUND-004**: The system shall not mutate a floor's dimensions, edge kinds, or tile features after generation produces them.
-- [x] **EXPLORE-BOUND-006**: When the clock advances, the system shall notify the hunger segment of the number of ticks elapsed.
+- [ ] **EXPLORE-BOUND-006**: When the clock advances, the system shall notify the food segment of the number of ticks elapsed, and shall pass on any hunger notice it returns.
 - [x] **EXPLORE-BOUND-009**: The system shall route each party action to the segment that owns it and shall hold no rules of its own for `PARTY`, `ITEMS`, `SPELLS`, `CAMP`, or `INTERACT`.

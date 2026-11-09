@@ -36,6 +36,7 @@ it is paid for, and what a cast does.
 ## What a cast does
 
 - [x] **MAGIC-CAST-001**: The system shall set a spell's magnitude to its base grown by a tenth per rank in its school and by four hundredths per point of Intellect above or below ten, rounded to a whole number and never below one.
+- [ ] **MAGIC-CAST-010**: The system shall scale a caster's spell magnitude by their hunger penalty and arcane buff, as the food segment sets them, before rounding.
 - [x] **MAGIC-CAST-002**: When a spell that deals damage ignoring armour is cast on an enemy, the system shall deal its whole magnitude, unreduced by the target's armour.
 - [x] **MAGIC-CAST-009**: When a spell that deals damage not ignoring armour is cast on an enemy, the system shall deal its magnitude less the target's armour, held to the minimum a weapon blow is held to.
 - [x] **MAGIC-CAST-003**: When a healing spell is cast on a conscious ally, the system shall restore its magnitude in hit points through the party's operation, never past the ally's maximum.

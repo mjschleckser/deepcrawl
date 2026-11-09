@@ -79,6 +79,7 @@ are fed into, never the numbers.
 ## Persistence
 
 - [x] **PARTY-SAVE-001**: The system shall save every character's attributes, class, skill ranks, accumulated skill experience, condition, hit points, and equipment.
+- [ ] **PARTY-SAVE-005**: The system shall save every character's fullness and the meal buff they carry.
 - [x] **PARTY-SAVE-003**: The system shall save the pack and every item in it, and shall restore it in the same order.
 - [x] **PARTY-SAVE-002**: The system shall restore a party from a save with every character in the condition they were saved in.
 - [x] **PARTY-SAVE-004**: The system shall save the party's purse, and shall restore it to the same amount.

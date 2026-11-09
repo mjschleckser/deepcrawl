@@ -391,7 +391,7 @@ Rules beyond that line belong to the other segment.
 
 | Hook | Fires when | Exploration provides | Owned elsewhere |
 |---|---|---|---|
-| Hunger | every tick | the tick | stages, thresholds, effects |
+| Hunger | every tick | the ticks elapsed; it hands back any notice that a character grew hungrier | fullness, stages, penalties, starving |
 | Roaming enemies | after discovery on each step | floor and party tile | movement behavior, roster, respawn |
 | Floor re-stocking | the party arrives on a floor it has visited before | the floor and the ticks elapsed since it was last left | how far enemies move, which rooms refill |
 | Opening a chest | the player commits `INTERACT` on an unopened chest | the floor, its seed and archetype, and the chest's number | what the chest holds |
@@ -429,7 +429,7 @@ matter which segment triggered the change.
 | Floor layouts | dungeon generation | never mutated after creation |
 | Character hit points, status, death state | party | party operations, called by combat and exploration |
 | Party roster | party | party operations |
-| Hunger per character | hunger | hunger, on exploration's tick |
+| Fullness and meal buff per character | party, held for the food segment | food, on exploration's tick and at camp |
 | Roaming enemy positions and state | roaming enemies | roaming enemies, on exploration's step |
 
 Exploration never mutates a floor's layout. Generation produces layouts; exploration
@@ -600,7 +600,7 @@ map; tapping the control expands the map to full screen.
 2. **Skill-dependent sight.** The party sees four tiles, and enemies within it. Party skill was raised as a future modifier on that range; the mechanism is unspecified.
 3. **Auto-travel** — tap a discovered automap tile and walk there. Must interrupt on an encounter. Not in v1.
 4. **Player map annotations** — Etrian-style notes and icons. Out of scope.
-5. **Hunger stages and effects** — this segment supplies the tick only; thresholds and consequences belong to the hunger segment.
+5. **Hunger stages and effects** — this segment supplies the tick only; thresholds and consequences belong to the food segment.
 6. **Keys and locked doors** — `lockedDoor` names a matching key, but whether keys are per-door ids, a keyring, or a generic unlock is the items segment's decision. No key exists yet, so a generated locked door names none and opens like any other door.
 7. **Spinners and teleporters** — tile features that defeat mapping. Deferred; the edge and feature model accommodates them unchanged.
 8. **Other adventuring parties** in the dungeon. Noted as a future inhabitant of the same floor model.

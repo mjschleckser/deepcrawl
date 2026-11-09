@@ -164,6 +164,13 @@ Gold is a count the party holds in its purse. A find's gold is added to the purs
 nothing in this segment takes any away. There is nothing to spend it on until there is
 a town; until then, gold is a score that will later become a currency.
 
+## Food
+
+Food is found the way any item is. Chests carry rations, goblins drop rations and haunches,
+and the goblin mage's table carries glowcaps. Food is authored at common or uncommon, so it
+turns up often enough to keep a careful party fed, and never often enough that hunger stops
+mattering. Foraging at camp is the other source, and belongs to the food segment.
+
 ## Consumables
 
 A consumable is an item the items segment defines with an effect rather than a slot.
