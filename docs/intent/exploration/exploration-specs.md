@@ -102,11 +102,12 @@ tuning the game does not rewrite its specs.
 - [x] **EXPLORE-RETURN-001**: When the party leaves a floor, the system shall record the current tick against that floor.
 - [x] **EXPLORE-RETURN-002**: While the party is not on a floor, the system shall not move that floor's roaming enemies, change its door states, or restock its rooms.
 - [x] **EXPLORE-RETURN-003**: When the party arrives on a floor it has previously left, the system shall apply a re-stocking scaled to the ticks elapsed since that floor's recorded departure.
-- [ ] **EXPLORE-RETURN-004**: When a re-stocking runs, the system shall reposition the floor's roaming enemies, change door open states, and refill some previously cleared rooms.
+- [x] **EXPLORE-RETURN-004**: When a re-stocking runs, the system shall set its strength to the ticks elapsed over a thousand, at most one, close each door on the floor that stands open when a number drawn for it falls under half the strength, and hand the strength and its generator on for the floor's warbands.
 - [x] **EXPLORE-RETURN-005**: When a re-stocking runs, the system shall leave the floor's discovery record unchanged.
 - [x] **EXPLORE-RETURN-006**: When a re-stocking runs, the system shall leave the floor's dimensions, edge kinds, and tile features unchanged.
-- [x] **EXPLORE-RETURN-007**: When the party returns to a floor after fewer elapsed ticks than the minimum threshold defined in content data, the system shall apply no re-stocking.
-- [ ] **EXPLORE-RETURN-008**: When two returns to the same floor differ in elapsed ticks, the system shall apply the larger re-stocking to the longer absence.
+- [x] **EXPLORE-RETURN-007**: When the party returns to a floor after fewer elapsed ticks than the minimum threshold defined in content data — 100 — the system shall apply no re-stocking.
+- [x] **EXPLORE-RETURN-008**: When two returns to the same floor differ only in elapsed ticks, the system shall make every change in the longer absence's re-stocking that the shorter one's would make.
+- [x] **EXPLORE-RETURN-011**: The system shall draw a re-stocking from a generator seeded by the floor's own seed and the number of times that floor has been re-stocked, and shall save that number for each floor.
 
 ## Persistence
 

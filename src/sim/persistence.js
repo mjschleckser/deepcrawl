@@ -83,6 +83,8 @@ export function serialize(state) {
     // The edges sight has recorded.
     discoveredEdges: [...state.discoveredEdges],
     departedAt: Object.fromEntries(state.departedAt),
+    // @spec EXPLORE-RETURN-011
+    restockCounts: Object.fromEntries(state.restockCounts),
     // A roamer's generator is a closure, so where it has reached is what is written.
     // @spec SAVE-HOLD-004
     roamers: state.roamers.map(({ rng, ...roamer }) => ({ ...roamer, rngPosition: rng?.position() })),
@@ -143,6 +145,7 @@ export function restore(saved, createExploration, { floorProvider = null, hooks 
   state._advanceTicks(saved.ticks);
   state.discoveredEdges = new Set(saved.discoveredEdges);
   state.departedAt = new Map(Object.entries(saved.departedAt));
+  state.restockCounts = new Map(Object.entries(saved.restockCounts ?? {}));
 
   for (const floor of floors) {
     state.discoveredTiles.set(

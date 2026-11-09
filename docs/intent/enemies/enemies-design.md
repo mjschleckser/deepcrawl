@@ -216,7 +216,8 @@ When exploration re-stocks a floor, it asks generation what refills the rooms, a
 generation asks here. What comes back is a set of bands and where they stand.
 
 A re-stocking never touches the floor's construction, so this segment
-answers only with occupants.
+answers only with occupants. A warband that is moved keeps who it is — its members, their
+wounds, its loot — and forgets the party: it arrives unaware.
 
 Nothing is ever placed on the tile the party occupies: a floor that re-stocks around a
 standing party puts its new bands elsewhere, so the invariant holds from the moment

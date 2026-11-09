@@ -281,7 +281,7 @@ export function selectEnemyTarget(role, candidates, rng) {
  * @spec ENEMY-STOCK-002
  * @spec ENEMY-CONTACT-006
  */
-export function occupantsFor({ floorId, rooms, rng, count, avoid = null }) {
+export function occupantsFor({ floorId, rooms, rng, count, avoid = null, idPrefix = `${floorId}-roamer-` }) {
   const occupants = [];
   for (let i = 0; i < count && rooms.length > 0; i++) {
     let tile = null;
@@ -298,7 +298,7 @@ export function occupantsFor({ floorId, rooms, rng, count, avoid = null }) {
     if (!tile) continue;
 
     occupants.push({
-      id: `${floorId}-roamer-${i}`,
+      id: `${idPrefix}${i}`,
       floorId,
       ...tile,
       band: assembleBand(BANDS.GOBLIN_WARBAND, rng),
