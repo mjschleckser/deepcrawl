@@ -45,10 +45,13 @@ when it is read.
 - [x] **SAVE-READ-010**: When a save holds items from before items carried a rarity, in a slot or in the pack, the system shall read each as common.
 - [x] **SAVE-READ-011**: When a save holds weapons carrying accuracy, combatants carrying Perception, or shields carrying defence, the system shall drop the accuracy and the Perception, and shall give each shield the armour its authored file gives it today, or none if it has no file.
 
-## The switch
+## Testing mode
 
-- [x] **SAVE-OFF-001**: While saving is switched off, the system shall begin a new campaign every time the game opens, and shall neither read, write, nor remove any save in storage.
-- [x] **SAVE-OFF-002**: While saving is switched off, the system shall report the campaign as not being saved.
+- [x] **SAVE-TEST-001**: The system shall hold whether testing mode is on as a setting in browser storage apart from the save, on when nothing has been stored.
+- [x] **SAVE-TEST-002**: While testing mode is on, the system shall begin a new campaign every time the game opens, and shall neither read, write, nor remove any save in storage.
+- [x] **SAVE-TEST-003**: While testing mode is on, the system shall report the campaign as in testing mode.
+- [x] **SAVE-TEST-004**: When a campaign begins in testing mode, the system shall put in the pack one of every weapon, armour, shield and consumable, three of every food, and 500 gold; teach every character every tome spell they could read; and give the cleric a Cooking rank of 6.
+- [x] **SAVE-TEST-005**: When the player confirms switching testing mode, the system shall store the new setting and begin a new campaign in that mode.
 
 ## Beginning again
 

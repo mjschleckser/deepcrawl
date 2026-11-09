@@ -191,7 +191,7 @@ describe('the party screen page', () => {
     const plan = buildPartyPlan(fourOf(), phone, { page: 0 });
 
     expect(plan.controls.map((c) => c.role).sort()).toEqual(
-      [PartyControl.CLOSE, PartyControl.NEW_CAMPAIGN, PartyControl.NEXT, PartyControl.PREVIOUS].sort(),
+      [PartyControl.CLOSE, PartyControl.NEW_CAMPAIGN, PartyControl.NEXT, PartyControl.PREVIOUS, PartyControl.TESTING].sort(),
     );
     for (const c of plan.controls) {
       expect(c.width).toBeGreaterThanOrEqual(MIN_TAP_PX);

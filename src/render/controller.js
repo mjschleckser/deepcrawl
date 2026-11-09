@@ -70,9 +70,11 @@ function stateSignature(state) {
 const keyIs = (key, ...names) => names.includes(key) || names.includes(key.toLowerCase());
 
 /** @spec PRESENT-SCENE-007 */
-export function createController({ state, viewport, onDraw, campaign = null, onBeginAgain = () => {} }) {
+export function createController({
+  state, viewport, onDraw, campaign = null, onBeginAgain = () => {}, onToggleTesting = () => {},
+}) {
   const controller = {
-    state, viewport, onDraw, campaign, onBeginAgain,
+    state, viewport, onDraw, campaign, onBeginAgain, onToggleTesting,
     // The map opens large: it is what the player is building.
     // @spec PRESENT-MAP-013
     mapMode: MapMode.EXPANDED, fight: null,
@@ -311,7 +313,7 @@ export function layers(controller) {
   // A question asked by the party screen is the view's own, about ending the campaign;
   // anything else on screen is the simulation's pending confirmation.
   const asking = controller.partyScreen?.confirming
-    ? { kind: 'NEW_CAMPAIGN' }
+    ? { kind: controller.partyScreen.confirming }
     : state.pendingConfirmation ?? null;
 
   return [
@@ -495,7 +497,9 @@ const partyOf = (controller) => controller.campaign?.party ?? null;
 function partyPlan(controller) {
   const party = partyOf(controller);
   if (!controller.partyScreen || !party) return null;
-  return buildPartyPlan(party, controller.viewport, { page: controller.partyScreen.page });
+  return buildPartyPlan(party, controller.viewport, {
+    page: controller.partyScreen.page, testing: Boolean(controller.campaign?.testing),
+  });
 }
 
 /**
@@ -545,13 +549,17 @@ function showPage(controller, page) {
  * @spec SAVE-NEW-002
  */
 function answerNewCampaign(controller, accepted) {
+  const asked = controller.partyScreen.confirming;
   if (!accepted) {
     controller.partyScreen.confirming = false;
     redraw(controller);
     return true;
   }
   closePartyScreen(controller);
-  controller.onBeginAgain();
+  // Switching testing mode begins a new campaign in the other mode.
+  // @spec PRESENT-PARTY-025
+  if (asked === 'TESTING_ON' || asked === 'TESTING_OFF') controller.onToggleTesting();
+  else controller.onBeginAgain();
   return true;
 }
 
@@ -591,7 +599,7 @@ function pressKeyOnPartyScreen(controller, key) {
  */
 function pressPointerOnPartyScreen(controller, px, py) {
   if (controller.partyScreen.confirming) {
-    const prompt = buildPromptPlan({ kind: 'NEW_CAMPAIGN' }, controller.viewport);
+    const prompt = buildPromptPlan({ kind: controller.partyScreen.confirming }, controller.viewport);
     const answer = hit(prompt.controls, px, py);
     return answer ? answerNewCampaign(controller, answer.accepted) : false;
   }
@@ -600,7 +608,12 @@ function pressPointerOnPartyScreen(controller, px, py) {
   if (!control) return false;
   const { page } = controller.partyScreen;
   if (control.role === PartyControl.NEW_CAMPAIGN) {
-    controller.partyScreen.confirming = true;
+    controller.partyScreen.confirming = 'NEW_CAMPAIGN';
+    redraw(controller);
+    return true;
+  }
+  if (control.role === PartyControl.TESTING) {
+    controller.partyScreen.confirming = controller.campaign?.testing ? 'TESTING_OFF' : 'TESTING_ON';
     redraw(controller);
     return true;
   }

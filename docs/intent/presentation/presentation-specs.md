@@ -234,6 +234,7 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-PARTY-021**: When the player presses New campaign, the system shall ask for confirmation with a control to confirm and a control to decline, and shall change nothing until it is answered.
 - [x] **PRESENT-PARTY-022**: While that confirmation stands, when the player declines it, presses `Escape`, or closes the party screen, the system shall dismiss it and change nothing.
 - [x] **PRESENT-PARTY-023**: When the player confirms that question, the system shall begin a new campaign and close the party screen.
+- [x] **PRESENT-PARTY-025**: The system shall draw on the party screen a Testing control saying whether testing mode is on, and when it is pressed shall ask for confirmation that switching begins a new campaign, as New campaign does.
 - [x] **PRESENT-PARTY-024**: The system shall draw the party screen's previous, Close and next controls in one row along the foot of the page — previous at the left, Close centred, next at the right — and the character's name and place across the head of the page.
 
 ## The Items screen

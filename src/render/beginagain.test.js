@@ -254,3 +254,45 @@ describe('the save note', () => {
     expect(onDraw).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('the Testing control on the party screen', () => {
+  function testing(on) {
+    const campaign = createCampaign({ seed: 21, testing: on });
+    const onToggleTesting = vi.fn();
+    const controller = createController({
+      state: campaign.state, campaign, viewport, onDraw: vi.fn(), onToggleTesting,
+    });
+    pressKey(controller, 'p');
+    return { controller, onToggleTesting };
+  }
+  const control = (controller) => layer(controller, 'party').controls.find((c) => c.role === PartyControl.TESTING);
+
+  // @spec PRESENT-PARTY-025
+  it('says whether testing mode is on, thumb-sized and clear of the other controls', () => {
+    const { controller } = testing(true);
+    expect(control(controller).label).toBe('Testing: on');
+    expect(control(controller).height).toBeGreaterThanOrEqual(MIN_TAP_PX);
+    for (const other of layer(controller, 'party').controls.filter((c) => c.role !== PartyControl.TESTING)) {
+      const c = control(controller);
+      const overlaps = c.x < other.x + other.width && c.x + c.width > other.x && c.y < other.y + other.height && c.y + c.height > other.y;
+      expect(overlaps).toBe(false);
+    }
+    expect(control(testing(false).controller).label).toBe('Testing: off');
+  });
+
+  // @spec PRESENT-PARTY-025
+  it('asks before switching, and switches only on a confirmation', () => {
+    const { controller, onToggleTesting } = testing(true);
+    pressPointer(controller, ...centre(control(controller)));
+
+    expect(layer(controller, 'hud').prompt.text).toBe('Turn testing mode off? This begins a new campaign.');
+    pressKey(controller, 'Escape');
+    expect(onToggleTesting).not.toHaveBeenCalled();
+    expect(layer(controller, 'hud').prompt).toBeNull();
+
+    pressPointer(controller, ...centre(control(controller)));
+    pressKey(controller, 'Enter');
+    expect(onToggleTesting).toHaveBeenCalledTimes(1);
+    expect(layer(controller, 'party')).toBeNull();
+  });
+});

@@ -12,8 +12,8 @@ import { createCampaign } from './campaign.js';
 import { itemById } from './items.js';
 import { enemyDefinitions } from './combatants.js';
 import {
-  SAVE_FORMAT, SAVE_KEY, SAVING, WRITE_DELAY_MS, createAutosave, encodeCampaign, migrate, openCampaign,
-  startCampaign,
+  SAVE_FORMAT, SAVE_KEY, TESTING_KEY, WRITE_DELAY_MS, createAutosave, encodeCampaign, migrate, openCampaign,
+  startCampaign, readTestingMode, writeTestingMode,
 } from './savegame.js';
 
 const fakeStorage = (seeded = {}) => {
@@ -535,46 +535,60 @@ describe('writing a save', () => {
   });
 });
 
-describe('saving switched off', () => {
-  // @spec SAVE-OFF-001
-  it('is off while items are being reworked', () => {
-    expect(SAVING).toBe(false);
+describe('testing mode', () => {
+  // @spec SAVE-TEST-001
+  it('is on until it is stored as off, and is stored apart from the save', () => {
+    const storage = fakeStorage();
+    expect(readTestingMode(storage)).toBe(true);
+    expect(readTestingMode(null)).toBe(true);
+
+    writeTestingMode(storage, false);
+    expect(readTestingMode(storage)).toBe(false);
+    expect(storage.items.has(SAVE_KEY)).toBe(false);
+    expect(storage.items.get(TESTING_KEY)).toBe('off');
   });
 
-  // @spec SAVE-OFF-001
-  it('begins a new campaign, leaving any save in storage untouched', () => {
+  // @spec SAVE-TEST-002
+  // @spec SAVE-TEST-003
+  it('begins a testing campaign, leaving any save in storage untouched, and writes nothing', () => {
     const text = encodeCampaign(createCampaign({ seed: 5 }));
     const storage = fakeStorage({ [SAVE_KEY]: text });
     const getItem = vi.spyOn(storage, 'getItem');
     const fresh = createCampaign({ seed: 9 });
     const create = vi.fn(() => fresh);
 
-    const opened = startCampaign(storage, { saving: false, create });
+    const opened = startCampaign(storage, { testing: true, create });
 
-    expect(getItem).not.toHaveBeenCalled();
-    expect(create).toHaveBeenCalledWith();
-    expect(opened.campaign).toBe(fresh);
-    expect(opened.canWrite).toBe(false);
-    expect(opened.setAside).toBe(false);
+    expect(getItem).not.toHaveBeenCalledWith(SAVE_KEY);
+    expect(create).toHaveBeenCalledWith({ testing: true });
+    expect(opened).toMatchObject({ campaign: fresh, canWrite: false, setAside: false, testing: true });
 
-    const onStatus = vi.fn();
-    const autosave = createAutosave({ storage, read: () => opened.campaign, canWrite: opened.canWrite, onStatus });
+    const autosave = createAutosave({ storage, read: () => opened.campaign, canWrite: opened.canWrite });
     autosave.flush();
-
-    // @spec SAVE-OFF-002
-    expect(onStatus).toHaveBeenCalledWith(false);
     expect([...storage.items.keys()]).toEqual([SAVE_KEY]);
     expect(storage.items.get(SAVE_KEY)).toBe(text);
   });
 
-  // @spec SAVE-OFF-001
-  it('opens the save as before once switched back on', () => {
+  it('opens the save as before when testing mode is off', () => {
     const saved = createCampaign({ seed: 5 });
-    const storage = fakeStorage({ [SAVE_KEY]: encodeCampaign(saved) });
+    const storage = fakeStorage({ [SAVE_KEY]: encodeCampaign(saved), [TESTING_KEY]: 'off' });
 
-    const opened = startCampaign(storage, { saving: true });
+    const opened = startCampaign(storage);
 
-    expect(opened.canWrite).toBe(true);
+    expect(opened).toMatchObject({ canWrite: true, testing: false });
     expect(JSON.stringify(opened.campaign.snapshot())).toBe(JSON.stringify(saved.snapshot()));
+  });
+
+  // @spec SAVE-TEST-005
+  it('lets an autosave be told it may write again', () => {
+    const storage = fakeStorage();
+    const campaign = createCampaign({ seed: 5 });
+    const autosave = createAutosave({ storage, read: () => campaign, canWrite: false });
+    autosave.flush();
+    expect(storage.items.has(SAVE_KEY)).toBe(false);
+
+    autosave.setCanWrite(true);
+    autosave.flush();
+    expect(storage.items.has(SAVE_KEY)).toBe(true);
   });
 });

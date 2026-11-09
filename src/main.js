@@ -1,6 +1,6 @@
 import './style.css';
 import { createCampaign } from './content/campaign.js';
-import { createAutosave, startCampaign } from './content/savegame.js';
+import { createAutosave, startCampaign, writeTestingMode } from './content/savegame.js';
 import { computeSight } from './sim/exploration.js';
 import { createRenderer } from './render/app.js';
 import { playableViewport } from './render/viewport.js';
@@ -22,8 +22,9 @@ function browserStorage() {
 async function bootstrap() {
   const mount = document.querySelector('#app');
   const storage = browserStorage();
-  // Saving can be switched off, in which case every load is a new campaign.
-  const { campaign, setAside, canWrite } = startCampaign(storage);
+  // In testing mode every load is a new testing campaign, and nothing is saved.
+  const { campaign, setAside, canWrite, testing: startedTesting } = startCampaign(storage);
+  let testing = startedTesting;
   // Exposed for driving the game from a browser smoke test. Development only.
   if (import.meta.env.DEV) window.__campaign = campaign;
   // Record what the party can see from where it stands, before anything is drawn.
@@ -36,7 +37,8 @@ async function bootstrap() {
 
   const showSaveNote = () => {
     if (!controller) return;
-    const note = !saving ? 'Not saving' : setAside ? 'Old save set aside' : null;
+    // @spec SAVE-TEST-003
+    const note = testing ? 'Testing mode' : !saving ? 'Not saving' : setAside ? 'Old save set aside' : null;
     setSaveNote(controller, note);
   };
 
@@ -47,11 +49,25 @@ async function bootstrap() {
    * @spec SAVE-NEW-001
    */
   const beginAgain = () => {
-    const fresh = createCampaign();
+    const fresh = createCampaign({ testing });
     computeSight(fresh.state);
     if (import.meta.env.DEV) window.__campaign = fresh;
     replaceCampaign(controller, fresh);
     autosave.flush();
+  };
+
+  /**
+   * Switch testing mode: remember the new setting, and begin a new campaign in it, which
+   * is saved only when testing mode is off.
+   *
+   * @spec SAVE-TEST-005
+   */
+  const toggleTesting = () => {
+    testing = !testing;
+    writeTestingMode(storage, testing);
+    autosave.setCanWrite(!testing);
+    beginAgain();
+    showSaveNote();
   };
 
   // A redraw is the one thing every change to the campaign has in common, a fight's
@@ -67,6 +83,7 @@ async function bootstrap() {
       autosave?.touch();
     },
     onBeginAgain: beginAgain,
+    onToggleTesting: () => toggleTesting(),
   });
 
   autosave = createAutosave({

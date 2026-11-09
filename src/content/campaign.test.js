@@ -12,7 +12,8 @@ import {
 } from '../sim/exploration.js';
 import { createController, pressKey, layers } from '../render/controller.js';
 import { createCampaign } from './campaign.js';
-import { packOf, roster } from '../sim/party.js';
+import { packOf, purseOf, roster } from '../sim/party.js';
+import { itemDefinitions } from './items.js';
 
 const viewport = { width: 800, height: 600 };
 
@@ -157,5 +158,33 @@ describe('the starting supply', () => {
     const campaign = createCampaign({ seed: 3 });
     expect(packOf(campaign.party).filter((item) => item.id === 'ration')).toHaveLength(6);
     for (const c of roster(campaign.party)) expect(c.fullness).toBe(2000);
+  });
+});
+
+describe('a testing campaign', () => {
+  // @spec SAVE-TEST-004
+  it('begins with one of every item, three of every food, gold, every spell, and a cook', () => {
+    const campaign = createCampaign({ seed: 3, testing: true });
+    const pack = packOf(campaign.party);
+    const count = (id) => pack.filter((item) => item.id === id).length;
+
+    for (const item of Object.values(itemDefinitions())) {
+      // Rations are the starting supply's six as well as the kit's three.
+      const expected = item.kind === 'FOOD' ? 3 + (item.id === 'ration' ? 6 : 0) : 1;
+      expect(count(item.id)).toBe(expected);
+    }
+    expect(purseOf(campaign.party)).toBe(500);
+    const mage = roster(campaign.party).find((c) => c.characterClass === 'MAGE');
+    expect(mage.learnedSpells).toContain('fire_bolt');
+    const cleric = roster(campaign.party).find((c) => c.characterClass === 'CLERIC');
+    expect(cleric.ranks.COOKING).toBe(6);
+    expect(campaign.testing).toBe(true);
+  });
+
+  it('gives an ordinary campaign none of it', () => {
+    const campaign = createCampaign({ seed: 3 });
+    expect(campaign.testing).toBe(false);
+    expect(purseOf(campaign.party)).toBe(0);
+    expect(packOf(campaign.party).every((item) => item.id === 'ration')).toBe(true);
   });
 });

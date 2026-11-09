@@ -897,6 +897,10 @@ of its own. A single save has no undo, so the one press that ends a campaign is 
 first press. Declining, closing the screen, or `Escape` leave everything as it was. The
 question is view state like the screen itself, and the simulation is told only the answer.
 
+Beside it is the **Testing** control, saying whether testing mode is on: *Testing: on*.
+Switching mode begins a new campaign, so pressing it asks first, the same way — *Turn
+testing mode off? This begins a new campaign.* — and only a confirmation switches.
+
 A defeat has nothing left to carry on with, so its banner says **Begin again** where the
 others say *Onward*. The banner is itself the confirmation: a wiped party has no other
 course, and the question would only ask the player to agree with what has happened.
@@ -904,8 +908,8 @@ course, and the question would only ask the player to agree with what has happen
 ## The Save Note
 
 A note on the build stamp's own line, after the number, says when the campaign is not
-being kept, and is not there otherwise: *Not saving* while writes are failing or saving is
-switched off, and *Old save set aside* when the game opened on a save it could not read.
+being kept, and is not there otherwise: *Testing mode* while testing mode is on, *Not
+saving* while writes are failing, and *Old save set aside* when the game opened on a save it could not read.
 It shares the stamp's line, and the stamp clears the corner at the width of both, so the
 note never lands on a control. It is small because play carries on, and it is
 there at all because a player who is losing progress should find out while they can do

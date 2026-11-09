@@ -12,6 +12,9 @@ const PROMPTS = {
   STAIRS: { text: 'A staircase leads down.', confirm: 'Descend', decline: 'Stay' },
   STAIRS_UP: { text: 'A staircase leads up.', confirm: 'Climb', decline: 'Stay' },
   NEW_CAMPAIGN: { text: 'Abandon this campaign?', confirm: 'Abandon', decline: 'Keep playing' },
+  // @spec PRESENT-PARTY-025
+  TESTING_ON: { text: 'Turn testing mode on? This begins a new campaign.', confirm: 'Switch', decline: 'Keep playing' },
+  TESTING_OFF: { text: 'Turn testing mode off? This begins a new campaign.', confirm: 'Switch', decline: 'Keep playing' },
 };
 
 const DEFAULT_PROMPT = { text: 'Are you sure?', confirm: 'Yes', decline: 'No' };

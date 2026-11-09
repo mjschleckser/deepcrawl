@@ -16,13 +16,31 @@ export const SAVE_KEY = 'deepcrawl.save';
 /** The schema a save is written in. Raise it, and add a migration, when the shape changes. */
 export const SAVE_FORMAT = 5;
 
+/** Where testing mode is remembered, apart from the save. */
+export const TESTING_KEY = 'deepcrawl.testing';
+
 /**
- * Whether the campaign is saved at all. Off while items are reworked from build to build:
- * every load is then a new campaign, and nothing in storage is read or written.
+ * Whether testing mode is on: on unless it has been stored as off, and on when storage
+ * cannot even be asked.
  *
- * @spec SAVE-OFF-001
+ * @spec SAVE-TEST-001
  */
-export const SAVING = false;
+export function readTestingMode(storage) {
+  try {
+    return storage?.getItem(TESTING_KEY) !== 'off';
+  } catch {
+    return true;
+  }
+}
+
+/** @spec SAVE-TEST-005 */
+export function writeTestingMode(storage, on) {
+  try {
+    storage?.setItem(TESTING_KEY, on ? 'on' : 'off');
+  } catch {
+    // A setting that cannot be stored is still in force for this load.
+  }
+}
 
 /** How long a change waits, so a run of steps becomes one write. */
 export const WRITE_DELAY_MS = 1000;
@@ -251,16 +269,15 @@ export function openCampaign(storage, { create = createCampaign, now = Date.now 
 }
 
 /**
- * The campaign the game opens on. With saving switched off it is always a new one, and
- * storage is left exactly as it was; the answer says nothing may be written, which is
- * what has the game report that it is not saving.
+ * The campaign the game opens on. In testing mode it is always a new testing campaign,
+ * and storage's save is left exactly as it was; the answer says nothing may be written.
  *
- * @spec SAVE-OFF-001
- * @spec SAVE-OFF-002
+ * @spec SAVE-TEST-002
+ * @spec SAVE-TEST-003
  */
-export function startCampaign(storage, { saving = SAVING, create = createCampaign, now = Date.now } = {}) {
-  if (!saving) return { campaign: create(), setAside: false, canWrite: false };
-  return openCampaign(storage, { create, now });
+export function startCampaign(storage, { testing = readTestingMode(storage), create = createCampaign, now = Date.now } = {}) {
+  if (testing) return { campaign: create({ testing: true }), setAside: false, canWrite: false, testing: true };
+  return { ...openCampaign(storage, { create, now }), testing: false };
 }
 
 /**
@@ -275,7 +292,8 @@ export function startCampaign(storage, { saving = SAVING, create = createCampaig
  * @spec SAVE-STORE-002
  * @spec SAVE-STORE-003
  */
-export function createAutosave({ storage, read, onStatus = () => {}, canWrite = true }) {
+export function createAutosave({ storage, read, onStatus = () => {}, canWrite: initiallyWritable = true }) {
+  let canWrite = initiallyWritable;
   let timer = null;
   let written = null;
   let saving = null;
@@ -308,5 +326,12 @@ export function createAutosave({ storage, read, onStatus = () => {}, canWrite = 
     if (timer === null) timer = setTimeout(flush, WRITE_DELAY_MS);
   };
 
-  return { touch, flush };
+  // Switching testing mode changes whether this campaign may be written.
+  // @spec SAVE-TEST-005
+  const setCanWrite = (writable) => {
+    canWrite = writable;
+    written = null;
+  };
+
+  return { touch, flush, setCanWrite };
 }

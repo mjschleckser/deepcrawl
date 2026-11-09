@@ -25,7 +25,7 @@ const STAGE_NAMES = {
 
 /** What a control on the page does. None of them changes a character. */
 export const PartyControl = {
-  PREVIOUS: 'PREVIOUS', NEXT: 'NEXT', CLOSE: 'CLOSE', NEW_CAMPAIGN: 'NEW_CAMPAIGN',
+  PREVIOUS: 'PREVIOUS', NEXT: 'NEXT', CLOSE: 'CLOSE', NEW_CAMPAIGN: 'NEW_CAMPAIGN', TESTING: 'TESTING',
 };
 
 /** A name as a player reads it: `HEAVY_ARMOUR` is Heavy Armour. */
@@ -60,7 +60,7 @@ export function pageFor(party, page) {
  * @spec PRESENT-PARTY-018
  * @spec PRESENT-PARTY-019
  */
-export function buildPartyPlan(party, viewport, { page = 0 } = {}) {
+export function buildPartyPlan(party, viewport, { page = 0, testing = false } = {}) {
   const at = pageFor(party, page);
   if (at === null) return null;
   const members = roster(party);
@@ -209,6 +209,15 @@ export function buildPartyPlan(party, viewport, { page = 0 } = {}) {
   controls.push({
     kind: 'BUTTON', role: PartyControl.NEW_CAMPAIGN, label: 'New campaign',
     x: inner.x + inner.width - campaignWidth,
+    y: footY - gap - tap,
+    width: campaignWidth,
+    height: tap,
+  });
+  // Beside it, whether testing mode is on, and the way to switch it.
+  // @spec PRESENT-PARTY-025
+  controls.push({
+    kind: 'BUTTON', role: PartyControl.TESTING, label: `Testing: ${testing ? 'on' : 'off'}`,
+    x: inner.x + inner.width - campaignWidth * 2 - gap,
     y: footY - gap - tap,
     width: campaignWidth,
     height: tap,

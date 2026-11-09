@@ -26,6 +26,7 @@ import { startingCharacters } from './combatants.js';
 import { checkArchetype, lootTables } from './loot.js';
 import { spellDefinitions } from './spells.js';
 import { itemById, forageList } from './items.js';
+import { applyTestKit } from './testkit.js';
 import { camp, CampOutcome } from '../sim/camp.js';
 import { passHunger, cookPot } from '../sim/meals.js';
 import { chestRng, rollLoot } from '../sim/loot.js';
@@ -67,7 +68,7 @@ function toEnemyGroup(band) {
  * @spec SAVE-HOLD-002
  * @spec SAVE-READ-002
  */
-export function createCampaign({ seed = Date.now() >>> 0, saved = null } = {}) {
+export function createCampaign({ seed = Date.now() >>> 0, saved = null, testing = false } = {}) {
   // The plan is read back rather than regenerated, so a later build generating plans
   // differently cannot disagree with the floors already in the save.
   const plan = saved ? saved.plan : generatePlan({ seed });
@@ -81,8 +82,11 @@ export function createCampaign({ seed = Date.now() >>> 0, saved = null } = {}) {
   for (const descriptor of plan.floors) checkArchetype(descriptor.archetype, tables);
 
   const party = saved ? restoreParty(saved.party) : createStartingParty();
+  // A testing campaign starts with one of everything, and is never a saved one.
+  // @spec SAVE-TEST-004
+  if (testing && !saved) applyTestKit(party);
   // The spells are content, held here so every screen reads the same catalogue.
-  const campaign = { plan, party, state: null, encounter: null, spells };
+  const campaign = { plan, party, state: null, encounter: null, spells, testing: Boolean(testing && !saved) };
 
   function stockFloor(floor, count = BANDS_PER_FLOOR) {
     // Nothing is stocked onto the party, so a floor re-stocking around a standing
