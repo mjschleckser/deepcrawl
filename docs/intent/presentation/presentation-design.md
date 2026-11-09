@@ -443,7 +443,7 @@ the panel is only ever offering one combatant's options.
 | Option | What it does | Unavailable when |
 |---|---|---|
 | **Attack** | swing what this combatant carries | they carry no attack, or nothing is standing to swing at |
-| **Magic** | cast from what this character knows | they know no spell that may be cast in a fight, or have no slot left to pay for one |
+| **Magic** | cast from what this character knows | they know no spell that may be cast in a fight, or have no slot left to pay for one and cannot Overchannel it |
 | **Items** | open the Items screen on this character, to put something on from the pack | the pack holds nothing this character may wield |
 | **Flee** | take the whole party out of the encounter | escape is certain to fail — something present forbids it, or the party cannot outrun what is chasing it |
 
@@ -557,7 +557,10 @@ player has no use for it.
 
 **Magic opens its menu the same way, off its own button.** It lists the spells the
 character knows that may be cast in a fight, each with the slots left at its rank;
-a spell with no slot left is drawn greyed and inert, as a greyed option is. Choosing a
+a spell with no slot left is drawn greyed and inert, as a greyed option is — unless a
+mage can Overchannel it, in which case it is offered with its price in hit points,
+*Costs 6 HP*, in place of its slots, and greyed only when that price would knock the mage
+out. Choosing a
 spell replaces the menu's entries with the next question, *whom*, asked the way Attack
 asks it: the legal targets of that spell — the enemies standing for Magic Missile, the
 conscious party for Heal — each with what the cast will do to them and their hit points.
@@ -648,8 +651,8 @@ sheet the whole screen rather than a quarter of it.
 │ Might 12    Constitution 13          │
 │ Dexterity 13  Intellect 9  ...       │
 │                                      │
+│ Class    Ironclad 1 █░░░             │
 │ Weapon   Blade 2 ███░  Blunt 1 █░░░  │
-│ Defence  Heavy Armour 2 ██░░  ...    │
 │ Survival Cartography 1 ░░░░  ...     │
 │                                      │
 │ Main hand  Shortsword                │
@@ -701,10 +704,11 @@ across skills by a pot split equally, and a rank alone hides how near the next o
 so a player cannot tell which skills a fight is about to pay off and which it is
 starving.
 
-**A skill the character's class cannot train is drawn, and marked as no longer
-advancing.** A character keeps every rank they earned when they change class, and
-those ranks still count; hiding them would understate the character, and drawing them
-like any other would promise progress that will never come.
+**The class skill leads the page.** It is the Class group, first of the party segment's
+groups, so the one skill that says what this character's class is sits above everything
+they have merely practised. A cleric's Intercession shows the charges left beside its
+rank, as a spell shows its slots, because how many falls the cleric can still catch is
+what a player checks before pressing deeper.
 
 **The condition is named whenever it is anything but conscious** — Unconscious, Dead,
 Ashes, Lost — in words and in place of nothing, because a hit-point bar at zero cannot
