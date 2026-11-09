@@ -10,7 +10,9 @@ import { RARITY_COLOURS } from './appconfig.js';
 import { beginEncounter, createEnemy, createEnemyGroup, readinessOf } from '../sim/combat.js';
 import { makeRng } from '../sim/rng.js';
 import { MIN_TAP_PX } from './geometry.js';
-import { createController, pressKey, pressPointer, layers } from './controller.js';
+import {
+  createController, pressKey, pressPointer, releasePointer, dragPointer, scrollItems, layers,
+} from './controller.js';
 import { MapMode } from './mapplan.js';
 import { buildItemsPlan, itemDetail, ItemsControl } from './itemsplan.js';
 import {
@@ -66,7 +68,11 @@ function harness() {
 const screen = (controller) => layers(controller).find((l) => l.name === 'items').plan;
 const rows = (controller) => screen(controller).entries.filter((e) => e.kind === 'ROW');
 const rowFor = (controller, name) => rows(controller).find((r) => r.name === name);
-const tap = (controller, box) => pressPointer(controller, box.x + box.width / 2, box.y + box.height / 2);
+const tap = (controller, box) => {
+  const pressed = pressPointer(controller, box.x + box.width / 2, box.y + box.height / 2);
+  const released = releasePointer(controller);
+  return pressed || released;
+};
 const tapRow = (controller, name) => tap(controller, rowFor(controller, name).box);
 const tapControl = (controller, role) =>
   tap(controller, screen(controller).controls.find((c) => c.role === role));
@@ -169,7 +175,7 @@ describe('the Items page', () => {
 
     expect(chosen.index).toBe(last);
     expect(chosen.box.y + chosen.box.height).toBeLessThanOrEqual(plan.area.y + plan.area.height + 0.5);
-    for (const e of plan.entries) expect(e.box.y).toBeGreaterThanOrEqual(plan.area.y - 0.5);
+    expect(chosen.box.y).toBeGreaterThanOrEqual(plan.area.y - 0.5);
   });
 
   it('draws no row smaller than a thumb', () => {
@@ -607,5 +613,93 @@ describe('drinking in a fight', () => {
     const full = option(hurtFight({ hurt: false }).controller);
     expect(full.available).toBe(false);
     expect(full.reason).toBe('Nothing to use');
+  });
+});
+
+describe('scrolling the Items screen by touch', () => {
+  /** A phone-sized harness with a pack far longer than the page. */
+  function longPack() {
+    const h = harness();
+    h.controller.viewport = phone;
+    for (let i = 0; i < 30; i++) stow(h.party, dagger());
+    pressKey(h.controller, 'i');
+    return h;
+  }
+  const listCentre = (controller) => {
+    const { area } = screen(controller);
+    return { x: area.x + area.width / 2, y: area.y + area.height / 2 };
+  };
+
+  // @spec PRESENT-ITEMS-022
+  it('scrolls the list with a drag, no further than either end, leaving the highlight', () => {
+    const { controller } = longPack();
+    const { x, y } = listCentre(controller);
+    const before = screen(controller).scroll;
+    expect(screen(controller).maxScroll).toBeGreaterThan(0);
+
+    pressPointer(controller, x, y);
+    dragPointer(controller, x, y - 120);
+    releasePointer(controller);
+
+    expect(screen(controller).scroll).toBeCloseTo(before + 120);
+    expect(screen(controller).selected).toBe(0);
+
+    pressPointer(controller, x, y);
+    dragPointer(controller, x, y - 100000);
+    releasePointer(controller);
+    expect(screen(controller).scroll).toBe(screen(controller).maxScroll);
+
+    scrollItems(controller, -100000);
+    expect(screen(controller).scroll).toBe(0);
+  });
+
+  // @spec PRESENT-ITEMS-022
+  it('lets the wheel scroll the list, and lets the keyboard bring the highlight back', () => {
+    const { controller } = longPack();
+    expect(scrollItems(controller, 200)).toBe(true);
+    expect(screen(controller).scroll).toBeCloseTo(200);
+
+    pressKey(controller, 's');
+    const chosen = rows(controller).find((r) => r.selected);
+    expect(chosen.box.y).toBeGreaterThanOrEqual(screen(controller).area.y - 0.5);
+  });
+
+  // @spec PRESENT-ITEMS-031
+  it('presses a row on lifting a still finger, and nothing after a drag', () => {
+    const { controller, party } = longPack();
+    const row = rowFor(controller, 'Chainmail');
+    const cx = row.box.x + row.box.width / 2;
+    const cy = row.box.y + row.box.height / 2;
+
+    pressPointer(controller, cx, cy);
+    dragPointer(controller, cx, cy - 40);
+    releasePointer(controller);
+    expect(character(party, 'bram').equipment[Slot.BODY]).toBeFalsy();
+
+    scrollItems(controller, -100000);
+    const again = rowFor(controller, 'Chainmail');
+    pressPointer(controller, again.box.x + again.box.width / 2, again.box.y + again.box.height / 2);
+    expect(character(party, 'bram').equipment[Slot.BODY]).toBeFalsy();
+    releasePointer(controller);
+    expect(character(party, 'bram').equipment[Slot.BODY]?.name).toBe('Chainmail');
+  });
+
+  // @spec PRESENT-ITEMS-032
+  it('clips rows cut by the list\'s edge, and draws a bar for where the view sits', () => {
+    const { controller } = longPack();
+    scrollItems(controller, 30);
+    const plan = screen(controller);
+
+    expect(plan.clip).toEqual(plan.area);
+    expect(plan.entries[0].box.y).toBeLessThan(plan.area.y);
+    for (const c of plan.controls.filter((k) => k.kind === 'ROW')) {
+      expect(c.y).toBeGreaterThanOrEqual(plan.area.y - 0.5);
+      expect(c.y + c.height).toBeLessThanOrEqual(plan.area.y + plan.area.height + 0.5);
+    }
+    expect(plan.scrollbar.thumb.height).toBeLessThan(plan.scrollbar.track.height);
+    expect(plan.scrollbar.thumb.y).toBeGreaterThan(plan.scrollbar.track.y);
+
+    const short = buildItemsPlan(fourOf(), viewport, { page: 0 });
+    expect(short.scrollbar).toBeNull();
   });
 });

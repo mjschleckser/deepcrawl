@@ -805,6 +805,18 @@ pack is not a short fixed list, and a key that meant a different item each time 
 changed would be a key nobody could press from memory. A pack longer than the page keeps
 the highlighted row in view by scrolling the list.
 
+### Scrolling by touch
+
+A finger drags the list up and down, and the mouse wheel scrolls it the same way. Because
+a drag starts with a finger on a row, a row is pressed when the finger lifts, not when it
+lands, and only if the finger has not moved far enough to count as a drag — so a scroll
+never puts something on by accident. The page's buttons still act the moment they are
+touched; they do not scroll. A row cut by the edge of the list is drawn clipped rather
+than left out, so the list moves smoothly under the finger, and a thin bar down the
+list's right edge shows how much more there is and where the view sits in it. The
+highlight does not chase a drag: the view stays where the finger left it until the
+keyboard moves the highlight again.
+
 ## The Spells Screen
 
 `SPELLS` opens it out of a fight — the `C` key, or the Spells button. It is drawn and
@@ -1140,7 +1152,6 @@ screen the player can see but the game cannot have.
 1. **Animation in a fight.** An action lands in one frame, and the only motion is the attacker's judder. Real animation — a blow that travels, a spell that reads as a spell — is unbuilt, and would want the ticker running throughout a fight rather than only between actions. The pause, the shake, and the ticker's bounds are settled; everything past them is not.
 2. **Art.** Everything is flat-shaded polygons. Textures, sprites for doors and stairs, and any sense of material are unaddressed.
 3. **Animation between steps.** A step currently cuts from one position to the next. Whether it should slide, and how that squares with a stopped ticker, is open — an animation is the one thing in this segment that would need time.
-9. **Scrolling the pack by touch.** The keyboard's highlight keeps a long pack's rows in reach; a finger has no way to scroll it yet. Nothing can make the pack longer than what the party takes off until loot exists, which is when this is wanted.
 5. **Expanded-map interaction.** Panning and zooming an expanded map, and whether tapping a tile does anything, are unspecified. Auto-travel is already deferred in exploration.
 6. **Wide-screen framing.** On a very wide desktop window the corridor frames may want letterboxing rather than stretching; untested.
 7. **Accessibility.** Keyboard focus, screen-reader description of the map, and colour-blind-safe stroke distinctions are unaddressed.

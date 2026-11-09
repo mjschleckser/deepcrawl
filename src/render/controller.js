@@ -103,6 +103,8 @@ export function createController({
     // kept here.
     // @spec PRESENT-ITEMS-003
     itemsScreen: null,
+    // A finger down on the Items screen's list, not yet a tap or a drag.
+    itemsDrag: null,
     // Which control the finger is currently on, so it can be outlined while held.
     pressedRegion: null,
   };
@@ -625,13 +627,57 @@ function itemsPlan(controller) {
   const characterId = itemsCharacter(controller);
   if (!party || !characterId) return null;
   const inFight = itemsInFight(controller);
-  return buildItemsPlan(party, controller.viewport, {
+  const plan = buildItemsPlan(party, controller.viewport, {
     characterId,
     page: controller.itemsScreen?.page ?? 0,
     selected: controller.itemsScreen?.selected ?? 0,
+    scroll: controller.itemsScreen?.scroll ?? 0,
+    follow: controller.itemsScreen?.follow ?? true,
     inFight,
     spells: controller.campaign?.spells ?? {},
   });
+  // Where the view settled is where the next one starts from.
+  if (plan && controller.itemsScreen) controller.itemsScreen.scroll = plan.scroll;
+  return plan;
+}
+
+/** How far a finger may wander and still be a tap rather than a drag. */
+const DRAG_SLOP_PX = 8;
+
+/**
+ * Scroll the Items screen's list by `by` pixels, within its ends. The highlight stays
+ * where it was, and the view stops following it until the keyboard moves it again.
+ *
+ * @spec PRESENT-ITEMS-022
+ */
+export function scrollItems(controller, by) {
+  const plan = itemsPlan(controller);
+  if (!plan) return false;
+  const screen = controller.itemsScreen
+    ?? (controller.itemsScreen = { page: 0, selected: 0, fromFight: itemsInFight(controller) });
+  const next = Math.min(plan.maxScroll, Math.max(0, plan.scroll + by));
+  screen.scroll = next;
+  screen.follow = false;
+  if (next === plan.scroll) return false;
+  redraw(controller);
+  return true;
+}
+
+/**
+ * A finger held down on the Items screen moved. Past a few pixels it is a drag, which
+ * scrolls the list and will press nothing when it lifts.
+ *
+ * @spec PRESENT-ITEMS-022
+ * @spec PRESENT-ITEMS-031
+ */
+export function dragPointer(controller, px, py) {
+  const drag = controller.itemsDrag;
+  if (!drag) return false;
+  if (!drag.dragging && Math.abs(py - drag.startY) <= DRAG_SLOP_PX) return false;
+  drag.dragging = true;
+  const by = drag.lastY - py;
+  drag.lastY = py;
+  return scrollItems(controller, by);
 }
 
 /** The catalogue every screen reads spells from. */
@@ -813,6 +859,8 @@ function moveHighlight(controller, by) {
   const screen = controller.itemsScreen
     ?? (controller.itemsScreen = { page: 0, selected: 0, fromFight: itemsInFight(controller) });
   const next = clampRow(rows, (screen.selected ?? 0) + by);
+  // The keyboard brings the view back to the highlight, wherever a drag left it.
+  screen.follow = true;
   if (next === screen.selected) return false;
   screen.selected = next;
   redraw(controller);
@@ -901,13 +949,21 @@ function pressKeyOnItemsScreen(controller, key) {
 }
 
 /** A press on the open screen: its own controls, and nothing beneath it. */
+/**
+ * The page's buttons act as they are touched. A touch on the list waits: it is a tap on
+ * a row if the finger lifts still, and a drag of the list if it moves.
+ *
+ * @spec PRESENT-ITEMS-031
+ */
 function pressPointerOnItemsScreen(controller, px, py) {
-  const control = hit(itemsPlan(controller)?.controls, px, py);
-  if (!control) return false;
-  if (control.role === ItemsControl.CLOSE) return closeItemsScreen(controller);
-  if (control.role === ItemsControl.NEXT) return showItemsPage(controller, controller.itemsScreen.page + 1);
-  if (control.role === ItemsControl.PREVIOUS) return showItemsPage(controller, controller.itemsScreen.page - 1);
-  return pressItemRow(controller, control.index);
+  const plan = itemsPlan(controller);
+  const control = hit(plan?.controls, px, py);
+  if (control?.role === ItemsControl.CLOSE) return closeItemsScreen(controller);
+  if (control?.role === ItemsControl.NEXT) return showItemsPage(controller, controller.itemsScreen.page + 1);
+  if (control?.role === ItemsControl.PREVIOUS) return showItemsPage(controller, controller.itemsScreen.page - 1);
+  if (!control && !(plan && within(plan.area, px, py))) return false;
+  controller.itemsDrag = { index: control?.index ?? null, startY: py, lastY: py, dragging: false };
+  return false;
 }
 
 /**
@@ -1192,7 +1248,13 @@ export function pressPointer(controller, px, py) {
  * @spec PRESENT-CTRL-008
  * @spec PRESENT-CTRL-009
  */
-export function releasePointer(controller) {
+export function releasePointer(controller, { cancelled = false } = {}) {
+  const drag = controller.itemsDrag;
+  if (drag) {
+    controller.itemsDrag = null;
+    // @spec PRESENT-ITEMS-031
+    if (!cancelled && !drag.dragging && drag.index !== null) return pressItemRow(controller, drag.index);
+  }
   if (controller.pressedRegion === null) return false;
   controller.pressedRegion = null;
   redraw(controller);

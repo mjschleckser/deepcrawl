@@ -3,7 +3,7 @@ import { createCampaign } from '../content/campaign.js';
 import { itemById } from '../content/items.js';
 import { computeSight, tickCount } from '../sim/exploration.js';
 import { packOf, roster, stow, applyDamage } from '../sim/party.js';
-import { createController, pressKey, pressPointer, layers } from './controller.js';
+import { createController, pressKey, pressPointer, releasePointer, layers } from './controller.js';
 import { CampControl } from './campplan.js';
 
 const viewport = { width: 390, height: 844 };
@@ -20,7 +20,10 @@ function harness() {
 const plan = (controller, name) => layers(controller).find((l) => l.name === name)?.plan ?? null;
 const rows = (controller) => plan(controller, 'camp').entries.filter((e) => e.kind === 'ROW');
 const rowFor = (controller, name) => rows(controller).find((r) => r.name === name);
-const tap = (controller, box) => pressPointer(controller, box.x + box.width / 2, box.y + box.height / 2);
+const tap = (controller, box) => {
+  const pressed = pressPointer(controller, box.x + box.width / 2, box.y + box.height / 2);
+  return releasePointer(controller) || pressed;
+};
 const tapControl = (controller, role) =>
   tap(controller, plan(controller, 'camp').controls.find((c) => c.role === role));
 const notes = (controller) => plan(controller, 'camp').entries.filter((e) => e.kind === 'NOTE').map((e) => e.text);

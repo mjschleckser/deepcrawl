@@ -10,7 +10,7 @@ import { beginEncounter, createEnemy, createEnemyGroup } from '../sim/combat.js'
 import { makeRng } from '../sim/rng.js';
 import { playEnemyTurn } from './fight.js';
 import { spellDefinitions } from '../content/spells.js';
-import { createController, pressKey, pressPointer, layers } from './controller.js';
+import { createController, pressKey, pressPointer, releasePointer, layers } from './controller.js';
 import { SpellsControl } from './spellsplan.js';
 
 const viewport = { width: 390, height: 844 };
@@ -35,7 +35,10 @@ function harness({ roamers = [] } = {}) {
 const plan = (controller, name) => layers(controller).find((l) => l.name === name)?.plan ?? null;
 const rows = (controller) => plan(controller, 'spells').entries.filter((e) => e.kind === 'ROW');
 const rowFor = (controller, name) => rows(controller).find((r) => r.name === name);
-const tap = (controller, box) => pressPointer(controller, box.x + box.width / 2, box.y + box.height / 2);
+const tap = (controller, box) => {
+  const pressed = pressPointer(controller, box.x + box.width / 2, box.y + box.height / 2);
+  return releasePointer(controller) || pressed;
+};
 const tapControl = (controller, role) =>
   tap(controller, plan(controller, 'spells').controls.find((c) => c.role === role));
 
