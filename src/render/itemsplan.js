@@ -7,7 +7,9 @@
  * those are the controller's.
  */
 
-import { packOf, purseOf, roster, useRefusal, UseRefusal } from '../sim/party.js';
+import {
+  classesCasting, classesWielding, packOf, purseOf, roster, useRefusal, UseRefusal,
+} from '../sim/party.js';
 import {
   Effect, ItemKind, Rarity, Slot, isConsumable, wieldableBy,
 } from '../sim/items.js';
@@ -44,7 +46,8 @@ export function itemDetail(item) {
     if (item.skill) parts.push(titled(item.skill));
     parts.push(`damage ${item.damage}`);
   } else if (item.kind === ItemKind.ARMOUR) {
-    if (item.skill) parts.push(titled(item.skill));
+    // Light or heavy is what tells one body armour from another, and who may wear it.
+    if (item.category) parts.push(titled(item.category));
     parts.push(`armour ${item.armour}`);
   } else if (item.kind === ItemKind.SHIELD) {
     parts.push(`armour ${item.armour}`);
@@ -91,7 +94,7 @@ const REFUSALS = {
  * @spec PRESENT-ITEMS-008
  */
 export function wieldersOf(item) {
-  const names = (item.classes ?? []).map(titled);
+  const names = classesWielding(item.category).map(titled);
   return withTier(item, `${SLOT_LABELS[item.slot] ?? titled(item.slot)} · ${names.join(', ')} only`);
 }
 
@@ -163,7 +166,7 @@ function rowDetail(row, c, party, spells = {}) {
   if (row.role === ItemsControl.PACK && taught) {
     const refusal = readRefusal(party, c.id, row.item, spells, { inFight: false });
     const words = {
-      [ReadRefusal.WRONG_CLASS]: `${taught.classes.map(titled).join(', ')} only`,
+      [ReadRefusal.WRONG_CLASS]: `${classesCasting(taught.school).map(titled).join(', ')} only`,
       [ReadRefusal.RANK_TOO_LOW]: `Needs ${titled(taught.school)} ${taught.rank}`,
       [ReadRefusal.ALREADY_KNOWN]: 'Already known',
       [ReadRefusal.NOT_CONSCIOUS]: 'Unconscious',

@@ -4,7 +4,7 @@
  */
 
 import {
-  CharacterClass, Skill, addGold, experienceForRank, roster, stow,
+  CharacterClass, Skill, addGold, classOf, experienceForRank, roster, stow,
 } from '../sim/party.js';
 import { ItemKind } from '../sim/items.js';
 import { Learned } from '../sim/magic.js';
@@ -31,7 +31,7 @@ export function applyTestKit(party) {
   const tomeSpells = Object.values(spellDefinitions()).filter((s) => s.learned === Learned.TOME);
   for (const c of roster(party)) {
     for (const spell of tomeSpells) {
-      const fits = spell.classes.includes(c.characterClass) && (c.ranks[spell.school] ?? 0) >= spell.rank;
+      const fits = (classOf(c)?.schools.includes(spell.school) ?? false) && (c.ranks[spell.school] ?? 0) >= spell.rank;
       if (fits && !c.learnedSpells.includes(spell.id)) c.learnedSpells.push(spell.id);
     }
     if (c.characterClass === CharacterClass.CLERIC) {

@@ -10,7 +10,9 @@
  * keeping a copy to drift from.
  */
 
-import { Attribute, Skill, skillRank } from './party.js';
+import {
+  Attribute, Skill, castingAttribute, classOf, ironcladArmourFactor, skillRank,
+} from './party.js';
 import { armourBonus, damageFactor } from './food.js';
 
 /**
@@ -53,6 +55,29 @@ export const Effect = { HEAL: 'heal', TEACH: 'teach' };
  */
 export const Slot = { MAIN_HAND: 'MAIN_HAND', OFF_HAND: 'OFF_HAND', BODY: 'BODY' };
 
+/**
+ * What kind of thing an item is to wield. A class's file names the categories it may
+ * hold, and an item names the one it belongs to, so neither names the other.
+ *
+ * @spec ITEM-DEF-016
+ */
+export const ItemCategory = {
+  LIGHT_WEAPON: 'LIGHT_WEAPON',
+  MARTIAL_BLADE: 'MARTIAL_BLADE',
+  MARTIAL_BLUNT: 'MARTIAL_BLUNT',
+  WAND: 'WAND',
+  LIGHT_ARMOUR: 'LIGHT_ARMOUR',
+  HEAVY_ARMOUR: 'HEAVY_ARMOUR',
+  SHIELD: 'SHIELD',
+};
+
+/**
+ * What a weapon names when its damage draws on whatever its wielder casts with.
+ *
+ * @spec ITEM-DEF-017
+ */
+export const CASTING = 'CASTING';
+
 const DAMAGE_PER_RANK = 0.1;
 const DAMAGE_PER_ATTRIBUTE = 0.04;
 
@@ -73,7 +98,7 @@ const DAMAGE_PER_ATTRIBUTE = 0.04;
 export function createItem({
   id, name, kind, slot = null, rarity = Rarity.COMMON,
   skill = null, damage = 0, governs = Attribute.MIGHT,
-  armour = 0, classes = null, effect = null, nourish = 0, heal = 0, traits = null,
+  armour = 0, category = null, effect = null, nourish = 0, heal = 0, traits = null,
 }) {
   // Neither a consumable nor food is worn, so neither names a slot.
   const consumable = kind === ItemKind.CONSUMABLE || kind === ItemKind.FOOD;
@@ -85,17 +110,19 @@ export function createItem({
     slot: consumable ? null : slot,
     // @spec ITEM-DATA-005
     rarity: rarity ?? Rarity.COMMON,
-    // A weapon's skill, or the skill a piece of armour is worn under.
-    skill,
+    // What a weapon trains. Armour trains nothing.
+    // @spec ITEM-DEF-005
+    skill: kind === ItemKind.WEAPON ? skill : null,
     damage,
     // Might by default; a finesse weapon names Dexterity and trains the same skill.
     // @spec ITEM-DEF-008
     governs,
     // What body armour turns, or what a shield adds to it.
     armour,
-    // Nothing named means anybody may hold it.
-    // @spec ITEM-DATA-004
-    classes: classes ? [...classes] : null,
+    // Which kind of thing it is to wield. Nothing worn is without one; nothing used
+    // up has one.
+    // @spec ITEM-DEF-016
+    category: consumable ? null : category,
     // What using it does: only a consumable has one.
     effect: kind === ItemKind.CONSUMABLE && effect ? { ...effect } : null,
     // What food adds to the pot.
@@ -140,6 +167,7 @@ export function weaponOf(combatant) {
  * @spec ITEM-HOLD-003
  * @spec ITEM-HOLD-004
  * @spec ITEM-NUM-006
+ * @spec ITEM-NUM-009
  */
 export function armourOf(combatant) {
   const worn = held(combatant, Slot.BODY);
@@ -147,11 +175,20 @@ export function armourOf(combatant) {
   // Only a shield adds; a second weapon in the same slot turns nothing.
   const offHand = held(combatant, Slot.OFF_HAND);
   const shield = offHand?.kind === ItemKind.SHIELD ? (offHand.armour ?? 0) : 0;
-  // A tough meal turns blows too.
-  return body + shield + armourBonus(combatant);
+  // A fighter's Ironclad grows what is strapped on; a tough meal turns blows on top.
+  return (body + shield) * ironcladArmourFactor(combatant) + armourBonus(combatant);
 }
 
-const score = (combatant, attribute) => combatant?.attributes?.[attribute] ?? 10;
+/**
+ * A score by name, where the name may be the wielder's casting attribute: whatever
+ * their class casts with, or the default score for a class that casts nothing.
+ *
+ * @spec ITEM-DEF-017
+ */
+const score = (combatant, attribute) => {
+  const named = attribute === CASTING ? castingAttribute(combatant) : attribute;
+  return named ? (combatant?.attributes?.[named] ?? 10) : 10;
+};
 
 /**
  * What a wand names as its skill: not one weapon skill, but the wielder's magic.
@@ -213,17 +250,17 @@ export function fitsSlot(item, slot) {
 }
 
 /**
- * Whether a class may hold this, asked of the item rather than of the class.
+ * Whether a class may hold this: whether the class's file names the item's category.
  *
- * Content has to flow one way: adding a weapon must not mean editing four classes. And
- * what a class may *train* is a different question from what it may *hold*, so nothing
- * here reads a skill table.
+ * Content flows one way: adding a weapon names a category and edits no class. And what
+ * a character has practised is a different question from what their class may hold, so
+ * nothing here reads a skill. Something with no category — a potion — anyone may use.
  *
  * @spec ITEM-WIELD-002
  * @spec ITEM-WIELD-003
  */
 export function wieldableBy(item, characterClass) {
   if (!item) return false;
-  if (!item.classes) return true;
-  return item.classes.includes(characterClass);
+  if (!item.category) return true;
+  return classOf(characterClass)?.wields.includes(item.category) ?? false;
 }

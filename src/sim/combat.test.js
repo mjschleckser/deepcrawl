@@ -829,9 +829,12 @@ describe('casting in a fight', () => {
       expect(takeAction(state, 'isolde', cast('magic_missile', 'o1'))).not.toBeNull();
     }
     readyUp(state, 'isolde');
+    // Out of slots, a mage could still Overchannel; too hurt to pay for it, she cannot.
+    character(state.party, 'isolde').hitPoints = 6;
 
     expect(takeAction(state, 'isolde', cast('magic_missile', 'o1'))).toBeNull();
     expect(readinessOf(state, 'isolde')).toBe(FULL_BAR);
+    expect(character(state.party, 'isolde').hitPoints).toBe(6);
   });
 
   // @spec COMBAT-ACTION-015

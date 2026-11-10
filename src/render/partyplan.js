@@ -6,7 +6,7 @@
  */
 
 import {
-  Attribute, Condition, SKILL_GROUPS, roster, skillProgress, skillRank, totalLevel, RANK_CAP,
+  Attribute, Condition, SKILL_GROUPS, Skill, chargesLeft, roster, skillProgress, skillRank, totalLevel, RANK_CAP,
 } from '../sim/party.js';
 import { Slot } from '../sim/items.js';
 import { MIN_TAP_PX, uiScale, contentColumn, stampRoom } from './geometry.js';
@@ -56,7 +56,7 @@ export function pageFor(party, page) {
  * @spec PRESENT-PARTY-014
  * @spec PRESENT-PARTY-015
  * @spec PRESENT-PARTY-016
- * @spec PRESENT-PARTY-017
+ * @spec PRESENT-PARTY-026
  * @spec PRESENT-PARTY-018
  * @spec PRESENT-PARTY-019
  */
@@ -181,8 +181,9 @@ export function buildPartyPlan(party, viewport, { page = 0, testing = false } = 
           rank,
           progress: skillProgress(c, skill),
           atCap: rank >= RANK_CAP,
-          // A rank kept from another career still counts, and will not move again.
-          advancing: c.trainable.includes(skill),
+          // How many falls a cleric can still catch, beside the skill that catches them.
+          // @spec PRESENT-PARTY-026
+          ...(skill === Skill.INTERCESSION ? { charges: chargesLeft(c) } : {}),
           box: { ...place, height: skillRow },
           bar: { x: place.x, y: place.y + skillRow, width: place.width, height: barHeight },
         };

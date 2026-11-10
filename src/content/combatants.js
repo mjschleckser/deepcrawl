@@ -11,8 +11,10 @@
  */
 
 import {
-  Attribute, CharacterClass, Condition, Skill, createCharacter,
+  Attribute, CharacterClass, CLASS_SKILLS, Condition, Skill, createCharacter,
 } from '../sim/party.js';
+// The classes are handed to the simulation before any character is built from them.
+import { classDefinitions } from './classes.js';
 import { Action, EnemyRole, createEnemy } from '../sim/combat.js';
 import { Slot } from '../sim/items.js';
 import { itemById } from './items.js';
@@ -91,10 +93,9 @@ function commonFields(file, data) {
  */
 export function buildPlayer(file, data) {
   const common = commonFields(file, data);
-  const character = createCharacter({
-    ...common,
-    characterClass: oneOf(file, 'class', data.characterClass, CharacterClass),
-  });
+  const characterClass = oneOf(file, 'class', data.characterClass, CharacterClass);
+  rejectClassSkills(file, common.ranks, classDefinitions()[characterClass]?.classSkill);
+  const character = createCharacter({ ...common, characterClass });
 
   // What they start holding, resolved to the item itself rather than kept as a name:
   // the simulation never looks anything up, and a name that was never authored fails
@@ -121,9 +122,11 @@ export function buildEnemy(file, data) {
   // An enemy holds no class to derive a body from, so its file must say.
   // @spec PARTY-DATA-005
   if (data?.maxHitPoints === undefined) throw new Error(`${file}: no maxHitPoints`);
+  const common = commonFields(file, data);
+  rejectClassSkills(file, common.ranks, null);
 
   return createEnemy({
-    ...commonFields(file, data),
+    ...common,
     // Exactly one role, and one the roster knows.
     // @spec ENEMY-ROSTER-002
     role: oneOf(file, 'role', data.role ?? EnemyRole.MELEE, EnemyRole),
@@ -131,6 +134,20 @@ export function buildEnemy(file, data) {
     forbidsEscape: data.forbidsEscape ?? false,
     loot: lootTableName(file, data.loot),
   });
+}
+
+/**
+ * A class skill belongs to its class alone: a character may hold only their own, and an
+ * enemy, having no class, none at all.
+ *
+ * @spec PARTY-DATA-007
+ */
+function rejectClassSkills(file, ranks, own) {
+  for (const skill of Object.keys(ranks)) {
+    if (CLASS_SKILLS.includes(skill) && skill !== own) {
+      throw new Error(`${file}: rank in ${skill}, a class skill this combatant cannot hold`);
+    }
+  }
 }
 
 /**

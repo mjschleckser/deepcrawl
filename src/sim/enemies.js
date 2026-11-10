@@ -6,7 +6,7 @@
  * dungeon grow without the machinery moving.
  */
 
-import { Attribute } from './party.js';
+import { Attribute, targetWeight } from './party.js';
 import { MAX_ENEMY_GROUP, EnemyRole } from './combat.js';
 import { enemyDefinitions } from '../content/combatants.js';
 import { hasLineOfSight } from './sight.js';
@@ -271,7 +271,8 @@ export function giveTicks(roamer, ticks, { floor, party }) {
  */
 export function selectEnemyTarget(role, candidates, rng) {
   if (candidates.length === 0) return null;
-  return rng.pick(candidates);
+  // Everyone is in the draw; a fighter's Ironclad only makes them likelier.
+  return rng.weighted(candidates, targetWeight);
 }
 
 /**

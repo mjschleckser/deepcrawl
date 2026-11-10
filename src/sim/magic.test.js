@@ -12,22 +12,22 @@ import {
 
 const missile = createSpell({
   id: 'magic_missile', name: 'Magic Missile', school: Skill.EVOCATION, rank: 1,
-  classes: [CharacterClass.MAGE], target: SpellTarget.ENEMY,
+  target: SpellTarget.ENEMY,
   effect: { [SpellEffect.DAMAGE]: 6, ignoresArmour: true }, where: [CastWhere.COMBAT], learned: Learned.CLASS,
 });
 const heal = createSpell({
   id: 'heal', name: 'Heal', school: Skill.HEALING, rank: 1,
-  classes: [CharacterClass.CLERIC], target: SpellTarget.ALLY,
+  target: SpellTarget.ALLY,
   effect: { [SpellEffect.HEAL]: 8 }, where: [CastWhere.COMBAT, CastWhere.EXPLORATION], learned: Learned.CLASS,
 });
 const fireBolt = createSpell({
   id: 'fire_bolt', name: 'Fire Bolt', school: Skill.EVOCATION, rank: 1,
-  classes: [CharacterClass.MAGE], target: SpellTarget.ENEMY,
+  target: SpellTarget.ENEMY,
   effect: { [SpellEffect.DAMAGE]: 10 }, where: [CastWhere.COMBAT], learned: Learned.TOME,
 });
 const deep = createSpell({
   id: 'deep', name: 'Deep', school: Skill.EVOCATION, rank: 4,
-  classes: [CharacterClass.MAGE], target: SpellTarget.ENEMY,
+  target: SpellTarget.ENEMY,
   effect: { [SpellEffect.DAMAGE]: 20 }, where: [CastWhere.COMBAT], learned: Learned.CLASS,
 });
 const spells = { magic_missile: missile, heal, fire_bolt: fireBolt, deep };
@@ -42,6 +42,8 @@ function party() {
   addCharacter(p, createCharacter({ id: 'isolde', name: 'Isolde', characterClass: CharacterClass.MAGE }));
   addCharacter(p, createCharacter({ id: 'wren', name: 'Wren', characterClass: CharacterClass.CLERIC }));
   addCharacter(p, createCharacter({ id: 'bram', name: 'Bram', characterClass: CharacterClass.FIGHTER }));
+  // Wren's Intercession is spent, so a knock-out in these tests stays one.
+  character(p, 'wren').spentCharges = 1;
   return p;
 }
 
@@ -50,7 +52,7 @@ describe('what a spell is', () => {
   it('carries everything a cast needs', () => {
     expect(missile).toMatchObject({
       id: 'magic_missile', name: 'Magic Missile', school: Skill.EVOCATION, rank: 1,
-      classes: [CharacterClass.MAGE], target: SpellTarget.ENEMY,
+      target: SpellTarget.ENEMY,
       where: [CastWhere.COMBAT], learned: Learned.CLASS,
     });
     expect(missile.effect).toEqual({ damage: 6, ignoresArmour: true });
@@ -208,7 +210,7 @@ describe('what a cast does', () => {
     healPreview(p, 'wren', heal, 'bram');
     expect(JSON.stringify(p)).toBe(before);
 
-    expect(castOnAlly(p, 'wren', heal, 'bram', { where: CastWhere.EXPLORATION })).toEqual({ healed: 4 });
+    expect(castOnAlly(p, 'wren', heal, 'bram', { where: CastWhere.EXPLORATION })).toEqual({ healed: 4, overchannelled: false });
     expect(bram.hitPoints).toBe(bram.maxHitPoints);
   });
 

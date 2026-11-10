@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { buildItem, itemDefinitions, itemById, forageList } from './items.js';
-import { ItemKind, Slot, Rarity } from '../sim/items.js';
-import { Attribute, CharacterClass, Skill } from '../sim/party.js';
+import { CASTING, ItemCategory, ItemKind, Slot, Rarity } from '../sim/items.js';
+import { Attribute, CharacterClass, Skill, classesWielding } from '../sim/party.js';
 
 const swordFile = {
-  id: 'blade', name: 'Blade', kind: 'WEAPON', slot: 'MAIN_HAND',
+  id: 'blade', name: 'Blade', kind: 'WEAPON', slot: 'MAIN_HAND', category: 'LIGHT_WEAPON',
   skill: 'BLADE', damage: 9, governs: 'MIGHT',
 };
 
@@ -12,7 +12,7 @@ describe('reading an authored item', () => {
   // @spec ITEM-DATA-001
   it('builds an item with everything its file said', () => {
     expect(buildItem('blade.json', swordFile)).toMatchObject({
-      id: 'blade', kind: ItemKind.WEAPON, slot: Slot.MAIN_HAND,
+      id: 'blade', kind: ItemKind.WEAPON, slot: Slot.MAIN_HAND, category: ItemCategory.LIGHT_WEAPON,
       skill: Skill.BLADE, damage: 9, governs: Attribute.MIGHT,
     });
   });
@@ -27,8 +27,10 @@ describe('reading an authored item', () => {
       .toThrow(/skill\.json: skill "BLDAE"/);
     expect(() => buildItem('attr.json', { ...swordFile, governs: 'MITE' }))
       .toThrow(/attr\.json: attribute "MITE"/);
-    expect(() => buildItem('class.json', { ...swordFile, classes: ['FIGTHER'] }))
-      .toThrow(/class\.json: class "FIGTHER"/);
+    expect(() => buildItem('cat.json', { ...swordFile, category: 'GREATAXE' }))
+      .toThrow(/cat\.json: category "GREATAXE"/);
+    expect(() => buildItem('class.json', { ...swordFile, classes: ['FIGHTER'] }))
+      .toThrow(/class\.json: classes "FIGHTER"/);
   });
 
   // @spec ITEM-DATA-005
@@ -67,23 +69,21 @@ describe('reading an authored item', () => {
 
   // @spec ITEM-DATA-003
   it('rejects a file missing anything every item must have', () => {
-    for (const field of ['id', 'name', 'kind', 'slot']) {
+    for (const field of ['id', 'name', 'kind', 'slot', 'category']) {
       const partial = { ...swordFile };
       delete partial[field];
       expect(() => buildItem('short.json', partial)).toThrow(new RegExp(`short\.json: no ${field}`));
     }
   });
 
-  // @spec ITEM-DATA-004
-  it('leaves an item naming no classes open to everybody', () => {
-    expect(buildItem('blade.json', swordFile).classes).toBeNull();
-  });
-
   // @spec ITEM-DATA-002
-  it('lets a shield omit the skill a weapon needs', () => {
+  it('lets a shield omit the skill a weapon needs, and refuses armour naming one', () => {
     const shield = buildItem('shield.json', {
-      id: 's', name: 'S', kind: 'SHIELD', slot: 'OFF_HAND', armour: 2,
+      id: 's', name: 'S', kind: 'SHIELD', slot: 'OFF_HAND', category: 'SHIELD', armour: 2,
     });
+    expect(() => buildItem('mail.json', {
+      id: 'm', name: 'M', kind: 'ARMOUR', slot: 'BODY', category: 'HEAVY_ARMOUR', skill: 'BLADE', armour: 5,
+    })).toThrow(/mail\.json: skill "BLADE"/);
 
     expect(shield.skill).toBeNull();
     expect(shield.armour).toBe(2);
@@ -106,9 +106,18 @@ describe('the authored catalogue', () => {
   });
 
   // @spec ITEM-WIELD-002
-  it('keeps heavy gear to the classes that may wear it', () => {
-    expect(itemById('chainmail').classes).toContain(CharacterClass.FIGHTER);
-    expect(itemById('chainmail').classes).not.toContain(CharacterClass.MAGE);
+  it('keeps heavy gear to the classes whose files name its category', () => {
+    expect(itemById('chainmail').category).toBe(ItemCategory.HEAVY_ARMOUR);
+    expect(classesWielding(ItemCategory.HEAVY_ARMOUR)).toContain(CharacterClass.FIGHTER);
+    expect(classesWielding(ItemCategory.HEAVY_ARMOUR)).not.toContain(CharacterClass.MAGE);
+  });
+
+  // @spec ITEM-DEF-016
+  it('gives every worn item a category and nothing used up one', () => {
+    for (const item of Object.values(itemDefinitions())) {
+      if (item.slot) expect(Object.values(ItemCategory)).toContain(item.category);
+      else expect(item.category ?? null).toBeNull();
+    }
   });
 });
 
@@ -130,18 +139,18 @@ describe('a tome', () => {
 
 describe('the wand', () => {
   // @spec ITEM-DEF-015
-  it('is an uncommon weapon for mages and clerics, of magic, drawing on Intellect', () => {
+  it('is an uncommon wand for mages and clerics, of magic, drawing on what its wielder casts with', () => {
     const wand = itemById('wand');
     expect(wand).toMatchObject({
-      kind: ItemKind.WEAPON, slot: Slot.MAIN_HAND, skill: 'MAGIC', governs: Attribute.INTELLECT,
+      kind: ItemKind.WEAPON, slot: Slot.MAIN_HAND, category: ItemCategory.WAND, skill: 'MAGIC', governs: CASTING,
     });
     expect([Rarity.UNCOMMON, Rarity.RARE, Rarity.EPIC, Rarity.LEGENDARY]).toContain(wand.rarity);
-    expect(wand.classes.sort()).toEqual([CharacterClass.CLERIC, CharacterClass.MAGE]);
+    expect(classesWielding(ItemCategory.WAND).sort()).toEqual([CharacterClass.CLERIC, CharacterClass.MAGE]);
   });
 
   it('refuses MAGIC as the skill of anything but a weapon', () => {
     expect(() => buildItem('robe.json', {
-      id: 'r', name: 'R', kind: 'ARMOUR', slot: 'BODY', skill: 'MAGIC', armour: 1,
+      id: 'r', name: 'R', kind: 'ARMOUR', slot: 'BODY', category: 'LIGHT_ARMOUR', skill: 'MAGIC', armour: 1,
     })).toThrow(/robe\.json: skill "MAGIC"/);
   });
 });

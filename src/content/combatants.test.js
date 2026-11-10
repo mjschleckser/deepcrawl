@@ -10,7 +10,7 @@ import {
 const goblinFile = {
   id: 'GOBLIN', name: 'Goblin', role: 'MELEE',
   attributes: { DEXTERITY: 11 },
-  ranks: { BLADE: 2, LIGHT_ARMOUR: 1 },
+  ranks: { BLADE: 2, DETECTION: 1 },
   maxHitPoints: 9,
   attack: { skill: 'BLADE', baseDamage: 5 },
   armour: 2,

@@ -406,8 +406,10 @@ describe('what a campaign never changes', () => {
     stepIntoContact(campaign);
     const fight = campaign.encounter;
 
-    // A blow that would take a character below nothing leaves them at nothing and
-    // unconscious, which is the party's floor and its chain, not combat's arithmetic.
+    // The first such blow is the cleric's Intercession to catch; with it spent, a blow
+    // that would take a character below nothing leaves them at nothing and unconscious,
+    // which is the party's floor and its chain, not combat's arithmetic.
+    wren.spentCharges = 1;
     for (const foe of fight.enemies.members) foe.attack = { skill: Skill.BLADE, baseDamage: 999 };
     fight.readiness.set(fight.enemies.members[0].id, 100);
     takeAction(fight, fight.enemies.members[0].id, { kind: Action.ATTACK, targetId: isolde.id });

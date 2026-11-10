@@ -31,6 +31,8 @@ function party() {
       id, name: id, characterClass: cls, attack: { skill: Skill.BLADE, baseDamage: 10 },
     }));
   }
+  // Wren's Intercession is spent, so a knock-out in these tests stays one.
+  character(p, 'wren').spentCharges = 1;
   return p;
 }
 

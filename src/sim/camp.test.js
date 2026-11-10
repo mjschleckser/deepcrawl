@@ -18,6 +18,8 @@ function party() {
   addCharacter(p, createCharacter({ id: 'wren', name: 'Wren', characterClass: CharacterClass.CLERIC }));
   addCharacter(p, createCharacter({ id: 'bram', name: 'Bram', characterClass: CharacterClass.FIGHTER }));
   for (const id of ['isolde', 'wren']) spendSlot(character(p, id), 1);
+  // Wren's Intercession is spent, so a knock-out in these tests stays one.
+  character(p, 'wren').spentCharges = 1;
   return p;
 }
 

@@ -182,6 +182,7 @@ describe('an unconscious character at the pot', () => {
   it('is not fed', () => {
     const { controller, party } = harness();
     const [first, second] = roster(party);
+    for (const c of roster(party)) c.spentCharges = 1;
     applyDamage(party, first.id, 999);
     first.fullness = 100;
     second.fullness = 100;

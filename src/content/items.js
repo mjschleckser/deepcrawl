@@ -11,8 +11,10 @@
  * rather than quietly producing a sword nobody can hold.
  */
 
-import { Attribute, CharacterClass, Skill } from '../sim/party.js';
-import { Effect, ItemKind, MAGIC_SKILL, Rarity, Slot, createItem } from '../sim/items.js';
+import { Attribute, Skill } from '../sim/party.js';
+import {
+  CASTING, Effect, ItemCategory, ItemKind, MAGIC_SKILL, Rarity, Slot, createItem,
+} from '../sim/items.js';
 import { spellDefinitions } from './spells.js';
 import { Trait } from '../sim/food.js';
 import FORAGE from '../game-data/forage.json';
@@ -37,7 +39,6 @@ function oneOf(file, field, value, allowed) {
  * @spec ITEM-DATA-001
  * @spec ITEM-DATA-002
  * @spec ITEM-DATA-003
- * @spec ITEM-DATA-004
  * @spec ITEM-DATA-005
  * @spec ITEM-DATA-006
  */
@@ -51,6 +52,9 @@ export function buildItem(file, data) {
   const consumable = kind === ItemKind.CONSUMABLE;
   if (consumable && data.slot !== undefined) throw new Error(`${file}: a consumable has no slot`);
   if (!consumable && data.slot === undefined) throw new Error(`${file}: no slot`);
+  // Who may hold it is the class's to say, by category; an item names no classes.
+  if (data.classes !== undefined) throw new Error(`${file}: classes "${data.classes}" — name a category instead`);
+  if (!consumable && data.category === undefined) throw new Error(`${file}: no category`);
   if (!consumable && data.effect !== undefined) {
     throw new Error(`${file}: only a consumable has an effect`);
   }
@@ -62,23 +66,27 @@ export function buildItem(file, data) {
     slot: consumable ? null : oneOf(file, 'slot', data.slot, Slot),
     rarity: data.rarity === undefined ? Rarity.COMMON : oneOf(file, 'rarity', data.rarity, Rarity),
     effect: consumable ? readEffect(file, data.effect) : null,
-    // A weapon's skill, or the skill a piece of armour is worn under. A shield has
-    // neither, and says so by omitting it.
-    // A weapon may name the wielder's magic instead of one skill; nothing else may.
+    category: consumable ? null : oneOf(file, 'category', data.category, ItemCategory),
+    // A weapon's skill. Armour and shields train nothing, and a file saying otherwise
+    // is wrong. A weapon may name the wielder's magic instead of one skill.
+    // @spec ITEM-DEF-005
     // @spec ITEM-DEF-014
-    skill: data.skill === undefined
-      ? null
-      : oneOf(file, 'skill', data.skill, kind === ItemKind.WEAPON ? { ...Skill, [MAGIC_SKILL]: MAGIC_SKILL } : Skill),
+    skill: weaponSkillOf(file, kind, data.skill),
     damage: data.damage ?? 0,
+    // Any attribute, or whatever the wielder casts with.
+    // @spec ITEM-DEF-017
     governs: data.governs === undefined
       ? Attribute.MIGHT
-      : oneOf(file, 'attribute', data.governs, Attribute),
+      : oneOf(file, 'attribute', data.governs, { ...Attribute, [CASTING]: CASTING }),
     armour: data.armour ?? 0,
-    // Naming nobody means anybody may hold it.
-    classes: data.classes
-      ? data.classes.map((name) => oneOf(file, 'class', name, CharacterClass))
-      : null,
   });
+}
+
+/** The skill a weapon trains; nothing else names one. */
+function weaponSkillOf(file, kind, skill) {
+  if (skill === undefined) return null;
+  if (kind !== ItemKind.WEAPON) throw new Error(`${file}: skill "${skill}" on something that is not a weapon`);
+  return oneOf(file, 'skill', skill, { ...Skill, [MAGIC_SKILL]: MAGIC_SKILL });
 }
 
 const TRAIT_NAMES = Object.fromEntries(Object.values(Trait).map((t) => [t, t]));

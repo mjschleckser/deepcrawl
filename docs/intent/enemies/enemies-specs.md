@@ -58,7 +58,7 @@ are fed into.
 
 ## Behaviour in a fight
 
-- [ ] **ENEMY-FIGHT-005**: When an enemy selects a target, the system shall draw it at random from every character able to act, each weighted by their weight as a target as the party segment reports it.
+- [x] **ENEMY-FIGHT-005**: When an enemy selects a target, the system shall draw it at random from every character able to act, each weighted by their weight as a target as the party segment reports it.
 - [x] **ENEMY-FIGHT-006**: The system shall draw an enemy's target from the encounter's own seeded generator, so that an encounter replayed from the same seed picks the same targets.
 - [x] **ENEMY-FIGHT-007**: The system shall never let an enemy select a target that is unable to act.
 

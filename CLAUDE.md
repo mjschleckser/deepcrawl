@@ -7,7 +7,7 @@ Deepcrawl is a 2D dungeon-crawling RPG, built as a progressive web app.
 - **Stack:** Vite + PixiJS + vite-plugin-pwa
 - **Live app:** https://mjschleckser.github.io/deepcrawl/
 - **Deploy:** every push to `main` triggers `.github/workflows/deploy.yml`, which builds and publishes to GitHub Pages automatically (usually live within about a minute)
-- **Status:** a party of four explores generated floors, fights roaming bands, advances skills by use, finds gold and gear rolled by rarity from won fights and chests, drinks healing potions, grows hungry and cooks foraged and looted food in a pot at camp for buffs, casts spells (Heal, Magic Missile, and Fire Bolt from a tome) paid for with slots that camping restores, changes equipment through a shared pack on the Items screen, and finds floors it left re-stocked on return (warbands moved and refilled, doors shut) in proportion to how long it was away; testing mode (on by default, switched from the party screen) saves nothing and starts the party with one of everything, otherwise the campaign saves itself; affixes, traps, secret doors and the town are unbuilt
+- **Status:** a party of four explores generated floors, fights roaming bands, advances skills by use at one rate for every class, gives each class one skill of its own (Ironclad, Backstab, Overchannel, Intercession) and reads every class from its own file, finds gold and gear rolled by rarity from won fights and chests, drinks healing potions, grows hungry and cooks foraged and looted food in a pot at camp for buffs, casts spells (Heal, Magic Missile, and Fire Bolt from a tome) paid for with slots that camping restores, changes equipment through a shared pack on the Items screen, and finds floors it left re-stocked on return (warbands moved and refilled, doors shut) in proportion to how long it was away; testing mode (on by default, switched from the party screen) saves nothing and starts the party with one of everything, otherwise the campaign saves itself; affixes, traps, secret doors and the town are unbuilt
 
 ## Repo structure
 
@@ -19,7 +19,7 @@ src/
   sim/               # simulation core - no renderer, no DOM
   render/            # draw plans (pure, tested) + a thin PixiJS adapter
   content/           # composition root: wires a campaign, reads authored data, saves
-  game-data/         # authored JSON: players, enemies, items, loot tables, portraits
+  game-data/         # authored JSON: classes, players, enemies, items, spells, loot tables, portraits
   style.css
 docs/                # the arrow of intent: HLD, design tree, EARS specs
 public/              # static assets, PWA icons

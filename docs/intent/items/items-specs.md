@@ -12,22 +12,22 @@ are assembled into the two the fight resolves, and who may hold it.
 - [x] **ITEM-DEF-002**: The system shall offer these kinds and no others: weapon, armour, shield, consumable, food.
 - [x] **ITEM-DEF-003**: The system shall offer these slots and no others: main hand, off hand, body.
 - [x] **ITEM-DEF-004**: The system shall carry on a weapon the skill it trains, its damage, and the attribute its damage draws on.
-- [ ] **ITEM-DEF-005**: The system shall carry on a piece of armour the damage it turns, and no skill.
+- [x] **ITEM-DEF-005**: The system shall carry on a piece of armour the damage it turns, and no skill.
 - [x] **ITEM-DEF-006**: The system shall carry on a shield the armour it adds to its holder's.
 - [x] **ITEM-DEF-007**: The system shall decide an item's behaviour from the fields it carries and from no property of its identifier or name.
 - [x] **ITEM-DEF-008**: The system shall treat a weapon that names Dexterity as its damage attribute as training the same skill as one that names Might.
 - [x] **ITEM-DEF-014**: The system shall let a weapon name `MAGIC` as its skill, meaning the wielder's highest-ranked magic school among Evocation, Alteration, Healing and Restoration, ties going in that order.
-- [ ] **ITEM-DEF-015**: The system shall hold a Wand: an uncommon weapon in the `WAND` category, whose skill is `MAGIC` and whose damage draws on the wielder's casting attribute.
-- [ ] **ITEM-DEF-016**: The system shall give every item but a consumable or food one category of these and no others: light weapon, martial blade, martial blunt, wand, light armour, heavy armour, shield.
-- [ ] **ITEM-DEF-017**: The system shall let a weapon name `CASTING` as the attribute its damage draws on, meaning the attribute the wielder's class casts with, or the default score for a class that casts nothing.
+- [x] **ITEM-DEF-015**: The system shall hold a Wand: an uncommon weapon in the `WAND` category, whose skill is `MAGIC` and whose damage draws on the wielder's casting attribute.
+- [x] **ITEM-DEF-016**: The system shall give every item but a consumable or food one category of these and no others: light weapon, martial blade, martial blunt, wand, light armour, heavy armour, shield.
+- [x] **ITEM-DEF-017**: The system shall let a weapon name `CASTING` as the attribute its damage draws on, meaning the attribute the wielder's class casts with, or the default score for a class that casts nothing.
 - [x] **ITEM-DEF-012**: The system shall offer these rarities and no others, from lowest to highest: common, uncommon, rare, epic, legendary.
 - [x] **ITEM-DEF-013**: The system shall carry on a consumable the effect it has when used, and shall offer two effects: healing a stated number of hit points, and teaching a named spell.
 
 ## Authoring
 
 - [x] **ITEM-DATA-001**: The system shall read each item from a file of its own under the authored item data, as it reads an authored combatant.
-- [ ] **ITEM-DATA-002**: When an authored item names a kind, slot, category, skill, or attribute that does not exist, or names classes, the system shall reject that file by name and the value it could not read.
-- [ ] **ITEM-DATA-003**: The system shall require of every authored item an identifier, a name and a kind, and of every item but a consumable or food a slot and a category, and shall reject a file lacking any of them.
+- [x] **ITEM-DATA-002**: When an authored item names a kind, slot, category, skill, or attribute that does not exist, or names classes, the system shall reject that file by name and the value it could not read.
+- [x] **ITEM-DATA-003**: The system shall require of every authored item an identifier, a name and a kind, and of every item but a consumable or food a slot and a category, and shall reject a file lacking any of them.
 - [x] **ITEM-DATA-005**: The system shall treat an authored item that names no rarity as common.
 - [x] **ITEM-DATA-006**: When an authored item names a rarity or an effect that does not exist, or a consumable names a slot, an effect amount below one, or a spell to teach that does not exist, the system shall reject that file by name and the value it could not read.
 
@@ -42,15 +42,15 @@ are assembled into the two the fight resolves, and who may hold it.
 
 - [x] **ITEM-NUM-003**: The system shall assemble a combatant's base damage from their weapon's damage, a tenth more per rank of that weapon's skill, and four hundredths more or less per point of the weapon's governing attribute above or below ten.
 - [x] **ITEM-NUM-008**: The system shall scale a character's base damage by their hunger penalty and hearty buff, and their armour by their tough buff, as the food segment sets them.
-- [ ] **ITEM-NUM-009**: The system shall assemble a combatant's armour as what their body wears plus any shield in their off hand, multiplied by their Ironclad armour factor, with any meal bonus added after.
+- [x] **ITEM-NUM-009**: The system shall assemble a combatant's armour as what their body wears plus any shield in their off hand, multiplied by their Ironclad armour factor, with any meal bonus added after.
 - [x] **ITEM-NUM-007**: The system shall assemble the base damage of a weapon whose skill is `MAGIC` from the wielder's rank in the school it resolves to, and shall record that school as the skill an attack with it uses.
 - [x] **ITEM-NUM-006**: The system shall assemble base damage and armour for a combatant holding nothing in any slot, contributing nothing for each empty slot rather than failing.
 
 ## Wielding
 
 - [x] **ITEM-WIELD-001**: The system shall report an item as fitting a slot only when the item names that slot.
-- [ ] **ITEM-WIELD-002**: The system shall report an item as wieldable by a class when that class's file names the item's category among those it wields.
-- [ ] **ITEM-WIELD-003**: The system shall decide what a class may hold from the item's category and the class's file alone, and not from the skills any character holds.
+- [x] **ITEM-WIELD-002**: The system shall report an item as wieldable by a class when that class's file names the item's category among those it wields.
+- [x] **ITEM-WIELD-003**: The system shall decide what a class may hold from the item's category and the class's file alone, and not from the skills any character holds.
 - [x] **ITEM-WIELD-004**: The system shall report a consumable or a food item as fitting no slot, so that it can never be equipped.
 
 ## The pack
