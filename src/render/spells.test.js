@@ -213,13 +213,15 @@ describe('a tome on the Items screen', () => {
     const { controller, party, state } = harness();
     stow(party, tome());
     pressKey(controller, 'i');
+    pressKey(controller, '3');
 
-    // Bram's page first: a fighter cannot read it.
-    expect(itemRow(controller, 'Tome of Fire Bolt')).toMatchObject({ available: false, detail: 'Rare · Mage only' });
-
-    pressKey(controller, 'd');
-    expect(itemRow(controller, 'Tome of Fire Bolt')).toMatchObject({ available: true, detail: 'Rare · Teaches Fire Bolt' });
+    expect(itemRow(controller, 'Tome of Fire Bolt')).toMatchObject({ detail: 'Rare · Teaches Fire Bolt' });
     tap(controller, itemRow(controller, 'Tome of Fire Bolt').box);
+    // A fighter cannot read it; the mage can.
+    expect(plan(controller, 'items').entries.find((e) => e.kind === 'HEADING' && e.text === 'Read')).toBeDefined();
+    expect(itemRow(controller, 'bram')).toMatchObject({ available: false, detail: 'Mage only' });
+    expect(itemRow(controller, 'isolde')).toMatchObject({ available: true, detail: 'learns Fire Bolt' });
+    tap(controller, itemRow(controller, 'isolde').box);
 
     expect(character(party, 'isolde').learnedSpells).toEqual(['fire_bolt']);
     expect(packOf(party)).toHaveLength(0);

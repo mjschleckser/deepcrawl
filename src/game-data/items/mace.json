@@ -6,5 +6,6 @@
   "category": "LIGHT_WEAPON",
   "skill": "BLUNT",
   "damage": 10,
-  "governs": "MIGHT"
+  "governs": "MIGHT",
+  "description": "A flanged iron head on an oak haft. It doesn't care much what you're wearing."
 }

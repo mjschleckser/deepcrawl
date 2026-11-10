@@ -7,5 +7,6 @@
   "rarity": "EPIC",
   "skill": "BLADE",
   "damage": 10,
-  "governs": "DEXTERITY"
+  "governs": "DEXTERITY",
+  "description": "Blue runes crawl along the fuller. The edge has never needed sharpening."
 }

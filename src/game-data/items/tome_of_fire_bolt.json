@@ -3,5 +3,8 @@
   "name": "Tome of Fire Bolt",
   "kind": "CONSUMABLE",
   "rarity": "RARE",
-  "effect": { "teach": "fire_bolt" }
+  "effect": {
+    "teach": "fire_bolt"
+  },
+  "description": "A singed book, warm at the spine. The pages smell of smoke."
 }

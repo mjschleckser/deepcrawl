@@ -188,7 +188,7 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-FIGHT-006**: The system shall offer every character the same four options in the same order on every turn: Attack, Magic, Items, then Flee.
 - [x] **PRESENT-FIGHT-034**: The system shall draw an option the acting character cannot take in its own place, marked unavailable, rather than omitting it or reordering the options around it.
 - [x] **PRESENT-FIGHT-035**: When the player presses an option marked unavailable, the system shall do nothing and shall report nothing.
-- [x] **PRESENT-FIGHT-036**: The system shall mark Attack unavailable when the character carries no attack or no combatant is standing to attack, Magic unavailable when the character knows no spell that may be cast in a fight or can pay neither a slot nor an Overchannel price for any they know, Items unavailable when the pack holds nothing that character may wield or drink, and Flee unavailable when the simulation reports a flee attempt as certain to fail.
+- [x] **PRESENT-FIGHT-036**: The system shall mark Attack unavailable when the character carries no attack or no combatant is standing to attack, Magic unavailable when the character knows no spell that may be cast in a fight or can pay neither a slot nor an Overchannel price for any they know, Items unavailable when the pack holds no consumable that character can use, and Flee unavailable when the simulation reports a flee attempt as certain to fail.
 - [x] **PRESENT-FIGHT-040**: The system shall draw on each unavailable option, beneath its name and in smaller text, a reason naming why it cannot be taken.
 - [x] **PRESENT-FIGHT-041**: The system shall draw an unavailable option's reason in the place an available option draws its key hint, and shall draw no key hint on an unavailable option.
 - [x] **PRESENT-FIGHT-042**: While every option is unavailable, the system shall draw a Pass turn control over the four, shall accept a press on it alone, and shall keep the four drawn beneath it.
@@ -227,9 +227,17 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-PARTY-015**: The system shall draw on a character's page every skill they hold at rank 1 or above, grouped by the party segment's skill groups in that segment's order, each with its rank.
 - [x] **PRESENT-PARTY-016**: The system shall draw under every skill on a character's page a bar filled to the progress toward the next rank that the party segment reports, and shall mark a skill at the rank cap as at the cap.
 - [x] **PRESENT-PARTY-026**: The system shall draw beside a cleric's Intercession on their page the charges they have left.
-- [x] **PRESENT-PARTY-018**: The system shall draw on a character's page every equipment slot the items segment defines, with the name of the item in it or a mark that it is empty.
-- [x] **PRESENT-PARTY-019**: The system shall offer on the party screen no control that changes a character.
-- [x] **PRESENT-PARTY-020**: The system shall draw on the party screen a New campaign control, apart from the character's page.
+- [x] **PRESENT-PARTY-018**: The system shall draw on a character's page, beneath their hit points and above their attributes, every equipment slot the items segment defines, with the item in it and its numbers or a mark that it is empty.
+- [x] **PRESENT-PARTY-019**: The system shall offer on the party screen no control that changes a character other than its equipment slots.
+- [x] **PRESENT-PARTY-027**: While the party screen is open with no slot list over it, when the player presses an equipment slot, or presses `Enter` or `Space` with it highlighted, the system shall open the slot list for that character and slot.
+- [x] **PRESENT-PARTY-028**: While the party screen is open with no slot list over it, when the player presses `W`, `S`, or the up or down arrow key, the system shall move the highlight to the previous or next equipment slot, stopping at either end.
+- [x] **PRESENT-PARTY-029**: The system shall draw on a slot list the character's name and the slot, then, when something is worn there, a row to take it off, then every pack item that fits the slot in the pack's order with its numbers, or a mark that nothing fits.
+- [x] **PRESENT-PARTY-030**: The system shall draw greyed on a slot list, with the classes that may wield it in place of its numbers, every item the character may not wield, and a press on it shall do nothing.
+- [x] **PRESENT-PARTY-031**: When the player presses an item on a slot list, the system shall equip it on that character through the party segment, and when they press the row to take off, shall take the worn item off into the pack; either shall commit an `ITEMS` action to exploration and close the list back to the page.
+- [x] **PRESENT-PARTY-032**: While a slot list is open, when the player presses `Escape` or its Back control, the system shall close the list back to the page and change nothing.
+- [x] **PRESENT-PARTY-034**: While a character's page is longer than the party screen, the system shall scroll everything under the name within a window between it and the foot's controls, by drag and by wheel, clipped to the window with a bar showing where the view sits, pressing what scrolls only when a still finger lifts inside the window.
+- [x] **PRESENT-PARTY-033**: While a slot list is open, the system shall move, press, scroll and draw its rows as it does the Items screen's list.
+- [x] **PRESENT-PARTY-020**: The system shall draw on the party screen a New campaign control at the end of the character's page, after everything about the character.
 - [x] **PRESENT-PARTY-021**: When the player presses New campaign, the system shall ask for confirmation with a control to confirm and a control to decline, and shall change nothing until it is answered.
 - [x] **PRESENT-PARTY-022**: While that confirmation stands, when the player declines it, presses `Escape`, or closes the party screen, the system shall dismiss it and change nothing.
 - [x] **PRESENT-PARTY-023**: When the player confirms that question, the system shall begin a new campaign and close the party screen.
@@ -238,43 +246,43 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 
 ## The Items screen
 
-- [x] **PRESENT-ITEMS-001**: When the player performs `ITEMS` during exploration while no prompt is pending and no screen is open, the system shall open the Items screen on the first character in the party's order.
-- [x] **PRESENT-ITEMS-002**: While the Items screen is open out of a fight, when the player performs `ITEMS`, presses `Escape`, or presses the screen's Close control, the system shall close it.
-- [x] **PRESENT-ITEMS-003**: The system shall hold whether the Items screen is open, which page it shows, and which row is highlighted as view state in the presentation layer, and shall mark exploration's menu open while it is open out of a fight.
+- [x] **PRESENT-ITEMS-001**: When the player performs `ITEMS` during exploration while no prompt is pending and no screen is open, the system shall open the Items screen on its All section.
+- [x] **PRESENT-ITEMS-002**: While the Items screen is open out of a fight, when the player performs `ITEMS`, presses `Escape` from the list, or presses the screen's Close control, the system shall close it.
+- [x] **PRESENT-ITEMS-003**: The system shall hold whether the Items screen is open, its section, its highlighted row, the item open on it and that item's highlighted character as view state in the presentation layer, and shall mark exploration's menu open while it is open out of a fight.
 - [x] **PRESENT-ITEMS-004**: While the Items screen is open, the system shall discard every movement verb and every party action other than `ITEMS`, and shall draw neither the navigation zones nor the party action bar.
-- [x] **PRESENT-ITEMS-005**: The system shall draw the Items screen as one character's page at a time within the centred column, and out of a fight shall page it by the same controls and keys, with the same wrap-around, as the party screen.
-- [x] **PRESENT-ITEMS-006**: The system shall draw on an Items page the character's name, every equipment slot the items segment defines with the item in it or a mark that it is empty, and every item in the pack in the pack's order or a mark that the pack is empty.
+- [x] **PRESENT-ITEMS-005**: The system shall draw across the head of the Items screen's list the tabs All, Equipment, Consumables and Food, the open one marked, where Equipment holds weapons, shields and armour, Consumables holds potions and tomes, Food holds food, and All holds the whole pack.
+- [x] **PRESENT-ITEMS-006**: The system shall draw in the Items screen's list every item of the open section in the pack's order, or a mark that the section is empty, and no worn item.
 - [x] **PRESENT-ITEMS-007**: The system shall draw beneath every item on the Items screen its slot and the numbers it carries: a weapon's skill and damage; an armour's category and armour; a shield's armour.
-- [x] **PRESENT-ITEMS-008**: The system shall draw greyed, with the classes whose files name its category in place of its numbers, every pack item the character on the page may not wield, and a press on it shall do nothing.
-- [x] **PRESENT-ITEMS-009**: When the player presses a pack item the character on the page may wield, the system shall equip it on that character through the party segment.
-- [x] **PRESENT-ITEMS-010**: Out of a fight, when the player presses a worn item, the system shall take it off that character into the pack through the party segment.
-- [x] **PRESENT-ITEMS-011**: Out of a fight, when an item is equipped or taken off on the Items screen, the system shall commit an `ITEMS` action to exploration and shall leave the screen open showing the result.
-- [x] **PRESENT-ITEMS-012**: The system shall draw an empty slot as a row that a press does nothing to.
-- [x] **PRESENT-ITEMS-013**: When the player presses Items in a fight while it is available, the system shall open the Items screen on the acting character's page alone, with no paging controls, over the fight.
-- [x] **PRESENT-ITEMS-014**: While the Items screen is open in a fight, when the player presses `I`, `Escape`, or the Close control, the system shall close it and return to the same character's turn having spent nothing.
-- [x] **PRESENT-ITEMS-015**: While the Items screen is open in a fight, when the player equips an item, the system shall take that change as the character's action, close the screen, and go on with the fight.
-- [x] **PRESENT-ITEMS-016**: While the Items screen is open in a fight, the system shall draw worn items as rows a press does nothing to.
-- [x] **PRESENT-ITEMS-017**: While the Items screen is open, when the player presses `W`, `S`, or the up or down arrow key, the system shall move the highlight to the previous or next row of worn items and pack items, stopping at either end.
+- [x] **PRESENT-ITEMS-008**: The system shall draw no row of the Items screen's list greyed.
+- [x] **PRESENT-ITEMS-009**: While the Items screen's list is open out of a fight, when the player presses a tab, a number key from `1` to `4`, the drawn previous or next control, the left or right arrow key, `A` or `D`, the system shall show that section, or the previous or next one with wrap-around.
+- [x] **PRESENT-ITEMS-010**: When the player presses a row of the Items screen's list, the system shall open that item's page.
+- [x] **PRESENT-ITEMS-011**: The system shall draw on an item's page its name in its rarity's colour, its tier and kind, every number it carries on a line of its own, how many the pack holds when more than one, every enchantment it carries, and its description.
+- [x] **PRESENT-ITEMS-012**: The system shall draw on an item's page, under Equip to, Use on or Read for equipment, a potion or a tome, a row for every character in the party saying what taking it would do, greyed with the reason where that character cannot take it, and a press on a greyed row shall do nothing.
+- [x] **PRESENT-ITEMS-013**: The system shall draw on a food item's page no character rows, and a note that it is eaten at camp.
+- [x] **PRESENT-ITEMS-014**: When the player presses a character who can take the item on an item's page, the system shall equip it on them, have them drink it, or have them read it, through the party and magic segments.
+- [x] **PRESENT-ITEMS-015**: Out of a fight, when an item is equipped, drunk or read from its page, the system shall commit an `ITEMS` action to exploration and return to the list, showing the result.
+- [x] **PRESENT-ITEMS-016**: While an item's page is open, when the player presses `Escape` or its Back control, the system shall return to the list and change nothing.
+- [x] **PRESENT-ITEMS-017**: While the Items screen is open, when the player presses `W`, `S`, or the up or down arrow key, the system shall move the highlight to the previous or next row of the list or of the item's characters, stopping at either end.
 - [x] **PRESENT-ITEMS-018**: While the Items screen is open, when the player presses `Enter` or `Space`, the system shall press the highlighted row.
 - [x] **PRESENT-ITEMS-019**: While the Items screen is open, if the highlighted row would fall outside the page, then the system shall scroll the list of rows to bring it into view.
 - [x] **PRESENT-ITEMS-020**: The system shall name the screen, the action bar's control and the fight's option Items.
-- [x] **PRESENT-ITEMS-021**: When the Items screen shows a different page or the pack changes, the system shall keep the highlight within the rows there are.
-- [x] **PRESENT-ITEMS-023**: The system shall draw on every Items page the gold in the party's purse.
+- [x] **PRESENT-ITEMS-021**: When the Items screen shows a different section or the pack changes, the system shall keep the highlight within the rows there are.
+- [x] **PRESENT-ITEMS-023**: The system shall draw on the heading of every section of the Items screen the gold in the party's purse.
 - [x] **PRESENT-ITEMS-024**: The system shall draw consumables and food in the pack that share an identifier as one row with their count, placed where the first of them stands in the pack's order, and shall draw every piece of equipment as a row of its own.
 - [x] **PRESENT-ITEMS-025**: The system shall draw beneath a consumable on the Items screen the effect it has when used.
-- [x] **PRESENT-ITEMS-026**: When the player presses a consumable the character on the page can use, the system shall use it on that character through the party segment.
-- [x] **PRESENT-ITEMS-027**: The system shall draw greyed, with the reason in place of its effect, every consumable the character on the page cannot use, and a press on it shall do nothing.
-- [x] **PRESENT-ITEMS-028**: Out of a fight, when a consumable is used on the Items screen, the system shall commit an `ITEMS` action to exploration and shall leave the screen open showing the result.
+- [x] **PRESENT-ITEMS-026**: When the player presses Items in a fight while it is available, the system shall open the Items screen over the fight on its Consumables alone, with no tabs and no paging.
+- [x] **PRESENT-ITEMS-027**: While the Items screen is open in a fight, the system shall offer on an item's page the acting character alone, and shall grey a tome with the reason that it cannot be read in a fight.
+- [x] **PRESENT-ITEMS-028**: While the Items screen's list is open in a fight, when the player presses `I`, `Escape`, or the Close control, the system shall close it and return to the same character's turn having spent nothing.
 - [x] **PRESENT-ITEMS-029**: While the Items screen is open in a fight, when the player uses a consumable, the system shall take that use as the character's action, close the screen, and go on with the fight.
 - [x] **PRESENT-ITEMS-022**: While the Items screen is open, when the player drags the list of rows or turns the mouse wheel over the screen, the system shall scroll the list by that distance, no further than its first row at the top or its last row at the bottom, and shall leave the highlight where it was.
 - [x] **PRESENT-ITEMS-031**: While the Items screen is open, the system shall press a row when the finger that touched it lifts without having moved more than a few pixels, and shall press nothing when it moved further.
 - [x] **PRESENT-ITEMS-032**: While the Items screen's rows are longer than the list, the system shall draw rows cut by the list's edges clipped to it, and a bar down the list's right edge showing how much of the list is in view and where.
-- [x] **PRESENT-ITEMS-030**: The system shall draw the Items screen's controls in one row along the foot of the page — previous at the left, Close centred, next at the right, and Close alone in a fight — with the list of rows ending above that row and the character's name across the head of the page.
+- [x] **PRESENT-ITEMS-030**: The system shall draw the Items screen's list controls in one row along the foot of the page — previous at the left, Close centred, next at the right, and Close alone in a fight — and an item's page with Back alone at its foot.
 
 ## The Spells screen
 
 - [x] **PRESENT-SPELLS-001**: When the player performs `SPELLS` during exploration while no prompt is pending and no screen is open, the system shall open the Spells screen on the first character in the party's order who knows a spell that may be cast out of a fight, or on the first character if none does.
-- [x] **PRESENT-SPELLS-002**: The system shall draw and page the Spells screen as it does the Items screen, one character a page, with the same controls along the foot, the same keys, and the same wrap-around, and shall close it on `SPELLS`, `Escape` or Close.
+- [x] **PRESENT-SPELLS-002**: The system shall draw and page the Spells screen as it does the party screen, one character a page, with the same controls along the foot, the same keys, and the same wrap-around, and shall close it on `SPELLS`, `Escape` or Close.
 - [x] **PRESENT-SPELLS-003**: The system shall hold whether the Spells screen is open, its page and any spell awaiting a target as view state in the presentation layer, and shall mark exploration's menu open while it is open.
 - [x] **PRESENT-SPELLS-004**: The system shall draw on a Spells page every spell the character knows, each with what it does and the slots left at its rank — or, for a spell a mage would Overchannel, its price in hit points — or a mark that the character knows none.
 - [x] **PRESENT-SPELLS-005**: The system shall draw greyed, with the reason in place of its effect, every spell on a Spells page that may not be cast out of a fight or can be paid for by neither a slot nor Overchannel, and a press on it shall do nothing.

@@ -3,5 +3,6 @@
   "name": "Ration",
   "kind": "FOOD",
   "nourish": 600,
-  "heal": 2
+  "heal": 2,
+  "description": "Hard bread, salt meat and dried fruit wrapped in oilcloth. It isn't good, but it keeps."
 }

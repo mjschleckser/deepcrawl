@@ -7,5 +7,6 @@
   "rarity": "LEGENDARY",
   "skill": "BLUNT",
   "damage": 18,
-  "governs": "MIGHT"
+  "governs": "MIGHT",
+  "description": "Its head is warm to the touch and glows like a coal when it strikes. Some say a god was in the forge."
 }

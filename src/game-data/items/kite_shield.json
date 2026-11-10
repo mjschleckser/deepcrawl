@@ -5,5 +5,6 @@
   "slot": "OFF_HAND",
   "category": "SHIELD",
   "rarity": "UNCOMMON",
-  "armour": 2
+  "armour": 2,
+  "description": "A tall shield, pointed at the foot, that covers a soldier from shoulder to knee."
 }

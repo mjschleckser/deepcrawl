@@ -99,6 +99,7 @@ export function createItem({
   id, name, kind, slot = null, rarity = Rarity.COMMON,
   skill = null, damage = 0, governs = Attribute.MIGHT,
   armour = 0, category = null, effect = null, nourish = 0, heal = 0, traits = null,
+  description = null,
 }) {
   // Neither a consumable nor food is worn, so neither names a slot.
   const consumable = kind === ItemKind.CONSUMABLE || kind === ItemKind.FOOD;
@@ -123,6 +124,9 @@ export function createItem({
     // up has one.
     // @spec ITEM-DEF-016
     category: consumable ? null : category,
+    // Flavour for the player; no rule reads it.
+    // @spec ITEM-DATA-007
+    description: description ?? null,
     // What using it does: only a consumable has one.
     effect: kind === ItemKind.CONSUMABLE && effect ? { ...effect } : null,
     // What food adds to the pot.

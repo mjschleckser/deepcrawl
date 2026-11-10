@@ -4,5 +4,6 @@
   "kind": "ARMOUR",
   "slot": "BODY",
   "category": "LIGHT_ARMOUR",
-  "armour": 2
+  "armour": 2,
+  "description": "Boiled leather, cracked at the elbows. It turns a scratch, if not much more."
 }

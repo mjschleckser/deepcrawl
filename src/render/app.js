@@ -843,7 +843,7 @@ function drawParty(container, plan) {
   const text = Math.round(13 * scale);
   const small = Math.round(11 * scale);
   const { bounds } = plan;
-  const graphics = new Graphics();
+  let graphics = new Graphics();
   graphics.roundRect(bounds.x, bounds.y, bounds.width, bounds.height, 6 * scale)
     .fill({ color: FIGHT_COLOURS.panel, alpha: 0.96 });
   graphics.roundRect(bounds.x, bounds.y, bounds.width, bounds.height, 6 * scale)
@@ -869,6 +869,20 @@ function drawParty(container, plan) {
   place.x = heading.title.x + (heading.title.width - place.width) / 2;
   place.y = heading.title.y + heading.title.height / 2 + 2 * scale;
   container.addChild(place);
+
+  // Everything under the name scrolls, clipped to its window.
+  // @spec PRESENT-PARTY-034
+  const outer = container;
+  const body = new Container();
+  graphics = new Graphics();
+  body.addChild(graphics);
+  outer.addChild(body);
+  if (plan.clip) {
+    const mask = new Graphics().rect(plan.clip.x, plan.clip.y, plan.clip.width, plan.clip.height).fill(0xffffff);
+    outer.addChild(mask);
+    body.mask = mask;
+  }
+  container = body;
 
   const box = heading.portraitBox;
   graphics.rect(box.x, box.y, box.size, box.size).fill(FIGHT_COLOURS.ally);
@@ -950,26 +964,56 @@ function drawParty(container, plan) {
     }
   }
 
+  // Each slot a pressable row: the slot, what is in it in its rarity's colour, and its
+  // numbers beneath, outlined when the keyboard's highlight is on it.
+  // @spec PRESENT-PARTY-018
   for (const e of plan.equipment) {
-    const slot = put(e.label, text, FIGHT_COLOURS.dim, e.box.x, e.box.y);
-    slot.y = middle(e.box, slot);
-    const item = label(e.item ?? '—', text, e.item ? FIGHT_COLOURS.text : FIGHT_COLOURS.dim);
-    item.x = e.box.x + e.box.width * 0.28;
-    item.y = middle(e.box, item);
+    const { box } = e;
+    graphics.roundRect(box.x, box.y + 1, box.width, box.height - 2, 4 * scale)
+      .fill({ color: 0x000000, alpha: 0.35 });
+    if (e.selected) {
+      graphics.roundRect(box.x, box.y + 1, box.width, box.height - 2, 4 * scale)
+        .stroke({ width: 1.5, color: FIGHT_COLOURS.banner });
+    }
+    const inset = 8 * scale;
+    const nameLeft = box.x + box.width * 0.3;
+    const slot = put(e.label, text, FIGHT_COLOURS.dim, box.x + inset, box.y + 4 * scale);
+    fitWithin(slot, nameLeft - box.x - inset * 2);
+    const item = label(e.item ?? 'Empty', text, e.item ? (e.colour ?? FIGHT_COLOURS.text) : FIGHT_COLOURS.dim);
+    fitWithin(item, box.x + box.width - inset - nameLeft);
+    item.x = nameLeft;
+    item.y = e.detail ? box.y + 4 * scale : middle(box, item);
     container.addChild(item);
+    if (e.detail) {
+      const detail = label(e.detail, small, FIGHT_COLOURS.dim);
+      fitWithin(detail, box.x + box.width - inset - nameLeft);
+      detail.x = nameLeft;
+      detail.y = box.y + box.height - detail.height - 4 * scale;
+      container.addChild(detail);
+    }
   }
 
-  for (const control of plan.controls) drawControl(container, control, { alpha: 0.85, scale });
+  for (const control of plan.controls) {
+    if (control.kind === 'BUTTON') drawControl(control.scrolls ? body : outer, control, { alpha: 0.85, scale });
+  }
+  if (plan.scrollbar) {
+    const { track, thumb } = plan.scrollbar;
+    const bar = new Graphics();
+    bar.roundRect(track.x, track.y, track.width, track.height, track.width / 2)
+      .fill({ color: FIGHT_COLOURS.frame, alpha: 0.35 });
+    bar.roundRect(thumb.x, thumb.y, thumb.width, thumb.height, thumb.width / 2)
+      .fill({ color: FIGHT_COLOURS.banner, alpha: 0.85 });
+    outer.addChild(bar);
+  }
 }
 
 /**
- * Draw the Items screen. Every box was placed by the plan; this only paints into them.
+ * Draw the Items screen — a section's list or an item's page — and the party screen's
+ * slot list. Every box was placed by the plan; this only paints into them.
  *
  * @spec PRESENT-ITEMS-005
- * @spec PRESENT-ITEMS-006
- * @spec PRESENT-ITEMS-007
- * @spec PRESENT-ITEMS-008
- * @spec PRESENT-ITEMS-012
+ * @spec PRESENT-ITEMS-011
+ * @spec PRESENT-PARTY-033
  */
 function drawItems(container, plan) {
   const scale = plan.scale ?? 1;
@@ -985,7 +1029,7 @@ function drawItems(container, plan) {
 
   // The name, and where this page sits, or that it is this character's turn.
   const { title } = plan;
-  const name = label(title.name, Math.round(17 * scale), FIGHT_COLOURS.banner);
+  const name = label(title.name, Math.round(17 * scale), title.colour ?? FIGHT_COLOURS.banner);
   fitWithin(name, title.box.width);
   name.x = title.box.x + (title.box.width - name.width) / 2;
   name.y = title.box.y + title.box.height / 2 - name.height + 2 * scale;
@@ -994,6 +1038,24 @@ function drawItems(container, plan) {
   place.x = title.box.x + (title.box.width - place.width) / 2;
   place.y = title.box.y + title.box.height / 2 + 2 * scale;
   container.addChild(place);
+
+  // The sections, across the head, the open one marked.
+  // @spec PRESENT-ITEMS-005
+  for (const tab of plan.tabs ?? []) {
+    if (tab.selected) {
+      graphics.roundRect(tab.x + 1, tab.y + 2, tab.width - 2, tab.height - 4, 4 * scale)
+        .fill({ color: FIGHT_COLOURS.ally, alpha: 0.9 })
+        .stroke({ width: 1.5, color: FIGHT_COLOURS.banner });
+    } else {
+      graphics.roundRect(tab.x + 1, tab.y + 2, tab.width - 2, tab.height - 4, 4 * scale)
+        .stroke({ width: 1, color: FIGHT_COLOURS.frame, alpha: 0.6 });
+    }
+    const t = label(tab.label, small, tab.selected ? FIGHT_COLOURS.banner : FIGHT_COLOURS.dim);
+    fitWithin(t, tab.width - 6 * scale);
+    t.x = tab.x + (tab.width - t.width) / 2;
+    t.y = tab.y + (tab.height - t.height) / 2;
+    container.addChild(t);
+  }
 
   // The list draws into its own layer, clipped to its window, so a row cut by the edge
   // is cut rather than spilling over the name or the buttons.
@@ -1026,6 +1088,39 @@ function drawItems(container, plan) {
         aside.y = t.y;
         container.addChild(aside);
       }
+      continue;
+    }
+    // A number an item carries, named on the left and given on the right.
+    // @spec PRESENT-ITEMS-011
+    if (entry.kind === 'LINE') {
+      const name = label(entry.label, text, FIGHT_COLOURS.dim);
+      name.x = box.x;
+      name.y = box.y + (box.height - name.height) / 2;
+      container.addChild(name);
+      const value = label(entry.value, text, FIGHT_COLOURS.text);
+      fitWithin(value, box.width * 0.62);
+      value.x = box.x + box.width * 0.36;
+      value.y = name.y;
+      container.addChild(value);
+      continue;
+    }
+    // Words that run over lines: an item's description, or an enchantment.
+    if (entry.kind === 'TEXT') {
+      const t = new Text({
+        text: entry.text,
+        style: {
+          fill: entry.flavour ? FIGHT_COLOURS.dim : FIGHT_COLOURS.text,
+          fontSize: Math.round(12 * scale),
+          fontFamily: 'monospace',
+          fontStyle: entry.flavour ? 'italic' : 'normal',
+          wordWrap: true,
+          wordWrapWidth: box.width - 4 * scale,
+          lineHeight: Math.round(12 * scale * 1.35),
+        },
+      });
+      t.x = box.x;
+      t.y = box.y;
+      container.addChild(t);
       continue;
     }
     if (entry.kind === 'NOTE') {

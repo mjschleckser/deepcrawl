@@ -5,7 +5,8 @@ import { setCombatActive } from '../sim/exploration.js';
 import { applyDamage, roster } from '../sim/party.js';
 import { makeRng } from '../sim/rng.js';
 import {
-  createController, layers, pressKey, pressPointer, replaceCampaign, setSaveNote, tick,
+  createController, layers, pressKey, pressPointer, releasePointer, replaceCampaign, scrollItems,
+  setSaveNote, tick,
 } from './controller.js';
 import { MapMode } from './mapplan.js';
 import { PartyControl } from './partyplan.js';
@@ -26,10 +27,17 @@ function setUp() {
 const layer = (controller, name) => layers(controller).find((l) => l.name === name).plan;
 const centre = (c) => [c.x + c.width / 2, c.y + c.height / 2];
 
+/** The campaign's controls sit at the end of the page, so the page is scrolled to them. */
+function pressCampaignControl(controller, role) {
+  scrollItems(controller, 1e5);
+  const control = layer(controller, 'party').controls.find((c) => c.role === role);
+  pressPointer(controller, ...centre(control));
+  releasePointer(controller);
+}
+
 function openNewCampaign(controller) {
   pressKey(controller, 'p');
-  const control = layer(controller, 'party').controls.find((c) => c.role === PartyControl.NEW_CAMPAIGN);
-  pressPointer(controller, ...centre(control));
+  pressCampaignControl(controller, PartyControl.NEW_CAMPAIGN);
 }
 
 /** A fight the party has already lost, standing on its banner. */
@@ -272,6 +280,7 @@ describe('the Testing control on the party screen', () => {
   // @spec PRESENT-PARTY-025
   it('says whether testing mode is on, thumb-sized and clear of the other controls', () => {
     const { controller } = testing(true);
+    scrollItems(controller, 1e5);
     expect(control(controller).label).toBe('Testing: on');
     expect(control(controller).height).toBeGreaterThanOrEqual(MIN_TAP_PX);
     for (const other of layer(controller, 'party').controls.filter((c) => c.role !== PartyControl.TESTING)) {
@@ -279,20 +288,22 @@ describe('the Testing control on the party screen', () => {
       const overlaps = c.x < other.x + other.width && c.x + c.width > other.x && c.y < other.y + other.height && c.y + c.height > other.y;
       expect(overlaps).toBe(false);
     }
-    expect(control(testing(false).controller).label).toBe('Testing: off');
+    const off = testing(false).controller;
+    scrollItems(off, 1e5);
+    expect(control(off).label).toBe('Testing: off');
   });
 
   // @spec PRESENT-PARTY-025
   it('asks before switching, and switches only on a confirmation', () => {
     const { controller, onToggleTesting } = testing(true);
-    pressPointer(controller, ...centre(control(controller)));
+    pressCampaignControl(controller, PartyControl.TESTING);
 
     expect(layer(controller, 'hud').prompt.text).toBe('Turn testing mode off? This begins a new campaign.');
     pressKey(controller, 'Escape');
     expect(onToggleTesting).not.toHaveBeenCalled();
     expect(layer(controller, 'hud').prompt).toBeNull();
 
-    pressPointer(controller, ...centre(control(controller)));
+    pressCampaignControl(controller, PartyControl.TESTING);
     pressKey(controller, 'Enter');
     expect(onToggleTesting).toHaveBeenCalledTimes(1);
     expect(layer(controller, 'party')).toBeNull();

@@ -58,6 +58,7 @@ kind      WEAPON | ARMOUR | SHIELD | CONSUMABLE
 rarity    COMMON | UNCOMMON | RARE | EPIC | LEGENDARY, common when not given
 slot      MAIN_HAND | OFF_HAND | BODY, for anything but a consumable
 category  which kind of thing it is to wield, for anything but a consumable
+description  a line or two of flavour for the player, nothing when not given
 ```
 
 The categories:
@@ -87,6 +88,11 @@ up: in any loot table, in the pack, in a hand. The tier is what loot rolls on an
 the screen colours a name by, and putting it on the item is what keeps the two in
 agreement. An item authored without a rarity is common, so every item that existed
 before rarity still reads.
+
+**A description is flavour and nothing else.** It is what the item looks like and what
+it is said to be, written for the player reading it, and no rule reads it. Its numbers
+are said elsewhere, from the numbers themselves, so a description never repeats one and
+can never disagree with one.
 
 **A consumable occupies no slot and is never equipped.** It sits in the pack until it
 is used, and using it removes it. It names no category, because anyone can drink a

@@ -4,5 +4,6 @@
   "kind": "ARMOUR",
   "slot": "BODY",
   "category": "HEAVY_ARMOUR",
-  "armour": 5
+  "armour": 5,
+  "description": "Riveted rings over a padded coat. Loud, heavy, and very hard to cut through."
 }

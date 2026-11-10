@@ -5,5 +5,6 @@
   "slot": "BODY",
   "category": "LIGHT_ARMOUR",
   "rarity": "UNCOMMON",
-  "armour": 3
+  "armour": 3,
+  "description": "Leather riveted with iron studs. It's light enough to run in, and tough enough to matter."
 }

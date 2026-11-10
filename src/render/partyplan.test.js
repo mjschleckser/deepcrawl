@@ -50,13 +50,33 @@ describe('the party screen page', () => {
   });
 
   // @spec PRESENT-PARTY-020
-  it('keeps New campaign to the side the equipment rows leave empty', () => {
+  it('puts New campaign at the end of the page, to the right, after everything about the character', () => {
     const short = { width: 390, height: 560 };
-    const plan = buildPartyPlan(fourOf(), short, { page: 0 });
+    const plan = buildPartyPlan(fourOf(), short, { page: 0, scroll: 1e5 });
     const control = plan.controls.find((c) => c.role === PartyControl.NEW_CAMPAIGN);
+    const lastSkill = plan.skills.at(-1).skills.at(-1);
 
     expect(control.x).toBeGreaterThan(plan.bounds.x + plan.bounds.width / 2);
-    expect(inside(control, plan.bounds)).toBe(true);
+    expect(inside(control, plan.area)).toBe(true);
+    expect(control.y).toBeGreaterThan(lastSkill.bar.y);
+  });
+
+  // @spec PRESENT-PARTY-034
+  it('scrolls everything under the name within its window, leaving the name and the foot in place', () => {
+    const short = { width: 390, height: 560 };
+    const top = buildPartyPlan(fourOf(), short, { page: 0 });
+    const down = buildPartyPlan(fourOf(), short, { page: 0, scroll: 60 });
+    const foot = (plan) => plan.controls.filter((c) => !c.scrolls).map((c) => [c.role, c.y]);
+
+    expect(top.maxScroll).toBeGreaterThan(60);
+    expect(down.scroll).toBe(60);
+    expect(down.health.box.y).toBeCloseTo(top.health.box.y - 60);
+    expect(down.title).toEqual(top.title);
+    expect(foot(down)).toEqual(foot(top));
+    expect(down.clip).toEqual(down.area);
+    expect(down.scrollbar.thumb.y).toBeGreaterThan(top.scrollbar.thumb.y);
+    expect(buildPartyPlan(fourOf(), short, { page: 0, scroll: 1e5 }).scroll).toBe(top.maxScroll);
+    expect(buildPartyPlan(fourOf(), desktop, { page: 0 }).scrollbar).toBeNull();
   });
 
   // @spec PRESENT-PARTY-007
@@ -168,12 +188,28 @@ describe('the party screen page', () => {
   });
 
   // @spec PRESENT-PARTY-018
-  it('shows every equipment slot, with the item in it or a mark that it is empty', () => {
+  it('shows every equipment slot under the hit points, above the attributes, with its item and numbers', () => {
     const plan = buildPartyPlan(fourOf(), phone, { page: 0 });
 
     expect(plan.equipment.map((e) => e.slot)).toEqual(Object.values(Slot));
-    expect(plan.equipment.find((e) => e.slot === Slot.MAIN_HAND)).toMatchObject({ label: 'Main hand', item: 'Shortsword' });
-    expect(plan.equipment.find((e) => e.slot === Slot.BODY).item).toBeNull();
+    expect(plan.equipment.find((e) => e.slot === Slot.MAIN_HAND)).toMatchObject({
+      label: 'Main hand', item: 'Shortsword', detail: 'Main hand · Blade · damage 8',
+    });
+    expect(plan.equipment.find((e) => e.slot === Slot.BODY)).toMatchObject({ item: null, detail: null });
+    const top = Math.min(...plan.equipment.map((e) => e.box.y));
+    const bottom = Math.max(...plan.equipment.map((e) => e.box.y + e.box.height));
+    expect(top).toBeGreaterThan(plan.health.bar.y);
+    expect(bottom).toBeLessThanOrEqual(Math.min(...plan.attributes.map((a) => a.box.y)));
+  });
+
+  // @spec PRESENT-PARTY-027
+  // @spec PRESENT-PARTY-028
+  it('makes every slot a control, and marks the highlighted one', () => {
+    const plan = buildPartyPlan(fourOf(), phone, { page: 0, selectedSlot: 2 });
+    const slots = plan.controls.filter((c) => c.role === PartyControl.SLOT);
+
+    expect(slots.map((c) => c.slot)).toEqual(Object.values(Slot));
+    expect(plan.equipment.map((e) => e.selected)).toEqual([false, false, true]);
   });
 
   // @spec PRESENT-PARTY-007
@@ -195,12 +231,13 @@ describe('the party screen page', () => {
   // @spec PRESENT-PARTY-009
   // @spec PRESENT-PARTY-010
   // @spec PRESENT-PARTY-019
-  it('offers paging, closing and a new campaign, every one thumb-sized, and nothing that changes anybody', () => {
+  it('offers paging, closing, a new campaign and the slots, every one thumb-sized, and nothing else', () => {
     const plan = buildPartyPlan(fourOf(), phone, { page: 0 });
 
-    expect(plan.controls.map((c) => c.role).sort()).toEqual(
-      [PartyControl.CLOSE, PartyControl.NEW_CAMPAIGN, PartyControl.NEXT, PartyControl.PREVIOUS, PartyControl.TESTING].sort(),
-    );
+    expect(plan.controls.map((c) => c.role).sort()).toEqual([
+      PartyControl.CLOSE, PartyControl.NEW_CAMPAIGN, PartyControl.NEXT, PartyControl.PREVIOUS, PartyControl.TESTING,
+      ...Object.values(Slot).map(() => PartyControl.SLOT),
+    ].sort());
     for (const c of plan.controls) {
       expect(c.width).toBeGreaterThanOrEqual(MIN_TAP_PX);
       expect(c.height).toBeGreaterThanOrEqual(MIN_TAP_PX);

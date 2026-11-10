@@ -7,5 +7,6 @@
   "rarity": "UNCOMMON",
   "skill": "BLADE",
   "damage": 11,
-  "governs": "MIGHT"
+  "governs": "MIGHT",
+  "description": "A soldier's sword, long in the blade and long in the grip. It needs training to swing well."
 }

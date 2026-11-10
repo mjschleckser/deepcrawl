@@ -4,5 +4,6 @@
   "kind": "ARMOUR",
   "slot": "BODY",
   "category": "LIGHT_ARMOUR",
-  "armour": 0
+  "armour": 0,
+  "description": "Wool robes, warm and loose, with plenty of room for a caster's hands to move."
 }

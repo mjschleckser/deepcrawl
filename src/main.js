@@ -152,7 +152,7 @@ async function bootstrap() {
     if (scrollFightLog(controller, event.deltaY > 0 ? -lines : lines)) event.preventDefault();
     // Over the Items screen it scrolls the list.
     // @spec PRESENT-ITEMS-022
-    else if (controller.itemsScreen || controller.fight?.pending?.items) {
+    else if (controller.itemsScreen || controller.partyScreen || controller.fight?.pending?.items) {
       scrollItems(controller, event.deltaY);
       event.preventDefault();
     }

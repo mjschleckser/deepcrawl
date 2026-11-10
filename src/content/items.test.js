@@ -178,3 +178,17 @@ describe('the authored food', () => {
     expect(forageList().map((item) => item.id)).toEqual(['bitterleaf', 'fleetroot', 'cave_moss', 'ironcap', 'glowcap']);
   });
 });
+
+describe('an item\'s description', () => {
+  // @spec ITEM-DATA-007
+  it('carries the flavour its file gives, none when it gives none, and refuses anything but text', () => {
+    expect(buildItem('blade.json', { ...swordFile, description: 'Sharp.' }).description).toBe('Sharp.');
+    expect(buildItem('blade.json', swordFile).description).toBeNull();
+    expect(() => buildItem('blade.json', { ...swordFile, description: 7 })).toThrow(/blade\.json.*description/);
+    expect(buildItem('food.json', { id: 'x', name: 'X', kind: 'FOOD', description: 'Tasty.' }).description).toBe('Tasty.');
+  });
+
+  it('is written for every authored item', () => {
+    for (const item of Object.values(itemDefinitions())) expect(item.description, item.id).toEqual(expect.any(String));
+  });
+});

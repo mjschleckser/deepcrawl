@@ -6,5 +6,6 @@
   "category": "LIGHT_WEAPON",
   "skill": "BLADE",
   "damage": 9,
-  "governs": "MIGHT"
+  "governs": "MIGHT",
+  "description": "A short, broad blade, made for close quarters and tight corridors."
 }

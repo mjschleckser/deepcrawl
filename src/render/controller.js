@@ -21,12 +21,13 @@ import {
 import { buildChestReportPlan, buildCampReportPlan, buildMealReportPlan } from './findsplan.js';
 import { buildCampPlan, CampControl, foodKinds, potItems } from './campplan.js';
 import { buildSpellsPlan, openingSpellsPage, SpellsControl } from './spellsplan.js';
-import { CastWhere, castOnAlly, readTome, tomeSpell } from '../sim/magic.js';
+import { CastWhere, castOnAlly, readTome } from '../sim/magic.js';
 import { character, equip, roster, takeOff, useItem } from '../sim/party.js';
-import { isConsumable } from '../sim/items.js';
+import { Slot } from '../sim/items.js';
 import { buildPartyPlan, pageFor, PartyControl } from './partyplan.js';
 import {
-  buildItemsPlan, clampRow, itemRows, rowActs, ItemsControl,
+  buildItemsPlan, buildItemPagePlan, buildSlotListPlan, itemChoices, itemRows, slotRows, stillCarried,
+  choiceKind, ChoiceKind, ItemsControl, ItemsSection, SECTION_ORDER,
 } from './itemsplan.js';
 import { Outcome } from '../sim/combat.js';
 import { hitTest, controlsFor, uiScale, versionStamp, contentColumn, tapRegionsFor } from './geometry.js';
@@ -36,7 +37,7 @@ import { buildViewPlan } from './viewplan.js';
 import { MapMode, buildMapPlan, nextMapMode } from './mapplan.js';
 import {
   buildFightPlan, createFightController, chooseOption, pressOption, goBack, dismissOutcome,
-  passTurn, equipInFight, useInFight, closeItems,
+  passTurn, useInFight, closeItems,
   advanceClock, fightIsPlaying, scrollLog, FightPhase,
 } from './fight.js';
 
@@ -281,8 +282,10 @@ export function layers(controller) {
       },
     ];
   }
-  const sheet = partyPlan(controller);
-  const items = itemsPlan(controller);
+  const slotList = slotPlan(controller);
+  // A slot list stands over the character's page in its place.
+  const sheet = slotList ? null : partyPlan(controller);
+  const items = slotList ?? itemsPlan(controller);
   const spellsScreen = spellsPlan(controller);
   const campScreen = campPlan(controller);
   const report = buildChestReportPlan(controller.chestFind, viewport)
@@ -484,9 +487,15 @@ const partyOf = (controller) => controller.campaign?.party ?? null;
 function partyPlan(controller) {
   const party = partyOf(controller);
   if (!controller.partyScreen || !party) return null;
-  return buildPartyPlan(party, controller.viewport, {
-    page: controller.partyScreen.page, testing: Boolean(controller.campaign?.testing),
+  const plan = buildPartyPlan(party, controller.viewport, {
+    page: controller.partyScreen.page,
+    testing: Boolean(controller.campaign?.testing),
+    selectedSlot: controller.partyScreen.selectedSlot ?? 0,
+    scroll: controller.partyScreen.scroll ?? 0,
+    follow: controller.partyScreen.follow ?? false,
   });
+  if (plan) controller.partyScreen.scroll = plan.scroll;
+  return plan;
 }
 
 /**
@@ -568,7 +577,22 @@ function pressKeyOnPartyScreen(controller, key) {
     if (key === 'p' || key === 'P') return closePartyScreen(controller);
     return false;
   }
+  if (controller.partyScreen.slotList) return pressKeyOnSlotList(controller, key);
   if (key === 'Escape' || key === 'p' || key === 'P') return closePartyScreen(controller);
+  // The highlight walks the equipment slots, and Enter opens the one it is on.
+  // @spec PRESENT-PARTY-027
+  // @spec PRESENT-PARTY-028
+  const slots = Object.values(Slot);
+  const at = controller.partyScreen.selectedSlot ?? 0;
+  if (keyIs(key, 'ArrowUp', 'w', 'ArrowDown', 's')) {
+    const next = Math.min(Math.max(0, at + (keyIs(key, 'ArrowUp', 'w') ? -1 : 1)), slots.length - 1);
+    if (next === at) return false;
+    controller.partyScreen.selectedSlot = next;
+    controller.partyScreen.follow = true;
+    redraw(controller);
+    return true;
+  }
+  if (key === 'Enter' || key === ' ') return openSlotList(controller, slots[at]);
   if (key === 'ArrowRight' || key === 'd' || key === 'D') return showPage(controller, page + 1);
   if (key === 'ArrowLeft' || key === 'a' || key === 'A') return showPage(controller, page - 1);
 
@@ -591,9 +615,23 @@ function pressPointerOnPartyScreen(controller, px, py) {
     return answer ? answerNewCampaign(controller, answer.accepted) : false;
   }
 
-  const control = hit(partyPlan(controller)?.controls, px, py);
+  if (controller.partyScreen.slotList) return pressPointerOnSlotList(controller, px, py);
+  const plan = partyPlan(controller);
+  const inWindow = plan && within(plan.area, px, py);
+  // What scrolls is pressed when a still finger lifts, and only inside the window; the
+  // foot's controls act as they are touched.
+  // @spec PRESENT-PARTY-034
+  const control = hit(plan?.controls.filter((c) => !c.scrolls || inWindow), px, py);
+  if (inWindow && (!control || control.scrolls)) return holdOnList(controller, plan, control, py);
   if (!control) return false;
+  return pressPartyControl(controller, control);
+}
+
+/** A control on a character's page, pressed. */
+function pressPartyControl(controller, control) {
   const { page } = controller.partyScreen;
+  // @spec PRESENT-PARTY-027
+  if (control.role === PartyControl.SLOT) return openSlotList(controller, control.slot);
   if (control.role === PartyControl.NEW_CAMPAIGN) {
     controller.partyScreen.confirming = 'NEW_CAMPAIGN';
     redraw(controller);
@@ -613,59 +651,112 @@ function pressPointerOnPartyScreen(controller, px, py) {
 /** Whether the fight has its Items screen open. */
 const itemsInFight = (controller) => Boolean(controller.fight?.pending?.items);
 
-/** Whose page the Items screen is on, whichever way it was opened. */
-function itemsCharacter(controller) {
-  if (itemsInFight(controller)) return controller.fight.pending.characterId;
-  const party = partyOf(controller);
-  if (!controller.itemsScreen || !party) return null;
-  return roster(party)[pageFor(party, controller.itemsScreen.page)]?.id ?? null;
+/** The Items screen's view state, made on first need: a fight opens it without asking. */
+function itemsScreenOf(controller) {
+  controller.itemsScreen ??= {
+    section: ItemsSection.ALL, selected: 0, scroll: 0, follow: true, open: null,
+    fromFight: itemsInFight(controller),
+  };
+  return controller.itemsScreen;
 }
 
-/** The open page, or nothing while the screen is shut. */
+/** Whether the Items screen is up, in a fight or out of one. */
+const itemsShowing = (controller) => Boolean(controller.itemsScreen) || itemsInFight(controller);
+
+/** Whose turn a fight's Items screen is spending. */
+const actingId = (controller) => (itemsInFight(controller) ? controller.fight.pending.characterId : null);
+
+/**
+ * The Items screen as it stands: an item's page when one is open and still carried,
+ * otherwise the section's list.
+ */
 function itemsPlan(controller) {
   const party = partyOf(controller);
-  const characterId = itemsCharacter(controller);
-  if (!party || !characterId) return null;
+  if (!party || !itemsShowing(controller)) return null;
+  const screen = itemsScreenOf(controller);
   const inFight = itemsInFight(controller);
+  const common = { inFight, actingId: actingId(controller), spells: spellsOf(controller) };
+
+  if (screen.open) {
+    const item = stillCarried(party, screen.open.item);
+    if (item) {
+      screen.open.item = item;
+      const plan = buildItemPagePlan(party, controller.viewport, item, {
+        ...common, selected: screen.open.selected, scroll: screen.open.scroll, follow: screen.open.follow,
+      });
+      screen.open.scroll = plan.scroll;
+      return plan;
+    }
+    // Whatever was open is gone from the pack; back to the list it came from.
+    screen.open = null;
+  }
   const plan = buildItemsPlan(party, controller.viewport, {
-    characterId,
-    page: controller.itemsScreen?.page ?? 0,
-    selected: controller.itemsScreen?.selected ?? 0,
-    scroll: controller.itemsScreen?.scroll ?? 0,
-    follow: controller.itemsScreen?.follow ?? true,
-    inFight,
-    spells: controller.campaign?.spells ?? {},
+    ...common, section: screen.section, selected: screen.selected, scroll: screen.scroll, follow: screen.follow,
   });
   // Where the view settled is where the next one starts from.
-  if (plan && controller.itemsScreen) controller.itemsScreen.scroll = plan.scroll;
+  screen.scroll = plan.scroll;
+  screen.selected = plan.selected;
   return plan;
+}
+
+/** The party screen's slot list, when one is open. */
+function slotPlan(controller) {
+  const party = partyOf(controller);
+  const list = controller.partyScreen?.slotList;
+  if (!party || !list) return null;
+  const c = roster(party)[pageFor(party, controller.partyScreen.page)];
+  if (!c) return null;
+  const plan = buildSlotListPlan(party, controller.viewport, {
+    characterId: c.id, slot: list.slot, selected: list.selected, scroll: list.scroll, follow: list.follow,
+  });
+  list.scroll = plan.scroll;
+  return plan;
+}
+
+/**
+ * The scrolling list that is up — a section, an item's page, or a slot list — with the
+ * view state it scrolls, or nothing.
+ */
+function scrollingList(controller) {
+  if (controller.partyScreen?.slotList) {
+    const plan = slotPlan(controller);
+    return plan ? { plan, view: controller.partyScreen.slotList } : null;
+  }
+  if (controller.partyScreen) {
+    if (controller.partyScreen.confirming) return null;
+    const plan = partyPlan(controller);
+    return plan ? { plan, view: controller.partyScreen } : null;
+  }
+  const plan = itemsPlan(controller);
+  if (!plan) return null;
+  const screen = itemsScreenOf(controller);
+  return { plan, view: plan.mode === 'ITEM' ? screen.open : screen };
 }
 
 /** How far a finger may wander and still be a tap rather than a drag. */
 const DRAG_SLOP_PX = 8;
 
 /**
- * Scroll the Items screen's list by `by` pixels, within its ends. The highlight stays
- * where it was, and the view stops following it until the keyboard moves it again.
+ * Scroll the list that is up by `by` pixels, within its ends. The highlight stays where
+ * it was, and the view stops following it until the keyboard moves it again.
  *
  * @spec PRESENT-ITEMS-022
+ * @spec PRESENT-PARTY-033
  */
 export function scrollItems(controller, by) {
-  const plan = itemsPlan(controller);
-  if (!plan) return false;
-  const screen = controller.itemsScreen
-    ?? (controller.itemsScreen = { page: 0, selected: 0, fromFight: itemsInFight(controller) });
-  const next = Math.min(plan.maxScroll, Math.max(0, plan.scroll + by));
-  screen.scroll = next;
-  screen.follow = false;
-  if (next === plan.scroll) return false;
+  const list = scrollingList(controller);
+  if (!list) return false;
+  const next = Math.min(list.plan.maxScroll, Math.max(0, list.plan.scroll + by));
+  list.view.scroll = next;
+  list.view.follow = false;
+  if (next === list.plan.scroll) return false;
   redraw(controller);
   return true;
 }
 
 /**
- * A finger held down on the Items screen moved. Past a few pixels it is a drag, which
- * scrolls the list and will press nothing when it lifts.
+ * A finger held down on a list moved. Past a few pixels it is a drag, which scrolls the
+ * list and will press nothing when it lifts.
  *
  * @spec PRESENT-ITEMS-022
  * @spec PRESENT-ITEMS-031
@@ -678,6 +769,23 @@ export function dragPointer(controller, px, py) {
   const by = drag.lastY - py;
   drag.lastY = py;
   return scrollItems(controller, by);
+}
+
+/** A touch on a list waits: a tap on a row if it lifts still, a drag if it moves. */
+function holdOnList(controller, plan, control, py) {
+  controller.itemsDrag = { control: control ?? null, startY: py, lastY: py, dragging: false };
+  return false;
+}
+
+/** Press what a still finger was held on, now that it has lifted. */
+function pressHeld(controller, control) {
+  if (control.kind === 'ROW') {
+    if (controller.partyScreen?.slotList) return pressSlotRow(controller, control.index);
+    if (itemsShowing(controller)) return pressItemsRow(controller, control.index);
+    return false;
+  }
+  if (controller.partyScreen && !controller.partyScreen.slotList) return pressPartyControl(controller, control);
+  return false;
 }
 
 /** The catalogue every screen reads spells from. */
@@ -802,8 +910,8 @@ function pressPointerOnSpellsScreen(controller, px, py) {
 }
 
 /**
- * Open the Items screen on the first character. Like the party screen it changes
- * nothing that is true, so the simulation is told only that a menu is up.
+ * Open the Items screen on All. Like the party screen it changes nothing that is true,
+ * so the simulation is told only that a menu is up.
  *
  * @spec PRESENT-ITEMS-001
  * @spec PRESENT-ITEMS-003
@@ -811,8 +919,9 @@ function pressPointerOnSpellsScreen(controller, px, py) {
 function openItemsScreen(controller) {
   const party = partyOf(controller);
   if (controller.fight || controller.state.pendingConfirmation) return false;
-  if (!party || roster(party).length === 0) return false;
-  controller.itemsScreen = { page: 0, selected: 0 };
+  if (!party) return false;
+  controller.itemsScreen = null;
+  itemsScreenOf(controller);
   setMenuOpen(controller.state, true);
   redraw(controller);
   return true;
@@ -820,7 +929,7 @@ function openItemsScreen(controller) {
 
 /**
  * @spec PRESENT-ITEMS-002
- * @spec PRESENT-ITEMS-014
+ * @spec PRESENT-ITEMS-028
  */
 function closeItemsScreen(controller) {
   if (itemsInFight(controller)) {
@@ -836,84 +945,117 @@ function closeItemsScreen(controller) {
 }
 
 /**
- * Turn to another character's page, wrapping at either end. The highlight stays where it
- * was, kept within the rows the new page has.
+ * Open a section, wrapping at either end. Out of a fight only: a fight shows its
+ * consumables alone.
  *
- * @spec PRESENT-ITEMS-005
+ * @spec PRESENT-ITEMS-009
  * @spec PRESENT-ITEMS-021
  */
-function showItemsPage(controller, page) {
+function showSection(controller, section) {
   if (itemsInFight(controller)) return false;
-  const party = partyOf(controller);
-  const count = roster(party).length;
-  controller.itemsScreen.page = pageFor(party, ((page % count) + count) % count);
-  const rows = itemRows(party, itemsCharacter(controller));
-  controller.itemsScreen.selected = clampRow(rows, controller.itemsScreen.selected);
+  const screen = itemsScreenOf(controller);
+  if (screen.open) return false;
+  const at = typeof section === 'number'
+    ? SECTION_ORDER[((section % SECTION_ORDER.length) + SECTION_ORDER.length) % SECTION_ORDER.length]
+    : section;
+  screen.section = at;
+  screen.selected = 0;
+  screen.scroll = 0;
+  screen.follow = true;
   redraw(controller);
   return true;
 }
 
-/** @spec PRESENT-ITEMS-017 */
+const sectionIndex = (controller) => SECTION_ORDER.indexOf(itemsScreenOf(controller).section);
+
+/**
+ * Move the highlight through the section's rows, or the open item's characters.
+ *
+ * @spec PRESENT-ITEMS-017
+ */
 function moveHighlight(controller, by) {
-  const rows = itemRows(partyOf(controller), itemsCharacter(controller));
-  const screen = controller.itemsScreen
-    ?? (controller.itemsScreen = { page: 0, selected: 0, fromFight: itemsInFight(controller) });
-  const next = clampRow(rows, (screen.selected ?? 0) + by);
+  const plan = itemsPlan(controller);
+  if (!plan) return false;
+  const view = plan.mode === 'ITEM' ? itemsScreenOf(controller).open : itemsScreenOf(controller);
   // The keyboard brings the view back to the highlight, wherever a drag left it.
-  screen.follow = true;
-  if (next === screen.selected) return false;
-  screen.selected = next;
+  view.follow = true;
+  const next = Math.min(Math.max(0, plan.selected + by), Math.max(0, plan.rowCount - 1));
+  if (next === plan.selected) return false;
+  view.selected = next;
   redraw(controller);
   return true;
 }
 
 /**
- * Press a row: put a pack item on, or take a worn one off. Out of a fight the change is
- * a committed `ITEMS` action and the screen stays up; in a fight it is the turn, and the
- * fight takes it from there.
+ * Press a row: in a section, open that item; on an item's page, give it to that
+ * character.
  *
- * @spec PRESENT-ITEMS-008
- * @spec PRESENT-ITEMS-009
  * @spec PRESENT-ITEMS-010
- * @spec PRESENT-ITEMS-011
- * @spec PRESENT-ITEMS-012
- * @spec PRESENT-ITEMS-015
- * @spec PRESENT-ITEMS-016
- * @spec PRESENT-ITEMS-021
- * @spec PRESENT-ITEMS-026
- * @spec PRESENT-ITEMS-028
- * @spec PRESENT-ITEMS-029
  */
-function pressItemRow(controller, index) {
+function pressItemsRow(controller, index) {
   const party = partyOf(controller);
-  const characterId = itemsCharacter(controller);
-  const row = itemRows(party, characterId)[index];
-  const inFight = itemsInFight(controller);
-  if (!row || !rowActs(row, character(party, characterId), { inFight, party, spells: spellsOf(controller) })) return false;
-  const drink = row.role === ItemsControl.PACK && isConsumable(row.item);
-
-  const screen = controller.itemsScreen
-    ?? (controller.itemsScreen = { page: 0, selected: 0, fromFight: itemsInFight(controller) });
+  const screen = itemsScreenOf(controller);
+  if (screen.open) return giveItem(controller, index);
+  const rows = itemRows(party, itemsInFight(controller) ? ItemsSection.CONSUMABLES : screen.section);
+  const row = rows[index];
+  if (!row) return false;
   screen.selected = index;
+  screen.open = { item: row.item, selected: 0, scroll: 0, follow: true };
+  redraw(controller);
+  return true;
+}
+
+/**
+ * Give the open item to the character on that row: put it on them, or have them drink it
+ * or read it. Out of a fight the change is a committed `ITEMS` action and the screen goes
+ * back to the list; in a fight it is the turn, and the fight takes it from there.
+ *
+ * @spec PRESENT-ITEMS-014
+ * @spec PRESENT-ITEMS-015
+ * @spec PRESENT-ITEMS-029
+ * @spec MAGIC-KNOW-003
+ */
+function giveItem(controller, index) {
+  const party = partyOf(controller);
+  const screen = itemsScreenOf(controller);
+  const item = stillCarried(party, screen.open?.item);
+  if (!item) return false;
+  const inFight = itemsInFight(controller);
+  const spells = spellsOf(controller);
+  const choice = itemChoices(party, item, { inFight, actingId: actingId(controller), spells })[index];
+  if (!choice || !choice.available) return false;
+  screen.open.selected = index;
+  const kind = choiceKind(item, spells);
 
   if (inFight) {
-    const taken = drink ? useInFight(controller.fight, row.item) : equipInFight(controller.fight, row.item);
-    if (!taken) return false;
+    if (kind !== ChoiceKind.USE || !useInFight(controller.fight, item)) return false;
     controller.itemsScreen = null;
     redraw(controller);
     return true;
   }
 
-  let changed;
-  // A tome is read rather than drunk, and teaches its spell to whoever's page it is.
-  // @spec MAGIC-KNOW-003
-  if (drink && tomeSpell(row.item, spellsOf(controller))) changed = readTome(party, characterId, row.item, spellsOf(controller));
-  else if (drink) changed = useItem(party, characterId, row.item);
-  else if (row.role === ItemsControl.PACK) changed = equip(party, characterId, row.item);
-  else changed = takeOff(party, characterId, row.slot);
+  let changed = false;
+  if (kind === ChoiceKind.EQUIP) changed = equip(party, choice.characterId, item);
+  else if (kind === ChoiceKind.READ) changed = readTome(party, choice.characterId, item, spells);
+  else if (kind === ChoiceKind.USE) changed = useItem(party, choice.characterId, item);
   if (!changed) return false;
   perform(controller.state, { partyAction: PartyAction.ITEMS, commit: true });
-  screen.selected = clampRow(itemRows(party, characterId), screen.selected);
+  screen.open = null;
+  screen.follow = true;
+  redraw(controller);
+  return true;
+}
+
+/**
+ * Leave an item's page for the list, having changed nothing.
+ *
+ * @spec PRESENT-ITEMS-016
+ */
+function backToList(controller) {
+  const screen = itemsScreenOf(controller);
+  if (!screen.open) return false;
+  screen.open = null;
+  screen.follow = true;
   redraw(controller);
   return true;
 }
@@ -923,47 +1065,135 @@ function pressItemRow(controller, index) {
  *
  * @spec PRESENT-ITEMS-002
  * @spec PRESENT-ITEMS-004
- * @spec PRESENT-ITEMS-005
- * @spec PRESENT-ITEMS-014
+ * @spec PRESENT-ITEMS-009
+ * @spec PRESENT-ITEMS-016
  * @spec PRESENT-ITEMS-017
  * @spec PRESENT-ITEMS-018
+ * @spec PRESENT-ITEMS-028
  */
 function pressKeyOnItemsScreen(controller, key) {
-  if (keyIs(key, 'Escape', 'i')) return closeItemsScreen(controller);
+  const screen = itemsScreenOf(controller);
+  if (screen.open) {
+    if (key === 'Escape') return backToList(controller);
+    if (keyIs(key, 'i')) return closeItemsScreen(controller);
+  } else if (keyIs(key, 'Escape', 'i')) return closeItemsScreen(controller);
   if (keyIs(key, 'ArrowUp', 'w')) return moveHighlight(controller, -1);
   if (keyIs(key, 'ArrowDown', 's')) return moveHighlight(controller, 1);
   if (key === 'Enter' || key === ' ') {
-    const rows = itemRows(partyOf(controller), itemsCharacter(controller));
-    return pressItemRow(controller, clampRow(rows, controller.itemsScreen?.selected ?? 0));
+    const plan = itemsPlan(controller);
+    return plan && plan.rowCount > 0 ? pressItemsRow(controller, plan.selected) : false;
   }
-  if (itemsInFight(controller)) return false;
+  if (screen.open || itemsInFight(controller)) return false;
 
-  const { page } = controller.itemsScreen;
-  if (keyIs(key, 'ArrowRight', 'd')) return showItemsPage(controller, page + 1);
-  if (keyIs(key, 'ArrowLeft', 'a')) return showItemsPage(controller, page - 1);
+  if (keyIs(key, 'ArrowRight', 'd')) return showSection(controller, sectionIndex(controller) + 1);
+  if (keyIs(key, 'ArrowLeft', 'a')) return showSection(controller, sectionIndex(controller) - 1);
   const number = Number.parseInt(key, 10);
-  if (String(number) === key && number >= 1 && number <= roster(partyOf(controller)).length) {
-    return showItemsPage(controller, number - 1);
+  if (String(number) === key && number >= 1 && number <= SECTION_ORDER.length) {
+    return showSection(controller, number - 1);
   }
   return false;
 }
 
-/** A press on the open screen: its own controls, and nothing beneath it. */
 /**
- * The page's buttons act as they are touched. A touch on the list waits: it is a tap on
- * a row if the finger lifts still, and a drag of the list if it moves.
+ * The page's buttons and tabs act as they are touched. A touch on the list waits: it is
+ * a tap on a row if the finger lifts still, and a drag of the list if it moves.
  *
+ * @spec PRESENT-ITEMS-009
+ * @spec PRESENT-ITEMS-016
  * @spec PRESENT-ITEMS-031
  */
 function pressPointerOnItemsScreen(controller, px, py) {
   const plan = itemsPlan(controller);
   const control = hit(plan?.controls, px, py);
   if (control?.role === ItemsControl.CLOSE) return closeItemsScreen(controller);
-  if (control?.role === ItemsControl.NEXT) return showItemsPage(controller, controller.itemsScreen.page + 1);
-  if (control?.role === ItemsControl.PREVIOUS) return showItemsPage(controller, controller.itemsScreen.page - 1);
+  if (control?.role === ItemsControl.BACK) return backToList(controller);
+  if (control?.role === ItemsControl.TAB) return showSection(controller, control.section);
+  if (control?.role === ItemsControl.NEXT) return showSection(controller, sectionIndex(controller) + 1);
+  if (control?.role === ItemsControl.PREVIOUS) return showSection(controller, sectionIndex(controller) - 1);
   if (!control && !(plan && within(plan.area, px, py))) return false;
-  controller.itemsDrag = { index: control?.index ?? null, startY: py, lastY: py, dragging: false };
+  return holdOnList(controller, plan, control, py);
+}
+
+/**
+ * Open the list of what fits a slot, over the character's page.
+ *
+ * @spec PRESENT-PARTY-027
+ */
+function openSlotList(controller, slot) {
+  if (!controller.partyScreen) return false;
+  controller.partyScreen.selectedSlot = Object.values(Slot).indexOf(slot);
+  controller.partyScreen.slotList = { slot, selected: 0, scroll: 0, follow: true };
+  redraw(controller);
+  return true;
+}
+
+/**
+ * Close the slot list back to the page.
+ *
+ * @spec PRESENT-PARTY-032
+ */
+function closeSlotList(controller) {
+  if (!controller.partyScreen?.slotList) return false;
+  controller.partyScreen.slotList = null;
+  redraw(controller);
+  return true;
+}
+
+/**
+ * Press a row of the slot list: put that item on, or take off what is worn. Either is a
+ * committed `ITEMS` action, and the list closes back to the page.
+ *
+ * @spec PRESENT-PARTY-030
+ * @spec PRESENT-PARTY-031
+ */
+function pressSlotRow(controller, index) {
+  const party = partyOf(controller);
+  const list = controller.partyScreen?.slotList;
+  if (!party || !list) return false;
+  const c = roster(party)[pageFor(party, controller.partyScreen.page)];
+  const row = slotRows(party, c.id, list.slot)[index];
+  if (!row) return false;
+  list.selected = index;
+  const changed = row.takeOff ? takeOff(party, c.id, list.slot) : equip(party, c.id, row.item, list.slot);
+  if (!changed) return false;
+  perform(controller.state, { partyAction: PartyAction.ITEMS, commit: true });
+  controller.partyScreen.slotList = null;
+  redraw(controller);
+  return true;
+}
+
+/**
+ * While a slot list is up it owns the keyboard, as the Items screen's list does.
+ *
+ * @spec PRESENT-PARTY-032
+ * @spec PRESENT-PARTY-033
+ */
+function pressKeyOnSlotList(controller, key) {
+  const list = controller.partyScreen.slotList;
+  if (key === 'Escape') return closeSlotList(controller);
+  if (keyIs(key, 'p')) return closePartyScreen(controller);
+  const plan = slotPlan(controller);
+  if (!plan) return false;
+  if (keyIs(key, 'ArrowUp', 'w', 'ArrowDown', 's')) {
+    const by = keyIs(key, 'ArrowUp', 'w') ? -1 : 1;
+    list.follow = true;
+    const next = Math.min(Math.max(0, plan.selected + by), Math.max(0, plan.rowCount - 1));
+    if (next === plan.selected) return false;
+    list.selected = next;
+    redraw(controller);
+    return true;
+  }
+  if (key === 'Enter' || key === ' ') return plan.rowCount > 0 ? pressSlotRow(controller, plan.selected) : false;
   return false;
+}
+
+/** A press over a slot list: Back at once, its rows when the finger lifts. */
+function pressPointerOnSlotList(controller, px, py) {
+  const plan = slotPlan(controller);
+  const control = hit(plan?.controls, px, py);
+  if (control?.role === ItemsControl.BACK) return closeSlotList(controller);
+  if (!control && !(plan && within(plan.area, px, py))) return false;
+  return holdOnList(controller, plan, control, py);
 }
 
 /**
@@ -1253,7 +1483,7 @@ export function releasePointer(controller, { cancelled = false } = {}) {
   if (drag) {
     controller.itemsDrag = null;
     // @spec PRESENT-ITEMS-031
-    if (!cancelled && !drag.dragging && drag.index !== null) return pressItemRow(controller, drag.index);
+    if (!cancelled && !drag.dragging && drag.control) return pressHeld(controller, drag.control);
   }
   if (controller.pressedRegion === null) return false;
   controller.pressedRegion = null;

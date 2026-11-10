@@ -789,14 +789,11 @@ function optionsFor(encounter, characterId) {
  * @spec PRESENT-FIGHT-036
  */
 function itemsReason(encounter, characterId) {
+  // A fight asks only what can be drunk; equipment is changed between fights.
   const pack = packOf(encounter.party);
   if (pack.length === 0) return 'Pack is empty';
-  const who = character(encounter.party, characterId);
-  const usable = pack.some((item) => (isConsumable(item)
-    ? useRefusal(encounter.party, characterId, item) === null
-    : wieldableBy(item, who?.characterClass)));
-  if (usable) return null;
-  return pack.some(isConsumable) ? 'Nothing to use' : 'Nothing to wield';
+  const usable = pack.some((item) => isConsumable(item) && useRefusal(encounter.party, characterId, item) === null);
+  return usable ? null : 'Nothing to use';
 }
 
 /**
@@ -1121,9 +1118,9 @@ export function chooseOption(fight, index) {
     return true;
   }
 
-  // Items opens the Items screen over the fight, on this character alone; nothing is
-  // spent until something is put on.
-  // @spec PRESENT-ITEMS-013
+  // Items opens the Items screen's consumables over the fight, for this character alone;
+  // nothing is spent until something is drunk.
+  // @spec PRESENT-ITEMS-026
   if (option.action === FightAction.ITEMS) {
     fight.pending = { ...fight.pending, items: true, openedBy: index };
     return true;
@@ -1205,7 +1202,6 @@ function closeMenu(fight) {
  * Put an item on from the Items screen, as this character's turn. A refused change
  * leaves the screen open and the turn waiting.
  *
- * @spec PRESENT-ITEMS-015
  * @spec COMBAT-ACTION-011
  */
 export function equipInFight(fight, item) {
@@ -1231,7 +1227,7 @@ export function useInFight(fight, item) {
 /**
  * Leave the Items screen with nothing spent.
  *
- * @spec PRESENT-ITEMS-014
+ * @spec PRESENT-ITEMS-028
  */
 export function closeItems(fight) {
   if (fight.phase !== FightPhase.ACTING || !fight.pending?.items) return false;

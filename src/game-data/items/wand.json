@@ -7,5 +7,6 @@
   "rarity": "UNCOMMON",
   "skill": "MAGIC",
   "damage": 7,
-  "governs": "CASTING"
+  "governs": "CASTING",
+  "description": "A tapered rod of dark wood with a crystal set in its tip. It hums faintly in a practised hand."
 }

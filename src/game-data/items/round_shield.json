@@ -4,5 +4,6 @@
   "kind": "SHIELD",
   "slot": "OFF_HAND",
   "category": "SHIELD",
-  "armour": 1
+  "armour": 1,
+  "description": "Planks bound in an iron rim. It's dented in a dozen places, each one a blow that missed."
 }

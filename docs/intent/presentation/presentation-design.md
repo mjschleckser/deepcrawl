@@ -444,7 +444,7 @@ the panel is only ever offering one combatant's options.
 |---|---|---|
 | **Attack** | swing what this combatant carries | they carry no attack, or nothing is standing to swing at |
 | **Magic** | cast from what this character knows | they know no spell that may be cast in a fight, or have no slot left to pay for one and cannot Overchannel it |
-| **Items** | open the Items screen on this character, to put something on from the pack | the pack holds nothing this character may wield |
+| **Items** | open the Items screen's consumables, to drink something from the pack | the pack holds nothing this character can use |
 | **Flee** | take the whole party out of the encounter | escape is certain to fail — something present forbids it, or the party cannot outrun what is chasing it |
 
 **An option that cannot be taken is drawn anyway, greyed and inert.** It keeps its
@@ -566,8 +566,9 @@ asks it: the legal targets of that spell — the enemies standing for Magic Miss
 conscious party for Heal — each with what the cast will do to them and their hit points.
 A Heal entry for someone already whole is greyed, saying *Unhurt*. Backing out of the
 second question returns to the list of spells. Items does not open a menu: it opens
-the Items screen, the same one exploration opens, because equipment is one subject
-whether or not a fight is on, and two drawings of the same pack would drift apart.
+the Items screen, the same one exploration opens, showing only its consumables, because
+the pack is one subject whether or not a fight is on, and two drawings of the same pack
+would drift apart.
 
 **Backing out closes the menu**, which is as far back as there is to go. A turn resolves
 the instant it is taken, so there is no earlier decision left standing to reconsider.
@@ -611,10 +612,11 @@ corridor comes back the moment it succeeds.
 
 The party screen is where the player reads their characters: who they are, how hurt,
 what they are good at, how close they are to getting better, and what they are
-carrying. It is the systems player's screen — the place to find out why a fight went
-the way it did — and it is read-only: nothing on it changes a character. The one control
-that does anything is about the campaign rather than the characters; see *Beginning
-Again*.
+wearing. It is the systems player's screen — the place to find out why a fight went
+the way it did — and the place to change what a character wears: each equipment slot on
+the page is pressable, and opens the pack's items for that slot. Nothing else on it
+changes a character. The other controls that do anything are about the campaign rather
+than the characters; see *Beginning Again*.
 
 ### Opening and closing
 
@@ -648,16 +650,17 @@ sheet the whole screen rather than a quarter of it.
 │ ▣  Fighter · Total level 9           │
 │    Hit points ████████░░ 31 / 33     │
 │                                      │
+│ Main hand  Shortsword                │
+│            Blade · damage 9          │
+│ Off hand   Round shield              │
+│ Body       Chainmail                 │
+│                                      │
 │ Might 12    Constitution 13          │
 │ Dexterity 13  Intellect 9  ...       │
 │                                      │
 │ Class    Ironclad 1 █░░░             │
 │ Weapon   Blade 2 ███░  Blunt 1 █░░░  │
 │ Survival Cartography 1 ░░░░  ...     │
-│                                      │
-│ Main hand  Shortsword                │
-│ Off hand   Round shield              │
-│ Body       Chainmail                 │
 │                      [New campaign]  │
 │ [ ◀ ]         [Close]         [ ▶ ]  │
 └──────────────────────────────────────┘
@@ -689,9 +692,19 @@ screen holds no copy of a character.
 |---|---|
 | Heading | portrait, name, class, total level, and where this page sits among the party |
 | Hit points | current and maximum, with a bar; the condition named when it is anything but conscious |
+| Equipment | every slot the items segment defines, with what is in it and its numbers, or a mark that it is empty |
 | Attributes | all five, named in full, with their scores |
 | Skills | every skill held at rank 1 or above, in the party segment's six groups and their order |
-| Equipment | every slot the items segment defines, with what is in it or a mark that it is empty |
+
+**Equipment comes first, under the hit points.** It is the part of the page a player
+comes to change, and the part that changes most often, so it sits where the eye lands
+and the thumb reaches without scrolling past the attributes and skills.
+
+**A page longer than the screen scrolls.** The name and place stay across the head and
+the paging controls along the foot; everything between scrolls in a window, by drag and
+by wheel, clipped at its edges with a thin bar down its right side, as the Items
+screen's list does. Because a drag starts with a finger on something, what scrolls — a
+slot, the campaign's controls — is pressed when a still finger lifts, never when it lands.
 
 **A skill shows its rank and how far it is toward the next.** The rank is a number; the
 progress is a thin bar under it, filling as experience is earned toward the next rank.
@@ -715,13 +728,44 @@ Ashes, Lost — in words and in place of nothing, because a hit-point bar at zer
 tell an unconscious character from a dead one, and that difference is the whole of what
 the player needs to know about them.
 
+### Changing what a character wears
+
+**Each slot on the page is pressed to change it.** Pressing a slot — or moving the
+highlight onto it with `W` and `S` or the up and down arrows and pressing `Enter` —
+opens a list over the page, headed with the character's name and the slot:
+
+```
+┌────────── Bram · Main hand ──────────┐
+│ Take off Shortsword                  │
+│ Longsword                            │
+│   Uncommon · Martial Blade · 11      │
+│ Wand                       (greyed)  │
+│   Uncommon · Wand · Mage only        │
+│                                      │
+│               [Back]                 │
+└──────────────────────────────────────┘
+```
+
+**It lists what the pack holds for that slot**, in the pack's order: a row for each item
+that fits the slot, with its numbers, and first, when something is worn there, a row to
+take it off. An item the character may not wield is drawn greyed with the classes that
+may, as the Items screen's detail does, and pressing it does nothing. With nothing worn
+and nothing in the pack that fits, the list says so.
+
+**Pressing an item puts it on**, and whatever was worn goes into the pack; **pressing
+Take off** puts the worn item in the pack. Either is committed as an `ITEMS` action and
+costs one tick, as any change of equipment does, and the list closes back to the page,
+which shows the result. `Escape` and the Back control close the list having changed
+nothing. The list scrolls by the keyboard's highlight, by drag and by wheel, as the
+Items screen's list does.
+
 ## The Items Screen
 
-The Items screen is where equipment changes hands: what each character wears and wields,
-and the pack the party carries everything else in. It is the one place an item moves, and
-it is the same screen in a fight and out of one. Its name is the same everywhere it is
-reached from — the Items button on the action bar, the Items option in a fight, and the
-`ITEMS` action behind both.
+The Items screen is the pack: everything the party carries and does not wear, sorted
+into sections, with every item's whole story a press away and the choice of who gets it
+made there. What a character already wears is changed from their page on the party
+screen. Its name is the same everywhere it is reached from — the Items button on the
+action bar, the Items option in a fight, and the `ITEMS` action behind both.
 
 ### Opening and closing
 
@@ -731,83 +775,111 @@ the input while it is open, draws no walking zones and no action bar, cannot be 
 over a prompt, and tells the simulation only that a menu is up. Browsing it costs
 nothing.
 
-In a fight, the Items option opens it, on the character whose turn it is and on nobody
-else: it is their turn being spent, and nobody else is being asked. `I`, `Escape` and
-Close return to the fight with the turn still waiting.
+In a fight, the Items option opens it for the character whose turn it is. `I`,
+`Escape` and Close return to the fight with the turn still waiting.
 
-### A page per character
+### Sections
 
-The screen shows **one character at a time**, as the party screen does, and pages the same
-way out of a fight: arrows and Close along the foot of the page, for the same reason, the
-arrow keys and `A` and `D`, wrapping round, opening on the first character. In a fight
-there is one page, no arrows, and Close alone at the foot.
+The pack is shown **a section at a time**: **All**, **Equipment**, **Consumables** and
+**Food**. Equipment is what can be worn — weapons, shields and armour. Consumables are
+what is used up from the pack — potions and tomes. Food is what goes in the pot at camp.
+All is the whole pack. A pack that has grown long is easier to read a kind at a time, and
+the question a player brings to it is usually about one kind: *what can I put on*, *what
+can I drink*.
 
 ```
-┌──────────── Bram  1 / 4 ─────────────┐
-│ Wearing                               │
-│ Main hand  Shortsword                 │
-│            Blade · damage 9           │
-│ Off hand   Round shield               │
-│ Body       Chainmail                  │
-│ Pack                                  │
-│ Dagger                                │
-│   Main hand · Blade · damage 6 · ...  │
-│ Robe                       (greyed)   │
-│   Body · Mage only                    │
-│                                       │
-│ [ ◀ ]         [Close]         [ ▶ ]   │
-└──────────────────────────────────────┘
+┌────────────────── Items ─────────────────┐
+│  All  Equipment  Consumables  Food       │
+│ Equipment                     564 gold   │
+│ Elder Staff                              │
+│   Epic · Main hand · Light Weapon · 11   │
+│ Longsword                                │
+│   Uncommon · Main hand · Martial Blade   │
+│ ...                                      │
+│ [ ◀ ]           [Close]           [ ▶ ]  │
+└──────────────────────────────────────────┘
 ```
 
-**Wearing** lists every slot the items segment defines, with what is in it or a mark that
-it is empty. **Pack** lists everything the party carries, in the pack's own order, or says
-that it is empty. Above it the page shows the party's gold, which belongs to the party as
-the pack does.
+**The sections run across the head of the page as tabs**, the open one marked, and a
+press on a tab opens it. **Previous and next at the foot step through them**, wrapping
+round, as do the left and right arrow keys and `A` and `D`; the number keys `1` to `4`
+open the section in that place. The screen opens on All every time.
 
-**Identical consumables and food share one row**, with a count: *Healing Potion ×3*,
-*Ration ×6*. Food says what it adds to the pot — *fullness 600 · heals 2* — and pressing it
-does nothing, since food is eaten only at camp. A row is
-listed where the first of them stands in the pack. Equipment is never grouped, since two
-of the same sword can be worn by two characters and each is something to press. A pack
-that found eight potions is a pack with one potion row, not eight rows to scroll past. Every item, worn or carried, shows its name and beneath it the numbers
-it carries — its slot, its skill, and what it adds — so two items can be compared without
-equipping either.
+Each section lists its items in the pack's order, with the party's gold on the section's
+heading, or says that it holds nothing. **Identical consumables and food share one
+row**, with a count — *Healing Potion ×3*, *Ration ×6* — listed where the first of them
+stands in the pack. Equipment is never grouped, since two of the same sword can be worn
+by two characters and each is something to choose. Every row shows the item's name in
+its rarity's colour and beneath it the numbers it carries — its slot, its category and
+what it adds, what a potion heals, what a tome teaches, what food adds to the pot — so
+two items can be compared without opening either.
 
-### Changing equipment
+**Nothing in the list is greyed.** No character is chosen while the list is read, so
+there is nobody for an item to be wrong for; who can take it is answered on the item.
 
-**Pressing an item in the pack puts it on the character whose page is open**, in the slot
-the item names, and whatever was there goes into the pack. **Pressing a worn item takes it
-off** into the pack. Each is one press and one change, and the page redraws at once with
-the result.
+**In a fight the screen shows Consumables alone**, with no tabs and no paging: equipment
+is changed between fights, from the party screen, and food is eaten at camp.
 
-**An item the character may not wield is drawn greyed, with the reason in place of its
-numbers** — *Fighter, Cleric only* — and pressing it does nothing, by the same rule as a
-greyed option in a fight. An empty slot is drawn but presses as nothing.
+### An item, close up
 
-**Pressing a consumable uses it on the character whose page is open**: they drink it, and
-one comes out of the pack. Beneath it the row says what it does: *Heals 15*. Where the
-party refuses it, the row is greyed with the reason in place of its effect: *At full
-health* or *Unconscious* (or *Dead*, and so on). Pressing it then does nothing, as with an
-item that can't be wielded.
+**Pressing a row opens the item**: a page of everything there is to say about it.
 
-**Pressing a tome has the character whose page is open read it.** Beneath it the row says
-what it teaches: *Teaches Fire Bolt*. Where the reading would be refused, the row is greyed
-with the reason: *Mage only*, *Needs Evocation 1*, *Already known*, or *Not in a fight*.
+```
+┌────────────── Elder Staff ───────────────┐
+│ Epic weapon                              │
+│ Slot         Main hand                   │
+│ Category     Light Weapon                │
+│ Trains       Polearm                     │
+│ Damage       11, with Might              │
+│ Wielded by   Fighter, Thief, Mage, Cleric│
+│                                          │
+│ Black wood that some old hand carved...  │
+│                                          │
+│ Equip to                                 │
+│ Bram        replaces Shortsword          │
+│ Tam         main hand empty              │
+│ Isolde      replaces Wand                │
+│ Wren        Fighter, Cleric only (grey)  │
+│                                          │
+│               [Back]                     │
+└──────────────────────────────────────────┘
+```
 
-**Out of a fight, each change or use costs one tick**, committed as an `ITEMS` action, and
-the screen stays open for the next. **In a fight, a change or a use spends the
-character's turn**: the screen closes and the fight goes on. Taking something off is not offered in a fight —
-worn items are drawn as they are out of one, but inert — because a turn spent emptying a
-hand gains nothing.
+It shows the name in its rarity's colour and the tier and kind beneath it; then every
+number the item carries, each on a line of its own and named in full: the slot, the
+category, the skill a weapon trains, its damage and the attribute that drives it, the
+armour it turns, the classes that may wield it; what a potion heals; the spell a tome
+teaches, its school and the rank it needs; what food adds to the pot, its fullness, its
+healing and every trait. How many the pack holds is said where there is more than one.
+Any enchantments the item carries are listed beneath its numbers, and nothing is drawn
+for an item that carries none. Last comes its description, the item's flavour, in the
+items segment's words.
+
+**Beneath it, who gets it.** Under a heading that says what pressing does — **Equip to**
+for equipment, **Use on** for a potion, **Read** for a tome — every character in the
+party is a row. A character who can take it says what will happen: what it replaces in
+their slot, or that the slot is empty; what a potion will heal them by. A character who
+cannot is greyed with the reason — the classes that may wield it, *At full health*,
+*Unconscious*, *Already known*, *Needs Evocation 1* — and pressing them does nothing. Food
+has no rows: it says it is eaten at camp, from the pot.
+
+**Pressing a character makes the change**: the item is put on them, and whatever they
+wore goes into the pack; or they drink the potion, or read the tome. Out of a fight the
+change is committed as an `ITEMS` action and costs one tick, and the screen returns to
+the list it came from, which shows the result. `Escape` and the Back control return to
+the list having changed nothing.
+
+**In a fight the only row is the character whose turn it is**, since it is their turn
+being spent. Using a potion takes the turn: the screen closes and the fight goes on. A
+tome is greyed, *Not in a fight*.
 
 ### The keyboard
 
-A highlighted row moves with `W` and `S` or the up and down arrows, through the worn items
-and then the pack, and `Enter` or `Space` presses it. The number keys turn to that
-character's page, as they do on the party screen, rather than addressing pack items: the
-pack is not a short fixed list, and a key that meant a different item each time the pack
-changed would be a key nobody could press from memory. A pack longer than the page keeps
-the highlighted row in view by scrolling the list.
+A highlighted row moves with `W` and `S` or the up and down arrows, through the section's
+items or an item's characters, and `Enter` or `Space` presses it. The number keys open a
+section rather than addressing pack items: the pack is not a short fixed list, and a key
+that meant a different item each time the pack changed would be a key nobody could press
+from memory. A list longer than the page keeps the highlighted row in view by scrolling.
 
 ### Scrolling by touch
 
@@ -824,7 +896,7 @@ keyboard moves the highlight again.
 ## The Spells Screen
 
 `SPELLS` opens it out of a fight — the `C` key, or the Spells button. It is drawn and
-paged exactly as the Items screen is: one character a page, the name across the head,
+paged as the party screen is: one character a page, the name across the head,
 previous, Close and next along the foot, the arrow keys and `A` and `D`, `Escape` and
 `C` to close. It holds the input and tells the simulation a menu is up, so browsing it
 costs nothing. It opens on the first character in the party's order who knows a spell
@@ -906,8 +978,9 @@ says which way it leads: *Descend* on the way down, *Climb* on the way up.
 
 ## Beginning Again
 
-The party screen carries a **New campaign** control, drawn apart from the character page
-because it is about the campaign rather than about anybody on it. Pressing it does nothing
+The party screen carries a **New campaign** control, at the end of the character page
+after everything about the character, because it is about the campaign rather than about
+anybody on it. Pressing it does nothing
 yet: it turns into a question, *Abandon this campaign?*, with the answer on two controls
 of its own. A single save has no undo, so the one press that ends a campaign is never the
 first press. Declining, closing the screen, or `Escape` leave everything as it was. The
@@ -1091,17 +1164,19 @@ screen the player can see but the game cannot have.
 | The fallen | Drawn in place, spent and dimmed | Removing them from the column | The shape of a side that has lost its middle is information, and a column that closed its gaps would move everything below the gap while the player was looking at it. |
 | Where the party screen's open state lives | The controller, as view state, with the simulation told only that a menu is open | A flag in exploration state; a party action that commits and costs a tick | Opening a character sheet changes nothing that is true, which is the test the expanded map already passes. Exploration still owns the clock rule, so it is told a menu is up and nothing more. Charging a tick to read a sheet would make looking cost something, which pushes the systems player to look less. |
 | How the map is shown | Three states stepped through by one control — expanded, minimap, hidden — and back to expanded | Two states, expanded and collapsed; a separate control for each state | A minimap is worth keeping in view while walking, and a corridor with nothing over it is worth having too, so two states force a choice that three do not. One control stepping smaller and then back to full keeps every state one or two presses away without spending room on more buttons. |
-| Casting out of a fight | A Spells screen paged like the Items screen, asking *whom* on its own rows | A menu off the Spells button; casting from the party screen | A screen paged by character reads the same as the two screens beside it and shows slots without a separate view. Asking *whom* on the same rows keeps the choice where the thumb already is. |
+| Casting out of a fight | A Spells screen paged like the party screen, asking *whom* on its own rows | A menu off the Spells button; casting from the party screen | A screen paged by character reads the same as the two screens beside it and shows slots without a separate view. Asking *whom* on the same rows keeps the choice where the thumb already is. |
 | Where Camp lives | A button of its own on the action bar | Inside the party screen; inside the Spells screen | Camp is about the whole party and about more than spells once food arrives, so it belongs beside the other party actions rather than inside a screen about one of them. |
 | How the pot is filled | A row per kind of food, pressed to add one and cycling back to none | Dragging items into a pot; a separate screen per ingredient | One press per portion is the fewest that can say *how many*, and cycling back means a mistake is undone by pressing on. Keys add and remove one at a time for a keyboard. |
 | Where hunger is announced | A notice across the top of the view until the next action | A report that holds the input; a line in a log | A report that stops the walk for every step of hunger would be a nag, and exploration has no log. A notice that waits for the next action is read without being in the way. |
 | Party screen layout | One character a page, paged with wrap-around, opening on the first | Four compact rows with the selected character's sheet beneath; all four sheets in one scrolling column | Four sheets do not fit a phone held upright at a readable size, and a roster-and-detail split spends a third of the screen repeating what the sheet already says. A scrolling column moves under the thumb. A page each gives every sheet the whole column, and with four characters wrap-around paging puts any one within two presses. |
 | Where a page's controls sit | Previous, Close and next in one row along the foot, the name across the head | Arrows either side of the name with Close at the top right | The top of a phone is out of a thumb's reach, and paging and closing are the most frequent presses on these screens. The name stays at the head, where reading starts and where it has the full width. |
 | Paging keys | The arrow keys, `A` and `D`, and `1` to `4` | Arrow keys alone; a dedicated pair of keys | `A` and `D` are the turn keys and free while the screen holds the input, so a keyboard player pages without moving their hand. The number keys match how fights already address a slot by number. |
-| Where equipment changes | One Items screen, reached from the action bar and from a fight's Items option alike | A fight menu of pack items off the Items button; editing equipment on the party screen | A menu off the button has room for a list of names but not for what each item does or what it would replace, which is the whole question. Two drawings of one pack would drift apart. The party screen is for reading a character; putting the controls there would make every look at a sheet a chance to change it by accident. |
+| Where equipment changes | From the pack, on an item's page, choosing who; and from a character's page, choosing what for a slot | A page per character on the Items screen, its pack items pressed to put on; the party screen read-only | A page per character makes a long pack a list to read four times, and makes the player find the right character before they can find the item. Starting from the item answers *who should have this*; starting from the slot answers *what should Bram hold*. Both questions come up, and each screen answers the one that starts there. |
+| How the pack is sorted | Sections — All, Equipment, Consumables, Food — as tabs paged by the foot's arrows | One long list; a filter menu; sorting by kind within one list | One list grows unreadable as loot accumulates. Sections a press apart keep each kind short, and keep the paging the foot's arrows already did. |
+| Items in a fight | Consumables only, for the acting character | The whole pack, with equipping taking the turn | Changing kit mid-fight was a turn spent for a small gain, and a sectioned pack in a fight is more to read while the fight waits. Drinking is what a fight needs from the pack. |
 | The screen's name | Items, everywhere it is reached | Inventory in a fight and Pack on the action bar | One thing under two names reads as two things. *Items* is short enough for a button on a phone and names what is on the screen rather than a container. |
 | What a press on an item does | Acts at once: equips from the pack, or takes off | Selecting first and confirming with a second press | Every change is reversible by the same screen, so a confirmation would make the common case cost twice to guard the rare one. A fight's target menu already acts on a single press. |
-| Keyboard on the Items screen | A highlighted row moved by `W`/`S` and the arrows, pressed by `Enter` | Number keys for the nth entry, as a fight menu has | A fight menu's entries are few and fixed for the turn; a pack is neither. A highlight reaches any row however long the pack grows. |
+| Keyboard on the Items screen | A highlighted row moved by `W`/`S` and the arrows, pressed by `Enter`; number keys for sections | Number keys for the nth entry, as a fight menu has | A fight menu's entries are few and fixed for the turn; a pack is neither. A highlight reaches any row however long the pack grows. |
 | Skill progress | A bar of experience toward the next rank under every rank | The rank alone | Progression is spread across skills by a pot split equally, and a bare rank hides which skills a fight is about to pay off. The share is the party segment's to compute, so the screen cannot drift from the rule it shows. |
 | Skills a class cannot train | Drawn, marked as no longer advancing | Hidden; drawn like any other | Hiding them understates a character who changed class, and drawing them plainly promises progress that will never come. |
 | The build stamp | Drawn in the corner of the running game, as a build number taken from the commit count | A version on an about screen; no version at all; a build date; a version and commit hash, `MAJOR.MINOR.PATCH+SHA` | "It does not work" and "you are looking at a cached build" are the same report without it, and a service worker makes the second common. Taking the number from the commit count means nobody has to remember to raise it, and it orders correctly by construction. A hash names the exact source but cannot be read as newer or older, and it buries the one digit that changes. |
@@ -1143,12 +1218,12 @@ screen the player can see but the game cannot have.
 27. ✅ **The prompt names who is ready to act**, and is absent while nothing waits on the player.
 28. ✅ **Prompts are drawn from the simulation's pending confirmation**, never from the renderer's own flag.
 29. ✅ **The build number is drawn in the bottom-left corner**, taken from the commit count and fixed at build time.
-30. ✅ **The party screen is one character a page**, read-only, opened and closed by `PARTY`, holding the input and stopping the clock while open.
+30. ✅ **The party screen is one character a page**, opened and closed by `PARTY`, holding the input and stopping the clock while open; its equipment slots open the pack's items for that slot.
 31. ✅ **A skill on the party screen shows its rank and its progress toward the next**, the share computed by the party segment.
-32. ✅ **One Items screen, in a fight and out of one**, a page per character, where a press on a pack item equips it and a press on a worn item takes it off.
+32. ✅ **One Items screen, in a fight and out of one**, the pack in sections, where a press on an item opens it and a press on a character there equips, drinks or reads it.
 33. ✅ **A newer build is announced beside the stamp, never applied**: `NEW BUILD AVAILABLE` appears once the new build is installed, and the player refreshes when they choose.
 34. ✅ **A find is reported, not chosen**: on the victory banner, or over the view after a chest is opened, with every item named in its rarity's colour.
-35. ✅ **A consumable is used by pressing it on the Items screen**, by the character whose page it is, greyed with the reason where that character can't drink it.
+35. ✅ **A consumable is used from its page on the Items screen**, by the character pressed there, each character greyed with the reason where they can't drink it.
 36. ✅ **Identical consumables share a row with a count**; equipment never does.
 
 ### Deferred

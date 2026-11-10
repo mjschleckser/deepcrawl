@@ -6,5 +6,6 @@
   "category": "LIGHT_WEAPON",
   "skill": "BLADE",
   "damage": 6,
-  "governs": "DEXTERITY"
+  "governs": "DEXTERITY",
+  "description": "A plain blade with a plain grip. Quicker to draw than to notice."
 }

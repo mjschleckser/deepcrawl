@@ -4,5 +4,6 @@
   "kind": "CONSUMABLE",
   "effect": {
     "heal": 8
-  }
+  },
+  "description": "A thin pink tonic. It barely takes the edge off a wound."
 }

@@ -169,14 +169,18 @@ describe('hunger', () => {
     expect(page.hunger.buffs).toEqual(['Tough: +2 armour']);
   });
 
-  it('shows food on the Items screen as what it adds to the pot, and does nothing when pressed', () => {
+  // @spec PRESENT-ITEMS-013
+  it('shows food on the Items screen as what it adds to the pot, and offers it to nobody', () => {
     const { controller, party } = harness();
     pressKey(controller, 'i');
+    pressKey(controller, '4');
     const row = plan(controller, 'items').entries.find((e) => e.kind === 'ROW' && e.name === 'Ration ×6');
 
     expect(row.detail).toBe('fullness 600 · heals 2');
-    expect(row.available).toBe(false);
     tap(controller, row.box);
+    const page = plan(controller, 'items');
+    expect(page.mode).toBe('ITEM');
+    expect(page.entries.filter((e) => e.kind === 'ROW')).toEqual([]);
     expect(packOf(party)).toHaveLength(6);
   });
 });

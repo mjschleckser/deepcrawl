@@ -29,6 +29,7 @@ are assembled into the two the fight resolves, and who may hold it.
 - [x] **ITEM-DATA-002**: When an authored item names a kind, slot, category, skill, or attribute that does not exist, or names classes, the system shall reject that file by name and the value it could not read.
 - [x] **ITEM-DATA-003**: The system shall require of every authored item an identifier, a name and a kind, and of every item but a consumable or food a slot and a category, and shall reject a file lacking any of them.
 - [x] **ITEM-DATA-005**: The system shall treat an authored item that names no rarity as common.
+- [x] **ITEM-DATA-007**: The system shall carry on an item the description its file gives, or none when it gives none, and shall reject a file whose description is not text.
 - [x] **ITEM-DATA-006**: When an authored item names a rarity or an effect that does not exist, or a consumable names a slot, an effect amount below one, or a spell to teach that does not exist, the system shall reject that file by name and the value it could not read.
 
 ## What a combatant fights with

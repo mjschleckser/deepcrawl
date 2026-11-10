@@ -79,7 +79,19 @@ export function buildItem(file, data) {
       ? Attribute.MIGHT
       : oneOf(file, 'attribute', data.governs, { ...Attribute, [CASTING]: CASTING }),
     armour: data.armour ?? 0,
+    description: descriptionOf(file, data.description),
   });
+}
+
+/**
+ * A line of flavour, or nothing.
+ *
+ * @spec ITEM-DATA-007
+ */
+function descriptionOf(file, description) {
+  if (description === undefined || description === null) return null;
+  if (typeof description !== 'string') throw new Error(`${file}: description ${description} is not text`);
+  return description;
 }
 
 /** The skill a weapon trains; nothing else names one. */
@@ -116,6 +128,7 @@ function buildFood(file, data) {
     nourish: amount(file, 'nourish', data.nourish ?? 0),
     heal: amount(file, 'heal', data.heal ?? 0),
     traits,
+    description: descriptionOf(file, data.description),
   });
 }
 
