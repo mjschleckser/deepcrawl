@@ -995,6 +995,21 @@ function drawItems(container, plan) {
   place.y = title.box.y + title.box.height / 2 + 2 * scale;
   container.addChild(place);
 
+  // The list draws into its own layer, clipped to its window, so a row cut by the edge
+  // is cut rather than spilling over the name or the buttons.
+  // @spec PRESENT-ITEMS-032
+  const outer = container;
+  const list = new Container();
+  const rowGraphics = new Graphics();
+  list.addChild(rowGraphics);
+  outer.addChild(list);
+  if (plan.clip) {
+    const mask = new Graphics().rect(plan.clip.x, plan.clip.y, plan.clip.width, plan.clip.height).fill(0xffffff);
+    outer.addChild(mask);
+    list.mask = mask;
+  }
+  container = list;
+
   const inset = 8 * scale;
   for (const entry of plan.entries) {
     const { box } = entry;
@@ -1022,10 +1037,10 @@ function drawItems(container, plan) {
     }
 
     // A row: a quiet panel, outlined when it is the highlighted one.
-    graphics.roundRect(box.x, box.y + 1, box.width, box.height - 2, 4 * scale)
+    rowGraphics.roundRect(box.x, box.y + 1, box.width, box.height - 2, 4 * scale)
       .fill({ color: entry.selected ? FIGHT_COLOURS.ally : 0x000000, alpha: entry.selected ? 0.9 : 0.35 });
     if (entry.selected) {
-      graphics.roundRect(box.x, box.y + 1, box.width, box.height - 2, 4 * scale)
+      rowGraphics.roundRect(box.x, box.y + 1, box.width, box.height - 2, 4 * scale)
         .stroke({ width: 1.5, color: FIGHT_COLOURS.banner });
     }
 
@@ -1053,6 +1068,17 @@ function drawItems(container, plan) {
       detail.y = box.y + box.height - detail.height - 5 * scale;
       container.addChild(detail);
     }
+  }
+
+  container = outer;
+  if (plan.scrollbar) {
+    const { track, thumb } = plan.scrollbar;
+    const bar = new Graphics();
+    bar.roundRect(track.x, track.y, track.width, track.height, track.width / 2)
+      .fill({ color: FIGHT_COLOURS.frame, alpha: 0.35 });
+    bar.roundRect(thumb.x, thumb.y, thumb.width, thumb.height, thumb.width / 2)
+      .fill({ color: FIGHT_COLOURS.banner, alpha: 0.85 });
+    container.addChild(bar);
   }
 
   for (const control of plan.controls) {

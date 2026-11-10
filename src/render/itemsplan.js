@@ -190,9 +190,15 @@ function rowDetail(row, c, party, spells = {}) {
  * @spec PRESENT-ITEMS-013
  * @spec PRESENT-ITEMS-016
  * @spec PRESENT-ITEMS-019
+ * @spec PRESENT-ITEMS-022
+ * @spec PRESENT-ITEMS-032
+ *
+ * `scroll` is where the list was left, in pixels; with `follow` the view moves the least
+ * it must to show the highlighted row, and without it stays where the finger put it.
  */
 export function buildItemsPlan(party, viewport, {
   page = 0, characterId = null, selected = 0, inFight = false, spells = {},
+  scroll: wanted = 0, follow = true,
 } = {}) {
   const members = roster(party);
   const at = characterId !== null
@@ -306,23 +312,45 @@ export function buildItemsPlan(party, viewport, {
 
   // @spec PRESENT-ITEMS-019
   const chosen = laid.find((entry) => entry.kind === 'ROW' && entry.selected);
-  const scroll = chosen ? Math.max(0, chosen.top + chosen.height - area.height) : 0;
+  const maxScroll = Math.max(0, cursor - area.height);
+  let scroll = wanted ?? 0;
+  if (follow && chosen) {
+    if (chosen.top < scroll) scroll = chosen.top;
+    if (chosen.top + chosen.height > scroll + area.height) scroll = chosen.top + chosen.height - area.height;
+  }
+  scroll = Math.min(maxScroll, Math.max(0, scroll));
 
+  // Anything the list's window shows any of is drawn, clipped to the window; only the
+  // part in view can be pressed.
   const entries = [];
   for (const entry of laid) {
     const top = entry.top - scroll;
-    // Only what fits whole is drawn, and only what is drawn can be pressed.
-    if (top < -0.5 || top + entry.height > area.height + 0.5) continue;
+    if (top + entry.height <= 0.5 || top >= area.height - 0.5) continue;
     entries.push({ ...entry, box: { x: area.x, y: area.y + top, width: area.width, height: entry.height } });
   }
 
   for (const entry of entries) {
     if (entry.kind !== 'ROW') continue;
+    const y = Math.max(area.y, entry.box.y);
+    const bottom = Math.min(area.y + area.height, entry.box.y + entry.box.height);
     controls.push({
       kind: 'ROW', role: entry.role, index: entry.index, slot: entry.slot,
-      packIndex: entry.packIndex, available: entry.available, ...entry.box,
+      packIndex: entry.packIndex, available: entry.available,
+      x: entry.box.x, y, width: entry.box.width, height: bottom - y,
     });
   }
+
+  // A thin bar down the list's right edge, there only when there is more than fits.
+  // @spec PRESENT-ITEMS-032
+  const barWidth = 3 * scale;
+  const track = { x: area.x + area.width - barWidth, y: area.y, width: barWidth, height: area.height };
+  const thumbHeight = maxScroll > 0 ? Math.max(16 * scale, area.height * (area.height / cursor)) : 0;
+  const scrollbar = maxScroll > 0
+    ? {
+      track,
+      thumb: { ...track, y: track.y + (track.height - thumbHeight) * (scroll / maxScroll), height: thumbHeight },
+    }
+    : null;
 
   return {
     characterId: c.id,
@@ -333,6 +361,10 @@ export function buildItemsPlan(party, viewport, {
     bounds,
     title,
     area,
+    clip: area,
+    scroll,
+    maxScroll,
+    scrollbar,
     entries,
     selected: highlight,
     rowCount: rows.length,

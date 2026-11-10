@@ -6,7 +6,7 @@ import { createRenderer } from './render/app.js';
 import { playableViewport } from './render/viewport.js';
 import {
   createController, pressKey, pressPointer, releasePointer, replaceCampaign, resize, layers,
-  setSaveNote, setNewBuild, tick, isPlaying, scrollFightLog,
+  setSaveNote, setNewBuild, tick, isPlaying, scrollFightLog, scrollItems, dragPointer,
 } from './render/controller.js';
 import { watchForUpdates } from './content/updates.js';
 
@@ -150,6 +150,12 @@ async function bootstrap() {
   renderer.app.canvas.addEventListener('wheel', (event) => {
     const lines = Math.max(1, Math.min(5, Math.round(Math.abs(event.deltaY) / 40)));
     if (scrollFightLog(controller, event.deltaY > 0 ? -lines : lines)) event.preventDefault();
+    // Over the Items screen it scrolls the list.
+    // @spec PRESENT-ITEMS-022
+    else if (controller.itemsScreen || controller.fight?.pending?.items) {
+      scrollItems(controller, event.deltaY);
+      event.preventDefault();
+    }
   }, { passive: false });
 
   window.addEventListener('keydown', (event) => {
@@ -165,8 +171,16 @@ async function bootstrap() {
   });
 
   // The outline is shown for as long as the finger is down, and no longer.
-  for (const ending of ['pointerup', 'pointercancel', 'pointerleave']) {
-    renderer.app.canvas.addEventListener(ending, () => releasePointer(controller));
+  // A finger dragged over the Items screen's list scrolls it.
+  // @spec PRESENT-ITEMS-022
+  renderer.app.canvas.addEventListener('pointermove', (event) => {
+    const bounds = renderer.app.canvas.getBoundingClientRect();
+    dragPointer(controller, event.clientX - bounds.left, event.clientY - bounds.top);
+  });
+  // Only a finger lifted is a tap; one taken away by the browser or off the canvas is not.
+  renderer.app.canvas.addEventListener('pointerup', () => { releasePointer(controller); pump(); });
+  for (const ending of ['pointercancel', 'pointerleave']) {
+    renderer.app.canvas.addEventListener(ending, () => releasePointer(controller, { cancelled: true }));
   }
 
   /**

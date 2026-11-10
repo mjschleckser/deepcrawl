@@ -266,6 +266,9 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-ITEMS-027**: The system shall draw greyed, with the reason in place of its effect, every consumable the character on the page cannot use, and a press on it shall do nothing.
 - [x] **PRESENT-ITEMS-028**: Out of a fight, when a consumable is used on the Items screen, the system shall commit an `ITEMS` action to exploration and shall leave the screen open showing the result.
 - [x] **PRESENT-ITEMS-029**: While the Items screen is open in a fight, when the player uses a consumable, the system shall take that use as the character's action, close the screen, and go on with the fight.
+- [x] **PRESENT-ITEMS-022**: While the Items screen is open, when the player drags the list of rows or turns the mouse wheel over the screen, the system shall scroll the list by that distance, no further than its first row at the top or its last row at the bottom, and shall leave the highlight where it was.
+- [x] **PRESENT-ITEMS-031**: While the Items screen is open, the system shall press a row when the finger that touched it lifts without having moved more than a few pixels, and shall press nothing when it moved further.
+- [x] **PRESENT-ITEMS-032**: While the Items screen's rows are longer than the list, the system shall draw rows cut by the list's edges clipped to it, and a bar down the list's right edge showing how much of the list is in view and where.
 - [x] **PRESENT-ITEMS-030**: The system shall draw the Items screen's controls in one row along the foot of the page — previous at the left, Close centred, next at the right, and Close alone in a fight — with the list of rows ending above that row and the character's name across the head of the page.
 
 ## The Spells screen
@@ -319,4 +322,3 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [D] **PRESENT-VIEW-011**: The system shall draw walls, floors, and features with textures rather than flat fill.
 - [D] **PRESENT-INPUT-007**: When a step is blocked, the system shall give the player feedback that the way is barred.
 - [D] **PRESENT-FIGHT-016**: The system shall animate a resolving action rather than landing its effect in a single frame.
-- [D] **PRESENT-ITEMS-022**: While the Items screen is open, the system shall let the player scroll a pack longer than the page by touch.
