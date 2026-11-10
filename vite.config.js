@@ -24,6 +24,8 @@ const APP_VERSION = formatVersion({ commits: git('git rev-list --count HEAD', '0
 export default defineConfig({
   base: '/deepcrawl/',
   define: { __APP_VERSION__: JSON.stringify(APP_VERSION) },
+  // Every test runs with the authored classes handed to the simulation, as the game does.
+  test: { setupFiles: ['src/content/classes.js'] },
   plugins: [
     VitePWA({
       registerType: 'autoUpdate',

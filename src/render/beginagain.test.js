@@ -43,6 +43,8 @@ function wiped() {
     origin: { floorId: campaign.state.party.floorId, x: 0, y: 0 },
   });
   setCombatActive(campaign.state, true);
+  // Every Intercession spent first, so the wipe is a wipe.
+  for (const c of roster(campaign.party)) c.spentCharges = 1;
   for (const c of roster(campaign.party)) applyDamage(campaign.party, c.id, 9999);
   tick(controller, 1);
   return set;

@@ -10,6 +10,7 @@ import { beginEncounter, createEnemy, createEnemyGroup } from '../sim/combat.js'
 import { makeRng } from '../sim/rng.js';
 import { playEnemyTurn } from './fight.js';
 import { spellDefinitions } from '../content/spells.js';
+import { createSpell, CastWhere, Learned, SpellTarget } from '../sim/magic.js';
 import { createController, pressKey, pressPointer, releasePointer, layers } from './controller.js';
 import { SpellsControl } from './spellsplan.js';
 
@@ -26,7 +27,12 @@ function harness({ roamers = [] } = {}) {
     floors: [floor], floorId: 'f1', tile: { x: 6, y: 6 }, facing: Direction.NORTH, roamers,
     hooks: { onCamp: () => camp(state, party) },
   });
-  const campaign = { encounter: null, state, party, spells: spellDefinitions() };
+  // A mage's spell cast out of a fight, which nothing authored offers yet.
+  const mend = createSpell({
+    id: 'mend', name: 'Mend', school: 'ALTERATION', rank: 1, target: SpellTarget.ALLY,
+    effect: { heal: 5 }, where: [CastWhere.EXPLORATION], learned: Learned.TOME,
+  });
+  const campaign = { encounter: null, state, party, spells: { ...spellDefinitions(), mend } };
   const onDraw = vi.fn();
   const controller = createController({ state, campaign, viewport, onDraw });
   return { controller, state, party };
@@ -110,9 +116,27 @@ describe('the Spells screen', () => {
     expect(rowFor(controller, 'Heal').detail).toBe('Heals 10 · 2/3 slots');
   });
 
+  // @spec PRESENT-SPELLS-004
+  // @spec PRESENT-SPELLS-005
+  it('shows a mage\'s Overchannel price for a spell out of slots, or greys it too hurt to pay', () => {
+    const { controller, party } = harness();
+    const isolde = character(party, 'isolde');
+    isolde.learnedSpells = ['mend'];
+    isolde.spentSlots = { 1: 3 };
+    pressKey(controller, 'c');
+    pressKey(controller, '2');
+    expect(rowFor(controller, 'Mend')).toMatchObject({ available: true, detail: expect.stringContaining('6 HP') });
+
+    isolde.hitPoints = 6;
+    pressKey(controller, 'd');
+    pressKey(controller, 'a');
+    expect(rowFor(controller, 'Mend')).toMatchObject({ available: false, detail: 'Too hurt to pay' });
+  });
+
   // @spec PRESENT-SPELLS-006
   it('greys an unconscious target with the reason', () => {
     const { controller, party } = harness();
+    character(party, 'wren').spentCharges = 1;
     applyDamage(party, 'bram', 999);
     character(party, 'isolde').hitPoints -= 2;
     pressKey(controller, 'c');

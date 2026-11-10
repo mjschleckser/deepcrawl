@@ -33,6 +33,19 @@ export function makeRng(seed) {
     int: (min, max) => min + Math.floor(next() * (max - min + 1)),
     chance: (probability) => next() < probability,
     pick: (items) => items[Math.floor(next() * items.length)],
+    /**
+     * One item, each as likely as its weight says. With every weight equal it draws
+     * exactly what `pick` would from the same point in the stream.
+     */
+    weighted: (items, weightOf) => {
+      const weights = items.map(weightOf);
+      let roll = next() * weights.reduce((sum, w) => sum + w, 0);
+      for (let i = 0; i < items.length; i++) {
+        roll -= weights[i];
+        if (roll < 0) return items[i];
+      }
+      return items[items.length - 1];
+    },
     /** Fisher-Yates, returning a new array and leaving the input alone. */
     shuffle: (items) => {
       const out = [...items];

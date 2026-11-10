@@ -175,7 +175,15 @@ a property of the weapon rather than of the skill: a dagger and a longsword are 
 Blade, and they are not the same argument for what makes a character dangerous.
 
 **Armour is subtracted from every blow**, and that is the whole of what armour does. A
-combatant's armour is what their body wears plus any shield in their off hand.
+combatant's armour is what their body wears plus any shield in their off hand, grown by
+a fighter's Ironclad as the party segment defines it. Practice at wearing armour is
+otherwise nothing: there are no armour skills.
+
+**Backstab multiplies base damage.** A thief's weapon attack on an enemy that has not yet
+acted in this fight has its base damage multiplied by the thief's Backstab, as the party
+segment defines it, before armour is subtracted. Whether an enemy has acted is a fact the
+fight records the first time each enemy takes an action, and it is what the preview of
+an attack reads, so a backstab is shown before it is struck.
 
 **What a character ate is in the numbers.** A hungry character's base damage is cut by
 their hunger penalty, and a meal's buff raises damage, armour or Dexterity until the next
@@ -309,6 +317,11 @@ attack. Anything cleverer belongs with enemies, which are their own segment.
 
 On victory, combat totals the pot from the enemies defeated and hands it to the party
 with the distinct skills used, which is the whole of its involvement in advancement.
+A skill is used by the character whose action drove it — the weapon's skill for an
+attack, the school for a cast — and also when a class skill takes effect in the fight:
+Ironclad when an enemy's attack strikes the fighter, Backstab when it multiplies an
+attack, Overchannel when a cast is paid in hit points, Intercession when it spends a
+charge.
 
 It also asks loot for one roll per defeated enemy, on that enemy's table, from the
 fight's own generator, and stows each find in the party's pack and purse. The finds go

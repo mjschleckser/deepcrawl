@@ -1,0 +1,22 @@
+{
+  "id": "MAGE",
+  "name": "Mage",
+  "hitPoints": 18,
+  "classSkill": "OVERCHANNEL",
+  "startingRanks": {
+    "OVERCHANNEL": 1,
+    "EVOCATION": 2,
+    "ALTERATION": 2,
+    "BLADE": 1
+  },
+  "wields": [
+    "LIGHT_WEAPON",
+    "WAND",
+    "LIGHT_ARMOUR"
+  ],
+  "schools": [
+    "EVOCATION",
+    "ALTERATION"
+  ],
+  "castsWith": "INTELLECT"
+}

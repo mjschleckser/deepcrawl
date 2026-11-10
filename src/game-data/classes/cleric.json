@@ -1,0 +1,25 @@
+{
+  "id": "CLERIC",
+  "name": "Cleric",
+  "hitPoints": 26,
+  "classSkill": "INTERCESSION",
+  "startingRanks": {
+    "INTERCESSION": 1,
+    "HEALING": 2,
+    "RESTORATION": 1,
+    "BLUNT": 1
+  },
+  "wields": [
+    "LIGHT_WEAPON",
+    "MARTIAL_BLUNT",
+    "WAND",
+    "LIGHT_ARMOUR",
+    "HEAVY_ARMOUR",
+    "SHIELD"
+  ],
+  "schools": [
+    "HEALING",
+    "RESTORATION"
+  ],
+  "castsWith": "RESOLVE"
+}

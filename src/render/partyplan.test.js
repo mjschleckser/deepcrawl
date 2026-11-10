@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  createParty, createCharacter, addCharacter, applyDamage, changeClass, equip, character,
+  createParty, createCharacter, addCharacter, applyDamage, equip, character,
   trainSkill, totalLevel, CharacterClass, Skill, Condition, RANK_CAP, stow,
 } from '../sim/party.js';
 import { ItemKind, Slot, createItem } from '../sim/items.js';
@@ -97,6 +97,7 @@ describe('the party screen page', () => {
     expect(hurt).toMatchObject({ hitPoints: max - 5, maxHitPoints: max, condition: null });
     expect(hurt.share).toBeCloseTo((max - 5) / max);
 
+    character(party, 'wren').spentCharges = 1;
     applyDamage(party, 'bram', 9999);
     const down = buildPartyPlan(party, phone, { page: 0 }).health;
     expect(character(party, 'bram').condition).toBe(Condition.UNCONSCIOUS);
@@ -125,15 +126,16 @@ describe('the party screen page', () => {
     expect([...shown].sort()).toEqual([...held].sort());
 
     // Groups appear in the segment's order, and only where something is in them.
-    expect(plan.skills.map((g) => g.label)).toEqual(['Weapon', 'Defence', 'Survival']);
-    const blade = plan.skills[0].skills.find((s) => s.skill === Skill.BLADE);
+    expect(plan.skills.map((g) => g.label)).toEqual(['Class', 'Weapon', 'Survival']);
+    const blade = plan.skills[1].skills.find((s) => s.skill === Skill.BLADE);
     expect(blade).toMatchObject({ label: 'Blade', rank: 2 });
   });
 
   // @spec PRESENT-PARTY-016
   it('draws the progress the party segment reports, and marks the cap', () => {
     const party = fourOf();
-    trainSkill(party, 'bram', Skill.BLADE, 300);
+    // Rank 2 stands at 300 and rank 3 at 900: 600 banked is halfway between.
+    trainSkill(party, 'bram', Skill.BLADE, 600);
     const skill = (plan, s) => plan.skills.flatMap((g) => g.skills).find((x) => x.skill === s);
 
     const blade = skill(buildPartyPlan(party, phone, { page: 0 }), Skill.BLADE);
@@ -148,15 +150,21 @@ describe('the party screen page', () => {
     expect(top).toMatchObject({ rank: RANK_CAP, progress: 1, atCap: true });
   });
 
-  // @spec PRESENT-PARTY-017
-  it('marks a skill the class cannot train as no longer advancing', () => {
-    const party = fourOf();
-    // A Fighter turned Mage keeps Heavy Armour, which a Mage cannot train.
-    changeClass(party, 'bram', CharacterClass.MAGE, { meetsRequirements: true });
-    const skills = buildPartyPlan(party, phone, { page: 0 }).skills.flatMap((g) => g.skills);
+  // @spec PRESENT-PARTY-015
+  it('leads the skills with the class skill, in its own group', () => {
+    const first = buildPartyPlan(fourOf(), phone, { page: 0 }).skills[0];
+    expect(first.group).toBe('CLASS');
+    expect(first.skills.map((s) => s.skill)).toEqual([Skill.IRONCLAD]);
+  });
 
-    expect(skills.find((s) => s.skill === Skill.HEAVY_ARMOUR).advancing).toBe(false);
-    expect(skills.find((s) => s.skill === Skill.LIGHT_ARMOUR).advancing).toBe(true);
+  // @spec PRESENT-PARTY-026
+  it('shows a cleric the Intercession charges left beside the rank', () => {
+    const party = fourOf();
+    const wren = buildPartyPlan(party, phone, { page: 3 }).skills[0].skills[0];
+    expect(wren).toMatchObject({ skill: Skill.INTERCESSION, charges: 1 });
+    applyDamage(party, 'bram', 999);
+    expect(buildPartyPlan(party, phone, { page: 3 }).skills[0].skills[0].charges).toBe(0);
+    expect(buildPartyPlan(party, phone, { page: 0 }).skills[0].skills[0].charges).toBeUndefined();
   });
 
   // @spec PRESENT-PARTY-018

@@ -19,7 +19,7 @@ import {
   fleeCertainToFail, turnOrder, hitDamage, castPreview, castRefusalInFight,
 } from '../sim/combat.js';
 import {
-  CastRefusal, CastWhere, SpellTarget, knownSpells, slotsAt, slotsLeft,
+  CastRefusal, CastWhere, SpellTarget, castPayment, knownSpells, slotsAt, slotsLeft,
 } from '../sim/magic.js';
 import { selectEnemyTarget } from '../sim/enemies.js';
 import { isConsumable, weaponOf, weaponSkill, wieldableBy } from '../sim/items.js';
@@ -664,8 +664,19 @@ const fightSpells = (encounter, c) =>
   knownSpells(c, encounter.spells ?? {}).filter((spell) => spell.where.includes(CastWhere.COMBAT));
 
 /**
- * Why Magic cannot be taken, or null if it can: no spell to cast here, or no slot left
- * to pay for any that there is.
+ * Whether a spell can be paid for now — a slot, or for a mage the hit points Overchannel
+ * takes — and if not, why in a word or two.
+ */
+function paymentFor(encounter, c, spell) {
+  const payment = castPayment(c, spell, encounter.spells);
+  if (payment.slot) return { payment, reason: null };
+  if (payment.hitPoints === null) return { payment, reason: 'No slots' };
+  return { payment, reason: payment.hitPoints >= c.hitPoints ? 'Too hurt' : null };
+}
+
+/**
+ * Why Magic cannot be taken, or null if it can: no spell to cast here, or nothing left to
+ * pay for any that there is — neither a slot nor an Overchannel price the mage can bear.
  *
  * @spec PRESENT-FIGHT-036
  */
@@ -673,7 +684,8 @@ function magicReason(encounter, characterId) {
   const c = character(encounter.party, characterId);
   const spells = fightSpells(encounter, c);
   if (spells.length === 0) return 'No spells';
-  return spells.some((spell) => slotsLeft(c, spell.rank, encounter.spells) > 0) ? null : 'No slots';
+  const reasons = spells.map((spell) => paymentFor(encounter, c, spell).reason);
+  return reasons.includes(null) ? null : reasons[0];
 }
 
 /** Short words for why a cast on a target is refused. */
@@ -681,22 +693,25 @@ const REFUSAL_WORDS = {
   [CastRefusal.UNHURT]: 'Unhurt',
   [CastRefusal.UNCONSCIOUS]: 'Unconscious',
   [CastRefusal.NO_SLOTS]: 'No slots',
+  [CastRefusal.TOO_HURT]: 'Too hurt',
 };
 
 /**
- * The spells on offer, each with its slots left, a spent one greyed.
+ * The spells on offer, each with its slots left — or, for a mage out of them, the hit
+ * points Overchannel will take — and one that cannot be paid for greyed.
  *
  * @spec PRESENT-MENU-012
  */
 function spellEntries(encounter, characterId) {
   const c = character(encounter.party, characterId);
   return fightSpells(encounter, c).map((spell) => {
-    const left = slotsLeft(c, spell.rank, encounter.spells);
+    const { payment, reason } = paymentFor(encounter, c, spell);
+    const slots = `${slotsLeft(c, spell.rank, encounter.spells)}/${slotsAt(c, spell.rank, encounter.spells)}`;
     return {
       id: spell.id, name: spell.name, spell: true,
-      detail: `${left}/${slotsAt(c, spell.rank, encounter.spells)}`,
+      detail: payment.slot || payment.hitPoints === null ? slots : `${payment.hitPoints} HP`,
       preview: '', weapon: spell.school,
-      available: left > 0, reason: left > 0 ? null : 'No slots',
+      available: reason === null, reason,
     };
   });
 }

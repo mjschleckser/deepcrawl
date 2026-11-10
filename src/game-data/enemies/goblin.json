@@ -11,7 +11,6 @@
   },
   "ranks": {
     "BLADE": 2,
-    "LIGHT_ARMOUR": 1,
     "DETECTION": 1
   },
   "maxHitPoints": 9,
@@ -20,7 +19,7 @@
     "baseDamage": 5
   },
   "armour": 2,
-  "potValue": 14,
+  "potValue": 28,
   "forbidsEscape": false,
   "portrait": "goblin.png",
   "loot": "goblin"

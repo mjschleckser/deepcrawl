@@ -3,6 +3,7 @@
   "name": "Quarterstaff",
   "kind": "WEAPON",
   "slot": "MAIN_HAND",
+  "category": "LIGHT_WEAPON",
   "skill": "POLEARM",
   "damage": 7,
   "governs": "MIGHT"

@@ -106,8 +106,10 @@ entirely, down to the floor every blow is held to.
 ### What an enemy is worth
 
 `potValue` is authored, not computed, and the guideline is that an **ordinary enemy of
-floor tier N is worth about 12 × N**, with a dangerous one worth up to twice that. A
-floor-one goblin at 14, an archer at 18 and a mage at 24 are that rule applied.
+floor tier N is worth about 24 × N**, with a dangerous one worth up to twice that. A
+floor-one goblin at 28, an archer at 36 and a mage at 48 are that rule applied. The
+figure is set for a game in which every skill advances at one rate, so a pot reaches a
+character's skill undiluted by any class multiplier.
 
 The pot scaling with the floor is the other half of the rank curve. A rank costs more
 than the last one did, and a deeper enemy is worth more than a shallower one, so
@@ -227,7 +229,9 @@ Deliberately thin at this stage. An enemy picks a standing character and attacks
 
 **The pick is spread rather than fixed.** Every standing character is a candidate and
 the choice is drawn from them, so a band does not put its whole weight on whoever
-happens to be listed first. With no rows to shield anybody, a band that always struck
+happens to be listed first. Each candidate is drawn with equal weight except a fighter,
+whose Ironclad weights the draw toward them by what the party segment says it is worth;
+weighting never removes anyone from the draw. With no rows to shield anybody, a band that always struck
 the same character would delete one member of the party before the second had acted —
 which is not difficulty, only arithmetic nobody can answer.
 
@@ -240,11 +244,11 @@ abilities are all later, and all want a reason more interesting than list order.
 |---|---|---|---|
 | Roster | Content data with no behaviour attached | Enemy subclasses with their own logic | Adding a monster should be authoring rather than programming. Behaviour that varies per enemy arrives later as data the machinery reads, not as code it dispatches to. |
 | What an enemy is | A character: the same attributes, ranks, condition, hit points and attack | A reduced stat block of only what combat resolves against | A separate shape needs every rule about a combatant written twice, and the copies drift the first time one gains a field. One shape also means a monster can be given anything a character can have — a skill, a status, an ability — without inventing a parallel mechanism for it. |
-| Enemy classes | None: an enemy has no class | Reusing the party's four; authoring monster classes of their own | Class governs what may be learned and how fast, and an enemy never learns anything. Reusing the party's four would put a goblin in a career it cannot have; authoring monster classes would make class content and cascade into the party segment for no gain an enemy can use. |
+| Enemy classes | None: an enemy has no class, and so holds no class skill | Reusing the party's four; authoring monster classes of their own | Class governs what a character may hold and cast and gives them a skill of their own, and an enemy is authored whole with exactly what it fights with. Reusing the party's four would put a goblin in a career it cannot have; authoring monster classes would make class content and cascade into the party segment for no gain an enemy can use. |
 | Total level | Summed from ranks, exactly as a character's is | An authored level field per enemy | Two ways of arriving at the same number is one of them eventually disagreeing with the ranks it claims to summarise. Summing also means an authored enemy cannot be given a level its skills do not support. |
 | Where a roster lives | One JSON file per enemy under `src/game-data/enemies` | A table inside the module that reads it; one file holding every enemy | A file per enemy is hand-editable, diffs cleanly, and is added without touching code. One big table makes every content edit a change to a module, and puts authoring inside a programming language. |
 | What role is for | What an enemy fights with, and nothing positional | A field deciding where an enemy stands | There is nowhere to stand: combat has no positions. Role survives because a swordsman and a caster still differ in what they do, what they can be given, and how they are drawn. |
-| Choosing a target | Drawn from every standing character | The first legal target; the weakest character | With everyone reachable, striking the first every time concentrates a whole band on one character by accident of list order, which kills them before the fight is a fight. Aiming at the weakest is a real behaviour worth having, but it belongs with the rest of enemy intelligence rather than arriving as a side effect of removing rows. |
+| Choosing a target | Drawn from every standing character, weighted only by Ironclad | The first legal target; the weakest character | With everyone reachable, striking the first every time concentrates a whole band on one character by accident of list order, which kills them before the fight is a fight. Aiming at the weakest is a real behaviour worth having, but it belongs with the rest of enemy intelligence rather than arriving as a side effect of removing rows. |
 | Group composition | Named bands with count ranges | Filling an encounter budget from a table | A band is legible: a goblin warband is two to four goblins, and an author can picture it. Budgets are worth having later for variety, but they make it hard to say what any particular fight will be. |
 | Awareness | Proximity alone | Line of sight, as the party sees | Proximity lets a roamer hear a party it cannot see, so something round a corner can already be coming when the party first lays eyes on it. That keeps corners dangerous, which line of sight on both sides would not. |
 | Contact | Neither side may enter the other's tile; the attempted entry is the encounter | Contact when the two share a tile | Sharing a tile makes a chase unresolvable: a pursuer that follows the party step for step is never escaped, because every attempt to break off ends with it still on top of them. Barring the entry hands the outcome of a chase back to speed. |
@@ -264,7 +268,7 @@ abilities are all later, and all want a reason more interesting than list order.
 4. ✅ **Every enemy is one JSON file** under `src/game-data/enemies`.
 5. ✅ **A band is a named template** with count ranges, drawn from the seed.
 6. ✅ **Enemies fight under the same rules the party does**, reachable by anyone and able to reach anyone.
-7. ✅ **An enemy's target is drawn from every standing character**, never taken by list order.
+7. ✅ **An enemy's target is drawn from every standing character**, never taken by list order, with a fighter's Ironclad weighting the draw.
 8. ✅ **Awareness is proximity alone.**
 9. ✅ **Awareness decays over ticks**, but never while the party is in the roamer's line of sight.
 10. ✅ **A successful escape from combat leaves the roamer unaware**, so fleeing buys something real.

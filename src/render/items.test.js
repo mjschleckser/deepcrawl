@@ -5,7 +5,7 @@ import {
   createParty, createCharacter, addCharacter, character, packOf, stow, equip,
   CharacterClass, Skill, addGold, applyDamage,
 } from '../sim/party.js';
-import { ItemKind, Rarity, Slot, createItem } from '../sim/items.js';
+import { ItemCategory, ItemKind, Rarity, Slot, createItem } from '../sim/items.js';
 import { RARITY_COLOURS } from './appconfig.js';
 import { beginEncounter, createEnemy, createEnemyGroup, readinessOf } from '../sim/combat.js';
 import { makeRng } from '../sim/rng.js';
@@ -32,7 +32,7 @@ const dagger = () => createItem({
 });
 const mail = () => createItem({
   id: 'chainmail', name: 'Chainmail', kind: ItemKind.ARMOUR, slot: Slot.BODY,
-  skill: Skill.HEAVY_ARMOUR, armour: 5, classes: [CharacterClass.FIGHTER, CharacterClass.CLERIC],
+  category: ItemCategory.HEAVY_ARMOUR, armour: 5,
 });
 const shield = () => createItem({
   id: 'round_shield', name: 'Round shield', kind: ItemKind.SHIELD, slot: Slot.OFF_HAND, armour: 1,
@@ -45,6 +45,8 @@ function fourOf() {
     ['bram', CharacterClass.FIGHTER], ['tam', CharacterClass.THIEF],
     ['isolde', CharacterClass.MAGE], ['wren', CharacterClass.CLERIC],
   ]) addCharacter(party, createCharacter({ id, name: id, characterClass: cls }));
+  // Wren's Intercession is spent, so a knock-out in these tests stays one.
+  character(party, 'wren').spentCharges = 1;
   const blade = sword();
   stow(party, blade);
   equip(party, 'bram', blade);

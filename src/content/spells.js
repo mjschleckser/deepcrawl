@@ -6,7 +6,7 @@
  * so a misspelled school says so by name rather than producing a spell nobody can cast.
  */
 
-import { CharacterClass, Skill } from '../sim/party.js';
+import { Skill } from '../sim/party.js';
 import {
   CastWhere, Learned, SpellEffect, SpellTarget, createSpell,
 } from '../sim/magic.js';
@@ -47,7 +47,7 @@ function readEffect(file, effect) {
  * @spec MAGIC-SPELL-003
  */
 export function buildSpell(file, data) {
-  for (const required of ['id', 'name', 'school', 'classes', 'target', 'effect', 'where']) {
+  for (const required of ['id', 'name', 'school', 'target', 'effect', 'where']) {
     if (data?.[required] === undefined) throw new Error(`${file}: no ${required}`);
   }
   const rank = data.rank ?? 1;
@@ -57,7 +57,6 @@ export function buildSpell(file, data) {
     name: data.name,
     school: oneOf(file, 'school', data.school, SCHOOLS),
     rank,
-    classes: data.classes.map((name) => oneOf(file, 'class', name, CharacterClass)),
     target: oneOf(file, 'target', data.target, SpellTarget),
     effect: readEffect(file, data.effect),
     where: data.where.map((place) => oneOf(file, 'where', place, CastWhere)),

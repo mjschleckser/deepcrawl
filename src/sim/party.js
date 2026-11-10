@@ -25,9 +25,10 @@ export const Attribute = {
   RESOLVE: 'RESOLVE',
 };
 
+/** @spec PARTY-SKILL-015 */
 export const Skill = {
+  IRONCLAD: 'IRONCLAD', BACKSTAB: 'BACKSTAB', OVERCHANNEL: 'OVERCHANNEL', INTERCESSION: 'INTERCESSION',
   BLADE: 'BLADE', BLUNT: 'BLUNT', POLEARM: 'POLEARM', BOW: 'BOW',
-  HEAVY_ARMOUR: 'HEAVY_ARMOUR', LIGHT_ARMOUR: 'LIGHT_ARMOUR', SHIELD: 'SHIELD',
   EVOCATION: 'EVOCATION', ALTERATION: 'ALTERATION',
   HEALING: 'HEALING', RESTORATION: 'RESTORATION',
   DETECTION: 'DETECTION', DISARM: 'DISARM', LOCKS: 'LOCKS',
@@ -45,13 +46,21 @@ export const CharacterClass = {
  * @spec PARTY-SKILL-013
  */
 export const SkillGroup = {
-  WEAPON: 'WEAPON', DEFENCE: 'DEFENCE', ARCANE: 'ARCANE',
+  CLASS: 'CLASS', WEAPON: 'WEAPON', ARCANE: 'ARCANE',
   DIVINE: 'DIVINE', STEALTH: 'STEALTH', SURVIVAL: 'SURVIVAL',
 };
 
+/**
+ * The skills that each belong to one class and no other. Only a class's own file can
+ * name one, and nobody of another class can ever hold it.
+ *
+ * @spec PARTY-CSKILL-001
+ */
+export const CLASS_SKILLS = [Skill.IRONCLAD, Skill.BACKSTAB, Skill.OVERCHANNEL, Skill.INTERCESSION];
+
 export const SKILL_GROUPS = [
+  { group: SkillGroup.CLASS, skills: CLASS_SKILLS },
   { group: SkillGroup.WEAPON, skills: [Skill.BLADE, Skill.BLUNT, Skill.POLEARM, Skill.BOW] },
-  { group: SkillGroup.DEFENCE, skills: [Skill.HEAVY_ARMOUR, Skill.LIGHT_ARMOUR, Skill.SHIELD] },
   { group: SkillGroup.ARCANE, skills: [Skill.EVOCATION, Skill.ALTERATION] },
   { group: SkillGroup.DIVINE, skills: [Skill.HEALING, Skill.RESTORATION] },
   { group: SkillGroup.STEALTH, skills: [Skill.DETECTION, Skill.DISARM, Skill.LOCKS] },
@@ -59,7 +68,7 @@ export const SKILL_GROUPS = [
 ];
 
 /** Skills every class carries, so nobody is useless at anything basic. */
-export const BASE_SKILLS = [Skill.LIGHT_ARMOUR, Skill.CARTOGRAPHY, Skill.COOKING, Skill.FORAGING];
+export const BASE_SKILLS = [Skill.CARTOGRAPHY, Skill.COOKING, Skill.FORAGING];
 
 /**
  * Ticks to cross one tile. Bounded at both ends so no party is ever twice the speed of
@@ -131,53 +140,49 @@ function rankFromExperience(experience) {
   return rank;
 }
 
-/** Rates are multipliers; a skill absent from a class's table cannot be trained. */
-const CLASS_TABLE = {
-  [CharacterClass.FIGHTER]: {
-    start: { [Skill.BLADE]: 2, [Skill.BLUNT]: 1, [Skill.POLEARM]: 1, [Skill.HEAVY_ARMOUR]: 2, [Skill.SHIELD]: 1 },
-    rates: {
-      [Skill.BLADE]: 2, [Skill.BLUNT]: 2, [Skill.POLEARM]: 2, [Skill.BOW]: 1,
-      [Skill.HEAVY_ARMOUR]: 2, [Skill.SHIELD]: 2, [Skill.LIGHT_ARMOUR]: 1,
-      [Skill.DETECTION]: 1, [Skill.CARTOGRAPHY]: 1, [Skill.COOKING]: 1, [Skill.FORAGING]: 1,
-    },
-  },
-  [CharacterClass.MAGE]: {
-    start: { [Skill.EVOCATION]: 2, [Skill.ALTERATION]: 2, [Skill.BLADE]: 1 },
-    rates: {
-      [Skill.EVOCATION]: 2, [Skill.ALTERATION]: 2, [Skill.BLADE]: 1, [Skill.BLUNT]: 1,
-      [Skill.LIGHT_ARMOUR]: 1, [Skill.DETECTION]: 1,
-      [Skill.CARTOGRAPHY]: 2, [Skill.COOKING]: 1, [Skill.FORAGING]: 1,
-    },
-  },
-  [CharacterClass.CLERIC]: {
-    start: { [Skill.HEALING]: 2, [Skill.RESTORATION]: 1, [Skill.BLUNT]: 1 },
-    rates: {
-      [Skill.HEALING]: 2, [Skill.RESTORATION]: 2, [Skill.BLUNT]: 2, [Skill.POLEARM]: 1,
-      [Skill.HEAVY_ARMOUR]: 1, [Skill.LIGHT_ARMOUR]: 1, [Skill.SHIELD]: 1,
-      [Skill.CARTOGRAPHY]: 1, [Skill.COOKING]: 1, [Skill.FORAGING]: 1,
-    },
-  },
-  [CharacterClass.THIEF]: {
-    start: { [Skill.DETECTION]: 2, [Skill.DISARM]: 2, [Skill.LOCKS]: 2, [Skill.BLADE]: 1 },
-    rates: {
-      [Skill.DETECTION]: 2, [Skill.DISARM]: 2, [Skill.LOCKS]: 2, [Skill.BLADE]: 2,
-      [Skill.BOW]: 1, [Skill.LIGHT_ARMOUR]: 2,
-      [Skill.CARTOGRAPHY]: 2, [Skill.COOKING]: 1, [Skill.FORAGING]: 1,
-    },
-  },
-};
+/**
+ * The classes, as their own files define them, by identifier. The simulation holds no
+ * class's numbers or lists: whoever reads the files hands them in once, before any
+ * character is made, and every rule that depends on a class asks here.
+ *
+ * @spec PARTY-CLASS-005
+ */
+let classCatalogue = {};
+
+export function useClasses(definitions) {
+  classCatalogue = { ...definitions };
+}
+
+/** A class's definition, by identifier or from the character who holds it. */
+export function classOf(characterClassOrCharacter) {
+  const id = typeof characterClassOrCharacter === 'string'
+    ? characterClassOrCharacter
+    : characterClassOrCharacter?.characterClass;
+  return classCatalogue[id] ?? null;
+}
+
+/** The classes whose files pass a test, in the game's own order of classes. */
+const classesWhere = (test) => Object.values(CharacterClass).filter((id) => classCatalogue[id] && test(classCatalogue[id]));
+
+/** Every class whose file names the item's category among those it wields. */
+export function classesWielding(category) {
+  return classesWhere((k) => k.wields.includes(category));
+}
+
+/** Every class whose file names this school among those it casts. */
+export function classesCasting(school) {
+  return classesWhere((k) => k.schools.includes(school));
+}
 
 /**
- * What a class is worth in hit points before Constitution is counted.
+ * The attribute a character's magic draws on, or nothing for a class that casts nothing
+ * and for anything without a class.
  *
- * @spec PARTY-CHAR-006
+ * @spec PARTY-CHAR-013
  */
-const CLASS_BASE_HIT_POINTS = {
-  [CharacterClass.FIGHTER]: 30,
-  [CharacterClass.CLERIC]: 26,
-  [CharacterClass.THIEF]: 22,
-  [CharacterClass.MAGE]: 18,
-};
+export function castingAttribute(c) {
+  return classOf(c)?.castsWith ?? null;
+}
 
 /**
  * A character's hit points: their class's base, moved a twentieth per point of
@@ -192,9 +197,14 @@ const CLASS_BASE_HIT_POINTS = {
  * @spec PARTY-CHAR-006
  */
 export function hitPointsFor(characterClass, constitution) {
-  const base = CLASS_BASE_HIT_POINTS[characterClass];
+  const base = classOf(characterClass)?.hitPoints;
   if (base === undefined) return null;
   return Math.round(base * (1 + 0.05 * (constitution - 10)));
+}
+
+/** Whether a character may ever hold a skill: anything but another class's own. */
+function mayHold(c, skill) {
+  return !CLASS_SKILLS.includes(skill) || classOf(c)?.classSkill === skill;
 }
 
 export const DEFAULT_ATTRIBUTES = {
@@ -212,17 +222,21 @@ export function createCharacter({
   id, name, characterClass, attributes: given = {}, ranks: authored = {},
   attack = null, armour = 0, portrait = null,
 }) {
-  const table = CLASS_TABLE[characterClass];
+  const startingRanks = classOf(characterClass)?.startingRanks ?? {};
   const ranks = {};
-  // Every class shares a floor of competence, then its own specialities on top.
+  // Every class shares a floor of competence, then its own specialities on top, its
+  // class skill among them.
   for (const skill of BASE_SKILLS) ranks[skill] = 1;
-  for (const [skill, rank] of Object.entries(table.start)) {
+  for (const [skill, rank] of Object.entries(startingRanks)) {
     ranks[skill] = Math.max(ranks[skill] ?? 0, rank);
   }
   // An authored character may say what it is better at than its class alone makes it,
-  // but no authored number reaches past the ceiling either.
+  // but no authored number reaches past the ceiling either, and nobody is handed
+  // another class's own skill.
   // @spec PARTY-SKILL-006
-  for (const [skill, rank] of Object.entries(authored)) ranks[skill] = rank;
+  // @spec PARTY-CSKILL-001
+  const self = { characterClass };
+  for (const [skill, rank] of Object.entries(authored)) if (mayHold(self, skill)) ranks[skill] = rank;
   for (const skill of Object.keys(ranks)) ranks[skill] = Math.min(RANK_CAP, ranks[skill]);
 
   // Derived, never handed in: hit points are what the class and the Constitution make
@@ -251,12 +265,14 @@ export function createCharacter({
     ranks,
     skillExperience: {},
     equipment: {},
-    trainable: Object.keys(table.rates),
     // Spells learned from tomes, and slots spent since the last camp, by rank.
     // @spec MAGIC-KNOW-006
     // @spec MAGIC-SLOT-006
     learnedSpells: [],
     spentSlots: {},
+    // Intercession charges spent since the last camp.
+    // @spec PARTY-CSKILL-011
+    spentCharges: 0,
     // How many ticks of food are in them, the buffs their last meal left, and the hit
     // points a hale buff lent. Starts full: nobody sets off hungry.
     // @spec FOOD-HUNGER-001
@@ -360,11 +376,21 @@ export function totalLevel(combatant) {
 }
 
 /**
+ * Strike a character. A fall into unconsciousness is caught by the first awake cleric
+ * with an Intercession charge left, who spends it to leave the fallen at one hit point;
+ * nothing catches a blow on somebody already down.
+ *
+ * In a fight, Intercession is counted as used there and advances when the fight ends,
+ * so the caller is told who interceded; out of one, it is trained here.
+ *
  * @spec PARTY-COND-001
  * @spec PARTY-COND-002
  * @spec PARTY-COND-010
+ * @spec PARTY-CSKILL-008
+ * @spec PARTY-CSKILL-009
+ * @spec PARTY-CSKILL-010
  */
-export function applyDamage(party, id, amount) {
+export function applyDamage(party, id, amount, { inFight = false } = {}) {
   const c = character(party, id);
   if (!c) return false;
 
@@ -375,8 +401,33 @@ export function applyDamage(party, id, amount) {
   }
   if (c.condition !== Condition.OK) return false;
 
+  if (c.hitPoints - amount <= 0) {
+    const cleric = party.members.find((m) => m.condition === Condition.OK && chargesLeft(m) > 0);
+    if (cleric) {
+      cleric.spentCharges = (cleric.spentCharges ?? 0) + 1;
+      c.hitPoints = 1;
+      if (!inFight) trainSkill(party, cleric.id, Skill.INTERCESSION);
+      return { intercededBy: cleric.id };
+    }
+  }
+
   c.hitPoints = Math.max(0, c.hitPoints - amount);
   if (c.hitPoints === 0) c.condition = Condition.UNCONSCIOUS;
+  return true;
+}
+
+/**
+ * Pay hit points as a price rather than take them as a blow: never down to nothing, so
+ * no condition changes and nobody intercedes. A price that would fell the payer is
+ * refused and nothing is paid.
+ *
+ * @spec PARTY-OP-009
+ * @spec PARTY-OP-010
+ */
+export function payHitPoints(party, id, amount) {
+  const c = character(party, id);
+  if (!c || c.condition !== Condition.OK || amount >= c.hitPoints) return false;
+  c.hitPoints -= amount;
   return true;
 }
 
@@ -440,6 +491,54 @@ export function skillRank(c, skill) {
 }
 
 /**
+ * What each class skill is worth at a character's rank in it. A character without the
+ * skill holds rank nothing, which is worth nothing: a factor of one, no cost, no charge.
+ */
+const rankIn = (c, skill) => c?.ranks?.[skill] ?? 0;
+
+/** @spec PARTY-CSKILL-003 */
+export function ironcladArmourFactor(c) {
+  return 1 + 0.05 * rankIn(c, Skill.IRONCLAD);
+}
+
+/** @spec PARTY-CSKILL-004 */
+export function targetWeight(c) {
+  return 1 + 0.2 * rankIn(c, Skill.IRONCLAD);
+}
+
+/** @spec PARTY-CSKILL-005 */
+export function backstabMultiplier(c) {
+  const rank = rankIn(c, Skill.BACKSTAB);
+  return rank > 0 ? 1.9 + 0.1 * rank : 1;
+}
+
+/** @spec PARTY-CSKILL-006 */
+export function overchannelCostPerRank(c) {
+  const rank = rankIn(c, Skill.OVERCHANNEL);
+  return rank > 0 ? 7 - Math.ceil(rank / 2) : null;
+}
+
+/** @spec PARTY-CSKILL-007 */
+export function intercessionCharges(c) {
+  const rank = rankIn(c, Skill.INTERCESSION);
+  return rank > 0 ? 1 + Math.floor(rank / 4) : 0;
+}
+
+/** How many Intercession charges a cleric has not yet spent since camp. */
+export function chargesLeft(c) {
+  return Math.max(0, intercessionCharges(c) - (c?.spentCharges ?? 0));
+}
+
+/**
+ * Every spent charge back. Camp is the only thing that asks.
+ *
+ * @spec PARTY-CSKILL-011
+ */
+export function restoreCharges(c) {
+  c.spentCharges = 0;
+}
+
+/**
  * How far a skill is toward its next rank: the share of that rank's cost the banked
  * experience has covered. Reported here, beside the cost, so nothing that shows it
  * needs the formula. A rank granted free counts as no progress until earned experience
@@ -458,21 +557,22 @@ export function skillProgress(c, skill) {
 }
 
 /**
- * @spec PARTY-SKILL-003
- * @spec PARTY-SKILL-004
+ * One rate for everyone: a skill used is a skill practised, whatever the class. The
+ * only skill a character can never practise is another class's own.
+ *
+ * @spec PARTY-SKILL-014
  * @spec PARTY-SKILL-005
  * @spec PARTY-SKILL-001
+ * @spec PARTY-CSKILL-001
+ * @spec PARTY-CSKILL-002
  */
 function advance(c, skill, amount) {
-  const rate = CLASS_TABLE[c.characterClass].rates[skill];
-  // A class that cannot train a skill gains nothing in it; what was already earned
-  // stays earned.
-  if (!rate) return;
+  if (!mayHold(c, skill)) return;
 
   // Experience keeps accruing past the cap; it simply stops buying anything, so that
   // nothing has to decide when to stop recording what a character did.
   // @spec PARTY-SKILL-006
-  c.skillExperience[skill] = (c.skillExperience[skill] ?? 0) + amount * rate;
+  c.skillExperience[skill] = (c.skillExperience[skill] ?? 0) + amount;
   const earned = rankFromExperience(c.skillExperience[skill]);
   c.ranks[skill] = Math.min(RANK_CAP, Math.max(c.ranks[skill] ?? 0, earned));
 }
@@ -520,22 +620,6 @@ export function trainSkill(party, id, skill, amount = RANK_STEP / 10) {
   const c = character(party, id);
   if (!c) return false;
   advance(c, skill, amount);
-  return true;
-}
-
-/**
- * A character is the sum of what they have done, so changing career does not unmake
- * it. Ranks in skills the new class cannot train simply stop advancing.
- *
- * @spec PARTY-CLASS-002
- * @spec PARTY-CLASS-003
- */
-export function changeClass(party, id, characterClass, { meetsRequirements }) {
-  const c = character(party, id);
-  if (!c || !meetsRequirements) return false;
-
-  c.characterClass = characterClass;
-  c.trainable = Object.keys(CLASS_TABLE[characterClass].rates);
   return true;
 }
 
@@ -657,13 +741,14 @@ export function useItem(party, id, item) {
  * @spec PARTY-SAVE-001
  * @spec PARTY-SAVE-003
  * @spec PARTY-SAVE-004
+ * @spec PARTY-SAVE-006
  */
 export function serializeParty(party) {
   return {
     purse: purseOf(party),
     members: party.members.map((c) => ({
       ...c, attributes: { ...c.attributes }, ranks: { ...c.ranks }, skillExperience: { ...c.skillExperience },
-      equipment: { ...c.equipment }, trainable: [...c.trainable],
+      equipment: { ...c.equipment },
       learnedSpells: [...(c.learnedSpells ?? [])], spentSlots: { ...(c.spentSlots ?? {}) },
       buffs: (c.buffs ?? []).map((b) => ({ ...b })),
     })),
@@ -676,9 +761,14 @@ export function serializeParty(party) {
  * @spec PARTY-SAVE-003
  */
 export function restoreParty(saved) {
+  const known = new Set(Object.values(Skill));
+  // A skill retired since the save was written leaves nothing behind.
+  // @spec PARTY-SAVE-007
+  const kept = (table) => Object.fromEntries(Object.entries(table ?? {}).filter(([skill]) => known.has(skill)));
   return {
-    members: saved.members.map((c) => ({
-      ...c, learnedSpells: [...(c.learnedSpells ?? [])], spentSlots: { ...(c.spentSlots ?? {}) },
+    members: saved.members.map(({ trainable, ...c }) => ({
+      ...c, ranks: kept(c.ranks), skillExperience: kept(c.skillExperience), spentCharges: c.spentCharges ?? 0,
+      learnedSpells: [...(c.learnedSpells ?? [])], spentSlots: { ...(c.spentSlots ?? {}) },
       fullness: c.fullness ?? FULLNESS_MAX, buffs: (c.buffs ?? []).map((b) => ({ ...b })), hale: c.hale ?? 0,
     })),
     pack: (saved.pack ?? []).map((item) => ({ ...item })),

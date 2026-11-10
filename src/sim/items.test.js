@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  ItemKind, Slot, Rarity, RARITY_ORDER, createItem,
+  ItemCategory, ItemKind, Slot, Rarity, RARITY_ORDER, createItem,
   weaponOf, armourOf, baseDamageWith, weaponSkill, MAGIC_SKILL,
   fitsSlot, wieldableBy,
 } from './items.js';
@@ -13,7 +13,7 @@ const sword = (over = {}) => createItem({
 
 const mail = (over = {}) => createItem({
   id: 'mail', name: 'Mail', kind: ItemKind.ARMOUR, slot: Slot.BODY,
-  skill: Skill.HEAVY_ARMOUR, armour: 4, ...over,
+  category: ItemCategory.HEAVY_ARMOUR, armour: 4, ...over,
 });
 
 const buckler = (over = {}) => createItem({
@@ -49,8 +49,8 @@ describe('what an item is', () => {
     expect(dagger.skill).toBe(sword().skill);
   });
 
-  // @spec ITEM-DATA-004
-  it('is wieldable by anyone when it names no classes', () => {
+  // @spec ITEM-WIELD-002
+  it('is open to anyone when it has no category, as a potion has none', () => {
     expect(wieldableBy(sword(), CharacterClass.MAGE)).toBe(true);
   });
 
@@ -169,23 +169,21 @@ describe('who may hold what', () => {
   });
 
   // @spec ITEM-WIELD-002
-  it('admits only the classes an item names, once it names any', () => {
-    const plate = mail({ classes: [CharacterClass.FIGHTER] });
+  it('admits only the classes whose files name its category', () => {
+    const plate = mail();
 
     expect(wieldableBy(plate, CharacterClass.FIGHTER)).toBe(true);
     expect(wieldableBy(plate, CharacterClass.MAGE)).toBe(false);
   });
 
   // @spec ITEM-WIELD-003
-  it('asks the item rather than what the class can train', () => {
-    const mage = createCharacter({ id: 'm', name: 'M', characterClass: CharacterClass.MAGE });
-    // Whatever this class cannot train, it may still be permitted to hold.
-    const untrainable = Object.values(Skill).find((sk) => !mage.trainable.includes(sk));
-    expect(untrainable).toBeDefined();
-
-    const permitted = sword({ skill: untrainable, classes: [CharacterClass.MAGE] });
-
-    expect(wieldableBy(permitted, CharacterClass.MAGE)).toBe(true);
+  it('asks the category rather than what anyone has practised', () => {
+    // A mage who has never held a hammer still may, if light weapons are theirs.
+    const hammer = sword({ skill: Skill.BLUNT, category: ItemCategory.LIGHT_WEAPON });
+    expect(wieldableBy(hammer, CharacterClass.MAGE)).toBe(true);
+    // A thief with every rank in Blunt there is still may not hold a warhammer.
+    const warhammer = sword({ skill: Skill.BLUNT, category: ItemCategory.MARTIAL_BLUNT });
+    expect(wieldableBy(warhammer, CharacterClass.THIEF)).toBe(false);
   });
 });
 
@@ -215,8 +213,9 @@ describe('the vocabulary an item is built from', () => {
   });
 
   // @spec ITEM-DEF-005
-  it('carries on armour the skill it is worn under and the damage it turns', () => {
-    expect(mail()).toMatchObject({ skill: Skill.HEAVY_ARMOUR, armour: 4 });
+  it('carries on armour the damage it turns, and no skill', () => {
+    expect(mail()).toMatchObject({ skill: null, armour: 4 });
+    expect(mail({ skill: Skill.BLADE }).skill).toBe(null);
   });
 
   // @spec ITEM-DEF-006

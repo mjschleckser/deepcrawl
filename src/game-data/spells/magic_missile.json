@@ -3,7 +3,6 @@
   "name": "Magic Missile",
   "school": "EVOCATION",
   "rank": 1,
-  "classes": ["MAGE"],
   "target": "ENEMY",
   "effect": { "damage": 6, "ignoresArmour": true },
   "where": ["COMBAT"],

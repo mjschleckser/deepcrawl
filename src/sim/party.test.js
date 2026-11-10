@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ItemKind, Slot, createItem } from './items.js';
+import { ItemCategory, ItemKind, Slot, createItem } from './items.js';
 import {
   createParty,
   createCharacter,
@@ -9,7 +9,6 @@ import {
   attemptRevival,
   awardEncounter,
   trainSkill,
-  changeClass,
   skillRank,
   character,
   roster,
@@ -44,8 +43,14 @@ import {
 
 const fighter = (over = {}) =>
   createCharacter({ id: 'f1', name: 'Bram', characterClass: CharacterClass.FIGHTER, ...over });
-const cleric = (over = {}) =>
-  createCharacter({ id: 'c1', name: 'Wren', characterClass: CharacterClass.CLERIC, ...over });
+/**
+ * A cleric whose Intercession is already spent, so a test of something else can knock
+ * somebody down without the cleric catching the fall.
+ */
+const cleric = (over = {}) => ({
+  ...createCharacter({ id: 'c1', name: 'Wren', characterClass: CharacterClass.CLERIC, ...over }),
+  spentCharges: 1,
+});
 
 function partyOf(...characters) {
   const party = createParty();
@@ -115,7 +120,7 @@ describe('total level', () => {
 
   // @spec PARTY-CHAR-011
   it('sums anything holding ranks, whichever side it belongs to', () => {
-    const goblin = { id: 'g', name: 'Goblin', ranks: { BLADE: 2, LIGHT_ARMOUR: 1 } };
+    const goblin = { id: 'g', name: 'Goblin', ranks: { BLADE: 2, DETECTION: 1 } };
 
     expect(totalLevel(goblin)).toBe(3);
   });
@@ -286,10 +291,10 @@ describe('advancement', () => {
   it('divides the pot equally among the distinct skills used, and awards nothing else', () => {
     const party = partyOf(fighter());
 
-    awardEncounter(party, 'f1', encounter([Skill.BLADE, Skill.SHIELD]));
+    awardEncounter(party, 'f1', encounter([Skill.BLADE, Skill.BLUNT]));
 
     const c = character(party, 'f1');
-    expect(c.skillExperience[Skill.BLADE]).toBe(c.skillExperience[Skill.SHIELD]);
+    expect(c.skillExperience[Skill.BLADE]).toBe(c.skillExperience[Skill.BLUNT]);
     expect(c.skillExperience[Skill.BOW] ?? 0).toBe(0);
   });
 
@@ -318,7 +323,7 @@ describe('advancement', () => {
     const party = partyOf(fighter());
 
     const one = awardEncounter(party, 'f1', encounter([Skill.BLADE]));
-    const two = awardEncounter(party, 'f1', encounter([Skill.BLADE, Skill.SHIELD]));
+    const two = awardEncounter(party, 'f1', encounter([Skill.BLADE, Skill.BLUNT]));
 
     expect(two.pot).toBeGreaterThan(one.pot);
   });
@@ -326,8 +331,8 @@ describe('advancement', () => {
   // @spec PARTY-XP-004
   it('stops growing the pot past the ceiling, so a long fight cannot inflate it', () => {
     const party = partyOf(fighter());
-    const everything = [Skill.BLADE, Skill.BLUNT, Skill.POLEARM, Skill.BOW, Skill.SHIELD,
-                        Skill.HEAVY_ARMOUR, Skill.LIGHT_ARMOUR, Skill.DETECTION];
+    const everything = [Skill.BLADE, Skill.BLUNT, Skill.POLEARM, Skill.BOW, Skill.IRONCLAD,
+                        Skill.LOCKS, Skill.COOKING, Skill.DETECTION];
 
     const atCeiling = awardEncounter(party, 'f1', encounter(everything.slice(0, POT_SKILL_CEILING)));
     const wellPast = awardEncounter(party, 'f1', encounter(everything));
@@ -351,36 +356,14 @@ describe('advancement', () => {
       .toBeGreaterThan(character(weak, 'f1').skillExperience[Skill.BLADE]);
   });
 
-  // @spec PARTY-SKILL-003
-  it('advances nothing in a skill the class cannot train', () => {
-    const party = partyOf(fighter());
-
-    awardEncounter(party, 'f1', encounter([Skill.EVOCATION]));
-
-    expect(character(party, 'f1').skillExperience[Skill.EVOCATION] ?? 0).toBe(0);
-    expect(skillRank(character(party, 'f1'), Skill.EVOCATION)).toBe(0);
-  });
-
-  // @spec PARTY-SKILL-004
-  it('advances a favoured skill faster than a tolerated one', () => {
-    const party = partyOf(fighter());
-
-    awardEncounter(party, 'f1', encounter([Skill.BLADE]));
-    awardEncounter(party, 'f1', encounter([Skill.LIGHT_ARMOUR]));
-
-    const c = character(party, 'f1');
-    expect(c.skillExperience[Skill.BLADE]).toBeGreaterThan(c.skillExperience[Skill.LIGHT_ARMOUR]);
-  });
-
   // @spec PARTY-SKILL-005
   it('never reduces a rank', () => {
     const party = partyOf(fighter());
-    for (let i = 0; i < 40; i++) awardEncounter(party, 'f1', encounter([Skill.BLADE], 400));
-    const high = skillRank(character(party, 'f1'), Skill.BLADE);
+    // Blade 2 granted free, with a ledger standing short of it: a little practice
+    // must not read the rank back down to what the ledger alone has bought.
+    trainSkill(party, 'f1', Skill.BLADE, 1);
 
-    changeClass(party, 'f1', CharacterClass.MAGE, { meetsRequirements: true });
-
-    expect(skillRank(character(party, 'f1'), Skill.BLADE)).toBe(high);
+    expect(skillRank(character(party, 'f1'), Skill.BLADE)).toBe(2);
   });
 
   // @spec PARTY-XP-007
@@ -401,41 +384,6 @@ describe('advancement', () => {
 
     expect(skillRank(character(party, 'f1'), Skill.BLADE)).toBeGreaterThan(before);
   });
-});
-
-describe('class', () => {
-  // @spec PARTY-CLASS-001
-  it('defines for every class what it may train', () => {
-    for (const cls of Object.values(CharacterClass)) {
-      const c = createCharacter({ id: 'x', name: 'X', characterClass: cls });
-      const trainable = Object.values(Skill).filter((s) => c.trainable.includes(s));
-      expect(trainable.length).toBeGreaterThan(0);
-      expect(trainable.length).toBeLessThan(Object.values(Skill).length);
-    }
-  });
-
-  // @spec PARTY-CLASS-002
-  it('keeps every rank across a class change, including ones the new class cannot train', () => {
-    const party = partyOf(fighter());
-    for (let i = 0; i < 30; i++) awardEncounter(party, 'f1', encounter([Skill.HEAVY_ARMOUR], 400));
-    const earned = skillRank(character(party, 'f1'), Skill.HEAVY_ARMOUR);
-
-    changeClass(party, 'f1', CharacterClass.MAGE, { meetsRequirements: true });
-
-    // A mage cannot train heavy armour, but what was learned is not unlearned.
-    expect(skillRank(character(party, 'f1'), Skill.HEAVY_ARMOUR)).toBe(earned);
-    expect(character(party, 'f1').trainable).not.toContain(Skill.HEAVY_ARMOUR);
-  });
-
-  // @spec PARTY-CLASS-003
-  it('refuses a class change when the requirements are not met', () => {
-    const party = partyOf(fighter());
-
-    expect(changeClass(party, 'f1', CharacterClass.MAGE, { meetsRequirements: false })).toBe(false);
-    expect(character(party, 'f1').characterClass).toBe(CharacterClass.FIGHTER);
-  });
-
-  const encounter = (skills, pot = 60) => ({ pot, skillsUsed: skills });
 });
 
 describe('persistence', () => {
@@ -661,7 +609,7 @@ describe('what total level decides', () => {
     }));
     const veteran = partyOf(createCharacter({
       id: 'x', name: 'X', characterClass: CharacterClass.FIGHTER,
-      ranks: { [Skill.BLADE]: 9, [Skill.HEAVY_ARMOUR]: 9, [Skill.SHIELD]: 9 },
+      ranks: { [Skill.BLADE]: 9, [Skill.BLUNT]: 9, [Skill.IRONCLAD]: 9 },
     }));
     expect(totalLevel(character(veteran, 'x'))).toBeGreaterThan(totalLevel(character(green, 'x')));
 
@@ -710,7 +658,7 @@ describe('putting something in a slot', () => {
   });
   const plate = () => createItem({
     id: 'plate', name: 'Plate', kind: ItemKind.ARMOUR, slot: Slot.BODY,
-    skill: Skill.HEAVY_ARMOUR, armour: 6, classes: [CharacterClass.FIGHTER],
+    category: ItemCategory.HEAVY_ARMOUR, armour: 6,
   });
 
   const partyWith = (characterClass) => partyOf(createCharacter({
@@ -876,9 +824,9 @@ describe('how far a skill is toward its next rank', () => {
   // @spec PARTY-SKILL-012
   it('reports the share of the next rank\'s cost the experience has covered', () => {
     const party = partyOf(fighter());
-    // Rank 2 stands at 300 and rank 3 at 900; a Fighter trains Blade at twice the
-    // rate, so 300 handed in is 600 banked — halfway across the 600 between them.
-    trainSkill(party, 'f1', Skill.BLADE, 300);
+    // Rank 2 stands at 300 and rank 3 at 900, so 600 banked is halfway across the
+    // 600 between them.
+    trainSkill(party, 'f1', Skill.BLADE, 600);
     const c = character(party, 'f1');
 
     expect(skillRank(c, Skill.BLADE)).toBe(2);
@@ -904,7 +852,7 @@ describe('skill groups', () => {
   // @spec PARTY-SKILL-013
   it('places every skill in exactly one of six groups, in a fixed order', () => {
     expect(SKILL_GROUPS.map((g) => g.group)).toEqual([
-      SkillGroup.WEAPON, SkillGroup.DEFENCE, SkillGroup.ARCANE,
+      SkillGroup.CLASS, SkillGroup.WEAPON, SkillGroup.ARCANE,
       SkillGroup.DIVINE, SkillGroup.STEALTH, SkillGroup.SURVIVAL,
     ]);
     const placed = SKILL_GROUPS.flatMap((g) => g.skills);

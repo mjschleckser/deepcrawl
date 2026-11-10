@@ -8,7 +8,8 @@
  */
 
 import {
-  Attribute, Condition, character, applyHealing, packOf, skillRank, trainSkill,
+  Condition, Skill, castingAttribute, character, classOf, applyHealing, overchannelCostPerRank,
+  packOf, payHitPoints, skillRank, trainSkill,
 } from './party.js';
 import { Effect } from './items.js';
 import { spellFactor } from './food.js';
@@ -18,11 +19,17 @@ export const CastWhere = { COMBAT: 'COMBAT', EXPLORATION: 'EXPLORATION' };
 export const Learned = { CLASS: 'CLASS', TOME: 'TOME' };
 export const SpellEffect = { DAMAGE: 'damage', HEAL: 'heal' };
 
-/** Rank-1 slots every caster holds, and how many points of Intellect buy one more. */
+/** Rank-1 slots every caster holds, and how many points of the casting attribute buy one more. */
 const BASE_SLOTS = 3;
-const INTELLECT_PER_SLOT = 2;
+const POINTS_PER_SLOT = 2;
 const MAGNITUDE_PER_RANK = 0.1;
-const MAGNITUDE_PER_INTELLECT = 0.04;
+const MAGNITUDE_PER_POINT = 0.04;
+
+/** The caster's casting attribute's score, or the default for one who casts with nothing. */
+const castingScore = (c) => {
+  const attribute = castingAttribute(c);
+  return attribute ? (c.attributes?.[attribute] ?? 10) : 10;
+};
 
 /**
  * A spell, as authored or as handed over.
@@ -30,14 +37,17 @@ const MAGNITUDE_PER_INTELLECT = 0.04;
  * @spec MAGIC-SPELL-001
  */
 export function createSpell({
-  id, name, school, rank = 1, classes = [], target, effect = {}, where = [], learned = Learned.CLASS,
+  id, name, school, rank = 1, target, effect = {}, where = [], learned = Learned.CLASS,
 }) {
   return {
-    id, name, school, rank, classes: [...classes], target, effect: { ...effect }, where: [...where], learned,
+    id, name, school, rank, target, effect: { ...effect }, where: [...where], learned,
   };
 }
 
 const asList = (spells) => (Array.isArray(spells) ? spells : Object.values(spells ?? {}));
+
+/** Whether a character's class casts a school, by the schools its file names. */
+const castsSchool = (c, school) => classOf(c)?.schools.includes(school) ?? false;
 
 /**
  * A class spell comes with practice; a tome spell only once its tome has been read.
@@ -48,7 +58,7 @@ const asList = (spells) => (Array.isArray(spells) ? spells : Object.values(spell
 export function knows(c, spell) {
   if (!c || !spell) return false;
   if (spell.learned === Learned.TOME) return (c.learnedSpells ?? []).includes(spell.id);
-  return spell.classes.includes(c.characterClass) && skillRank(c, spell.school) >= spell.rank;
+  return castsSchool(c, spell.school) && skillRank(c, spell.school) >= spell.rank;
 }
 
 /** Every spell in the catalogue this character knows, in the catalogue's order. */
@@ -56,10 +66,9 @@ export function knownSpells(c, spells) {
   return asList(spells).filter((spell) => knows(c, spell));
 }
 
-/** What a caster holds at a rank they know a spell of: Intellect is what buys slots. */
+/** What a caster holds at a rank they know a spell of: the casting attribute buys slots. */
 function slotsForCaster(c) {
-  const intellect = c.attributes?.[Attribute.INTELLECT] ?? 10;
-  return BASE_SLOTS + Math.max(0, Math.floor((intellect - 10) / INTELLECT_PER_SLOT));
+  return BASE_SLOTS + Math.max(0, Math.floor((castingScore(c) - 10) / POINTS_PER_SLOT));
 }
 
 /**
@@ -101,10 +110,9 @@ export function restoreSlots(c) {
  */
 export function spellMagnitude(caster, spell) {
   const base = spell.effect[SpellEffect.DAMAGE] ?? spell.effect[SpellEffect.HEAL] ?? 0;
-  const intellect = caster.attributes?.[Attribute.INTELLECT] ?? 10;
   const grown = base
     * (1 + MAGNITUDE_PER_RANK * skillRank(caster, spell.school))
-    * (1 + MAGNITUDE_PER_INTELLECT * (intellect - 10))
+    * (1 + MAGNITUDE_PER_POINT * (castingScore(caster) - 10))
     // Hunger weakens a spell; an arcane meal strengthens it.
     // @spec MAGIC-CAST-010
     * spellFactor(caster);
@@ -115,10 +123,25 @@ export const CastRefusal = {
   NOT_KNOWN: 'NOT_KNOWN',
   NOT_HERE: 'NOT_HERE',
   NO_SLOTS: 'NO_SLOTS',
+  // Out of slots, and the hit points Overchannel would take are more than the mage has.
+  TOO_HURT: 'TOO_HURT',
   UNCONSCIOUS: 'UNCONSCIOUS',
   UNHURT: 'UNHURT',
   NO_TARGET: 'NO_TARGET',
 };
+
+/**
+ * How a cast would be paid for: a slot while one of its rank is left, and only then, for
+ * a mage, the hit points Overchannel takes. Nothing is spent by asking.
+ *
+ * @spec MAGIC-SLOT-009
+ * @spec MAGIC-SLOT-011
+ */
+export function castPayment(c, spell, spells = [spell]) {
+  if (slotsLeft(c, spell.rank, spells) > 0) return { slot: true, hitPoints: 0 };
+  const perRank = overchannelCostPerRank(c);
+  return { slot: false, hitPoints: perRank === null ? null : perRank * spell.rank };
+}
 
 /**
  * Why a cast cannot happen, or nothing when it can. Asked before anything is spent, so a
@@ -126,6 +149,7 @@ export const CastRefusal = {
  * An enemy target is the fight's to judge; an ally is judged here.
  *
  * @spec MAGIC-SLOT-003
+ * @spec MAGIC-SLOT-010
  * @spec MAGIC-CAST-004
  * @spec MAGIC-CAST-006
  */
@@ -133,7 +157,11 @@ export function castRefusal(party, casterId, spell, { where, targetId = null } =
   const caster = character(party, casterId);
   if (!caster || caster.condition !== Condition.OK || !knows(caster, spell)) return CastRefusal.NOT_KNOWN;
   if (!spell.where.includes(where)) return CastRefusal.NOT_HERE;
-  if (slotsLeft(caster, spell.rank, [spell]) <= 0) return CastRefusal.NO_SLOTS;
+  const payment = castPayment(caster, spell);
+  if (!payment.slot) {
+    if (payment.hitPoints === null) return CastRefusal.NO_SLOTS;
+    if (payment.hitPoints >= caster.hitPoints) return CastRefusal.TOO_HURT;
+  }
   if (spell.target === SpellTarget.ALLY && targetId !== null) {
     const target = character(party, targetId);
     if (!target) return CastRefusal.NO_TARGET;
@@ -168,16 +196,32 @@ export function healPreview(party, casterId, spell, targetId) {
 export function castOnAlly(party, casterId, spell, targetId, { where } = {}) {
   if (castRefusal(party, casterId, spell, { where, targetId })) return null;
   const healed = healPreview(party, casterId, spell, targetId);
-  spendSlot(character(party, casterId), spell.rank);
+  const payment = payForCast(party, casterId, spell, { where });
   applyHealing(party, targetId, healed);
   // In a fight the school is recorded as a skill used, and advances when the fight ends.
   if (where === CastWhere.EXPLORATION) trainSkill(party, casterId, spell.school);
-  return { healed };
+  return { healed, overchannelled: !payment.slot };
 }
 
-/** Spend a caster's slot for a spell aimed at an enemy; the fight applies the damage. */
-export function payForCast(party, casterId, spell) {
-  spendSlot(character(party, casterId), spell.rank);
+/**
+ * Pay for a cast: a slot if one is left, otherwise the hit points Overchannel takes,
+ * through the party's own operation. Out of a fight, paying in hit points trains
+ * Overchannel; in one, the fight records it as used. Answers how it was paid.
+ *
+ * @spec MAGIC-SLOT-002
+ * @spec MAGIC-SLOT-008
+ * @spec MAGIC-SLOT-012
+ */
+export function payForCast(party, casterId, spell, { where = CastWhere.COMBAT } = {}) {
+  const caster = character(party, casterId);
+  const payment = castPayment(caster, spell);
+  if (payment.slot) {
+    spendSlot(caster, spell.rank);
+  } else {
+    payHitPoints(party, casterId, payment.hitPoints);
+    if (where === CastWhere.EXPLORATION) trainSkill(party, casterId, Skill.OVERCHANNEL);
+  }
+  return payment;
 }
 
 export const ReadRefusal = {
@@ -211,7 +255,7 @@ export function readRefusal(party, id, item, spells, { inFight = false } = {}) {
   if (!c || !packOf(party).includes(item)) return ReadRefusal.NOT_IN_PACK;
   if (inFight) return ReadRefusal.IN_A_FIGHT;
   if (c.condition !== Condition.OK) return ReadRefusal.NOT_CONSCIOUS;
-  if (!spell.classes.includes(c.characterClass)) return ReadRefusal.WRONG_CLASS;
+  if (!castsSchool(c, spell.school)) return ReadRefusal.WRONG_CLASS;
   if (skillRank(c, spell.school) < spell.rank) return ReadRefusal.RANK_TOO_LOW;
   if ((c.learnedSpells ?? []).includes(spell.id)) return ReadRefusal.ALREADY_KNOWN;
   return null;

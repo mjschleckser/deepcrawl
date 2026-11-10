@@ -3,6 +3,7 @@
   "name": "Shortsword",
   "kind": "WEAPON",
   "slot": "MAIN_HAND",
+  "category": "LIGHT_WEAPON",
   "skill": "BLADE",
   "damage": 9,
   "governs": "MIGHT"

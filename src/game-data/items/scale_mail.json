@@ -3,11 +3,7 @@
   "name": "Scale Mail",
   "kind": "ARMOUR",
   "slot": "BODY",
+  "category": "HEAVY_ARMOUR",
   "rarity": "RARE",
-  "skill": "HEAVY_ARMOUR",
-  "armour": 7,
-  "classes": [
-    "FIGHTER",
-    "CLERIC"
-  ]
+  "armour": 7
 }

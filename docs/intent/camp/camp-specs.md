@@ -11,6 +11,7 @@ camp may happen, what it costs, and what it restores.
 - [x] **CAMP-REST-002**: When the party camps, the system shall advance the exploration clock by the camp's ticks and give roaming enemies on the floor those ticks to move by.
 - [x] **CAMP-REST-003**: If a roaming enemy reaches the party while the camp's ticks are spent, then the system shall begin that encounter and restore nothing.
 - [x] **CAMP-REST-004**: When a camp is not broken, the system shall ask the magic segment to restore the spell slots of every character who is not dead, ashes or lost.
+- [x] **CAMP-REST-007**: When a camp is not broken, the system shall ask the party segment to restore the Intercession charges of every character who is not dead, ashes or lost.
 - [x] **CAMP-REST-005**: The system shall restore no hit points and wake no unconscious character by camping, apart from what the meal restores.
 - [x] **CAMP-REST-006**: The system shall report how a camp ended: rested, broken by an encounter, or refused with an enemy in sight.
 

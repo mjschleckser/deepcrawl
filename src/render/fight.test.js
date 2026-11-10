@@ -1744,18 +1744,45 @@ describe('casting from the Magic menu', () => {
 
   // @spec PRESENT-FIGHT-036
   it('offers Magic to a caster with a slot, and greys it for those who know no spell or have none left', () => {
-    const fight = askedFor(casting(), 'isolde');
+    const fight = askedFor(casting(), 'wren');
+    character(fight.encounter.party, 'bram').hitPoints -= 5;
+    defend(fight);
+    askedFor(fight, 'wren');
     expect(slot(fight, FightAction.MAGIC).available).toBe(true);
 
-    character(fight.encounter.party, 'isolde').spentSlots = { 1: 3 };
-    const spent = askedFor(fight, 'isolde');
+    character(fight.encounter.party, 'wren').spentSlots = { 1: 3 };
     // Recomposed on the next turn: asked again after one round.
-    defend(spent);
-    askedFor(spent, 'isolde');
-    expect(slot(spent, FightAction.MAGIC)).toMatchObject({ available: false, reason: 'No slots' });
+    defend(fight);
+    askedFor(fight, 'wren');
+    expect(slot(fight, FightAction.MAGIC)).toMatchObject({ available: false, reason: 'No slots' });
 
-    askedFor(spent, 'bram');
-    expect(slot(spent, FightAction.MAGIC)).toMatchObject({ available: false, reason: 'No spells' });
+    askedFor(fight, 'bram');
+    expect(slot(fight, FightAction.MAGIC)).toMatchObject({ available: false, reason: 'No spells' });
+  });
+
+  // @spec PRESENT-FIGHT-036
+  it('keeps Magic open to a mage out of slots who can Overchannel, and greys it once that would fell her', () => {
+    const fight = askedFor(casting(), 'isolde');
+    character(fight.encounter.party, 'isolde').spentSlots = { 1: 3 };
+    defend(fight);
+    askedFor(fight, 'isolde');
+    expect(slot(fight, FightAction.MAGIC).available).toBe(true);
+
+    character(fight.encounter.party, 'isolde').hitPoints = 6;
+    defend(fight);
+    askedFor(fight, 'isolde');
+    expect(slot(fight, FightAction.MAGIC)).toMatchObject({ available: false, reason: 'Too hurt' });
+  });
+
+  // @spec PRESENT-MENU-012
+  it('names a mage\'s Overchannel price in place of her spent slots', () => {
+    const fight = askedFor(casting(), 'isolde');
+    character(fight.encounter.party, 'isolde').spentSlots = { 1: 3 };
+    defend(fight);
+    askedFor(fight, 'isolde');
+    chooseOption(fight, magicIndex(fight));
+
+    expect(fight.pending.targets[0]).toMatchObject({ name: 'Magic Missile', available: true, detail: '6 HP' });
   });
 
   // @spec PRESENT-MENU-012

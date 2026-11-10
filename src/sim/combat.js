@@ -8,7 +8,8 @@
  */
 
 import {
-  Attribute, Condition, DEFAULT_ATTRIBUTES, applyDamage, character, equip, roster, useItem,
+  Attribute, Condition, DEFAULT_ATTRIBUTES, Skill, applyDamage, backstabMultiplier, character, equip,
+  roster, skillRank, useItem,
 } from './party.js';
 import { mergeFinds, rollLoot } from './loot.js';
 import { armourOf, baseDamageWith } from './items.js';
@@ -151,6 +152,9 @@ export function beginEncounter({ party, enemies, rng, origin, lootTables = {}, s
     beats: 0,
     skillsUsed: new Set(),
     skillsByActor: new Map(),
+    // Everyone who has taken an action in this fight. Backstab reads it.
+    // @spec COMBAT-ATTACK-019
+    acted: new Set(),
     escaped: false,
     potBanked: 0,
   };
@@ -362,6 +366,7 @@ export function serializeEncounter(state) {
     beats: state.beats,
     skillsUsed: [...state.skillsUsed],
     skillsByActor: [...state.skillsByActor].map(([id, skills]) => [id, [...skills]]),
+    acted: [...(state.acted ?? [])],
     escaped: state.escaped,
     potBanked: state.potBanked,
     finds: state.finds ?? null,
@@ -384,7 +389,42 @@ export function restoreEncounter(saved, party, lootTables = {}, spells = {}) {
     readiness: new Map(saved.readiness),
     skillsUsed: new Set(saved.skillsUsed),
     skillsByActor: new Map(saved.skillsByActor.map(([id, skills]) => [id, new Set(skills)])),
+    acted: new Set(saved.acted ?? []),
   };
+}
+
+/**
+ * Whether a combatant has yet taken an action in this fight.
+ *
+ * @spec COMBAT-ATTACK-019
+ */
+export function hasActed(state, id) {
+  return state.acted?.has(id) ?? false;
+}
+
+/** Record a skill as used by this combatant, for the fight's end to advance. */
+function recordUse(state, actorId, skill) {
+  state.skillsUsed.add(skill);
+  const mine = state.skillsByActor.get(actorId) ?? new Set();
+  mine.add(skill);
+  state.skillsByActor.set(actorId, mine);
+}
+
+/**
+ * Whether a weapon attack by this swinger on this target is a backstab: a thief's blow on
+ * an enemy that has not yet acted.
+ *
+ * @spec COMBAT-ATTACK-017
+ * @spec COMBAT-ATTACK-018
+ */
+function backstabs(state, swinger, target) {
+  if (!character(state.party, swinger.id) || character(state.party, target.id)) return false;
+  return skillRank(swinger, Skill.BACKSTAB) > 0 && !hasActed(state, target.id);
+}
+
+/** A weapon blow's base damage, multiplied by Backstab where it applies. */
+function attackBase(state, swinger, target, base = baseDamageWith(swinger)) {
+  return backstabs(state, swinger, target) ? base * backstabMultiplier(swinger) : base;
 }
 
 /**
@@ -398,7 +438,7 @@ export function hitDamage(state, actorId, targetId) {
   const swinger = recordOf(state, actorId);
   const target = findTarget(state, targetId);
   if (!swinger || !target) return 0;
-  return damageFor(baseDamageWith(swinger), armourOf(target));
+  return damageFor(attackBase(state, swinger, target), armourOf(target));
 }
 
 /**
@@ -452,9 +492,12 @@ export function castPreview(state, actorId, spellId, targetId) {
  */
 function strike(state, target, damage) {
   if (character(state.party, target.id)) {
-    // Every change to a character goes through the party's own operation.
+    // Every change to a character goes through the party's own operation. A cleric's
+    // Intercession catching the fall is counted as used, to advance with the rest.
+    // @spec COMBAT-END-008
     const wasUp = target.condition === Condition.OK;
-    if (damage > 0) applyDamage(state.party, target.id, damage);
+    const landed = damage > 0 ? applyDamage(state.party, target.id, damage, { inFight: true }) : false;
+    if (landed?.intercededBy) recordUse(state, landed.intercededBy, Skill.INTERCESSION);
     return wasUp && character(state.party, target.id).condition !== Condition.OK;
   }
   // A fallen enemy is dead where a fallen character is unconscious: nobody is
@@ -515,22 +558,24 @@ export function takeAction(state, actorId, action) {
   // A cast trains the school it belongs to, whatever skill the caller named.
   if (action.kind === Action.CAST) action = { ...action, skill: state.spells[action.spellId].school };
 
-  if (action.skill) {
-    state.skillsUsed.add(action.skill);
-    const mine = state.skillsByActor.get(actorId) ?? new Set();
-    mine.add(action.skill);
-    state.skillsByActor.set(actorId, mine);
-  }
+  if (action.skill) recordUse(state, actorId, action.skill);
+
+  // Backstab reads whether a target has acted before this action of its own is counted.
+  const backstab = action.kind === Action.ATTACK
+    && backstabs(state, recordOf(state, actorId), findTarget(state, action.targetId) ?? { id: null });
+  state.acted.add(actorId);
 
   // @spec COMBAT-ACTION-015
   if (action.kind === Action.CAST) {
     const spell = state.spells[action.spellId];
     if (spell.target === SpellTarget.ALLY) {
-      const { healed } = castOnAlly(state.party, actorId, spell, action.targetId, { where: CastWhere.COMBAT });
+      const { healed, overchannelled } = castOnAlly(state.party, actorId, spell, action.targetId, { where: CastWhere.COMBAT });
+      // @spec MAGIC-SLOT-012
+      if (overchannelled) recordUse(state, actorId, Skill.OVERCHANNEL);
       return { actorId, action: action.kind, spellId: spell.id, targetId: action.targetId, healed };
     }
     const target = findTarget(state, action.targetId);
-    payForCast(state.party, actorId, spell);
+    if (!payForCast(state.party, actorId, spell).slot) recordUse(state, actorId, Skill.OVERCHANNEL);
     const damage = spellDamage(recordOf(state, actorId), spell, target);
     const felled = strike(state, target, damage);
     return { actorId, action: action.kind, spellId: spell.id, targetId: target.id, damage, felled };
@@ -554,10 +599,23 @@ export function takeAction(state, actorId, action) {
   // holding nothing, from the attack they were authored with.
   // @spec COMBAT-ACTION-008
   const swinger = recordOf(state, actorId);
-  const baseDamage = action.baseDamage ?? baseDamageWith(swinger);
+  const unmultiplied = action.baseDamage ?? baseDamageWith(swinger);
+  // A thief's blow on an enemy yet to act lands harder, and Backstab is counted as used.
+  // @spec COMBAT-ATTACK-017
+  // @spec COMBAT-END-008
+  const baseDamage = backstab ? unmultiplied * backstabMultiplier(swinger) : unmultiplied;
+  if (backstab) recordUse(state, actorId, Skill.BACKSTAB);
+
+  // An enemy's blow landing on a fighter is Ironclad taking it.
+  // @spec COMBAT-END-008
+  if (!character(state.party, actorId) && character(state.party, target.id)
+    && skillRank(target, Skill.IRONCLAD) > 0) {
+    recordUse(state, target.id, Skill.IRONCLAD);
+  }
 
   // Nothing is rolled: every attack lands, for exactly what the fight previewed.
   // @spec COMBAT-ATTACK-014
+  // @spec COMBAT-ATTACK-015
   // @spec COMBAT-ATTACK-016
   const damage = damageFor(baseDamage, armourOf(target));
 

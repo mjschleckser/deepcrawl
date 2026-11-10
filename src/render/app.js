@@ -835,7 +835,7 @@ function drawFight(container, plan) {
  * @spec PRESENT-PARTY-014
  * @spec PRESENT-PARTY-015
  * @spec PRESENT-PARTY-016
- * @spec PRESENT-PARTY-017
+ * @spec PRESENT-PARTY-026
  * @spec PRESENT-PARTY-018
  */
 function drawParty(container, plan) {
@@ -931,11 +931,11 @@ function drawParty(container, plan) {
     const groupLabel = put(group.label, small, FIGHT_COLOURS.banner, group.box.x, group.box.y);
     groupLabel.y = middle(group.box, groupLabel);
     for (const s of group.skills) {
-      const tone = s.advancing ? FIGHT_COLOURS.text : FIGHT_COLOURS.dim;
-      const t = put(s.label, small, tone, s.box.x, s.box.y);
+      const t = put(s.label, small, FIGHT_COLOURS.text, s.box.x, s.box.y);
       t.y = middle(s.box, t);
-      const note = s.atCap ? `${s.rank} max` : (s.advancing ? String(s.rank) : `${s.rank} stopped`);
-      const rank = label(note, small, s.advancing ? FIGHT_COLOURS.text : FIGHT_COLOURS.dim);
+      const charges = s.charges === undefined ? '' : ` · ${s.charges} left`;
+      const note = `${s.atCap ? `${s.rank} max` : String(s.rank)}${charges}`;
+      const rank = label(note, small, FIGHT_COLOURS.text);
       rank.x = s.box.x + s.box.width - rank.width - 6 * scale;
       rank.y = middle(s.box, rank);
       container.addChild(rank);
@@ -945,7 +945,7 @@ function drawParty(container, plan) {
       graphics.rect(b.x, b.y, width, b.height).fill({ color: 0x000000, alpha: 0.5 });
       if (s.progress > 0) {
         graphics.rect(b.x, b.y, width * s.progress, b.height)
-          .fill(s.advancing ? FIGHT_COLOURS.allyReady : FIGHT_COLOURS.frame);
+          .fill(FIGHT_COLOURS.allyReady);
       }
     }
   }

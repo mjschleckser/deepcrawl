@@ -9,7 +9,7 @@
 
 import { canSee } from './sight.js';
 import { restForCamp } from './exploration.js';
-import { Condition } from './party.js';
+import { Condition, restoreCharges } from './party.js';
 import { restoreSlots } from './magic.js';
 import { clearBuffs, forage } from './meals.js';
 
@@ -51,7 +51,13 @@ export function camp(state, party, { ticks = CAMP_TICKS, forageList = [], rng = 
   // Something walked in while the party slept: the fight is on and the rest is lost.
   if (state.combatActive) return { outcome: CampOutcome.BROKEN };
 
-  for (const c of party.members) if (rests(c)) restoreSlots(c);
+  // @spec CAMP-REST-007
+  for (const c of party.members) {
+    if (rests(c)) {
+      restoreSlots(c);
+      restoreCharges(c);
+    }
+  }
   // The last meal's buffs are gone; the pot is what replaces them.
   // @spec CAMP-FOOD-001
   clearBuffs(party);

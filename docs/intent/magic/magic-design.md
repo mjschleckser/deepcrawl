@@ -37,7 +37,7 @@ so a caster gets better at what they actually cast.
 | | Owned here | Owned elsewhere |
 |---|---|---|
 | What a spell is | the fields a spell carries, and reading them from authored files | content holds the files |
-| Who knows a spell | the rule from class and school rank | the party holds the ranks |
+| Who knows a spell | the rule from class and school rank | the party holds the ranks; the class's file names its schools |
 | Spell slots | how many a character holds at each rank, spending them, restoring them | camp decides when slots are restored |
 | What a cast does | the effect's size, its target, and whether it may be cast now | the party applies every change to a character; combat applies damage to an enemy |
 | When a spell is cast | — | combat in a fight, exploration out of one |
@@ -51,7 +51,6 @@ A spell is authored as one file under `src/game-data/spells`, carrying:
 | `id`, `name` | identity |
 | `school` | the skill the spell belongs to: Evocation, Alteration, Healing or Restoration |
 | `rank` | the spell's rank: the slot it costs, and the school rank a caster needs to know it |
-| `classes` | the classes that may cast it |
 | `target` | `ENEMY` or `ALLY`: whom it is aimed at |
 | `effect` | what it does: `damage` with whether it `ignoresArmour`, or `heal` |
 | `where` | where it may be cast: `COMBAT`, `EXPLORATION`, or both |
@@ -59,11 +58,15 @@ A spell is authored as one file under `src/game-data/spells`, carrying:
 
 The first spells:
 
-| Spell | Learned | School | Rank | Classes | Target | Effect | Where |
-|---|---|---|---|---|---|---|---|
-| **Magic Missile** | class | Evocation | 1 | Mage | an enemy | 6 damage, ignoring armour | in a fight |
-| **Heal** | class | Healing | 1 | Cleric | a conscious ally, the caster included | heals 8 | in a fight and exploring |
-| **Fire Bolt** | tome | Evocation | 1 | Mage | an enemy | 10 damage, reduced by armour | in a fight |
+| Spell | Learned | School | Rank | Target | Effect | Where |
+|---|---|---|---|---|---|---|
+| **Magic Missile** | class | Evocation | 1 | an enemy | 6 damage, ignoring armour | in a fight |
+| **Heal** | class | Healing | 1 | a conscious ally, the caster included | heals 8 | in a fight and exploring |
+| **Fire Bolt** | tome | Evocation | 1 | an enemy | 10 damage, reduced by armour | in a fight |
+
+A spell does not name who may cast it. A class names the schools it casts, so a spell is
+open to every class whose schools include the spell's school: today the mage's Evocation
+and Alteration, and the cleric's Healing and Restoration.
 
 Fire Bolt hits harder than Magic Missile and is blunted by armour where the missile is
 not, so a mage who knows both chooses by what they are aiming at rather than always
@@ -74,8 +77,8 @@ reaching for the newer one.
 There are two kinds of spell, and they are learned two ways.
 
 **A class spell is known as soon as practice reaches it.** A character knows one when
-their class is among the spell's classes and their rank in the spell's school is at least
-the spell's rank. Nothing is learned by hand and nothing is chosen at creation: a cleric
+their class casts the spell's school and their rank in that school is at least the
+spell's rank. Nothing is learned by hand and nothing is chosen at creation: a cleric
 with a rank in Healing knows Heal, and a mage whose Evocation reaches rank 3 will know the
 rank-3 Evocation class spells the moment it does. The class says which spells are open to
 a character; practice says how far into them they have come.
@@ -83,7 +86,7 @@ a character; practice says how far into them they have come.
 **A rare spell is known only by reading its tome.** A tome is an item, found like any
 other: in chests, and on the enemies whose loot tables carry one. Reading it teaches its
 spell to the character who reads it, for good, and uses the tome up. A character may read
-a tome only when their class is among the spell's classes, their rank in its school
+a tome only when their class casts the spell's school, their rank in that school
 reaches the spell's rank, and they do not know the spell already; otherwise the tome is
 refused and kept, so it can go to someone who can use it, or wait until practice catches
 up. A tome is read out of a fight, as a committed party action costing a tick: study is
@@ -99,19 +102,24 @@ A character holds a number of slots at each spell rank, spends one of a spell's 
 each cast, and gets them back only by camping.
 
 ```
-slots at rank 1 = 3 + 1 per 2 points of Intellect above 10
+slots at rank 1 = 3 + 1 per 2 points of the casting attribute above 10
 ```
 
 for a character who knows any rank-1 spell, and none for one who knows none. A character
-holds no slots at a rank they know no spell of, so a fighter has no slots to show.
-Intellect is the attribute that buys slots, which is the job the party segment gives it.
+holds no slots at a rank they know no spell of, so a fighter has no slots to show. The
+casting attribute is the one the character's class names — Intellect for a mage, Resolve
+for a cleric — which is the job the party segment gives each.
 
-**A cast with no slot of its rank left is refused, and costs nothing.** No readiness, no
+**A cast with no slot of its rank left is refused, and costs nothing** — unless the
+caster is a mage, whose Overchannel lets them pay hit points instead, through the
+party's `payHitPoints`, at the cost the party segment defines. A slot is always spent
+when one is left; hit points are paid only when none is. An Overchannelled cast whose
+cost would bring the mage to zero is refused like any other, and costs nothing. No readiness, no
 tick, no slot: it was never a cast. That is the same rule a refused drink follows, and it
 is what lets the screen grey a spell rather than offer it and charge for the attempt.
 
 Slots are a record of what has been spent, kept on the character, so the number held
-follows Intellect and the spells known whenever either moves.
+follows the casting attribute and the spells known whenever either moves.
 
 ## What a Cast Does
 
@@ -119,11 +127,11 @@ A spell's effect is its base number grown by practice and wit:
 
 ```
 magnitude = round(base × (1 + 0.10 × rank in the spell's school)
-                       × (1 + 0.04 × (Intellect − 10))), at least 1
+                       × (1 + 0.04 × (casting attribute − 10))), at least 1
 ```
 
-which is the same growth a weapon gets from its skill and its attribute, with Intellect
-as the attribute for every spell. A fresh mage with Evocation 2 casts a 7-point Magic
+which is the same growth a weapon gets from its skill and its attribute, with the
+caster's class naming the attribute. A fresh mage with Evocation 2 casts a 7-point Magic
 Missile; a fresh cleric with Healing 2 casts a 10-point Heal.
 
 **Damage that ignores armour is dealt whole.** Magic Missile is the caster's answer to
@@ -157,7 +165,7 @@ Out of a fight, casting is committing to a party action: it costs the slot and a
 
 ## Authoring
 
-A spell file names its school, classes, target and where it is cast from the game's own
+A spell file names its school, target and where it is cast from the game's own
 vocabularies, and a file naming one that does not exist is rejected by name, with the
 value it could not read, as an item file is.
 
@@ -169,8 +177,10 @@ value it could not read, as an item file is.
 | Restoring slots | Only by camping | After every won fight; on taking stairs | Refilling after every fight makes each fight a fresh budget and the long view disappears. Tying it to camping puts the refill where it costs something: time, risk, and the food buffs camping clears. |
 | Knowing a spell | Class spells by class and school rank; rare spells only by reading a tome | Every spell learned from scrolls or trainers; every spell by rank; chosen at creation | Practice already drives every other part of a character, so the common spells arrive with it and need no learning screen. Tomes give loot something for casters to hope for and make two casters of one class differ. |
 | Reading a tome | Out of a fight, by a character whose class and school rank fit, using the tome up | Readable by anyone; learning first and needing the rank later to cast; readable in a fight | A tome read by someone who can never cast its spell is a tome wasted, so it is refused and kept. Requiring the rank at reading keeps one rule for when a spell can be cast: known means castable. |
-| Slot count | Three rank-1 slots, one more per two points of Intellect over ten | Slots from the school's rank; one slot per rank | Intellect is the attribute the party gives slots to. Three is enough for a fight or two and too few for a floor, which is the attrition intended. |
-| Magnitude | Base × school rank × Intellect, fixed | A rolled range; base only | A fixed number keeps the preview honest, as weapon damage is. Growing with the school rank is what makes casting worth practising, and Intellect gives the attribute a reason to exist in a fight. |
+| Who may cast a spell | The class names its schools; the spell names none | Each spell listing its classes | A class should be readable in one file. A school is what a spell already belongs to, so naming schools on the class says everything the per-spell list did and keeps adding a spell a matter of one file. |
+| Running out of slots | Refused, except a mage's Overchannel paying hit points | Always refused | Overchannel is the mage's class skill: a choice at the bottom of the slots, priced in the scarcest thing a mage has. |
+| Slot count | Three rank-1 slots, one more per two points of the casting attribute over ten | Slots from the school's rank; one slot per rank | The casting attribute is the one the party gives slots to — Intellect for a mage, Resolve for a cleric. Three is enough for a fight or two and too few for a floor, which is the attrition intended. |
+| Magnitude | Base × school rank × casting attribute, fixed | A rolled range; base only | A fixed number keeps the preview honest, as weapon damage is. Growing with the school rank is what makes casting worth practising, and the casting attribute gives each caster's score a reason to exist in a fight. |
 | Magic Missile and armour | Ignores armour | Reduced by armour like a weapon blow | A mage's spell should answer what a mage's staff cannot. Ignoring armour gives a slot a reason to be spent on the armoured enemy rather than the soft one. |
 | Healing the unconscious | Not by Heal | Heal waking the unconscious at its healed hit points | Waking the fallen is a bigger thing than topping someone up, and belongs to Restoration. Keeping it separate keeps a knocked-out character a real setback. |
 
@@ -183,7 +193,9 @@ value it could not read, as an item file is.
 9. ✅ **A tome is read out of a fight**, by a character who could cast its spell and does not know it, and is used up.
 3. ✅ **Slots are per rank, spent one per cast, restored only by camping.**
 4. ✅ **A cast with no slot left is refused and costs nothing.**
-5. ✅ **A spell's effect is fixed**, grown by the school's rank and by Intellect, and reported before it is cast.
+5. ✅ **A spell's effect is fixed**, grown by the school's rank and by the caster's casting attribute, and reported before it is cast.
+10. ✅ **A class names the schools it casts**; a spell names no classes.
+11. ✅ **A mage out of slots may Overchannel**, paying hit points, never to zero.
 6. ✅ **Magic Missile ignores armour**, and is cast only in a fight.
 7. ✅ **Heal raises a conscious character only**, is refused on one already whole, and is cast in a fight or out of one.
 8. ✅ **Casting uses the spell's school**, in a fight and out of one.

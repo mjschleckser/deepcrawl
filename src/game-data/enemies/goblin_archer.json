@@ -11,7 +11,6 @@
   },
   "ranks": {
     "BOW": 3,
-    "LIGHT_ARMOUR": 1,
     "DETECTION": 2
   },
   "maxHitPoints": 7,
@@ -20,7 +19,7 @@
     "baseDamage": 6
   },
   "armour": 1,
-  "potValue": 18,
+  "potValue": 36,
   "forbidsEscape": false,
   "portrait": "goblin_archer.png",
   "loot": "goblin_archer"

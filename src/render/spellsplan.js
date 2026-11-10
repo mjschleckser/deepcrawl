@@ -10,7 +10,7 @@
 import { Condition, roster, character } from '../sim/party.js';
 import {
   CastRefusal, CastWhere, SpellEffect, SpellTarget,
-  castRefusal, healPreview, knownSpells, slotsAt, slotsLeft, spellMagnitude,
+  castPayment, castRefusal, healPreview, knownSpells, slotsAt, slotsLeft, spellMagnitude,
 } from '../sim/magic.js';
 import { MIN_TAP_PX, uiScale, contentColumn, stampRoom } from './geometry.js';
 
@@ -27,6 +27,7 @@ export function spellEffectText(caster, spell) {
 
 const REASONS = {
   [CastRefusal.NO_SLOTS]: 'No slots left',
+  [CastRefusal.TOO_HURT]: 'Too hurt to pay',
   [CastRefusal.NOT_HERE]: 'In a fight only',
   [CastRefusal.UNHURT]: 'Unhurt',
   [CastRefusal.UNCONSCIOUS]: 'Unconscious',
@@ -60,7 +61,11 @@ export function spellRows(party, characterId, spells, spellId = null) {
   }
   return knownSpells(c, spells).map((spell) => {
     const refusal = castRefusal(party, characterId, spell, { where: CastWhere.EXPLORATION });
-    const slots = `${slotsLeft(c, spell.rank, spells)}/${slotsAt(c, spell.rank, spells)} slots`;
+    // A mage out of slots pays in hit points, and is told how many.
+    const payment = castPayment(c, spell, spells);
+    const slots = payment.slot || payment.hitPoints === null
+      ? `${slotsLeft(c, spell.rank, spells)}/${slotsAt(c, spell.rank, spells)} slots`
+      : `${payment.hitPoints} HP`;
     return {
       role: SpellsControl.SPELL, id: spell.id, name: spell.name,
       detail: refusal ? (REASONS[refusal] ?? 'Not now') : `${spellEffectText(c, spell)} · ${slots}`,
