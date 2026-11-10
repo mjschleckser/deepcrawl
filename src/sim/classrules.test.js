@@ -13,7 +13,7 @@ import {
 } from './magic.js';
 import {
   beginEncounter, takeAction, hitDamage, createEnemy, createEnemyGroup, encounterOutcome, castPreview,
-  hasActed, Action, FULL_BAR, serializeEncounter, restoreEncounter,
+  hasActed, Action, FULL_BAR, serializeEncounter, restoreEncounter, hitMultiplier,
 } from './combat.js';
 import { selectEnemyTarget } from './enemies.js';
 import { createFloor, Direction } from './floor.js';
@@ -251,6 +251,19 @@ describe('Backstab', () => {
     expect(hitDamage(state, 'tam', 'o1')).toBe(10);
     const back = restoreEncounter(JSON.parse(JSON.stringify(serializeEncounter(state))), state.party, {}, spells);
     expect(hasActed(back, 'o1')).toBe(true);
+  });
+
+  // @spec COMBAT-ATTACK-020
+  it('reports the multiplier it applies, and one once the enemy has acted or for another class', () => {
+    const tam = thief();
+    const bram = make('bram', CharacterClass.FIGHTER, { attack: { skill: Skill.BLADE, baseDamage: 10 } });
+    const state = fight([tam, bram], [orc('o1', { attack: { skill: Skill.BLADE, baseDamage: 1 } })]);
+
+    expect(hitMultiplier(state, 'tam', 'o1')).toBe(2);
+    expect(hitMultiplier(state, 'bram', 'o1')).toBe(1);
+    state.readiness.set('o1', FULL_BAR);
+    takeAction(state, 'o1', { kind: Action.ATTACK, targetId: 'tam', skill: Skill.BLADE });
+    expect(hitMultiplier(state, 'tam', 'o1')).toBe(1);
   });
 
   // @spec COMBAT-ATTACK-018

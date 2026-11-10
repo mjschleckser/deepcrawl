@@ -5,7 +5,7 @@ import {
   roster, Condition,
 } from '../sim/party.js';
 import {
-  beginEncounter, createEnemy, createEnemyGroup, readinessOf, turnOrder, hitDamage,
+  beginEncounter, createEnemy, createEnemyGroup, readinessOf, turnOrder, hitDamage, hitMultiplier,
   FULL_BAR, Outcome,
 } from '../sim/combat.js';
 import { MIN_TAP_PX } from './geometry.js';
@@ -1453,6 +1453,35 @@ describe('the action menu', () => {
     expect(drawn[0].preview).toBe(String(hitDamage(fight.encounter, whose, 'g1')));
     expect(drawn[2].preview).toBe(String(hitDamage(fight.encounter, whose, 'a1')));
     expect(drawn[2].preview).not.toBe(drawn[0].preview);
+  });
+
+  // @spec PRESENT-MENU-019
+  it('marks a backstab\'s damage with its multiplier, and nothing else', () => {
+    const alone = (cls) => {
+      const party = createParty();
+      addCharacter(party, createCharacter({
+        id: 'tam', name: 'Tam', characterClass: cls, attributes: { DEXTERITY: 40 },
+        attack: { skill: Skill.BLADE, baseDamage: 9 },
+      }));
+      const encounter = beginEncounter({
+        party,
+        enemies: createEnemyGroup([
+          createEnemy({ id: 'g1', name: 'Goblin', maxHitPoints: 90, potValue: 14, attributes: { DEXTERITY: 1 } }),
+        ]),
+        rng: makeRng(4), origin: { floorId: 'f1', x: 2, y: 3 },
+      });
+      const fight = createFightController({ encounter, viewport, onDraw: vi.fn() });
+      expect(fight.pending.characterId).toBe('tam');
+      chooseOption(fight, 0);
+      return { encounter, entry: entries(planOf(fight))[0] };
+    };
+
+    const thief = alone(CharacterClass.THIEF);
+    expect(hitMultiplier(thief.encounter, 'tam', 'g1')).toBeGreaterThan(1);
+    expect(thief.entry.multiplier).toBe(`×${hitMultiplier(thief.encounter, 'tam', 'g1').toFixed(1)}`);
+    expect(thief.entry.preview).toBe(String(hitDamage(thief.encounter, 'tam', 'g1')));
+
+    expect(alone(CharacterClass.FIGHTER).entry.multiplier).toBeNull();
   });
 
   // @spec PRESENT-MENU-018

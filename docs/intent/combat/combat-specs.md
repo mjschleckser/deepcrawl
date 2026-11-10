@@ -49,6 +49,7 @@ are fed into.
 - [x] **COMBAT-ATTACK-016**: The system shall draw no random number when resolving an attack, so that the same attacker striking the same target deals the same damage every time, on either side alike.
 - [x] **COMBAT-ATTACK-017**: When a thief makes a weapon attack on an enemy that has not yet acted in the encounter, the system shall multiply the attack's base damage by the thief's Backstab multiplier before armour is subtracted.
 - [x] **COMBAT-ATTACK-018**: The system shall apply Backstab to no spell, item, or attack on an enemy that has taken an action in the encounter.
+- [x] **COMBAT-ATTACK-020**: The system shall report the multiplier Backstab applies to one combatant's attack on another, and one where it applies none.
 - [x] **COMBAT-ATTACK-019**: The system shall record, for every enemy in an encounter, whether it has yet taken an action, and shall report an attack's damage by the same reckoning the attack uses, Backstab included.
 - [x] **COMBAT-ATTACK-005**: The system shall deal at least one twentieth of an attack's base damage, rounded up and never below one, whatever the target's armour.
 - [x] **COMBAT-ATTACK-013**: The system shall report the damage one combatant's attack on another will deal, by the calculation that resolving that attack uses, without drawing a random number or changing the encounter.

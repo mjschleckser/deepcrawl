@@ -539,6 +539,11 @@ simulation reports for an attack on that target, armour taken off, and an attack
 exactly that, so a choice of whom to strike can be made from the numbers: a blow worth
 at least the hit points beside it finishes the job.
 
+**A multiplied blow says so.** When Backstab multiplies an attack on a target, the entry
+writes the multiplier beside the damage — *×2.0* — in a colour of its own, so a number
+larger than the last swing is explained where it is read rather than left to be
+puzzled over. An attack nothing multiplies carries no mark.
+
 **An entry reads as a blow against a body:** the name, then the damage, then a symbol of
 the weapon striking it, then the target's hit points. The symbol sits between the two
 numbers so that neither needs a label: one side is what is being dealt and the other what

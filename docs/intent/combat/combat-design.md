@@ -183,7 +183,9 @@ otherwise nothing: there are no armour skills.
 acted in this fight has its base damage multiplied by the thief's Backstab, as the party
 segment defines it, before armour is subtracted. Whether an enemy has acted is a fact the
 fight records the first time each enemy takes an action, and it is what the preview of
-an attack reads, so a backstab is shown before it is struck.
+an attack reads, so a backstab is shown before it is struck. The fight also reports the
+multiplier itself for an attack on a given target — one where Backstab does not apply —
+so the screen can say why the number is larger.
 
 **What a character ate is in the numbers.** A hungry character's base damage is cut by
 their hunger penalty, and a meal's buff raises damage, armour or Dexterity until the next

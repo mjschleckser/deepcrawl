@@ -816,8 +816,19 @@ function drawFight(container, plan) {
       preview.y = middle - preview.height / 2;
       container.addChild(preview);
 
+      // A multiplied blow says by how much, just ahead of the number it explains.
+      // @spec PRESENT-MENU-019
+      let nameEnd = preview.x;
+      if (entry.multiplier && !greyed) {
+        const times = label(entry.multiplier, Math.round(11 * scale), FIGHT_COLOURS.healthy);
+        times.x = preview.x - times.width - 6 * scale;
+        times.y = middle - times.height / 2;
+        container.addChild(times);
+        nameEnd = times.x;
+      }
+
       const name = label(entry.label, Math.round(13 * scale), greyed ? FIGHT_COLOURS.dim : FIGHT_COLOURS.text);
-      fitWithin(name, preview.x - entry.x - 12 * scale);
+      fitWithin(name, nameEnd - entry.x - 12 * scale);
       name.x = entry.x + 6 * scale;
       name.y = middle - name.height / 2;
       container.addChild(name);

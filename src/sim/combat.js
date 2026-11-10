@@ -428,6 +428,20 @@ function attackBase(state, swinger, target, base = baseDamageWith(swinger)) {
 }
 
 /**
+ * What Backstab multiplies an attack by one combatant on another by: its multiplier
+ * where it applies, and one where it does not. Read the way the attack reads it, so a
+ * screen can say why a blow is worth more.
+ *
+ * @spec COMBAT-ATTACK-020
+ */
+export function hitMultiplier(state, actorId, targetId) {
+  const swinger = recordOf(state, actorId);
+  const target = findTarget(state, targetId);
+  if (!swinger || !target) return 1;
+  return backstabs(state, swinger, target) ? backstabMultiplier(swinger) : 1;
+}
+
+/**
  * What an attack by one combatant on another will deal. The very sum a resolved attack
  * runs through, so the preview and the result are the same number; nothing is drawn and
  * nothing changes.

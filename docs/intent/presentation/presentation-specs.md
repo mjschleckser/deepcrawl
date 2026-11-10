@@ -143,6 +143,7 @@ structure and the rules; the numbers stay tunable without rewriting a spec or a 
 - [x] **PRESENT-MENU-014**: When the player presses Flee while it is available, the system shall attempt the escape at once and open no menu.
 - [x] **PRESENT-MENU-015**: While a fight menu is open, when the player turns the wheel, the system shall scroll the log and leave the menu open.
 - [x] **PRESENT-MENU-016**: The system shall draw on a fight menu entry for an attack target, in this order: the target's name, the damage the simulation reports for an attack on that target, a weapon symbol, and the target's hit points.
+- [x] **PRESENT-MENU-019**: When Backstab multiplies an attack on a target, the system shall draw the multiplier the simulation reports beside that target's damage, and shall draw no multiplier where it applies none.
 - [x] **PRESENT-MENU-018**: The system shall draw on an attack target's entry the symbol for the skill of the weapon the acting character is using, with a distinct symbol for each of Blade, Blunt, Polearm and Bow.
 - [x] **PRESENT-MENU-013**: When a chosen fight menu entry needs a further answer, the system shall replace the menu's entries with the next question rather than opening a second menu.
 - [x] **PRESENT-MENU-017**: The system shall list attack targets in a fight menu in the order their column lists them.

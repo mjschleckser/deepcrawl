@@ -16,7 +16,7 @@ import { MIN_TAP_PX, ControlKind, uiScale, contentColumn } from './geometry.js';
 import {
   Action, Outcome, attackTargets, allyTargets,
   encounterOutcome, nextActor, takeAction, attemptFlee,
-  fleeCertainToFail, turnOrder, hitDamage, castPreview, castRefusalInFight,
+  fleeCertainToFail, turnOrder, hitDamage, hitMultiplier, castPreview, castRefusalInFight,
 } from '../sim/combat.js';
 import {
   CastRefusal, CastWhere, SpellTarget, castPayment, knownSpells, slotsAt, slotsLeft,
@@ -549,6 +549,8 @@ function layOutMenu({ pending, opener, bounds, ceiling, metrics, scale }) {
     label: target.name,
     detail: target.detail ?? `${target.hitPoints}/${target.maxHitPoints}`,
     preview: target.preview ?? String(target.damage),
+    // @spec PRESENT-MENU-019
+    multiplier: target.multiplier > 1 ? `×${target.multiplier.toFixed(1)}` : null,
     weapon: target.weapon ?? null,
     available: target.available ?? true,
     reason: target.reason ?? null,
@@ -806,6 +808,9 @@ function targetsFor(encounter, characterId, action) {
   return attackTargets(encounter, characterId).map((t) => ({
     id: t.id, name: t.name, hitPoints: t.hitPoints, maxHitPoints: t.maxHitPoints,
     damage: hitDamage(encounter, characterId, t.id),
+    // What multiplied it, when something did, so the larger number explains itself.
+    // @spec PRESENT-MENU-019
+    multiplier: hitMultiplier(encounter, characterId, t.id),
     weapon,
   }));
 }
